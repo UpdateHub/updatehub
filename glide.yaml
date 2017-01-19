@@ -1,0 +1,8 @@
+package: code.ossystems.com.br/easyfota/agent
+import: []
+testImport:
+- package: github.com/stretchr/testify
+  version: v1.1.4
+  subpackages:
+  - assert
+  - mock
