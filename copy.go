@@ -1,13 +1,17 @@
 package main
 
+import "fmt"
+
 type Copy struct {
-	Object
+	PackageObject
+	PackageObjectData
 
 	TargetDevice string `json:"target-device"`
 	TargetPath   string `json:"target-path,omitempty"`
 }
 
 func (cp Copy) CheckRequirements() error {
+	fmt.Println("do copy")
 	return nil
 }
 

@@ -8,7 +8,7 @@ import (
 
 type FakeObject struct {
 	mock.Mock
-	Object
+	PackageObject
 }
 
 func (f *FakeObject) CheckRequirements() error {
