@@ -11,6 +11,14 @@ func (o PackageObjectData) Setup() error {
 	return nil
 }
 
+func (o PackageObjectData) Install() error {
+	return nil
+}
+
+func (o PackageObjectData) Cleanup() error {
+	return nil
+}
+
 func (o PackageObjectData) CheckRequirements() error {
 	return nil
 }

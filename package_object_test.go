@@ -7,14 +7,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestPackageObjectCheckrequirementsNil(t *testing.T) {
+	o := PackageObjectData{}
+	assert.Nil(t, o.CheckRequirements())
+}
+
 func TestPackageObjectSetupNil(t *testing.T) {
 	o := PackageObjectData{}
 	assert.Nil(t, o.Setup())
 }
 
-func TestPackageObjectCheckrequirementsNil(t *testing.T) {
+func TestPackageObjectInstallNil(t *testing.T) {
 	o := PackageObjectData{}
-	assert.Nil(t, o.CheckRequirements())
+	assert.Nil(t, o.Install())
+}
+
+func TestPackageObjectCleanupNil(t *testing.T) {
+	o := PackageObjectData{}
+	assert.Nil(t, o.Cleanup())
 }
 
 func TestPackageObjectFROMJson(t *testing.T) {

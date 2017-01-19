@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 type Copy struct {
 	PackageObject
 	PackageObjectData
@@ -11,10 +9,17 @@ type Copy struct {
 }
 
 func (cp Copy) CheckRequirements() error {
-	fmt.Println("do copy")
 	return nil
 }
 
 func (cp Copy) Setup() error {
+	return nil
+}
+
+func (cp Copy) Install() error {
+	return nil
+}
+
+func (cp Copy) Cleanup() error {
 	return nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -21,11 +22,23 @@ func (f *FakeObject) Setup() error {
 	return nil
 }
 
+func (f *FakeObject) Install() error {
+	f.Called()
+	return nil
+}
+
+func (f *FakeObject) Cleanup() error {
+	f.Called()
+	return nil
+}
+
 func TestInstallUpdate(t *testing.T) {
 	f := &FakeObject{}
 
-	f.On("CheckRequirements").Return()
+	f.On("CheckRequirements").Return(errors.New(""))
 	f.On("Setup").Return()
+	f.On("Install").Return()
+	f.On("Cleanup").Return()
 
 	InstallUpdate(f)
 

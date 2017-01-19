@@ -1,9 +1,8 @@
 package main
 
-type CheckRequirements interface {
+type PackageObjectInstaller interface {
 	CheckRequirements() error
-}
-
-type Setup interface {
 	Setup() error
+	Install() error
+	Cleanup() error
 }

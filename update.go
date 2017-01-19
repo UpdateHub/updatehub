@@ -1,11 +1,25 @@
 package main
 
 type InstallUpdateHandler interface {
-	CheckRequirements() error
-	Setup() error
+	PackageObjectInstaller
 }
 
-func InstallUpdate(h InstallUpdateHandler) {
-	h.CheckRequirements()
-	h.Setup()
+func InstallUpdate(h InstallUpdateHandler) error {
+	if err := h.CheckRequirements(); err != nil {
+		return err
+	}
+
+	if err := h.Setup(); err != nil {
+		return err
+	}
+
+	if err := h.Install(); err != nil {
+		return err
+	}
+
+	if err := h.Cleanup(); err != nil {
+		return err
+	}
+
+	return nil
 }
