@@ -19,10 +19,16 @@ node('docker') {
     stage('Test') {
         try {
             docker.image('golang').inside("-v $WORKSPACE:${GOPATH}") {
-                sh "cd ${GOPATH} && go test -v \$(glide novendor | tr '\n' ' ') | tee test-result.log "
+                sh "cd ${GOPATH} && go test -v \$(glide novendor | tr '\n' ' ') | tee test-result.log"
+                sh "cd ${GOPATH} && gocov test \$(glide novendor | tr '\n' ' ') | gocov-html > coverage.html"
                 sh "cd ${GOPATH} && go2xunit -fail -input test-result.log -output test-result.xml"
             }
         } finally {
+            publishHTML([alwaysLinkToLastBuild: true,
+                         reportDir: "$WORKSPACE",
+                         reportFiles: 'coverage.html',
+                         reportName: 'Coverage Report'])
+
             step([$class: 'XUnitBuilder',
                   thresholds: [
                       [$class: 'FailedThreshold', failureThreshold: '1']
