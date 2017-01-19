@@ -1,7 +1,7 @@
 package plugins
 
 var (
-	plugins = make(map[string]Plugin)
+	Plugins = make(map[string]Plugin)
 )
 
 type Plugin struct {
@@ -11,9 +11,19 @@ type Plugin struct {
 }
 
 func RegisterPlugin(name string, plugin Plugin) {
-	plugins[name] = plugin
+	Plugins[name] = plugin
 }
 
 func GetPlugin(mode string) interface{} {
-	return plugins[mode].Instantiate()
+	return Plugins[mode].Instantiate()
+}
+
+func CheckRequirements() error {
+	for _, p := range Plugins {
+		if err := p.CheckRequirements(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

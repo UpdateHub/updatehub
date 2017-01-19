@@ -1,11 +1,6 @@
 package pkg
 
-import (
-	"encoding/json"
-
-	"bitbucket.org/ossystems/agent/handlers"
-	"bitbucket.org/ossystems/agent/plugins"
-)
+import "bitbucket.org/ossystems/agent/handlers"
 
 type ObjectData struct {
 	Sha256sum string `json:"sha256sum"`
@@ -30,24 +25,4 @@ func (o ObjectData) CheckRequirements() error {
 
 type Object interface {
 	handlers.InstallUpdateHandler
-}
-
-func ObjectFromJSON(bytes []byte) (Object, error) {
-	var v interface{}
-
-	err := json.Unmarshal(bytes, &v)
-	if err != nil {
-		return nil, err
-	}
-
-	var obj Object
-
-	switch v.(map[string]interface{})["mode"] {
-	case "copy":
-		obj = plugins.GetPlugin("copy").(Object)
-	}
-
-	json.Unmarshal(bytes, &obj)
-
-	return obj, nil
 }

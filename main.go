@@ -3,14 +3,12 @@ package main
 import (
 	"fmt"
 
-	"bitbucket.org/ossystems/agent/pkg"
-
-	// load plugins
+	"bitbucket.org/ossystems/agent/metadata"
 	_ "bitbucket.org/ossystems/agent/plugins/copy"
 )
 
 func main() {
-	obj, _ := pkg.ObjectFromJSON([]byte("{ \"mode\": \"copy\" }"))
+	obj, _ := metadata.PackageObjectFromJSON([]byte("{ \"mode\": \"copy\" }"))
 	fmt.Println(obj)
 
 	obj.Setup()
