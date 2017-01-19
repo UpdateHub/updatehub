@@ -1,12 +1,19 @@
 package main
 
+import (
+	"fmt"
+
+	"bitbucket.org/ossystems/agent/pkg"
+
+	// load plugins
+	_ "bitbucket.org/ossystems/agent/plugins/copy"
+)
+
 func main() {
-	cp := Copy{
-		TargetDevice: "/dev/f1",
-		TargetPath:   "/f",
-	}
+	obj, _ := pkg.ObjectFromJSON([]byte("{ \"mode\": \"copy\" }"))
+	fmt.Println(obj)
 
-	cp.Mode = "copy"
+	obj.Setup()
 
-	InstallUpdate(cp)
+	InstallUpdate(obj)
 }

@@ -4,12 +4,14 @@ import (
 	"errors"
 	"testing"
 
+	"bitbucket.org/ossystems/agent/pkg"
+
 	"github.com/stretchr/testify/mock"
 )
 
 type FakeObject struct {
 	mock.Mock
-	PackageObject
+	pkg.Object
 }
 
 func (f *FakeObject) CheckRequirements() error {

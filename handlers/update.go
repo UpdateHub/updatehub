@@ -1,4 +1,4 @@
-package main
+package handlers
 
 type InstallUpdateHandler interface {
 	PackageObjectInstaller
