@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	_ "bitbucket.org/ossystems/agent/installmodes/copy"
 	"bitbucket.org/ossystems/agent/metadata"
-	_ "bitbucket.org/ossystems/agent/plugins/copy"
 )
 
 func main() {

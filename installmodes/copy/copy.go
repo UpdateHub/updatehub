@@ -1,10 +1,12 @@
 package copy
 
-import "bitbucket.org/ossystems/agent/pkg"
-import "bitbucket.org/ossystems/agent/plugins"
+import (
+	"bitbucket.org/ossystems/agent/installmodes"
+	"bitbucket.org/ossystems/agent/pkg"
+)
 
 func init() {
-	plugins.RegisterPlugin("copy", plugins.Plugin{
+	installmodes.RegisterInstallMode("copy", installmodes.InstallMode{
 		CheckRequirements: checkRequirements,
 		Instantiate:       instantiate,
 	})
@@ -15,10 +17,10 @@ func checkRequirements() error {
 }
 
 func instantiate() interface{} {
-	return &Copy{}
+	return &CopyObject{}
 }
 
-type Copy struct {
+type CopyObject struct {
 	pkg.Object
 	pkg.ObjectData
 
@@ -26,18 +28,18 @@ type Copy struct {
 	TargetPath   string `json:"target-path,omitempty"`
 }
 
-func (cp Copy) CheckRequirements() error {
+func (cp CopyObject) CheckRequirements() error {
 	return nil
 }
 
-func (cp Copy) Setup() error {
+func (cp CopyObject) Setup() error {
 	return nil
 }
 
-func (cp Copy) Install() error {
+func (cp CopyObject) Install() error {
 	return nil
 }
 
-func (cp Copy) Cleanup() error {
+func (cp CopyObject) Cleanup() error {
 	return nil
 }

@@ -3,8 +3,8 @@ package metadata
 import (
 	"testing"
 
+	"bitbucket.org/ossystems/agent/installmodes"
 	"bitbucket.org/ossystems/agent/pkg"
-	"bitbucket.org/ossystems/agent/plugins"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,7 +13,7 @@ type TestObject struct {
 }
 
 func TestObjectFROMJson(t *testing.T) {
-	plugins.RegisterPlugin("test", plugins.Plugin{
+	installmodes.RegisterInstallMode("test", installmodes.InstallMode{
 		Mode:              "test",
 		CheckRequirements: func() error { return nil },
 		Instantiate:       func() interface{} { return TestObject{} },

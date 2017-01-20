@@ -3,12 +3,12 @@ package metadata
 import (
 	"encoding/json"
 
+	"bitbucket.org/ossystems/agent/installmodes"
 	"bitbucket.org/ossystems/agent/pkg"
-	"bitbucket.org/ossystems/agent/plugins"
 )
 
 func PackageObjectFromJSON(bytes []byte) (pkg.Object, error) {
-	var v interface{}
+	var v map[string]interface{}
 
 	err := json.Unmarshal(bytes, &v)
 	if err != nil {
@@ -17,11 +17,11 @@ func PackageObjectFromJSON(bytes []byte) (pkg.Object, error) {
 
 	var obj pkg.Object
 
-	for mode, _ := range plugins.Plugins {
-		p := plugins.GetPlugin(mode).(pkg.Object)
-		if p != nil {
-			obj = p
-		}
+	o, err := installmodes.GetObject(v["mode"].(string))
+	if err == nil {
+		obj = o.(pkg.Object)
+	} else {
+		return nil, err
 	}
 
 	json.Unmarshal(bytes, &obj)
