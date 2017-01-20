@@ -28,10 +28,6 @@ type CopyObject struct {
 	TargetPath   string `json:"target-path,omitempty"`
 }
 
-func (cp CopyObject) CheckRequirements() error {
-	return nil
-}
-
 func (cp CopyObject) Setup() error {
 	return nil
 }

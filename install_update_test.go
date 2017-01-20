@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"testing"
 
 	"bitbucket.org/ossystems/agent/metadata"
@@ -12,11 +11,6 @@ import (
 type FakeObject struct {
 	mock.Mock
 	metadata.Object
-}
-
-func (f *FakeObject) CheckRequirements() error {
-	f.Called()
-	return nil
 }
 
 func (f *FakeObject) Setup() error {
@@ -37,7 +31,6 @@ func (f *FakeObject) Cleanup() error {
 func TestInstallUpdate(t *testing.T) {
 	f := &FakeObject{}
 
-	f.On("CheckRequirements").Return(errors.New(""))
 	f.On("Setup").Return()
 	f.On("Install").Return()
 	f.On("Cleanup").Return()
