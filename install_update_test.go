@@ -4,14 +4,14 @@ import (
 	"errors"
 	"testing"
 
-	"bitbucket.org/ossystems/agent/pkg"
+	"bitbucket.org/ossystems/agent/metadata"
 
 	"github.com/stretchr/testify/mock"
 )
 
 type FakeObject struct {
 	mock.Mock
-	pkg.Object
+	metadata.Object
 }
 
 func (f *FakeObject) CheckRequirements() error {

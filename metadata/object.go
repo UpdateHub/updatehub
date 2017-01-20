@@ -1,4 +1,4 @@
-package pkg
+package metadata
 
 import "bitbucket.org/ossystems/agent/handlers"
 

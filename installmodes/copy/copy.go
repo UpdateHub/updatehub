@@ -2,7 +2,7 @@ package copy
 
 import (
 	"bitbucket.org/ossystems/agent/installmodes"
-	"bitbucket.org/ossystems/agent/pkg"
+	"bitbucket.org/ossystems/agent/metadata"
 )
 
 func init() {
@@ -21,8 +21,8 @@ func instantiate() interface{} {
 }
 
 type CopyObject struct {
-	pkg.Object
-	pkg.ObjectData
+	metadata.Object
+	metadata.ObjectData
 
 	TargetDevice string `json:"target-device"`
 	TargetPath   string `json:"target-path,omitempty"`

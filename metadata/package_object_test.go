@@ -4,12 +4,11 @@ import (
 	"testing"
 
 	"bitbucket.org/ossystems/agent/installmodes"
-	"bitbucket.org/ossystems/agent/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
 type TestObject struct {
-	pkg.Object
+	Object
 }
 
 func TestObjectFROMJson(t *testing.T) {
