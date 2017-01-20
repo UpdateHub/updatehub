@@ -6,7 +6,7 @@ import (
 	"bitbucket.org/ossystems/agent/installmodes"
 )
 
-func PackageObjectFromJSON(bytes []byte) (Object, error) {
+func ObjectFromJSON(bytes []byte) (Object, error) {
 	var v map[string]interface{}
 
 	err := json.Unmarshal(bytes, &v)

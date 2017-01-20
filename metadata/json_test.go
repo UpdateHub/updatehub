@@ -18,7 +18,7 @@ func TestObjectFROMJson(t *testing.T) {
 		Instantiate:       func() interface{} { return TestObject{} },
 	})
 
-	obj, err := PackageObjectFromJSON([]byte("{ \"mode\": \"test\" }"))
+	obj, err := ObjectFromJSON([]byte("{ \"mode\": \"test\" }"))
 	if !assert.NotNil(t, obj) {
 		t.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func TestObjectFROMJson(t *testing.T) {
 }
 
 func TestObjectFromInvalidJson(t *testing.T) {
-	obj, err := PackageObjectFromJSON([]byte("invalid"))
+	obj, err := ObjectFromJSON([]byte("invalid"))
 	assert.Nil(t, obj)
 	assert.Error(t, err)
 }

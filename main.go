@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	obj, _ := metadata.PackageObjectFromJSON([]byte("{ \"mode\": \"copy\" }"))
+	obj, _ := metadata.ObjectFromJSON([]byte("{ \"mode\": \"copy\" }"))
 	fmt.Println(obj)
 
 	obj.Setup()
