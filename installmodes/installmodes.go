@@ -3,29 +3,33 @@ package installmodes
 import "errors"
 
 var (
-	InstallModes = make(map[string]InstallMode)
+	installModes = make(map[string]InstallMode)
 )
 
+// InstallMode represents a install mode
 type InstallMode struct {
 	Mode              string
 	CheckRequirements func() error
 	Instantiate       func() interface{}
 }
 
+// RegisterInstallMode registers a new install mode
 func RegisterInstallMode(name string, mode InstallMode) {
-	InstallModes[name] = mode
+	installModes[name] = mode
 }
 
+// GetObject gets the object that represents a install mode
 func GetObject(name string) (interface{}, error) {
-	if m, ok := InstallModes[name]; ok {
+	if m, ok := installModes[name]; ok {
 		return m.Instantiate(), nil
 	} else {
 		return nil, errors.New("Object not found")
 	}
 }
 
+// CheckRequirements iterates over all registered install modes and check for their requirements
 func CheckRequirements() error {
-	for _, m := range InstallModes {
+	for _, m := range installModes {
 		if err := m.CheckRequirements(); err != nil {
 			return err
 		}

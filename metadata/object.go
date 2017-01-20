@@ -2,25 +2,10 @@ package metadata
 
 import "bitbucket.org/ossystems/agent/handlers"
 
+// ObjectData contains the common properties of a package's object from JSON metadata
 type ObjectData struct {
 	Sha256sum string `json:"sha256sum"`
 	Mode      string `json:"mode"`
-}
-
-func (o ObjectData) Setup() error {
-	return nil
-}
-
-func (o ObjectData) Install() error {
-	return nil
-}
-
-func (o ObjectData) Cleanup() error {
-	return nil
-}
-
-func (o ObjectData) CheckRequirements() error {
-	return nil
 }
 
 type Object interface {
