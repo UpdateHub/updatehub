@@ -1,17 +1,14 @@
 package main
 
 import (
-	"fmt"
-
 	_ "bitbucket.org/ossystems/agent/installmodes/copy"
-	"bitbucket.org/ossystems/agent/metadata"
 )
 
 func main() {
-	obj, _ := metadata.ObjectFromJSON([]byte("{ \"mode\": \"copy\" }"))
-	fmt.Println(obj)
+	fota := EasyFota{
+		state:        NewIdleState(),
+		pollInterval: 5,
+	}
 
-	obj.Setup()
-
-	InstallUpdate(obj)
+	fota.MainLoop()
 }
