@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"encoding/json"
+	"errors"
+	"reflect"
 
 	"bitbucket.org/ossystems/agent/installmodes"
 )
@@ -59,6 +61,14 @@ func ObjectFromJSON(bytes []byte) (Object, error) {
 	}
 
 	json.Unmarshal(bytes, &obj)
+
+	if compressed, ok := v["compressed"].(bool); ok && compressed {
+		field, ok := reflect.TypeOf(obj).FieldByName("CompressedObject")
+
+		if !ok || field.Type != reflect.TypeOf(CompressedObject{}) {
+			return nil, errors.New("Compressed object does not embed CompressedObject struct")
+		}
+	}
 
 	return obj, nil
 }

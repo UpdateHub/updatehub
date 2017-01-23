@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"errors"
 	"testing"
 
 	"bitbucket.org/ossystems/agent/installmodes"
@@ -16,10 +17,33 @@ const (
 	    ]
 	  ]
 	}`
+
+	validJSONMetadataWithCompressedObject = `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	    [
+	      { "mode": "compressed-object", "compressed": true }
+	    ]
+	  ]
+	}`
+
+	validJSONMetadataWithoutCompressedObject = `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	    [
+	      { "mode": "test", "compressed": true }
+	    ]
+	  ]
+	}`
 )
 
 type TestObject struct {
 	Object
+}
+
+type TestObjectCompressed struct {
+	Object
+	CompressedObject
 }
 
 func TestMetadataFromValidJson(t *testing.T) {
@@ -37,6 +61,32 @@ func TestMetadataFromValidJson(t *testing.T) {
 	assert.NotEmpty(t, m.Objects)
 	assert.NotEmpty(t, m.Objects[0])
 	assert.IsType(t, TestObject{}, m.Objects[0][0])
+}
+
+func TestCompressedObject(t *testing.T) {
+	installmodes.RegisterInstallMode("compressed-object", installmodes.InstallMode{
+		Mode:              "compressed-object",
+		CheckRequirements: func() error { return nil },
+		Instantiate:       func() interface{} { return TestObjectCompressed{} },
+	})
+
+	obj, err := FromJSON([]byte(validJSONMetadataWithCompressedObject))
+	if !assert.NotNil(t, obj) {
+		t.Fatal(err)
+	}
+}
+
+func TestInvalidCompressedObject(t *testing.T) {
+	installmodes.RegisterInstallMode("test", installmodes.InstallMode{
+		Mode:              "test",
+		CheckRequirements: func() error { return nil },
+		Instantiate:       func() interface{} { return TestObject{} },
+	})
+
+	_, err := FromJSON([]byte(validJSONMetadataWithoutCompressedObject))
+	if assert.Error(t, err) {
+		assert.Equal(t, err, errors.New("Compressed object does not embed CompressedObject struct"))
+	}
 }
 
 func TestObjectFromValidJson(t *testing.T) {

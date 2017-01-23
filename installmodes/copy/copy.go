@@ -23,6 +23,7 @@ func instantiate() interface{} {
 type CopyObject struct {
 	metadata.Object
 	metadata.ObjectData
+	metadata.CompressedObject
 
 	TargetDevice string `json:"target-device"`
 	TargetPath   string `json:"target-path,omitempty"`
