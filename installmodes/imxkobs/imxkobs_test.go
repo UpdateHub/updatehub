@@ -13,11 +13,11 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestImxKobsInstantiate(t *testing.T) {
-	ik, ok := instantiate().(*ImxKobsObject)
+func TestImxKobsGetObject(t *testing.T) {
+	ik, ok := getObject().(*ImxKobsObject)
 
 	if !ok {
-		t.Error("Failed to cast return value of \"instantiate()\" to ImxKobsObject")
+		t.Error("Failed to cast return value of \"getObject()\" to ImxKobsObject")
 	}
 
 	cmd := ik.CmdLine
@@ -84,12 +84,12 @@ func (clm CmdLineMock) Execute(cmdline string) ([]byte, error) {
 func TestImxKobsInstallSuccessCases(t *testing.T) {
 	// FIXME: populate these fields with a json sample?
 	testCases := []struct {
-		Name               string
-		Add1KPadding       bool
-		SearchExponent     int
-		Chip0DevicePath    string
-		Chip1DevicePath    string
-		ExpectedCmdLine    string
+		Name            string
+		Add1KPadding    bool
+		SearchExponent  int
+		Chip0DevicePath string
+		Chip1DevicePath string
+		ExpectedCmdLine string
 	}{
 		{
 			"SuccessWithAllFields",

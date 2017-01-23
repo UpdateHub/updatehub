@@ -11,9 +11,9 @@ import (
 
 // FIXME: test "init"?
 func init() {
-	installmodes.RegisterInstallMode("imxkobs", installmodes.InstallMode {
+	installmodes.RegisterInstallMode("imxkobs", installmodes.InstallMode{
 		CheckRequirements: checkRequirements,
-		Instantiate:       instantiate,
+		GetObject:         getObject,
 	})
 }
 
@@ -23,7 +23,7 @@ func checkRequirements() error {
 	return err
 }
 
-func instantiate() interface{} {
+func getObject() interface{} {
 	return &ImxKobsObject{CmdLine: &utils.CmdLineImpl{}}
 }
 
@@ -46,25 +46,25 @@ func (ik ImxKobsObject) Install() error {
 	cmdline := "kobs-ng init"
 
 	if ik.Add1KPadding {
-		cmdline += " -x";
+		cmdline += " -x"
 	}
 
 	// FIXME: we need to: join(ik.UpdateDir, ik.Sha256sum)
 	cmdline += " " + ik.Sha256sum
 
 	if ik.SearchExponent > 0 {
-		cmdline += " --search_exponent=" + strconv.Itoa(ik.SearchExponent);
+		cmdline += " --search_exponent=" + strconv.Itoa(ik.SearchExponent)
 	}
 
 	if ik.Chip0DevicePath != "" {
-		cmdline += " --chip_0_device_path=" + ik.Chip0DevicePath;
+		cmdline += " --chip_0_device_path=" + ik.Chip0DevicePath
 	}
 
 	if ik.Chip1DevicePath != "" {
-		cmdline += " --chip_1_device_path=" + ik.Chip1DevicePath;
+		cmdline += " --chip_1_device_path=" + ik.Chip1DevicePath
 	}
 
-	cmdline += " -v";
+	cmdline += " -v"
 
 	_, err := ik.Execute(cmdline)
 

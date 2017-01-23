@@ -50,7 +50,7 @@ func TestMetadataFromValidJson(t *testing.T) {
 	installmodes.RegisterInstallMode("test", installmodes.InstallMode{
 		Mode:              "test",
 		CheckRequirements: func() error { return nil },
-		Instantiate:       func() interface{} { return TestObject{} },
+		GetObject:         func() interface{} { return TestObject{} },
 	})
 
 	m, err := FromJSON([]byte(validJSONMetadata))
@@ -67,7 +67,7 @@ func TestCompressedObject(t *testing.T) {
 	installmodes.RegisterInstallMode("compressed-object", installmodes.InstallMode{
 		Mode:              "compressed-object",
 		CheckRequirements: func() error { return nil },
-		Instantiate:       func() interface{} { return TestObjectCompressed{} },
+		GetObject:         func() interface{} { return TestObjectCompressed{} },
 	})
 
 	obj, err := FromJSON([]byte(validJSONMetadataWithCompressedObject))
@@ -80,7 +80,7 @@ func TestInvalidCompressedObject(t *testing.T) {
 	installmodes.RegisterInstallMode("test", installmodes.InstallMode{
 		Mode:              "test",
 		CheckRequirements: func() error { return nil },
-		Instantiate:       func() interface{} { return TestObject{} },
+		GetObject:         func() interface{} { return TestObject{} },
 	})
 
 	_, err := FromJSON([]byte(validJSONMetadataWithoutCompressedObject))
@@ -93,7 +93,7 @@ func TestObjectFromValidJson(t *testing.T) {
 	installmodes.RegisterInstallMode("test", installmodes.InstallMode{
 		Mode:              "test",
 		CheckRequirements: func() error { return nil },
-		Instantiate:       func() interface{} { return TestObject{} },
+		GetObject:         func() interface{} { return TestObject{} },
 	})
 
 	obj, err := ObjectFromJSON([]byte("{ \"mode\": \"test\" }"))

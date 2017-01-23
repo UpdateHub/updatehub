@@ -13,7 +13,7 @@ type TestObject struct {
 func TestRegisterInstallMode(t *testing.T) {
 	RegisterInstallMode("test1", InstallMode{
 		CheckRequirements: func() error { return nil },
-		Instantiate:       func() interface{} { return &TestObject{} },
+		GetObject:         func() interface{} { return &TestObject{} },
 	})
 
 	obj, err := GetObject("test1")

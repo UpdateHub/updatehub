@@ -7,17 +7,9 @@ import (
 
 func init() {
 	installmodes.RegisterInstallMode("copy", installmodes.InstallMode{
-		CheckRequirements: checkRequirements,
-		Instantiate:       instantiate,
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &CopyObject{} },
 	})
-}
-
-func checkRequirements() error {
-	return nil
-}
-
-func instantiate() interface{} {
-	return &CopyObject{}
 }
 
 type CopyObject struct {

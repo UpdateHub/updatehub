@@ -10,7 +10,7 @@ var (
 type InstallMode struct {
 	Mode              string
 	CheckRequirements func() error
-	Instantiate       func() interface{}
+	GetObject         func() interface{}
 }
 
 // RegisterInstallMode registers a new install mode
@@ -21,7 +21,7 @@ func RegisterInstallMode(name string, mode InstallMode) {
 // GetObject gets the object that represents a install mode
 func GetObject(name string) (interface{}, error) {
 	if m, ok := installModes[name]; ok {
-		return m.Instantiate(), nil
+		return m.GetObject(), nil
 	} else {
 		return nil, errors.New("Object not found")
 	}
