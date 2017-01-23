@@ -5,6 +5,7 @@ type EasyFotaState int
 const (
 	EasyFotaStateIdle = iota
 	EasyFotaStateUpdateCheck
+	EasyFotaStateUpdateFetch
 	EasyFotaStateInstalling
 	EasyFotaStateInstalled
 	EasyFotaStateWaitingForReboot
@@ -13,6 +14,7 @@ const (
 var statusNames = map[EasyFotaState]string{
 	EasyFotaStateIdle:             "idle",
 	EasyFotaStateUpdateCheck:      "update-check",
+	EasyFotaStateUpdateFetch:      "update-fetch",
 	EasyFotaStateInstalling:       "installing",
 	EasyFotaStateInstalled:        "installed",
 	EasyFotaStateWaitingForReboot: "waiting-for-reboot",

@@ -3,8 +3,18 @@ package main
 import "fmt"
 
 type EasyFota struct {
+	Controller
+
 	state        State
 	pollInterval int
+}
+
+type Controller interface {
+	CheckUpdate() bool
+}
+
+func (ef *EasyFota) CheckUpdate() bool {
+	return false
 }
 
 func (ef *EasyFota) MainLoop() {
