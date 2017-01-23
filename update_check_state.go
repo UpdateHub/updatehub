@@ -17,8 +17,8 @@ func (is *UpdateCheckState) Id() EasyFotaState {
 	return is.id
 }
 
-func (is *UpdateCheckState) Handle(fota *EasyFota) State {
+func (is *UpdateCheckState) Handle(fota *EasyFota) (State, bool) {
 	fmt.Println("No update available")
 
-	return NewIdleState()
+	return NewIdleState(), false
 }

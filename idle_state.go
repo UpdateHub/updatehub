@@ -21,11 +21,11 @@ func (is *IdleState) Id() EasyFotaState {
 	return is.id
 }
 
-func (is *IdleState) Cancel() bool {
-	return is.CancellableState.Cancel()
+func (is *IdleState) Cancel(ok bool) bool {
+	return is.CancellableState.Cancel(ok)
 }
 
-func (is *IdleState) Handle(fota *EasyFota) State {
+func (is *IdleState) Handle(fota *EasyFota) (State, bool) {
 	var nextState State
 
 	nextState = is
@@ -43,10 +43,10 @@ func (is *IdleState) Handle(fota *EasyFota) State {
 			is.elapsedTime++
 		}
 
-		is.Cancel()
+		is.Cancel(true)
 	}()
 
 	is.Wait()
 
-	return nextState
+	return nextState, false
 }

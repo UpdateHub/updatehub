@@ -26,14 +26,14 @@ func (b *BaseState) Id() EasyFotaState {
 	return b.id
 }
 
-func (b *BaseState) Cancel() bool {
-	return false
+func (b *BaseState) Cancel(ok bool) bool {
+	return ok
 }
 
 type State interface {
 	Id() EasyFotaState
-	Handle(*EasyFota) State
-	Cancel() bool
+	Handle(*EasyFota) (State, bool)
+	Cancel(bool) bool
 }
 
 func StateToString(status EasyFotaState) string {

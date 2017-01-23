@@ -5,8 +5,8 @@ type CancellableState struct {
 	cancel chan bool
 }
 
-func (cs *CancellableState) Cancel() bool {
-	cs.cancel <- true
+func (cs *CancellableState) Cancel(ok bool) bool {
+	cs.cancel <- ok
 	return true
 }
 
