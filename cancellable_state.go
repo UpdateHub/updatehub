@@ -7,7 +7,7 @@ type CancellableState struct {
 
 func (cs *CancellableState) Cancel(ok bool) bool {
 	cs.cancel <- ok
-	return true
+	return ok
 }
 
 func (cs *CancellableState) Wait() {
