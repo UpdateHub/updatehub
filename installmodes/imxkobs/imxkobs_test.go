@@ -48,10 +48,11 @@ func TestImxKobsGetObject(t *testing.T) {
 
 func TestImxKobsCheckRequirementsWithKobsNGBinaryNotFound(t *testing.T) {
 	// setup a temp dir on PATH
-	test_path, err := ioutil.TempDir("", "imxkobs-test")
+	testPath, err := ioutil.TempDir("", "imxkobs-test")
 	assert.Nil(t, err)
-	defer os.RemoveAll(test_path)
-	os.Setenv("PATH", test_path)
+	defer os.RemoveAll(testPath)
+	err = os.Setenv("PATH", testPath)
+	assert.NoError(t, err)
 
 	// test the call
 	err = checkRequirements()
@@ -61,18 +62,19 @@ func TestImxKobsCheckRequirementsWithKobsNGBinaryNotFound(t *testing.T) {
 
 func TestImxKobsCheckRequirementsWithKobsNGBinaryFound(t *testing.T) {
 	// setup a temp dir on PATH
-	test_path, err := ioutil.TempDir("", "imxkobs-test")
+	testPath, err := ioutil.TempDir("", "imxkobs-test")
 	assert.Nil(t, err)
-	defer os.RemoveAll(test_path)
-	os.Setenv("PATH", test_path)
+	defer os.RemoveAll(testPath)
+	err = os.Setenv("PATH", testPath)
+	assert.NoError(t, err)
 
 	// setup the "kobs-ng" binary on PATH
-	kobsng_path := path.Join(test_path, "kobs-ng")
-	kobsng_file, err := os.Create(kobsng_path)
+	kobsngPath := path.Join(testPath, "kobs-ng")
+	kobsngFile, err := os.Create(kobsngPath)
 	assert.Nil(t, err)
-	err = os.Chmod(kobsng_path, 0777)
+	err = os.Chmod(kobsngPath, 0777)
 	assert.Nil(t, err)
-	defer kobsng_file.Close()
+	defer kobsngFile.Close()
 
 	// test the call
 	err = checkRequirements()
@@ -91,7 +93,7 @@ func TestImxKobsCleanupNil(t *testing.T) {
 }
 
 type CmdLineMock struct {
-	mock.Mock
+	*mock.Mock
 }
 
 func (clm CmdLineMock) Execute(cmdline string) ([]byte, error) {
@@ -161,8 +163,8 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			clm := CmdLineMock{}
-			clm.On("Execute", tc.ExpectedCmdLine).Return([]byte("combined_output"), nil)
+			clm := CmdLineMock{&mock.Mock{}}
+			clm.On("Execute", tc.ExpectedCmdLine).Return([]byte("combinedOutput"), nil)
 
 			ik := ImxKobsObject{CmdLine: clm}
 
@@ -182,10 +184,10 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 }
 
 func TestImxKobsInstallFailure(t *testing.T) {
-	clm := CmdLineMock{}
-	expected_cmdline := "kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v"
-	combined_output := "combined_output"
-	clm.On("Execute", expected_cmdline).Return([]byte(combined_output), fmt.Errorf("Error executing 'kobs-ng'. Output: "+combined_output))
+	clm := CmdLineMock{&mock.Mock{}}
+	expectedCmdline := "kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v"
+	combinedOutput := "combinedOutput"
+	clm.On("Execute", expectedCmdline).Return([]byte(combinedOutput), fmt.Errorf("Error executing 'kobs-ng'. Output: "+combinedOutput))
 
 	ik := ImxKobsObject{CmdLine: clm}
 
@@ -197,7 +199,7 @@ func TestImxKobsInstallFailure(t *testing.T) {
 	ik.Chip1DevicePath = "/dev/mtd1"
 
 	err := ik.Install()
-	assert.EqualError(t, err, "Error executing 'kobs-ng'. Output: combined_output")
+	assert.EqualError(t, err, "Error executing 'kobs-ng'. Output: combinedOutput")
 
 	clm.AssertExpectations(t)
 }
