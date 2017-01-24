@@ -13,7 +13,7 @@ type CmdLineExecuter interface {
 type CmdLine struct {
 }
 
-func (cli *CmdLine) Execute(cmdline string) ([]byte, error) {
+func (cl *CmdLine) Execute(cmdline string) ([]byte, error) {
 	list := strings.Split(cmdline, " ")
 	cmd := exec.Command(list[0], list[1:]...)
 	ret, err := cmd.CombinedOutput()

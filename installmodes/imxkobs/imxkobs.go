@@ -48,7 +48,7 @@ func (ik ImxKobsObject) Install() error {
 		cmdline += " -x"
 	}
 
-	// FIXME: we need to: join(ik.UpdateDir, ik.Sha256sum)
+	// FIXME: for cmdline we need to: path.Join(ik.UpdateDir, ik.Sha256sum)
 	cmdline += " " + ik.Sha256sum
 
 	if ik.SearchExponent > 0 {
