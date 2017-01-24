@@ -11,10 +11,15 @@ type EasyFota struct {
 
 type Controller interface {
 	CheckUpdate() bool
+	FetchUpdate() error
 }
 
 func (ef *EasyFota) CheckUpdate() bool {
 	return false
+}
+
+func (ef *EasyFota) FetchUpdate() error {
+	return nil
 }
 
 func (ef *EasyFota) MainLoop() {

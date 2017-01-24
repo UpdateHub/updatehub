@@ -1,12 +1,8 @@
 package main
 
-import "time"
-
 type UpdateFetchState struct {
 	BaseState
 	CancellableState
-
-	elapsedTime int
 }
 
 func NewUpdateFetchState() *UpdateFetchState {
@@ -30,23 +26,9 @@ func (is *UpdateFetchState) Handle(fota *EasyFota) (State, bool) {
 
 	nextState = is
 
-	go func() {
-		for {
-			if is.elapsedTime == fota.pollInterval {
-				is.elapsedTime = 0
-				nextState = NewUpdateCheckState()
-				break
-			}
-
-			time.Sleep(time.Second)
-
-			is.elapsedTime++
-		}
-
-		is.Cancel(true)
-	}()
-
-	is.Wait()
+	if err := fota.Controller.FetchUpdate(); err == nil {
+		return NewInstallUpdateState(), false
+	}
 
 	return nextState, false
 }

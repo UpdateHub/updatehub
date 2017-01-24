@@ -6,16 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type StateTestController struct {
-	EasyFota
-
-	updateAvailable bool
-}
-
-func (c *StateTestController) CheckUpdate() bool {
-	return c.updateAvailable
-}
-
 func TestStateUpdateCheck(t *testing.T) {
 	testCases := []struct {
 		Name         string
