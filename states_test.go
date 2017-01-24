@@ -40,7 +40,7 @@ func TestStateUpdateCheck(t *testing.T) {
 			"UpdateNotAvailable",
 			&StateTestController{updateAvailable: false},
 			NewUpdateCheckState(),
-			&IdleState{},
+			&PollState{},
 		},
 	}
 

@@ -7,7 +7,7 @@ import (
 
 func main() {
 	fota := &EasyFota{
-		state:        NewIdleState(),
+		state:        NewPollState(),
 		pollInterval: 5,
 		api:          client.NewApiClient("localhost:8080"),
 		updater:      client.NewUpdateClient(),

@@ -8,7 +8,7 @@ import (
 type EasyFotaState int
 
 const (
-	EasyFotaStateIdle = iota
+	EasyFotaStatePoll = iota
 	EasyFotaStateUpdateCheck
 	EasyFotaStateUpdateFetch
 	EasyFotaStateUpdateInstall
@@ -19,7 +19,7 @@ const (
 )
 
 var statusNames = map[EasyFotaState]string{
-	EasyFotaStateIdle:             "idle",
+	EasyFotaStatePoll:             "poll",
 	EasyFotaStateUpdateCheck:      "update-check",
 	EasyFotaStateUpdateFetch:      "update-fetch",
 	EasyFotaStateUpdateInstall:    "update-install",
@@ -61,7 +61,7 @@ func (state *ErrorState) Handle(fota *EasyFota) (State, bool) {
 		panic(state.cause)
 	}
 
-	return NewIdleState(), false
+	return NewPollState(), false
 }
 
 func NewErrorState(err EasyFotaErrorReporter) State {
@@ -75,22 +75,23 @@ func NewErrorState(err EasyFotaErrorReporter) State {
 	}
 }
 
-type IdleState struct {
+type PollState struct {
 	BaseState
 	CancellableState
 
 	elapsedTime int
+	extraPoll   int
 }
 
-func (state *IdleState) Id() EasyFotaState {
+func (state *PollState) Id() EasyFotaState {
 	return state.id
 }
 
-func (state *IdleState) Cancel(ok bool) bool {
+func (state *PollState) Cancel(ok bool) bool {
 	return state.CancellableState.Cancel(ok)
 }
 
-func (state *IdleState) Handle(fota *EasyFota) (State, bool) {
+func (state *PollState) Handle(fota *EasyFota) (State, bool) {
 	var nextState State
 
 	nextState = state
@@ -116,9 +117,9 @@ func (state *IdleState) Handle(fota *EasyFota) (State, bool) {
 	return nextState, false
 }
 
-func NewIdleState() *IdleState {
-	state := &IdleState{
-		BaseState:        BaseState{id: EasyFotaStateIdle},
+func NewPollState() *PollState {
+	state := &PollState{
+		BaseState:        BaseState{id: EasyFotaStatePoll},
 		CancellableState: CancellableState{cancel: make(chan bool)},
 	}
 
@@ -138,7 +139,8 @@ func (state *UpdateCheckState) Handle(fota *EasyFota) (State, bool) {
 		return NewUpdateFetchState(), false
 	}
 
-	return NewIdleState(), false
+	// TODO: and how about extra poll interval?
+	return NewPollState(), false
 }
 
 func NewUpdateCheckState() *UpdateCheckState {
