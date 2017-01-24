@@ -9,6 +9,7 @@ const (
 	EasyFotaStateInstalling
 	EasyFotaStateInstalled
 	EasyFotaStateWaitingForReboot
+	EasyFotaStateError
 )
 
 var statusNames = map[EasyFotaState]string{
@@ -18,6 +19,7 @@ var statusNames = map[EasyFotaState]string{
 	EasyFotaStateInstalling:       "installing",
 	EasyFotaStateInstalled:        "installed",
 	EasyFotaStateWaitingForReboot: "waiting-for-reboot",
+	EasyFotaStateError:            "error",
 }
 
 type BaseState struct {

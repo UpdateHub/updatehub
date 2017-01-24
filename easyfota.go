@@ -28,6 +28,13 @@ func (fota *EasyFota) MainLoop() {
 
 		state, cancelled := fota.state.Handle(fota)
 
+		if state.Id() == EasyFotaStateError {
+			if es, ok := state.(*ErrorState); ok {
+				// FIXME: log error
+				fmt.Println(es.cause)
+			}
+		}
+
 		if cancelled {
 			fmt.Println("State cancelled")
 		}
