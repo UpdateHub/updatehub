@@ -23,13 +23,13 @@ func checkRequirements() error {
 }
 
 func getObject() interface{} {
-	return &ImxKobsObject{CmdLine: &utils.CmdLineImpl{}}
+	return &ImxKobsObject{CmdLineExecuter: &utils.CmdLine{}}
 }
 
 type ImxKobsObject struct {
 	metadata.Object
 	metadata.ObjectData
-	utils.CmdLine
+	utils.CmdLineExecuter
 
 	Add1KPadding    bool   `json:"1k_padding,omitempty"`
 	SearchExponent  int    `json:"search_exponent,omitempty"`

@@ -1,19 +1,28 @@
 package utils
 
-// FIXME: test this package
-
 import (
+	"fmt"
 	"os/exec"
+	"strings"
 )
 
-type CmdLine interface {
+type CmdLineExecuter interface {
 	Execute(cmdline string) ([]byte, error)
 }
 
-type CmdLineImpl struct {
+type CmdLine struct {
 }
 
-func (cli *CmdLineImpl) Execute(cmdline string) ([]byte, error) {
-	cmd := exec.Command(cmdline)
-	return cmd.CombinedOutput()
+func (cli *CmdLine) Execute(cmdline string) ([]byte, error) {
+	list := strings.Split(cmdline, " ")
+	cmd := exec.Command(list[0], list[1:]...)
+	ret, err := cmd.CombinedOutput()
+
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		if !exitErr.Success() {
+			return ret, fmt.Errorf(fmt.Sprintf("Error executing command '%s': %s", cmdline, string(ret)))
+		}
+	}
+
+	return ret, err
 }

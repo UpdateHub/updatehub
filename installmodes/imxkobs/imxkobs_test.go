@@ -38,11 +38,11 @@ func TestImxKobsGetObject(t *testing.T) {
 		t.Error("Failed to cast return value of \"getObject()\" to ImxKobsObject")
 	}
 
-	cmd := ik.CmdLine
-	_, ok = cmd.(*utils.CmdLineImpl)
+	cmd := ik.CmdLineExecuter
+	_, ok = cmd.(*utils.CmdLine)
 
 	if !ok {
-		t.Error("Failed to cast default implementation of \"CmdLine\" to CmdLineImpl")
+		t.Error("Failed to cast default implementation of \"CmdLineExecuter\" to CmdLine")
 	}
 }
 
@@ -92,11 +92,11 @@ func TestImxKobsCleanupNil(t *testing.T) {
 	assert.Nil(t, ik.Cleanup())
 }
 
-type CmdLineMock struct {
+type CmdLineExecuterMock struct {
 	*mock.Mock
 }
 
-func (clm CmdLineMock) Execute(cmdline string) ([]byte, error) {
+func (clm CmdLineExecuterMock) Execute(cmdline string) ([]byte, error) {
 	args := clm.Called(cmdline)
 	return args.Get(0).([]byte), args.Error(1)
 }
@@ -109,7 +109,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 		SearchExponent  int
 		Chip0DevicePath string
 		Chip1DevicePath string
-		ExpectedCmdLine string
+		ExpectedCmdLineExecuter string
 	}{
 		{
 			"SuccessWithAllFields",
@@ -163,10 +163,10 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			clm := CmdLineMock{&mock.Mock{}}
-			clm.On("Execute", tc.ExpectedCmdLine).Return([]byte("combinedOutput"), nil)
+			clm := CmdLineExecuterMock{&mock.Mock{}}
+			clm.On("Execute", tc.ExpectedCmdLineExecuter).Return([]byte("combinedOutput"), nil)
 
-			ik := ImxKobsObject{CmdLine: clm}
+			ik := ImxKobsObject{CmdLineExecuter: clm}
 
 			ik.Mode = "imxkobs"
 			ik.Sha256sum = "a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123"
@@ -184,12 +184,12 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 }
 
 func TestImxKobsInstallFailure(t *testing.T) {
-	clm := CmdLineMock{&mock.Mock{}}
+	clm := CmdLineExecuterMock{&mock.Mock{}}
 	expectedCmdline := "kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v"
 	combinedOutput := "combinedOutput"
 	clm.On("Execute", expectedCmdline).Return([]byte(combinedOutput), fmt.Errorf("Error executing 'kobs-ng'. Output: "+combinedOutput))
 
-	ik := ImxKobsObject{CmdLine: clm}
+	ik := ImxKobsObject{CmdLineExecuter: clm}
 
 	ik.Mode = "imxkobs"
 	ik.Sha256sum = "a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123"
