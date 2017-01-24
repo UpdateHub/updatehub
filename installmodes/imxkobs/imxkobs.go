@@ -9,7 +9,6 @@ import (
 	"bitbucket.org/ossystems/agent/utils"
 )
 
-// FIXME: test "init"?
 func init() {
 	installmodes.RegisterInstallMode("imxkobs", installmodes.InstallMode{
 		CheckRequirements: checkRequirements,

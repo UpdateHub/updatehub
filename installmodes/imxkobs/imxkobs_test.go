@@ -7,11 +7,29 @@ import (
 	"path"
 	"testing"
 
+	"bitbucket.org/ossystems/agent/installmodes"
 	"bitbucket.org/ossystems/agent/utils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+func TestImxKobsInit(t *testing.T) {
+	val, err := installmodes.GetObject("imxkobs")
+	assert.NoError(t, err)
+
+	ik1, ok := val.(*ImxKobsObject)
+	if !ok {
+		t.Error("Failed to cast return value of \"installmodes.GetObject()\" to ImxKobsObject")
+	}
+
+	ik2, ok := getObject().(*ImxKobsObject)
+	if !ok {
+		t.Error("Failed to cast return value of \"getObject()\" to ImxKobsObject")
+	}
+
+	assert.Equal(t, ik2, ik1)
+}
 
 func TestImxKobsGetObject(t *testing.T) {
 	ik, ok := getObject().(*ImxKobsObject)
@@ -166,7 +184,8 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 func TestImxKobsInstallFailure(t *testing.T) {
 	clm := CmdLineMock{}
 	expected_cmdline := "kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v"
-	clm.On("Execute", expected_cmdline).Return([]byte("combined_output"), fmt.Errorf("Error executing 'kobs-ng'. Output: combined_output"))
+	combined_output := "combined_output"
+	clm.On("Execute", expected_cmdline).Return([]byte(combined_output), fmt.Errorf("Error executing 'kobs-ng'. Output: "+combined_output))
 
 	ik := ImxKobsObject{CmdLine: clm}
 
