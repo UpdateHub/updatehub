@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 type UpdateCheckState struct {
 	BaseState
 }
@@ -13,16 +11,14 @@ func NewUpdateCheckState() *UpdateCheckState {
 	return state
 }
 
-func (is *UpdateCheckState) Id() EasyFotaState {
-	return is.id
+func (state *UpdateCheckState) Id() EasyFotaState {
+	return state.id
 }
 
-func (is *UpdateCheckState) Handle(fota *EasyFota) (State, bool) {
+func (state *UpdateCheckState) Handle(fota *EasyFota) (State, bool) {
 	if fota.Controller.CheckUpdate() {
 		return NewUpdateFetchState(), false
 	}
-
-	fmt.Println("No update available")
 
 	return NewIdleState(), false
 }

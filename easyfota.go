@@ -14,24 +14,24 @@ type Controller interface {
 	FetchUpdate() error
 }
 
-func (ef *EasyFota) CheckUpdate() bool {
+func (fota *EasyFota) CheckUpdate() bool {
 	return false
 }
 
-func (ef *EasyFota) FetchUpdate() error {
+func (fota *EasyFota) FetchUpdate() error {
 	return nil
 }
 
-func (ef *EasyFota) MainLoop() {
+func (fota *EasyFota) MainLoop() {
 	for {
-		fmt.Println("Handling state:", StateToString(ef.state.Id()))
+		fmt.Println("Handling state:", StateToString(fota.state.Id()))
 
-		state, cancelled := ef.state.Handle(ef)
+		state, cancelled := fota.state.Handle(fota)
 
 		if cancelled {
 			fmt.Println("State cancelled")
 		}
 
-		ef.state = state
+		fota.state = state
 	}
 }

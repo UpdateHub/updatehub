@@ -17,36 +17,36 @@ func NewIdleState() *IdleState {
 	return state
 }
 
-func (is *IdleState) Id() EasyFotaState {
-	return is.id
+func (state *IdleState) Id() EasyFotaState {
+	return state.id
 }
 
-func (is *IdleState) Cancel(ok bool) bool {
-	return is.CancellableState.Cancel(ok)
+func (state *IdleState) Cancel(ok bool) bool {
+	return state.CancellableState.Cancel(ok)
 }
 
-func (is *IdleState) Handle(fota *EasyFota) (State, bool) {
+func (state *IdleState) Handle(fota *EasyFota) (State, bool) {
 	var nextState State
 
-	nextState = is
+	nextState = state
 
 	go func() {
 		for {
-			if is.elapsedTime == fota.pollInterval {
-				is.elapsedTime = 0
+			if state.elapsedTime == fota.pollInterval {
+				state.elapsedTime = 0
 				nextState = NewUpdateCheckState()
 				break
 			}
 
 			time.Sleep(time.Second)
 
-			is.elapsedTime++
+			state.elapsedTime++
 		}
 
-		is.Cancel(true)
+		state.Cancel(true)
 	}()
 
-	is.Wait()
+	state.Wait()
 
 	return nextState, false
 }

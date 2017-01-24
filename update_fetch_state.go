@@ -13,18 +13,18 @@ func NewUpdateFetchState() *UpdateFetchState {
 	return state
 }
 
-func (is *UpdateFetchState) Id() EasyFotaState {
-	return is.id
+func (state *UpdateFetchState) Id() EasyFotaState {
+	return state.id
 }
 
-func (is *UpdateFetchState) Cancel(ok bool) bool {
-	return is.CancellableState.Cancel(ok)
+func (state *UpdateFetchState) Cancel(ok bool) bool {
+	return state.CancellableState.Cancel(ok)
 }
 
-func (is *UpdateFetchState) Handle(fota *EasyFota) (State, bool) {
+func (state *UpdateFetchState) Handle(fota *EasyFota) (State, bool) {
 	var nextState State
 
-	nextState = is
+	nextState = state
 
 	if err := fota.Controller.FetchUpdate(); err == nil {
 		return NewInstallUpdateState(), false

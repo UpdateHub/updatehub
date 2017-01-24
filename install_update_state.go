@@ -11,14 +11,14 @@ func NewInstallUpdateState() *InstallUpdateState {
 	return state
 }
 
-func (is *InstallUpdateState) Id() EasyFotaState {
-	return is.id
+func (state *InstallUpdateState) Id() EasyFotaState {
+	return state.id
 }
 
-func (is *InstallUpdateState) Handle(fota *EasyFota) (State, bool) {
+func (state *InstallUpdateState) Handle(fota *EasyFota) (State, bool) {
 	var nextState State
 
-	nextState = is
+	nextState = state
 
 	return nextState, false
 }
