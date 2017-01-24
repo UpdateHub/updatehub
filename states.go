@@ -98,8 +98,9 @@ func (state *PollState) Handle(fota *EasyFota) (State, bool) {
 
 	go func() {
 		for {
-			if state.elapsedTime == fota.pollInterval {
+			if state.elapsedTime == fota.pollInterval+state.extraPoll {
 				state.elapsedTime = 0
+				state.extraPoll = 0
 				nextState = NewUpdateCheckState()
 				break
 			}
@@ -135,12 +136,21 @@ func (state *UpdateCheckState) Id() EasyFotaState {
 }
 
 func (state *UpdateCheckState) Handle(fota *EasyFota) (State, bool) {
-	if fota.Controller.CheckUpdate() {
+	updateAvailable, extraPoll := fota.Controller.CheckUpdate()
+
+	if updateAvailable {
 		return NewUpdateFetchState(), false
 	}
 
-	// TODO: and how about extra poll interval?
-	return NewPollState(), false
+	poll := NewPollState()
+
+	if extraPoll > 0 {
+		poll.extraPoll = extraPoll
+
+		return poll, false
+	}
+
+	return poll, false
 }
 
 func NewUpdateCheckState() *UpdateCheckState {

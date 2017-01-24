@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"bitbucket.org/ossystems/agent/metadata"
 )
@@ -13,27 +15,37 @@ type UpdateClient struct {
 }
 
 type Updater interface {
-	CheckUpdate(api ApiRequester) (interface{}, error)
+	CheckUpdate(api ApiRequester) (interface{}, int, error)
 }
 
-func (u *UpdateClient) CheckUpdate(api ApiRequester) (interface{}, error) {
+func (u *UpdateClient) CheckUpdate(api ApiRequester) (interface{}, int, error) {
 	url := serverURL(api.Client(), UpgradesEndpoint)
 
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
-		return nil, errors.New("failed to create check update request")
+		return nil, 0, errors.New("failed to create check update request")
 	}
 
 	res, err := api.Do(req)
 	if err != nil {
-		return nil, errors.New("check update request failed")
+		return nil, 0, errors.New("check update request failed")
 	}
 
 	defer res.Body.Close()
 
-	r, err := processUpgradeResponse(res)
+	var extraPoll int
 
-	return r, err
+	r, err := processUpgradeResponse(res)
+	if err == nil {
+		if v, ok := res.Header["Add-Extra-Poll"]; ok {
+			extraPoll, err = strconv.Atoi(strings.Join(v, ""))
+			if err != nil {
+				return nil, 0, errors.New("failed to parse extra poll header")
+			}
+		}
+	}
+
+	return r, extraPoll, err
 }
 
 func processUpgradeResponse(res *http.Response) (interface{}, error) {

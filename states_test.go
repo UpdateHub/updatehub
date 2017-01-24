@@ -10,12 +10,13 @@ import (
 type StateTestController struct {
 	EasyFota
 
+	extraPoll        int
 	updateAvailable  bool
 	fetchUpdateError error
 }
 
-func (c *StateTestController) CheckUpdate() bool {
-	return c.updateAvailable
+func (c *StateTestController) CheckUpdate() (bool, int) {
+	return c.updateAvailable, c.extraPoll
 }
 
 func (c *StateTestController) FetchUpdate() error {
@@ -39,6 +40,13 @@ func TestStateUpdateCheck(t *testing.T) {
 		{
 			"UpdateNotAvailable",
 			&StateTestController{updateAvailable: false},
+			NewUpdateCheckState(),
+			&PollState{},
+		},
+
+		{
+			"ExtraPoll",
+			&StateTestController{updateAvailable: false, extraPoll: 5},
 			NewUpdateCheckState(),
 			&PollState{},
 		},

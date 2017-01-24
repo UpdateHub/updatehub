@@ -16,17 +16,17 @@ type EasyFota struct {
 }
 
 type Controller interface {
-	CheckUpdate() bool
+	CheckUpdate() (bool, int)
 	FetchUpdate() error
 }
 
-func (fota *EasyFota) CheckUpdate() bool {
-	_, err := fota.updater.CheckUpdate(fota.api.Request())
+func (fota *EasyFota) CheckUpdate() (bool, int) {
+	_, extraPoll, err := fota.updater.CheckUpdate(fota.api.Request())
 	if err != nil {
-		return false
+		return false, 0
 	}
 
-	return true
+	return true, extraPoll
 }
 
 func (fota *EasyFota) FetchUpdate() error {
