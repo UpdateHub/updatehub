@@ -1,12 +1,18 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"bitbucket.org/ossystems/agent/client"
+)
 
 type EasyFota struct {
 	Controller
 
 	state        State
 	pollInterval int
+	api          *client.ApiClient
+	updater      client.Updater
 }
 
 type Controller interface {
@@ -15,7 +21,12 @@ type Controller interface {
 }
 
 func (fota *EasyFota) CheckUpdate() bool {
-	return false
+	_, err := fota.updater.CheckUpdate(fota.api.Request())
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 func (fota *EasyFota) FetchUpdate() error {
