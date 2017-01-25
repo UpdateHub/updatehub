@@ -19,6 +19,10 @@ type Updater interface {
 }
 
 func (u *UpdateClient) CheckUpdate(api ApiRequester) (interface{}, int, error) {
+	if api == nil {
+		return nil, 0, errors.New("invalid api requester")
+	}
+
 	url := serverURL(api.Client(), UpgradesEndpoint)
 
 	req, err := http.NewRequest(http.MethodPost, url, nil)
