@@ -1,6 +1,8 @@
 hash: a76e3f6004f8d640b8ad54ca7a00e4e2f2dcfc6831b1a2ea1d0d8c6142f2ae33
-updated: 2017-01-19T13:09:51.949268342-02:00
-imports: []
+updated: 2017-01-25T09:05:59.959177633-02:00
+imports:
+- name: github.com/pkg/errors
+  version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
