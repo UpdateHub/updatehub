@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type StateTestController struct {
+type EasyFotaTestController struct {
 	EasyFota
 
 	extraPoll        int
@@ -15,53 +15,46 @@ type StateTestController struct {
 	fetchUpdateError error
 }
 
-func (c *StateTestController) CheckUpdate() (bool, int) {
+var checkUpdateCases = []struct {
+	name         string
+	controller   *EasyFotaTestController
+	initialState State
+	nextState    State
+}{
+	{
+		"UpdateAvailable",
+		&EasyFotaTestController{updateAvailable: true},
+		NewUpdateCheckState(),
+		&UpdateFetchState{},
+	},
+
+	{
+		"UpdateNotAvailable",
+		&EasyFotaTestController{updateAvailable: false},
+		NewUpdateCheckState(),
+		&PollState{},
+	},
+}
+
+func (c *EasyFotaTestController) CheckUpdate() (bool, int) {
 	return c.updateAvailable, c.extraPoll
 }
 
-func (c *StateTestController) FetchUpdate() error {
+func (c *EasyFotaTestController) FetchUpdate() error {
 	return c.fetchUpdateError
 }
 
 func TestStateUpdateCheck(t *testing.T) {
-	testCases := []struct {
-		Name         string
-		Controller   *StateTestController
-		InitialState State
-		NextState    State
-	}{
-		{
-			"UpdateAvailable",
-			&StateTestController{updateAvailable: true},
-			NewUpdateCheckState(),
-			&UpdateFetchState{},
-		},
-
-		{
-			"UpdateNotAvailable",
-			&StateTestController{updateAvailable: false},
-			NewUpdateCheckState(),
-			&PollState{},
-		},
-
-		{
-			"ExtraPoll",
-			&StateTestController{updateAvailable: false, extraPoll: 5},
-			NewUpdateCheckState(),
-			&PollState{},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
+	for _, tc := range checkUpdateCases {
+		t.Run(tc.name, func(t *testing.T) {
 			fota := &EasyFota{
-				state:      tc.InitialState,
-				Controller: tc.Controller,
+				state:      tc.initialState,
+				Controller: tc.controller,
 			}
 
 			next, _ := fota.state.Handle(fota)
 
-			assert.IsType(t, tc.NextState, next)
+			assert.IsType(t, tc.nextState, next)
 		})
 	}
 }
@@ -69,20 +62,20 @@ func TestStateUpdateCheck(t *testing.T) {
 func TestStateUpdateFetch(t *testing.T) {
 	testCases := []struct {
 		Name         string
-		Controller   *StateTestController
+		Controller   *EasyFotaTestController
 		InitialState State
 		NextState    State
 	}{
 		{
 			"WithoutError",
-			&StateTestController{fetchUpdateError: nil},
+			&EasyFotaTestController{fetchUpdateError: nil},
 			NewUpdateFetchState(),
 			&InstallUpdateState{},
 		},
 
 		{
 			"WithError",
-			&StateTestController{fetchUpdateError: errors.New("fetch error")},
+			&EasyFotaTestController{fetchUpdateError: errors.New("fetch error")},
 			NewUpdateFetchState(),
 			&UpdateFetchState{},
 		},
@@ -122,7 +115,7 @@ func TestPollTicks(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			fota := &StateTestController{
+			fota := &EasyFotaTestController{
 				updateAvailable: false,
 				extraPoll:       tc.ExtraPoll,
 			}
@@ -132,11 +125,9 @@ func TestPollTicks(t *testing.T) {
 			fota.Controller = fota
 
 			poll, _ := fota.state.Handle(&fota.EasyFota)
-
 			assert.IsType(t, &PollState{}, poll)
 
-			poll.Handle(&fota.EasyFota)
-
+			fota.state.Handle(&fota.EasyFota)
 			assert.Equal(t, fota.EasyFota.pollInterval+fota.extraPoll, poll.(*PollState).ticksCount)
 		})
 	}
