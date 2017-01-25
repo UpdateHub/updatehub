@@ -81,6 +81,7 @@ type PollState struct {
 
 	elapsedTime int
 	extraPoll   int
+	ticksCount  int
 }
 
 func (state *PollState) Id() EasyFotaState {
@@ -98,16 +99,15 @@ func (state *PollState) Handle(fota *EasyFota) (State, bool) {
 
 	go func() {
 		for {
-			if state.elapsedTime == fota.pollInterval+state.extraPoll {
-				state.elapsedTime = 0
+			if state.ticksCount > 0 && state.ticksCount%(fota.pollInterval+state.extraPoll) == 0 {
 				state.extraPoll = 0
 				nextState = NewUpdateCheckState()
 				break
 			}
 
-			time.Sleep(time.Second)
+			time.Sleep(fota.timeStep)
 
-			state.elapsedTime++
+			state.ticksCount++
 		}
 
 		state.Cancel(true)

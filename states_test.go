@@ -100,3 +100,44 @@ func TestStateUpdateFetch(t *testing.T) {
 		})
 	}
 }
+
+func TestPollTicks(t *testing.T) {
+	testCases := []struct {
+		Name         string
+		PollInterval int
+		ExtraPoll    int
+	}{
+		{
+			"PollWithoutExtraPoll",
+			10,
+			0,
+		},
+
+		{
+			"PollWithExtraPoll",
+			13,
+			88,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			fota := &StateTestController{
+				updateAvailable: false,
+				extraPoll:       tc.ExtraPoll,
+			}
+
+			fota.EasyFota.pollInterval = tc.PollInterval
+			fota.EasyFota.state = NewUpdateCheckState()
+			fota.Controller = fota
+
+			poll, _ := fota.state.Handle(&fota.EasyFota)
+
+			assert.IsType(t, &PollState{}, poll)
+
+			poll.Handle(&fota.EasyFota)
+
+			assert.Equal(t, fota.EasyFota.pollInterval+fota.extraPoll, poll.(*PollState).ticksCount)
+		})
+	}
+}

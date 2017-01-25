@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"bitbucket.org/ossystems/agent/client"
 	_ "bitbucket.org/ossystems/agent/installmodes/copy"
 )
@@ -11,6 +13,7 @@ func main() {
 		pollInterval: 5,
 		api:          client.NewApiClient("localhost:8080"),
 		updater:      client.NewUpdateClient(),
+		timeStep:     time.Minute,
 	}
 
 	fota.Controller = fota

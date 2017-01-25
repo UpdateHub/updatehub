@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"bitbucket.org/ossystems/agent/client"
 )
@@ -11,6 +12,7 @@ type EasyFota struct {
 
 	state        State
 	pollInterval int
+	timeStep     time.Duration
 	api          *client.ApiClient
 	updater      client.Updater
 }
