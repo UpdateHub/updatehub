@@ -31,15 +31,15 @@ Loop:
 			}
 		case <-time.After(timeout):
 			return false, errors.New("timeout")
-		case _, ok := <-len:
+		case n, ok := <-len:
 			if !ok {
 				break Loop
 			}
-		}
 
-		_, err := wr.Write(buf)
-		if err != nil {
-			return false, err
+			_, err := wr.Write(buf[0:n])
+			if err != nil {
+				return false, err
+			}
 		}
 	}
 

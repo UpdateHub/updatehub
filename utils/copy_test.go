@@ -43,23 +43,42 @@ func NewTimedReader(data string) *TimedReader {
 	}
 }
 
+func TestCopy(t *testing.T) {
+	data := "123"
+
+	buff := bytes.NewBuffer(nil)
+
+	rd := NewTimedReader(data)
+	wr := bufio.NewWriter(buff)
+
+	cancelled, err := Copy(wr, rd, time.Minute, nil)
+
+	err = wr.Flush()
+	assert.NoError(t, err)
+
+	assert.NoError(t, err)
+	assert.False(t, cancelled)
+	assert.Equal(t, data, buff.String())
+}
+
 func TestCopyTimeoutHasReached(t *testing.T) {
 	rd := NewTimedReader("123")
 
 	rd.idleTimeout = time.Minute
 
-	var buff bytes.Buffer
-
-	wr := bufio.NewWriter(&buff)
+	buff := bytes.NewBuffer(nil)
+	wr := bufio.NewWriter(buff)
 
 	cancel := make(chan bool)
 
 	cancelled, err := Copy(wr, rd, time.Millisecond, cancel)
-
 	assert.False(t, cancelled)
 	if !assert.Error(t, err) {
 		assert.Equal(t, errors.New("timeout"), err)
 	}
+
+	err = wr.Flush()
+	assert.NoError(t, err)
 
 	assert.Empty(t, buff.Bytes())
 }
@@ -67,9 +86,8 @@ func TestCopyTimeoutHasReached(t *testing.T) {
 func TestCancelCopy(t *testing.T) {
 	rd := NewTimedReader("123")
 
-	var buff bytes.Buffer
-
-	wr := bufio.NewWriter(&buff)
+	buff := bytes.NewBuffer(nil)
+	wr := bufio.NewWriter(buff)
 
 	var cancelled bool
 	var err error
@@ -95,5 +113,9 @@ func TestCancelCopy(t *testing.T) {
 
 	assert.True(t, cancelled)
 	assert.NoError(t, err)
+
+	err = wr.Flush()
+	assert.NoError(t, err)
+
 	assert.NotEmpty(t, buff.Bytes())
 }
