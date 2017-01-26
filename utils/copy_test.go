@@ -11,14 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// PLEASE FIXME: avoid time.Sleep
-
-type SlowReader struct {
-	data  []byte
-	index int64
+type TimedReader struct {
+	data        []byte
+	index       int64
+	idleTimeout time.Duration
+	onRead      func()
 }
 
-func (r *SlowReader) Read(b []byte) (n int, err error) {
+func (r *TimedReader) Read(b []byte) (n int, err error) {
 	if r.index >= int64(len(r.data)) {
 		err = io.EOF
 		return
@@ -28,19 +28,25 @@ func (r *SlowReader) Read(b []byte) (n int, err error) {
 
 	r.index++
 
-	time.Sleep(time.Second)
+	time.Sleep(r.idleTimeout)
+
+	r.onRead()
 
 	return
 }
 
-func NewSlowReader(data string) *SlowReader {
-	return &SlowReader{
-		data: []byte(data),
+func NewTimedReader(data string) *TimedReader {
+	return &TimedReader{
+		data:        []byte(data),
+		idleTimeout: time.Millisecond,
+		onRead:      func() {},
 	}
 }
 
 func TestCopyTimeoutHasReached(t *testing.T) {
-	rd := NewSlowReader("123")
+	rd := NewTimedReader("123")
+
+	rd.idleTimeout = time.Minute
 
 	var buff bytes.Buffer
 
@@ -51,7 +57,7 @@ func TestCopyTimeoutHasReached(t *testing.T) {
 	cancelled, err := Copy(wr, rd, time.Millisecond, cancel)
 
 	assert.False(t, cancelled)
-	if assert.Error(t, err) {
+	if !assert.Error(t, err) {
 		assert.Equal(t, errors.New("timeout"), err)
 	}
 
@@ -59,7 +65,7 @@ func TestCopyTimeoutHasReached(t *testing.T) {
 }
 
 func TestCancelCopy(t *testing.T) {
-	rd := NewSlowReader("123")
+	rd := NewTimedReader("123")
 
 	var buff bytes.Buffer
 
@@ -76,10 +82,14 @@ func TestCancelCopy(t *testing.T) {
 		wait <- false
 	}()
 
-	go func() {
-		time.Sleep(time.Second * 2)
-		cancel <- true
-	}()
+	var ticks int
+	rd.onRead = func() {
+		if ticks == 2 {
+			cancel <- true
+		}
+
+		ticks++
+	}
 
 	<-wait
 

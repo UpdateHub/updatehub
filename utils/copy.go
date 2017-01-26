@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const bufferSize = 1024 * 32
+const bufferSize = 32 * 1024
 
 // Copy copies from rd to wr until EOF or timeout is reached on rd or it was cancelled
 func Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool) (bool, error) {
