@@ -13,20 +13,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func dirExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-
-	if err == nil {
-		return true, nil
-	}
-
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-
-	return true, err
-}
-
 func TestCopyInit(t *testing.T) {
 	val, err := installmodes.GetObject("copy")
 	assert.NoError(t, err)
@@ -140,7 +126,7 @@ func TestCopyInstallWithMountError(t *testing.T) {
 	assert.EqualError(t, err, "mount error")
 	fsm.AssertExpectations(t)
 
-	tempDirExists, err := dirExists(tempDirPath)
+	tempDirExists, err := utils.PathExists(tempDirPath)
 	assert.False(t, tempDirExists)
 	assert.NoError(t, err)
 }
@@ -188,7 +174,7 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cc.AssertExpectations(t)
 
-	tempDirExists, err := dirExists(tempDirPath)
+	tempDirExists, err := utils.PathExists(tempDirPath)
 	assert.False(t, tempDirExists)
 	assert.NoError(t, err)
 }
@@ -227,7 +213,7 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cc.AssertExpectations(t)
 
-	tempDirExists, err := dirExists(tempDirPath)
+	tempDirExists, err := utils.PathExists(tempDirPath)
 	assert.True(t, tempDirExists)
 	assert.NoError(t, err)
 }
@@ -266,7 +252,7 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cc.AssertExpectations(t)
 
-	tempDirExists, err := dirExists(tempDirPath)
+	tempDirExists, err := utils.PathExists(tempDirPath)
 	assert.True(t, tempDirExists)
 	assert.NoError(t, err)
 }
@@ -379,7 +365,7 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			fsm.AssertExpectations(t)
 			cc.AssertExpectations(t)
 
-			tempDirExists, err := dirExists(tempDirPath)
+			tempDirExists, err := utils.PathExists(tempDirPath)
 			assert.False(t, tempDirExists)
 			assert.NoError(t, err)
 		})

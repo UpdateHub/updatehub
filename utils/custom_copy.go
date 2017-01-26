@@ -1,15 +1,67 @@
 package utils
 
-import "fmt"
+// FIXME: test this whole file
+
+import (
+	"io"
+	"os"
+	"time"
+)
 
 type CustomCopier interface {
 	CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error
 }
 
+// FIXME: all "CustomCopy" instantiations have to be "CustomCopy{FileOperationsImpl{}}"?
 type CustomCopy struct {
+	FileOperations
 }
 
-func (fs *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
-	// FIXME: implement and test this
-	return fmt.Errorf("CopyFile not implemented yet")
+type FileOperationsImpl struct {
+}
+
+type FileOperations interface {
+	Open(name string) (FileInterface, error)
+	Create(name string) (FileInterface, error)
+}
+
+type FileInterface interface {
+	io.Closer
+	io.Reader
+	io.ReaderAt
+	io.Seeker
+	io.Writer
+}
+
+func (foi FileOperationsImpl) Open(name string) (FileInterface, error) {
+	return os.Open(name)
+}
+
+func (foi FileOperationsImpl) Create(name string) (FileInterface, error) {
+	return os.Create(name)
+}
+
+func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
+	source, err := cc.Open(sourcePath)
+
+	if err != nil {
+		if pathErr, ok := err.(*os.PathError); ok {
+			return pathErr
+		}
+		return err
+	}
+
+	target, err := cc.Create(targetPath)
+	if err != nil {
+		source.Close()
+		return err
+	}
+
+	cancel := make(chan bool)
+	_, err = Copy(target, source, time.Hour, cancel)
+
+	source.Close()
+	target.Close()
+
+	return err
 }

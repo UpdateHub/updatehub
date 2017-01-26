@@ -12,12 +12,16 @@ const bufferSize = 32 * 1024
 func Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool) (bool, error) {
 	len := make(chan int)
 	buf := make([]byte, bufferSize)
+	readErrChan := make(chan error)
 
 Loop:
 	for {
 		go func() {
 			n, err := rd.Read(buf)
 			if n == 0 && err != nil {
+				if err != io.EOF {
+					readErrChan <- err
+				}
 				close(len)
 			} else {
 				len <- n
@@ -25,6 +29,11 @@ Loop:
 		}()
 
 		select {
+		case err, ok := <-readErrChan:
+			if ok {
+				close(readErrChan)
+				return false, err
+			}
 		case _, ok := <-cancel:
 			if ok {
 				return true, nil

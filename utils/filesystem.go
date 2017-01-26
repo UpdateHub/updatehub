@@ -3,7 +3,23 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 )
+
+// FIXME: test this
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+
+	if err == nil {
+		return true, nil
+	}
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	return true, err
+}
 
 type FileSystemHelper interface {
 	Format(targetDevice string, fsType string, formatOptions string) error
