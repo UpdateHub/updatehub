@@ -24,8 +24,8 @@ type CopyObject struct {
 	metadata.Object
 	metadata.ObjectData
 	metadata.CompressedObject
-	utils.FileSystemHelper
-	utils.CustomCopier
+	utils.FileSystemHelper `json:"-"`
+	utils.CustomCopier     `json:"-"`
 
 	Target        string `json:"target"`
 	TargetType    string `json:"target-type"`
