@@ -1,8 +1,8 @@
 package client
 
 import (
-	"encoding/json"
 	"errors"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -16,6 +16,7 @@ type UpdateClient struct {
 
 type Updater interface {
 	CheckUpdate(api ApiRequester) (interface{}, int, error)
+	FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error)
 }
 
 func (u *UpdateClient) CheckUpdate(api ApiRequester) (interface{}, int, error) {
@@ -50,6 +51,31 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester) (interface{}, int, error) {
 	}
 
 	return r, extraPoll, err
+}
+
+func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error) {
+	if api == nil {
+		return nil, -1, errors.New("invalid api requester")
+	}
+
+	url := serverURL(api.Client(), uri)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, -1, errors.New("failed to create fetch update request")
+	}
+
+	res, err := api.Do(req)
+	if err != nil {
+		return nil, -1, errors.New("fetch update request failed")
+	}
+
+	if res.StatusCode != http.StatusOK {
+		res.Body.Close()
+		return nil, -1, errors.New("failed to fetch update. maybe the file is missing?")
+	}
+
+	return res.Body, res.ContentLength, nil
 }
 
 func processUpgradeResponse(res *http.Response) (interface{}, error) {

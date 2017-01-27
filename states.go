@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"time"
+
+	"bitbucket.org/ossystems/agent/metadata"
 )
 
 type EasyFotaState int
@@ -136,10 +138,10 @@ func (state *UpdateCheckState) Id() EasyFotaState {
 }
 
 func (state *UpdateCheckState) Handle(fota *EasyFota) (State, bool) {
-	updateAvailable, extraPoll := fota.Controller.CheckUpdate()
+	updateMetadata, extraPoll := fota.Controller.CheckUpdate()
 
-	if updateAvailable {
-		return NewUpdateFetchState(), false
+	if updateMetadata != nil {
+		return NewUpdateFetchState(updateMetadata), false
 	}
 
 	poll := NewPollState()
@@ -163,10 +165,18 @@ func NewUpdateCheckState() *UpdateCheckState {
 
 type UpdateFetchState struct {
 	BaseState
+	CancellableState
+
+	updateMetadata *metadata.Metadata
 }
 
 func (state *UpdateFetchState) Id() EasyFotaState {
 	return state.id
+}
+
+func (state *UpdateFetchState) Cancel(ok bool) bool {
+	state.CancellableState.Cancel(ok)
+	return ok
 }
 
 func (state *UpdateFetchState) Handle(fota *EasyFota) (State, bool) {
@@ -174,16 +184,17 @@ func (state *UpdateFetchState) Handle(fota *EasyFota) (State, bool) {
 
 	nextState = state
 
-	if err := fota.Controller.FetchUpdate(); err == nil {
+	if err := fota.Controller.FetchUpdate(state.updateMetadata); err == nil {
 		return NewInstallUpdateState(), false
 	}
 
 	return nextState, false
 }
 
-func NewUpdateFetchState() *UpdateFetchState {
+func NewUpdateFetchState(updateMetadata *metadata.Metadata) *UpdateFetchState {
 	state := &UpdateFetchState{
-		BaseState: BaseState{id: EasyFotaStateUpdateFetch},
+		BaseState:      BaseState{id: EasyFotaStateUpdateFetch},
+		updateMetadata: updateMetadata,
 	}
 
 	return state

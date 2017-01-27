@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"bitbucket.org/ossystems/agent/metadata"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,11 +38,15 @@ var checkUpdateCases = []struct {
 	},
 }
 
-func (c *EasyFotaTestController) CheckUpdate() (bool, int) {
-	return c.updateAvailable, c.extraPoll
+func (c *EasyFotaTestController) CheckUpdate() (*metadata.Metadata, int) {
+	if c.updateAvailable {
+		return &metadata.Metadata{}, c.extraPoll
+	}
+
+	return nil, c.extraPoll
 }
 
-func (c *EasyFotaTestController) FetchUpdate() error {
+func (c *EasyFotaTestController) FetchUpdate(updateMetadata *metadata.Metadata) error {
 	return c.fetchUpdateError
 }
 
@@ -69,14 +75,14 @@ func TestStateUpdateFetch(t *testing.T) {
 		{
 			"WithoutError",
 			&EasyFotaTestController{fetchUpdateError: nil},
-			NewUpdateFetchState(),
+			NewUpdateFetchState(&metadata.Metadata{}),
 			&InstallUpdateState{},
 		},
 
 		{
 			"WithError",
 			&EasyFotaTestController{fetchUpdateError: errors.New("fetch error")},
-			NewUpdateFetchState(),
+			NewUpdateFetchState(&metadata.Metadata{}),
 			&UpdateFetchState{},
 		},
 	}
@@ -127,7 +133,7 @@ func TestPollTicks(t *testing.T) {
 			poll, _ := fota.state.Handle(&fota.EasyFota)
 			assert.IsType(t, &PollState{}, poll)
 
-			fota.state.Handle(&fota.EasyFota)
+			poll.Handle(&fota.EasyFota)
 			assert.Equal(t, fota.EasyFota.pollInterval+fota.extraPoll, poll.(*PollState).ticksCount)
 		})
 	}

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"path"
 	"time"
 
 	"bitbucket.org/ossystems/agent/client"
+	"bitbucket.org/ossystems/agent/metadata"
 )
 
 type EasyFota struct {
@@ -18,20 +21,51 @@ type EasyFota struct {
 }
 
 type Controller interface {
-	CheckUpdate() (bool, int)
-	FetchUpdate() error
+	CheckUpdate() (*metadata.Metadata, int)
+	FetchUpdate(*metadata.Metadata) error
 }
 
-func (fota *EasyFota) CheckUpdate() (bool, int) {
-	_, extraPoll, err := fota.updater.CheckUpdate(fota.api.Request())
+func (fota *EasyFota) CheckUpdate() (*metadata.Metadata, int) {
+	updateMetadata, extraPoll, err := fota.updater.CheckUpdate(fota.api.Request())
 	if err != nil {
-		return false, 0
+		return nil, 0
 	}
 
-	return true, extraPoll
+	return updateMetadata.(*metadata.Metadata), extraPoll
 }
 
-func (fota *EasyFota) FetchUpdate() error {
+func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.Metadata) error {
+	// For now, we installs the first object
+	// FIXME: What object I should to install?
+	obj := updateMetadata.Objects[0][0]
+
+	if obj == nil {
+		return errors.New("object not found")
+	}
+
+	// FIXME: read product uid from firmaware metadata
+	productUID := "1"
+
+	packageUID, err := updateMetadata.Checksum()
+	if err != nil {
+		return err
+	}
+
+	objectUID := obj.GetObjectData().Sha256sum
+
+	uri := "/"
+	uri = path.Join(uri, productUID)
+	uri = path.Join(uri, packageUID)
+	uri = path.Join(uri, objectUID)
+
+	body, contentLength, err := fota.updater.FetchUpdate(fota.api.Request(), uri)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(body)
+	fmt.Println(contentLength)
+
 	return nil
 }
 
