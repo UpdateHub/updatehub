@@ -67,14 +67,18 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.Metadata, cancel <-ch
 		return err
 	}
 
+	defer file.Close()
+
 	rd, contentLength, err := fota.updater.FetchUpdate(fota.api.Request(), uri)
 	if err != nil {
 		return err
 	}
-	fmt.Println(uri)
+
 	wd := bufio.NewWriter(file)
 
 	utils.Copy(wd, rd, 30*time.Second, cancel)
+
+	wd.Flush()
 
 	fmt.Println(contentLength)
 
