@@ -60,9 +60,8 @@ func processUpgradeResponse(res *http.Response) (interface{}, error) {
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		var data metadata.Metadata
-
-		if err := json.Unmarshal(body, &data); err != nil {
+		data, err := metadata.FromJSON(body)
+		if err != nil {
 			return nil, errors.New("failed to parse upgrade response")
 		}
 
