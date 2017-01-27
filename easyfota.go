@@ -16,11 +16,12 @@ import (
 type EasyFota struct {
 	Controller
 
-	state        State
-	pollInterval int
-	timeStep     time.Duration
-	api          *client.ApiClient
-	updater      client.Updater
+	firmwareMetadata metadata.FirmwareMetadata
+	state            State
+	pollInterval     int
+	timeStep         time.Duration
+	api              *client.ApiClient
+	updater          client.Updater
 }
 
 type Controller interface {
@@ -46,9 +47,6 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.Metadata, cancel <-ch
 		return errors.New("object not found")
 	}
 
-	// FIXME: read product uid from firmaware metadata
-	productUID := "1"
-
 	packageUID, err := updateMetadata.Checksum()
 	if err != nil {
 		return err
@@ -57,7 +55,7 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.Metadata, cancel <-ch
 	objectUID := obj.GetObjectData().Sha256sum
 
 	uri := "/"
-	uri = path.Join(uri, productUID)
+	uri = path.Join(uri, fota.firmwareMetadata.ProductUID)
 	uri = path.Join(uri, packageUID)
 	uri = path.Join(uri, objectUID)
 
