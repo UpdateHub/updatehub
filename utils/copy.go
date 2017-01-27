@@ -17,7 +17,7 @@ Loop:
 	for {
 		go func() {
 			n, err := rd.Read(buf)
-			if err != nil {
+			if n == 0 && err != nil {
 				close(len)
 			} else {
 				len <- n
