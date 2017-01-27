@@ -1,13 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"time"
 
 	"bitbucket.org/ossystems/agent/client"
 	"bitbucket.org/ossystems/agent/metadata"
+	"bitbucket.org/ossystems/agent/utils"
 )
 
 type EasyFota struct {
@@ -22,7 +25,7 @@ type EasyFota struct {
 
 type Controller interface {
 	CheckUpdate() (*metadata.Metadata, int)
-	FetchUpdate(*metadata.Metadata) error
+	FetchUpdate(*metadata.Metadata, <-chan bool) error
 }
 
 func (fota *EasyFota) CheckUpdate() (*metadata.Metadata, int) {
@@ -34,7 +37,7 @@ func (fota *EasyFota) CheckUpdate() (*metadata.Metadata, int) {
 	return updateMetadata.(*metadata.Metadata), extraPoll
 }
 
-func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.Metadata) error {
+func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.Metadata, cancel <-chan bool) error {
 	// For now, we installs the first object
 	// FIXME: What object I should to install?
 	obj := updateMetadata.Objects[0][0]
@@ -58,12 +61,21 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.Metadata) error {
 	uri = path.Join(uri, packageUID)
 	uri = path.Join(uri, objectUID)
 
-	body, contentLength, err := fota.updater.FetchUpdate(fota.api.Request(), uri)
+	// FIXME: uses update download dir from settings
+	file, err := os.Create(path.Join("/tmp/", objectUID))
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(body)
+	rd, contentLength, err := fota.updater.FetchUpdate(fota.api.Request(), uri)
+	if err != nil {
+		return err
+	}
+	fmt.Println(uri)
+	wd := bufio.NewWriter(file)
+
+	utils.Copy(wd, rd, 30*time.Second, cancel)
+
 	fmt.Println(contentLength)
 
 	return nil

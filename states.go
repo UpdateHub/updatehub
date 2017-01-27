@@ -184,7 +184,7 @@ func (state *UpdateFetchState) Handle(fota *EasyFota) (State, bool) {
 
 	nextState = state
 
-	if err := fota.Controller.FetchUpdate(state.updateMetadata); err == nil {
+	if err := fota.Controller.FetchUpdate(state.updateMetadata, state.cancel); err == nil {
 		return NewInstallUpdateState(), false
 	}
 

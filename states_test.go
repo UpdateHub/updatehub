@@ -46,7 +46,7 @@ func (c *EasyFotaTestController) CheckUpdate() (*metadata.Metadata, int) {
 	return nil, c.extraPoll
 }
 
-func (c *EasyFotaTestController) FetchUpdate(updateMetadata *metadata.Metadata) error {
+func (c *EasyFotaTestController) FetchUpdate(updateMetadata *metadata.Metadata, cancel <-chan bool) error {
 	return c.fetchUpdateError
 }
 
