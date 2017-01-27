@@ -27,7 +27,6 @@ func getObject() interface{} {
 }
 
 type ImxKobsObject struct {
-	metadata.Object
 	metadata.ObjectData
 	utils.CmdLineExecuter
 
