@@ -25,20 +25,20 @@ type EasyFota struct {
 }
 
 type Controller interface {
-	CheckUpdate() (*metadata.Metadata, int)
-	FetchUpdate(*metadata.Metadata, <-chan bool) error
+	CheckUpdate() (*metadata.UpdateMetadata, int)
+	FetchUpdate(*metadata.UpdateMetadata, <-chan bool) error
 }
 
-func (fota *EasyFota) CheckUpdate() (*metadata.Metadata, int) {
+func (fota *EasyFota) CheckUpdate() (*metadata.UpdateMetadata, int) {
 	updateMetadata, extraPoll, err := fota.updater.CheckUpdate(fota.api.Request())
 	if err != nil || updateMetadata == nil {
 		return nil, 0
 	}
 
-	return updateMetadata.(*metadata.Metadata), extraPoll
+	return updateMetadata.(*metadata.UpdateMetadata), extraPoll
 }
 
-func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.Metadata, cancel <-chan bool) error {
+func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
 	// For now, we installs the first object
 	// FIXME: What object I should to install?
 	obj := updateMetadata.Objects[0][0]

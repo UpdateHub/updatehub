@@ -8,19 +8,19 @@ import (
 	"io"
 )
 
-type Metadata struct {
+type UpdateMetadata struct {
 	ProductUID string     `json:"product-uid"`
 	Version    string     `json:"version"`
 	Objects    [][]Object `json:"-"`
 }
 
-func (m Metadata) Checksum() (string, error) {
+func (m UpdateMetadata) Checksum() (string, error) {
 	var wrapper struct {
-		Metadata
+		UpdateMetadata
 		Objects [][]Object `json:"objects"`
 	}
 
-	wrapper.Metadata = m
+	wrapper.UpdateMetadata = m
 	wrapper.Objects = m.Objects
 
 	data, err := json.Marshal(wrapper)

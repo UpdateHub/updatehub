@@ -38,15 +38,15 @@ var checkUpdateCases = []struct {
 	},
 }
 
-func (c *EasyFotaTestController) CheckUpdate() (*metadata.Metadata, int) {
+func (c *EasyFotaTestController) CheckUpdate() (*metadata.UpdateMetadata, int) {
 	if c.updateAvailable {
-		return &metadata.Metadata{}, c.extraPoll
+		return &metadata.UpdateMetadata{}, c.extraPoll
 	}
 
 	return nil, c.extraPoll
 }
 
-func (c *EasyFotaTestController) FetchUpdate(updateMetadata *metadata.Metadata, cancel <-chan bool) error {
+func (c *EasyFotaTestController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
 	return c.fetchUpdateError
 }
 
@@ -75,14 +75,14 @@ func TestStateUpdateFetch(t *testing.T) {
 		{
 			"WithoutError",
 			&EasyFotaTestController{fetchUpdateError: nil},
-			NewUpdateFetchState(&metadata.Metadata{}),
+			NewUpdateFetchState(&metadata.UpdateMetadata{}),
 			&InstallUpdateState{},
 		},
 
 		{
 			"WithError",
 			&EasyFotaTestController{fetchUpdateError: errors.New("fetch error")},
-			NewUpdateFetchState(&metadata.Metadata{}),
+			NewUpdateFetchState(&metadata.UpdateMetadata{}),
 			&UpdateFetchState{},
 		},
 	}

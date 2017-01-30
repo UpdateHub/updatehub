@@ -12,7 +12,7 @@ import (
 )
 
 type UpdaterTest struct {
-	updateMetadata   *metadata.Metadata
+	updateMetadata   *metadata.UpdateMetadata
 	extraPoll        int
 	checkUpdateError error
 }
@@ -37,7 +37,7 @@ var checkUpdateTestCases = []struct {
 	err            error
 }{
 	{
-		"InvalidMetadata",
+		"InvalidUpdateMetadata",
 		"",
 		0,
 		nil,

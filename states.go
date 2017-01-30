@@ -167,7 +167,7 @@ type UpdateFetchState struct {
 	BaseState
 	CancellableState
 
-	updateMetadata *metadata.Metadata
+	updateMetadata *metadata.UpdateMetadata
 }
 
 func (state *UpdateFetchState) Id() EasyFotaState {
@@ -191,7 +191,7 @@ func (state *UpdateFetchState) Handle(fota *EasyFota) (State, bool) {
 	return nextState, false
 }
 
-func NewUpdateFetchState(updateMetadata *metadata.Metadata) *UpdateFetchState {
+func NewUpdateFetchState(updateMetadata *metadata.UpdateMetadata) *UpdateFetchState {
 	state := &UpdateFetchState{
 		BaseState:      BaseState{id: EasyFotaStateUpdateFetch},
 		updateMetadata: updateMetadata,

@@ -8,9 +8,9 @@ import (
 	"bitbucket.org/ossystems/agent/installmodes"
 )
 
-func FromJSON(bytes []byte) (*Metadata, error) {
+func FromJSON(bytes []byte) (*UpdateMetadata, error) {
 	var wrapper struct {
-		Metadata
+		UpdateMetadata
 		RawObjects [][]interface{} `json:"objects"`
 	}
 
@@ -20,7 +20,7 @@ func FromJSON(bytes []byte) (*Metadata, error) {
 	}
 
 	// Unwraps metadata
-	metadata := wrapper.Metadata
+	metadata := wrapper.UpdateMetadata
 
 	for _, list := range wrapper.RawObjects {
 		var objects []Object
