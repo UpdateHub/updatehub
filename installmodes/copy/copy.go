@@ -21,7 +21,7 @@ func init() {
 }
 
 type CopyObject struct {
-	metadata.ObjectData
+	metadata.ObjectMetadata
 	metadata.CompressedObject
 	utils.FileSystemHelper `json:"-"`
 	utils.CustomCopier     `json:"-"`

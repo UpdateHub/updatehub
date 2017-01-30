@@ -2,8 +2,8 @@ package metadata
 
 import "bitbucket.org/ossystems/agent/handlers"
 
-// ObjectData contains the common properties of a package's object from JSON metadata
-type ObjectData struct {
+// ObjectMetadata contains the common properties of a package's object from JSON metadata
+type ObjectMetadata struct {
 	Object `json:"-"`
 
 	Sha256sum  string `json:"sha256sum"`
@@ -11,7 +11,7 @@ type ObjectData struct {
 	Compressed bool   `json:"bool"`
 }
 
-func (o ObjectData) GetObjectData() ObjectData {
+func (o ObjectMetadata) GetObjectMetadata() ObjectMetadata {
 	return o
 }
 
@@ -23,5 +23,5 @@ type CompressedObject struct {
 type Object interface {
 	handlers.InstallUpdateHandler
 
-	GetObjectData() ObjectData
+	GetObjectMetadata() ObjectMetadata
 }

@@ -27,7 +27,7 @@ func getObject() interface{} {
 }
 
 type ImxKobsObject struct {
-	metadata.ObjectData
+	metadata.ObjectMetadata
 	utils.CmdLineExecuter
 
 	Add1KPadding    bool   `json:"1k_padding,omitempty"`

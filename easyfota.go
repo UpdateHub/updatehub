@@ -52,7 +52,7 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 		return err
 	}
 
-	objectUID := obj.GetObjectData().Sha256sum
+	objectUID := obj.GetObjectMetadata().Sha256sum
 
 	uri := "/"
 	uri = path.Join(uri, fota.firmwareMetadata.ProductUID)
