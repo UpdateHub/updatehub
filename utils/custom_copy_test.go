@@ -88,41 +88,6 @@ func TestCustomCopyFileWithSuccessUsingMocks(t *testing.T) {
 	targetMock.AssertExpectations(t)
 }
 
-func TestCustomCopyFileWithSuccessUsingMocks(t *testing.T) {
-	sourceMock := FileMock{&mock.Mock{}}
-	sourceContent := []uint8("test")
-	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
-		arg := args.Get(0).([]uint8)
-		copy(arg, sourceContent)
-	}).Return(len(sourceContent), nil).Once()
-	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.EOF).Once()
-	sourceMock.On("Close").Return(nil)
-
-	targetMock := FileMock{&mock.Mock{}}
-	targetContent := []uint8("")
-	targetMock.On("Write", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
-		arg := args.Get(0).([]uint8)
-		targetContent = arg
-	}).Return(len(targetContent), nil).Once()
-	targetMock.On("Close").Return(nil)
-
-	fom := FileOperationsMock{&mock.Mock{}}
-	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
-
-	cc := CustomCopy{FileOperations: fom}
-
-	err := cc.CopyFile("source.txt", "target.txt", 128*1024,
-		0, 0, -1, true, false)
-	assert.NoError(t, err)
-
-	assert.Equal(t, sourceContent, targetContent)
-
-	fom.AssertExpectations(t)
-	sourceMock.AssertExpectations(t)
-	targetMock.AssertExpectations(t)
-}
-
 func TestCustomCopyFileWithOpenError(t *testing.T) {
 	targetMock := FileMock{&mock.Mock{}}
 
