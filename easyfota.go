@@ -31,7 +31,7 @@ type Controller interface {
 
 func (fota *EasyFota) CheckUpdate() (*metadata.Metadata, int) {
 	updateMetadata, extraPoll, err := fota.updater.CheckUpdate(fota.api.Request())
-	if err != nil {
+	if err != nil || updateMetadata == nil {
 		return nil, 0
 	}
 
