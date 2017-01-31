@@ -10,7 +10,8 @@ import (
 )
 
 func init() {
-	installmodes.RegisterInstallMode("imxkobs", installmodes.InstallMode{
+	installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "imxkobs",
 		CheckRequirements: checkRequirements,
 		GetObject:         getObject,
 	})

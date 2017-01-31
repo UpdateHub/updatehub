@@ -8,14 +8,19 @@ var (
 
 // InstallMode represents a install mode
 type InstallMode struct {
-	Mode              string
+	Name              string
 	CheckRequirements func() error
 	GetObject         func() interface{}
 }
 
+func (mode InstallMode) Unregister() {
+	delete(installModes, mode.Name)
+}
+
 // RegisterInstallMode registers a new install mode
-func RegisterInstallMode(name string, mode InstallMode) {
-	installModes[name] = mode
+func RegisterInstallMode(mode InstallMode) InstallMode {
+	installModes[mode.Name] = mode
+	return mode
 }
 
 // GetObject gets the object that represents a install mode

@@ -47,11 +47,13 @@ type TestObjectCompressed struct {
 }
 
 func TestMetadataFromValidJson(t *testing.T) {
-	installmodes.RegisterInstallMode("test", installmodes.InstallMode{
-		Mode:              "test",
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
 		CheckRequirements: func() error { return nil },
 		GetObject:         func() interface{} { return TestObject{} },
 	})
+
+	defer mode.Unregister()
 
 	m, err := FromJSON([]byte(validJSONMetadata))
 	if !assert.NotNil(t, m) {
@@ -64,11 +66,13 @@ func TestMetadataFromValidJson(t *testing.T) {
 }
 
 func TestCompressedObject(t *testing.T) {
-	installmodes.RegisterInstallMode("compressed-object", installmodes.InstallMode{
-		Mode:              "compressed-object",
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "compressed-object",
 		CheckRequirements: func() error { return nil },
 		GetObject:         func() interface{} { return TestObjectCompressed{} },
 	})
+
+	defer mode.Unregister()
 
 	obj, err := FromJSON([]byte(validJSONMetadataWithCompressedObject))
 	if !assert.NotNil(t, obj) {
@@ -77,11 +81,13 @@ func TestCompressedObject(t *testing.T) {
 }
 
 func TestInvalidCompressedObject(t *testing.T) {
-	installmodes.RegisterInstallMode("test", installmodes.InstallMode{
-		Mode:              "test",
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
 		CheckRequirements: func() error { return nil },
 		GetObject:         func() interface{} { return TestObject{} },
 	})
+
+	defer mode.Unregister()
 
 	_, err := FromJSON([]byte(validJSONMetadataWithoutCompressedObject))
 	if assert.Error(t, err) {
@@ -90,11 +96,13 @@ func TestInvalidCompressedObject(t *testing.T) {
 }
 
 func TestObjectFromValidJson(t *testing.T) {
-	installmodes.RegisterInstallMode("test", installmodes.InstallMode{
-		Mode:              "test",
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
 		CheckRequirements: func() error { return nil },
 		GetObject:         func() interface{} { return TestObject{} },
 	})
+
+	defer mode.Unregister()
 
 	obj, err := ObjectFromJSON([]byte("{ \"mode\": \"test\" }"))
 	if !assert.NotNil(t, obj) {
