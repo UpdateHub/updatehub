@@ -6,12 +6,16 @@ import (
 	"time"
 )
 
-const bufferSize = 32 * 1024
+const ChunkSize = 128 * 1024
 
 // Copy copies from rd to wr until EOF or timeout is reached on rd or it was cancelled
-func Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool) (bool, error) {
+func Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool, chunkSize int) (bool, error) {
+	if chunkSize < 1 {
+		return false, errors.New("Copy error: chunkSize can't be less than 1")
+	}
+
 	len := make(chan int)
-	buf := make([]byte, bufferSize)
+	buf := make([]byte, chunkSize)
 	readErrChan := make(chan error)
 
 Loop:

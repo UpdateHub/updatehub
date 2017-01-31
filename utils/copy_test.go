@@ -51,7 +51,7 @@ func TestCopy(t *testing.T) {
 	rd := NewTimedReader(data)
 	wr := bufio.NewWriter(buff)
 
-	cancelled, err := Copy(wr, rd, time.Minute, nil)
+	cancelled, err := Copy(wr, rd, time.Minute, nil, ChunkSize)
 
 	err = wr.Flush()
 	assert.NoError(t, err)
@@ -71,7 +71,7 @@ func TestCopyTimeoutHasReached(t *testing.T) {
 
 	cancel := make(chan bool)
 
-	cancelled, err := Copy(wr, rd, time.Millisecond, cancel)
+	cancelled, err := Copy(wr, rd, time.Millisecond, cancel, ChunkSize)
 	assert.False(t, cancelled)
 	if !assert.Error(t, err) {
 		assert.Equal(t, errors.New("timeout"), err)
@@ -96,7 +96,7 @@ func TestCancelCopy(t *testing.T) {
 	wait := make(chan bool)
 
 	go func() {
-		cancelled, err = Copy(wr, rd, time.Minute, cancel)
+		cancelled, err = Copy(wr, rd, time.Minute, cancel, ChunkSize)
 		wait <- false
 	}()
 

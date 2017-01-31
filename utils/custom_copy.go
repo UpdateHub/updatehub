@@ -51,14 +51,27 @@ func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize i
 		return err
 	}
 
+	_, err = source.Seek(int64(skip*chunkSize), io.SeekStart)
+	if err != nil {
+		source.Close()
+		return err
+	}
+
 	target, err := cc.Create(targetPath)
 	if err != nil {
 		source.Close()
 		return err
 	}
 
+	_, err = target.Seek(int64(seek*chunkSize), io.SeekStart)
+	if err != nil {
+		source.Close()
+		target.Close()
+		return err
+	}
+
 	cancel := make(chan bool)
-	_, err = Copy(target, source, time.Hour, cancel)
+	_, err = Copy(target, source, time.Hour, cancel, chunkSize)
 
 	source.Close()
 	target.Close()
