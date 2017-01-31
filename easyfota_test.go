@@ -54,7 +54,7 @@ func TestEasyfotaCheckUpdate(t *testing.T) {
 
 	for _, tc := range checkUpdateTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			expectedUpdateMetadata, _ := metadata.FromJSON([]byte(tc.updateMetadata))
+			expectedUpdateMetadata, _ := metadata.NewUpdateMetadata([]byte(tc.updateMetadata))
 
 			updater := testUpdater{
 				updateMetadata: expectedUpdateMetadata,
@@ -86,7 +86,7 @@ func TestEasyFotaFetchUpdate(t *testing.T) {
 		api:      client.NewApiClient("localhost"),
 	}
 
-	updateMetadata, err := metadata.FromJSON([]byte(validUpdateMetadata))
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
 	assert.NoError(t, err)
 
 	updater := testUpdater{

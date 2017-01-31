@@ -14,6 +14,41 @@ type UpdateMetadata struct {
 	Objects    [][]Object `json:"-"`
 }
 
+func NewUpdateMetadata(bytes []byte) (*UpdateMetadata, error) {
+	var wrapper struct {
+		UpdateMetadata
+		RawObjects [][]interface{} `json:"objects"`
+	}
+
+	err := json.Unmarshal(bytes, &wrapper)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unwraps metadata
+	metadata := wrapper.UpdateMetadata
+
+	for _, list := range wrapper.RawObjects {
+		var objects []Object
+
+		for _, obj := range list {
+			// It is safe to ignore errors here
+			b, _ := json.Marshal(obj)
+
+			o, err := NewObjectMetadata(b)
+			if err != nil {
+				return nil, err
+			}
+
+			objects = append(objects, o)
+		}
+
+		metadata.Objects = append(metadata.Objects, objects)
+	}
+
+	return &metadata, nil
+}
+
 func (m UpdateMetadata) Checksum() (string, error) {
 	var wrapper struct {
 		UpdateMetadata

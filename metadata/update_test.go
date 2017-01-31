@@ -37,10 +37,6 @@ const (
 	}`
 )
 
-type TestObject struct {
-	Object
-}
-
 type TestObjectCompressed struct {
 	Object
 	CompressedObject
@@ -55,7 +51,7 @@ func TestMetadataFromValidJson(t *testing.T) {
 
 	defer mode.Unregister()
 
-	m, err := FromJSON([]byte(validJSONMetadata))
+	m, err := NewUpdateMetadata([]byte(validJSONMetadata))
 	if !assert.NotNil(t, m) {
 		t.Fatal(err)
 	}
@@ -74,7 +70,7 @@ func TestCompressedObject(t *testing.T) {
 
 	defer mode.Unregister()
 
-	obj, err := FromJSON([]byte(validJSONMetadataWithCompressedObject))
+	obj, err := NewUpdateMetadata([]byte(validJSONMetadataWithCompressedObject))
 	if !assert.NotNil(t, obj) {
 		t.Fatal(err)
 	}
@@ -89,31 +85,8 @@ func TestInvalidCompressedObject(t *testing.T) {
 
 	defer mode.Unregister()
 
-	_, err := FromJSON([]byte(validJSONMetadataWithoutCompressedObject))
+	_, err := NewUpdateMetadata([]byte(validJSONMetadataWithoutCompressedObject))
 	if assert.Error(t, err) {
 		assert.Equal(t, err, errors.New("Compressed object does not embed CompressedObject struct"))
 	}
-}
-
-func TestObjectFromValidJson(t *testing.T) {
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return TestObject{} },
-	})
-
-	defer mode.Unregister()
-
-	obj, err := ObjectFromJSON([]byte("{ \"mode\": \"test\" }"))
-	if !assert.NotNil(t, obj) {
-		t.Fatal(err)
-	}
-
-	assert.IsType(t, TestObject{}, obj)
-}
-
-func TestObjectFromInvalidJson(t *testing.T) {
-	obj, err := ObjectFromJSON([]byte("invalid"))
-	assert.Nil(t, obj)
-	assert.Error(t, err)
 }
