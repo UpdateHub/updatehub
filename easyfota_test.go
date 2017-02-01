@@ -24,35 +24,31 @@ const validUpdateMetadata = `{
   ]
 }`
 
-var checkUpdateTestCases = []struct {
-	name           string
-	updateMetadata string
-	extraPoll      int
-	err            error
-}{
-	{
-		"InvalidUpdateMetadata",
-		"",
-		0,
-		nil,
-	},
-
-	{
-		"ValidUpdateMetadata",
-		validUpdateMetadata,
-		13,
-		nil,
-	},
-}
-
 func TestEasyfotaCheckUpdate(t *testing.T) {
-	fota := &EasyFota{
-		state:    &PollState{},
-		timeStep: time.Millisecond,
-		api:      client.NewApiClient("localhost"),
+	testCases := []struct {
+		name           string
+		updateMetadata string
+		extraPoll      int
+		err            error
+	}{
+		{
+			"InvalidUpdateMetadata",
+			"",
+			0,
+			nil,
+		},
+
+		{
+			"ValidUpdateMetadata",
+			validUpdateMetadata,
+			13,
+			nil,
+		},
 	}
 
-	for _, tc := range checkUpdateTestCases {
+	fota := newTestEasyFota(&PollState{})
+
+	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			expectedUpdateMetadata, _ := metadata.NewUpdateMetadata([]byte(tc.updateMetadata))
 
@@ -72,19 +68,11 @@ func TestEasyfotaCheckUpdate(t *testing.T) {
 }
 
 func TestEasyFotaFetchUpdate(t *testing.T) {
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return &testObject{} },
-	})
+	mode := newTestInstallMode()
 
 	defer mode.Unregister()
 
-	fota := &EasyFota{
-		state:    &PollState{},
-		timeStep: time.Millisecond,
-		api:      client.NewApiClient("localhost"),
-	}
+	fota := newTestEasyFota(&PollState{})
 
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
 	assert.NoError(t, err)
@@ -126,4 +114,20 @@ func (t testUpdater) CheckUpdate(api client.ApiRequester) (interface{}, int, err
 func (t testUpdater) FetchUpdate(api client.ApiRequester, uri string) (io.ReadCloser, int64, error) {
 	rd := bytes.NewReader(t.updateBytes)
 	return ioutil.NopCloser(rd), int64(len(t.updateBytes)), t.fetchUpdateError
+}
+
+func newTestInstallMode() installmodes.InstallMode {
+	return installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObject{} },
+	})
+}
+
+func newTestEasyFota(state State) *EasyFota {
+	return &EasyFota{
+		state:    state,
+		timeStep: time.Millisecond,
+		api:      client.NewApiClient("localhost"),
+	}
 }
