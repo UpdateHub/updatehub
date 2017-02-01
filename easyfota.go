@@ -16,6 +16,7 @@ import (
 type EasyFota struct {
 	Controller
 
+	settings         *Settings
 	firmwareMetadata metadata.FirmwareMetadata
 	state            State
 	pollInterval     int
@@ -59,8 +60,7 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 	uri = path.Join(uri, packageUID)
 	uri = path.Join(uri, objectUID)
 
-	// FIXME: uses update download dir from settings
-	file, err := os.Create(path.Join("/tmp/", objectUID))
+	file, err := os.Create(path.Join(fota.settings.DownloadDir, objectUID))
 	if err != nil {
 		return err
 	}

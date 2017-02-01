@@ -46,7 +46,7 @@ func TestEasyfotaCheckUpdate(t *testing.T) {
 		},
 	}
 
-	fota := newTestEasyFota(&PollState{})
+	fota, _ := newTestEasyFota(&PollState{})
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -72,7 +72,7 @@ func TestEasyFotaFetchUpdate(t *testing.T) {
 
 	defer mode.Unregister()
 
-	fota := newTestEasyFota(&PollState{})
+	fota, _ := newTestEasyFota(&PollState{})
 
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
 	assert.NoError(t, err)
@@ -88,7 +88,7 @@ func TestEasyFotaFetchUpdate(t *testing.T) {
 	err = fota.FetchUpdate(updateMetadata, nil)
 	assert.NoError(t, err)
 
-	data, err := ioutil.ReadFile(path.Join("/tmp", updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum))
+	data, err := ioutil.ReadFile(path.Join(fota.settings.DownloadDir, updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum))
 	assert.NoError(t, err)
 	assert.Equal(t, updater.updateBytes, data)
 }
@@ -124,10 +124,20 @@ func newTestInstallMode() installmodes.InstallMode {
 	})
 }
 
-func newTestEasyFota(state State) *EasyFota {
-	return &EasyFota{
+func newTestEasyFota(state State) (*EasyFota, error) {
+	fota := &EasyFota{
 		state:    state,
 		timeStep: time.Millisecond,
 		api:      client.NewApiClient("localhost"),
 	}
+
+	settings, err := NewSettings([]byte(""))
+
+	if err != nil {
+		return nil, err
+	}
+
+	fota.settings = settings
+
+	return fota, err
 }
