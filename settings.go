@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"io/ioutil"
 
 	"github.com/go-ini/ini"
 )
@@ -52,9 +53,9 @@ func init() {
 	ini.PrettyFormat = false
 }
 
-func NewSettings(data []byte) (*Settings, error) {
-	cfg, err := ini.Load(data)
-	if err != nil {
+func LoadSettings(r io.Reader) (*Settings, error) {
+	cfg, err := ini.Load(ioutil.NopCloser(r))
+	if err != nil || cfg == nil {
 		return nil, err
 	}
 

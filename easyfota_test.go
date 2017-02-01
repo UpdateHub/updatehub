@@ -133,8 +133,7 @@ func newTestEasyFota(state State) (*EasyFota, error) {
 		api:      client.NewApiClient("localhost"),
 	}
 
-	settings, err := NewSettings([]byte(""))
-
+	settings, err := LoadSettings(bytes.NewReader([]byte("")))
 	if err != nil {
 		return nil, err
 	}

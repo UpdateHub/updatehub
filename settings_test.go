@@ -34,7 +34,7 @@ EasyFotaServerAddress=localhost
 MetadataPath=/tmp/metadata
 `
 
-func TestNewSettings(t *testing.T) {
+func TestLoadSettings(t *testing.T) {
 	testCases := []struct {
 		name             string
 		data             string
@@ -115,7 +115,7 @@ func TestNewSettings(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			s, err := NewSettings([]byte(tc.data))
+			s, err := LoadSettings(bytes.NewReader([]byte(tc.data)))
 			assert.NoError(t, err)
 			assert.NotNil(t, s)
 			assert.Equal(t, tc.expectedSettings, s)
@@ -124,7 +124,7 @@ func TestNewSettings(t *testing.T) {
 }
 
 func TestSaveSettings(t *testing.T) {
-	expectedSettings, err := NewSettings([]byte(""))
+	expectedSettings, err := LoadSettings(bytes.NewReader([]byte("")))
 	assert.NoError(t, err)
 	assert.NotNil(t, expectedSettings)
 
@@ -132,7 +132,7 @@ func TestSaveSettings(t *testing.T) {
 	err = SaveSettings(expectedSettings, &buf)
 	assert.NoError(t, err)
 
-	s, err := NewSettings(buf.Bytes())
+	s, err := LoadSettings(bytes.NewReader(buf.Bytes()))
 	assert.NoError(t, err)
 	assert.NotNil(t, s)
 
