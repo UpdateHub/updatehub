@@ -71,7 +71,7 @@ func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize i
 	}
 
 	cancel := make(chan bool)
-	_, err = Copy(target, source, time.Hour, cancel, chunkSize)
+	_, err = Copy(target, source, time.Hour, cancel, chunkSize, count)
 
 	source.Close()
 	target.Close()

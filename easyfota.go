@@ -74,7 +74,7 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 
 	wd := bufio.NewWriter(file)
 
-	utils.Copy(wd, rd, 30*time.Second, cancel, utils.ChunkSize)
+	utils.Copy(wd, rd, 30*time.Second, cancel, utils.ChunkSize, -1)
 
 	wd.Flush()
 
