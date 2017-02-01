@@ -22,7 +22,7 @@ func TestCopyInit(t *testing.T) {
 		t.Error("Failed to cast return value of \"installmodes.GetObject()\" to CopyObject")
 	}
 
-	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{}}
+	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileOperations: &utils.FileOperationsImpl{}}}
 
 	assert.Equal(t, cp2, cp1)
 }

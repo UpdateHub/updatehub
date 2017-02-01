@@ -16,7 +16,7 @@ func init() {
 		Name:              "copy",
 		CheckRequirements: func() error { return nil },
 		GetObject: func() interface{} {
-			return &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{}}
+			return &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileOperations: &utils.FileOperationsImpl{}}}
 		},
 	})
 }

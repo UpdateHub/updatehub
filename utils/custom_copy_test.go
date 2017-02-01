@@ -614,3 +614,158 @@ func TestCustomCopyFileWithSeekError(t *testing.T) {
 	sourceMock.AssertExpectations(t)
 	targetMock.AssertExpectations(t)
 }
+
+func TestFileOperationsImplOpen(t *testing.T) {
+	tempFilePath, err := ioutil.TempFile("", "FileOperationsImplOpen-test")
+	assert.NoError(t, err)
+	defer os.Remove(tempFilePath.Name())
+
+	content := []byte("content")
+
+	_, err = tempFilePath.Write(content)
+	assert.NoError(t, err)
+
+	err = tempFilePath.Close()
+	assert.NoError(t, err)
+
+	foi := FileOperationsImpl{}
+
+	file, err := foi.Open(tempFilePath.Name())
+
+	osFile, ok := file.(*os.File)
+	if !ok {
+		t.Error("Failed to cast '*FileInterface' to '*os.File'")
+	}
+	assert.NotNil(t, osFile)
+
+	buf := make([]byte, len(content))
+	_, err = osFile.Read(buf)
+	assert.NoError(t, err)
+
+	assert.Equal(t, content, buf)
+
+	err = osFile.Close()
+	assert.NoError(t, err)
+}
+
+func TestFileOperationsImplCreate(t *testing.T) {
+	tempDirPath, err := ioutil.TempDir("", "FileOperationsImplCreate-test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tempDirPath)
+
+	content := []byte("content")
+
+	foi := FileOperationsImpl{}
+
+	file, err := foi.Create(path.Join(tempDirPath, "test.txt"))
+	assert.NoError(t, err)
+
+	osFile, ok := file.(*os.File)
+	if !ok {
+		t.Error("Failed to cast '*FileInterface' to '*os.File'")
+	}
+	assert.NotNil(t, osFile)
+
+	_, err = osFile.Write(content)
+	assert.NoError(t, err)
+
+	err = osFile.Close()
+	assert.NoError(t, err)
+
+	// check if the file created is what we wanted
+	data, err := ioutil.ReadFile(path.Join(tempDirPath, "test.txt"))
+	assert.NoError(t, err)
+
+	assert.Equal(t, content, data)
+}
+
+func FakeOpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
+	return os.OpenFile(name, flag, perm)
+}
+
+func TestFileOperationsImplOpenFile(t *testing.T) {
+	tempDirPath, err := ioutil.TempDir("", "FileOperationsImplOpenFile-test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tempDirPath)
+
+	tempFilePath := path.Join(tempDirPath, "test.txt")
+
+	// it's useless for us to test the Mode here because go checks for
+	// some "sticky bit logic" on OpenFile and sometimes doesn't do
+	// the "chmod" on the file. in doubt, check the go source code.
+	testCases := []struct {
+		Name  string
+		Flags int
+		Mode  os.FileMode
+	}{
+		{
+			"CreateDeafultArgs",
+			os.O_RDWR | os.O_CREATE | os.O_TRUNC,
+			0666,
+		},
+		{
+			"WithoutReadPermission",
+			os.O_WRONLY | os.O_CREATE | os.O_TRUNC,
+			0666,
+		},
+		{
+			"WithoutWritePermission",
+			os.O_RDONLY | os.O_CREATE | os.O_TRUNC,
+			0666,
+		},
+		{
+			"WithoutTruncate",
+			os.O_RDWR | os.O_CREATE,
+			0666,
+		},
+		{
+			"WithoutCreate",
+			os.O_RDWR | os.O_TRUNC,
+			0666,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			foi := FileOperationsImpl{}
+
+			file, err := foi.OpenFile(tempFilePath, tc.Flags, tc.Mode)
+			assert.NoError(t, err)
+
+			osFile, ok := file.(*os.File)
+			if !ok {
+				t.Error("Failed to cast '*FileInterface' to '*os.File'")
+			}
+			assert.NotNil(t, osFile)
+
+			content := []byte("content")
+
+			if tc.Flags&os.O_RDONLY != 0 || tc.Flags&os.O_RDWR != 0 {
+				buf := make([]byte, len(content))
+				_, err = osFile.Read(buf)
+				assert.Error(t, err, io.EOF)
+			} else {
+				buf := make([]byte, len(content))
+				_, err = osFile.Read(buf)
+				assert.Error(t, fmt.Errorf("read %s: bad file descriptor", tempFilePath), err)
+			}
+
+			if tc.Flags&os.O_WRONLY != 0 || tc.Flags&os.O_RDWR != 0 {
+				_, err = osFile.Write(content)
+				assert.NoError(t, err)
+			} else {
+				_, err = osFile.Write(content)
+				assert.Error(t, fmt.Errorf("write %s: bad file descriptor", tempFilePath), err)
+			}
+
+			err = osFile.Close()
+			assert.NoError(t, err)
+
+			checkFile, err := os.Open(tempFilePath)
+			assert.NoError(t, err)
+
+			err = checkFile.Close()
+			assert.NoError(t, err)
+		})
+	}
+}

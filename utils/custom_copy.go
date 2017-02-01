@@ -12,7 +12,6 @@ type CustomCopier interface {
 	CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error
 }
 
-// FIXME: all "CustomCopy" instantiations have to be "CustomCopy{FileOperationsImpl{}}"?
 type CustomCopy struct {
 	FileOperations
 }
