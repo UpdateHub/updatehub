@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
 	"bitbucket.org/ossystems/agent/client"
@@ -88,7 +89,7 @@ func TestEasyFotaFetchUpdate(t *testing.T) {
 	err = fota.FetchUpdate(updateMetadata, nil)
 	assert.NoError(t, err)
 
-	data, err := ioutil.ReadFile(path.Join(fota.settings.DownloadDir, updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum))
+	data, err := afero.ReadFile(fota.store, path.Join(fota.settings.DownloadDir, updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum))
 	assert.NoError(t, err)
 	assert.Equal(t, updater.updateBytes, data)
 }
@@ -126,6 +127,7 @@ func newTestInstallMode() installmodes.InstallMode {
 
 func newTestEasyFota(state State) (*EasyFota, error) {
 	fota := &EasyFota{
+		store:    afero.NewMemMapFs(),
 		state:    state,
 		timeStep: time.Millisecond,
 		api:      client.NewApiClient("localhost"),

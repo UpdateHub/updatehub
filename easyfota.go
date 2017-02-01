@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"time"
+
+	"github.com/spf13/afero"
 
 	"bitbucket.org/ossystems/agent/client"
 	"bitbucket.org/ossystems/agent/metadata"
@@ -17,6 +18,7 @@ type EasyFota struct {
 	Controller
 
 	settings         *Settings
+	store            afero.Fs
 	firmwareMetadata metadata.FirmwareMetadata
 	state            State
 	pollInterval     int
@@ -60,7 +62,7 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 	uri = path.Join(uri, packageUID)
 	uri = path.Join(uri, objectUID)
 
-	file, err := os.Create(path.Join(fota.settings.DownloadDir, objectUID))
+	file, err := fota.store.Create(path.Join(fota.settings.DownloadDir, objectUID))
 	if err != nil {
 		return err
 	}
