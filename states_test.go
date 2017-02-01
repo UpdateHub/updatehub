@@ -9,9 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type EasyFotaTestController struct {
-	EasyFota
-
+type testController struct {
 	extraPoll        int
 	updateAvailable  bool
 	fetchUpdateError error
@@ -19,26 +17,26 @@ type EasyFotaTestController struct {
 
 var checkUpdateCases = []struct {
 	name         string
-	controller   *EasyFotaTestController
+	controller   *testController
 	initialState State
 	nextState    State
 }{
 	{
 		"UpdateAvailable",
-		&EasyFotaTestController{updateAvailable: true},
+		&testController{updateAvailable: true},
 		NewUpdateCheckState(),
 		&UpdateFetchState{},
 	},
 
 	{
 		"UpdateNotAvailable",
-		&EasyFotaTestController{updateAvailable: false},
+		&testController{updateAvailable: false},
 		NewUpdateCheckState(),
 		&PollState{},
 	},
 }
 
-func (c *EasyFotaTestController) CheckUpdate() (*metadata.UpdateMetadata, int) {
+func (c *testController) CheckUpdate() (*metadata.UpdateMetadata, int) {
 	if c.updateAvailable {
 		return &metadata.UpdateMetadata{}, c.extraPoll
 	}
@@ -46,17 +44,17 @@ func (c *EasyFotaTestController) CheckUpdate() (*metadata.UpdateMetadata, int) {
 	return nil, c.extraPoll
 }
 
-func (c *EasyFotaTestController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
+func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
 	return c.fetchUpdateError
 }
 
 func TestStateUpdateCheck(t *testing.T) {
 	for _, tc := range checkUpdateCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fota := &EasyFota{
-				state:      tc.initialState,
-				Controller: tc.controller,
-			}
+			fota, err := newTestEasyFota(tc.initialState)
+			assert.NoError(t, err)
+
+			fota.Controller = tc.controller
 
 			next, _ := fota.state.Handle(fota)
 
@@ -67,44 +65,45 @@ func TestStateUpdateCheck(t *testing.T) {
 
 func TestStateUpdateFetch(t *testing.T) {
 	testCases := []struct {
-		Name         string
-		Controller   *EasyFotaTestController
-		InitialState State
-		NextState    State
+		name         string
+		controller   *testController
+		initialState State
+		nextState    State
 	}{
 		{
 			"WithoutError",
-			&EasyFotaTestController{fetchUpdateError: nil},
+			&testController{fetchUpdateError: nil},
 			NewUpdateFetchState(&metadata.UpdateMetadata{}),
 			&InstallUpdateState{},
 		},
 
 		{
 			"WithError",
-			&EasyFotaTestController{fetchUpdateError: errors.New("fetch error")},
+			&testController{fetchUpdateError: errors.New("fetch error")},
 			NewUpdateFetchState(&metadata.UpdateMetadata{}),
 			&UpdateFetchState{},
 		},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
-			fota := tc.Controller
-			fota.EasyFota.state = tc.InitialState
-			fota.Controller = tc.Controller
+		t.Run(tc.name, func(t *testing.T) {
+			fota, err := newTestEasyFota(tc.initialState)
+			assert.NoError(t, err)
 
-			next, _ := fota.state.Handle(&fota.EasyFota)
+			fota.Controller = tc.controller
 
-			assert.IsType(t, tc.NextState, next)
+			next, _ := fota.state.Handle(fota)
+
+			assert.IsType(t, tc.nextState, next)
 		})
 	}
 }
 
 func TestPollTicks(t *testing.T) {
 	testCases := []struct {
-		Name         string
-		PollInterval int
-		ExtraPoll    int
+		name         string
+		pollInterval int
+		extraPoll    int
 	}{
 		{
 			"PollWithoutExtraPoll",
@@ -120,21 +119,23 @@ func TestPollTicks(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.Name, func(t *testing.T) {
-			fota := &EasyFotaTestController{
+		t.Run(tc.name, func(t *testing.T) {
+			fota, err := newTestEasyFota(NewUpdateCheckState())
+			assert.NoError(t, err)
+
+			c := &testController{
 				updateAvailable: false,
-				extraPoll:       tc.ExtraPoll,
+				extraPoll:       tc.extraPoll,
 			}
 
-			fota.EasyFota.pollInterval = tc.PollInterval
-			fota.EasyFota.state = NewUpdateCheckState()
-			fota.Controller = fota
+			fota.pollInterval = tc.pollInterval
+			fota.Controller = c
 
-			poll, _ := fota.state.Handle(&fota.EasyFota)
+			poll, _ := fota.state.Handle(fota)
 			assert.IsType(t, &PollState{}, poll)
 
-			poll.Handle(&fota.EasyFota)
-			assert.Equal(t, fota.EasyFota.pollInterval+fota.extraPoll, poll.(*PollState).ticksCount)
+			poll.Handle(fota)
+			assert.Equal(t, fota.pollInterval+c.extraPoll, poll.(*PollState).ticksCount)
 		})
 	}
 }
