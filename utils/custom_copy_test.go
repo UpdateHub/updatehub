@@ -13,44 +13,62 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestCustomCopyFileWithSuccessIntegration(t *testing.T) {
-	testPath, err := ioutil.TempDir("", "CustomCopyFile-test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
+func TestCustomCopyFileIntegration(t *testing.T) {
+	testCases := []struct {
+		Name              string
+		SourceFileContent []byte
+	}{
+		{
+			"Success",
+			[]byte("content"),
+		},
+		{
+			"ZeroBytesSourceFile",
+			[]byte(""),
+		},
+	}
 
-	sourcePath := path.Join(testPath, "source.txt")
-	source, err := os.Create(sourcePath)
-	assert.Nil(t, err)
-	_, err = source.WriteString("content")
-	assert.Nil(t, err)
-	err = source.Close()
-	assert.Nil(t, err)
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			testPath, err := ioutil.TempDir("", "CustomCopyFile-test")
+			assert.NoError(t, err)
+			defer os.RemoveAll(testPath)
 
-	targetPath := path.Join(testPath, "target.txt")
+			sourcePath := path.Join(testPath, "source.txt")
+			source, err := os.Create(sourcePath)
+			assert.Nil(t, err)
+			_, err = source.Write(tc.SourceFileContent)
+			assert.Nil(t, err)
+			err = source.Close()
+			assert.Nil(t, err)
 
-	chunkSize := 128
-	skip := 0
-	seek := 0
-	count := -1
-	truncate := true
-	compressed := false
+			targetPath := path.Join(testPath, "target.txt")
 
-	pathExists, err := PathExists(targetPath)
-	assert.False(t, pathExists)
-	assert.NoError(t, err)
+			chunkSize := 128
+			skip := 0
+			seek := 0
+			count := -1
+			truncate := true
+			compressed := false
 
-	cc := CustomCopy{FileOperations: FileOperationsImpl{}}
-	err = cc.CopyFile(sourcePath, targetPath, chunkSize,
-		skip, seek, count, truncate, compressed)
-	assert.NoError(t, err)
+			pathExists, err := PathExists(targetPath)
+			assert.False(t, pathExists)
+			assert.NoError(t, err)
 
-	pathExists, err = PathExists(targetPath)
-	assert.True(t, pathExists)
-	assert.NoError(t, err)
+			cc := CustomCopy{FileOperations: FileOperationsImpl{}}
+			err = cc.CopyFile(sourcePath, targetPath, chunkSize,
+				skip, seek, count, truncate, compressed)
+			assert.NoError(t, err)
 
-	data, err := ioutil.ReadFile(targetPath)
-	assert.NoError(t, err)
-	assert.Equal(t, []byte("content"), data)
+			pathExists, err = PathExists(targetPath)
+			assert.True(t, pathExists)
+			assert.NoError(t, err)
+
+			data, err := ioutil.ReadFile(targetPath)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.SourceFileContent, data)
+		})
+	}
 }
 
 type FileOperationsMock struct {
@@ -64,6 +82,11 @@ func (fom FileOperationsMock) Open(name string) (FileInterface, error) {
 
 func (fom FileOperationsMock) Create(name string) (FileInterface, error) {
 	args := fom.Called(name)
+	return args.Get(0).(FileInterface), args.Error(1)
+}
+
+func (fom FileOperationsMock) OpenFile(name string, flag int, perm os.FileMode) (FileInterface, error) {
+	args := fom.Called(name, flag, perm)
 	return args.Get(0).(FileInterface), args.Error(1)
 }
 
@@ -124,7 +147,7 @@ func TestCustomCopyFileWithSuccessUsingMocks(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
@@ -175,7 +198,7 @@ func TestCustomCopyFileWithSuccessWithMultipleChunksUsingMocks(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
@@ -220,7 +243,7 @@ func TestCustomCopyFileWithSuccessUsingSkipAndSeekWithMocks(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
@@ -270,7 +293,7 @@ func TestCustomCopyFileUsingCountWithMocks(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
@@ -322,12 +345,53 @@ func TestCustomCopyFileUsingNegativeCountWithMocks(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
 	err := cc.CopyFile("source.txt", "target.txt", chunkSize,
 		0, 0, count, true, false)
+	assert.NoError(t, err)
+
+	assert.Equal(t, sourceContent, targetContent)
+
+	fom.AssertExpectations(t)
+	sourceMock.AssertExpectations(t)
+	targetMock.AssertExpectations(t)
+}
+
+func TestCustomCopyFileNotUsingTruncateWithMocks(t *testing.T) {
+	const (
+		truncate = false
+	)
+
+	sourceMock := FileMock{&mock.Mock{}}
+	sourceContent := []uint8("test")
+	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
+	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
+		arg := args.Get(0).([]uint8)
+		copy(arg, sourceContent)
+	}).Return(len(sourceContent), nil).Once()
+	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.EOF).Once()
+	sourceMock.On("Close").Return(nil)
+
+	targetMock := FileMock{&mock.Mock{}}
+	targetContent := []uint8("")
+	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
+	targetMock.On("Write", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
+		arg := args.Get(0).([]uint8)
+		targetContent = append(targetContent, arg...)
+	}).Return(len(targetContent), nil).Once()
+	targetMock.On("Close").Return(nil)
+
+	fom := FileOperationsMock{&mock.Mock{}}
+	fom.On("Open", "source.txt").Return(sourceMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE, os.FileMode(0666)).Return(targetMock, nil)
+
+	cc := CustomCopy{FileOperations: fom}
+
+	err := cc.CopyFile("source.txt", "target.txt", ChunkSize,
+		0, 0, -1, truncate, false)
 	assert.NoError(t, err)
 
 	assert.Equal(t, sourceContent, targetContent)
@@ -351,7 +415,7 @@ func TestCustomCopyFileWithOpenError(t *testing.T) {
 
 	cc := CustomCopy{FileOperations: fom}
 
-	err := cc.CopyFile("source.txt", "target.txt", 128*1024,
+	err := cc.CopyFile("source.txt", "target.txt", ChunkSize,
 		0, 0, -1, true, false)
 	assert.EqualError(t, err, "open source.txt: no space left on device")
 
@@ -359,7 +423,7 @@ func TestCustomCopyFileWithOpenError(t *testing.T) {
 	targetMock.AssertExpectations(t)
 }
 
-func TestCustomCopyFileWithCreateError(t *testing.T) {
+func TestCustomCopyFileWithOpenFileError(t *testing.T) {
 	sourceMock := FileMock{&mock.Mock{}}
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Close").Return(nil)
@@ -372,11 +436,11 @@ func TestCustomCopyFileWithCreateError(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return((*FileMock)(nil), pathError)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return((*FileMock)(nil), pathError)
 
 	cc := CustomCopy{FileOperations: fom}
 
-	err := cc.CopyFile("source.txt", "target.txt", 128*1024,
+	err := cc.CopyFile("source.txt", "target.txt", ChunkSize,
 		0, 0, -1, true, false)
 	assert.EqualError(t, err, "open target.txt: no space left on device")
 
@@ -396,11 +460,11 @@ func TestCustomCopyFileWithReadError(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
-	err := cc.CopyFile("source.txt", "target.txt", 128*1024,
+	err := cc.CopyFile("source.txt", "target.txt", ChunkSize,
 		0, 0, -1, true, false)
 	assert.EqualError(t, err, "io: read/write on closed pipe")
 
@@ -430,11 +494,11 @@ func TestCustomCopyFileWithWriteError(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
-	err := cc.CopyFile("source.txt", "target.txt", 128*1024,
+	err := cc.CopyFile("source.txt", "target.txt", ChunkSize,
 		0, 0, -1, true, false)
 	assert.EqualError(t, err, "io: read/write on closed pipe")
 
@@ -460,7 +524,7 @@ func TestCustomCopyFileWithZeroedChunkSize(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
@@ -488,7 +552,7 @@ func TestCustomCopyFileWithNegativeChunkSize(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 
@@ -538,7 +602,7 @@ func TestCustomCopyFileWithSeekError(t *testing.T) {
 
 	fom := FileOperationsMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("Create", "target.txt").Return(targetMock, nil)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	cc := CustomCopy{FileOperations: fom}
 

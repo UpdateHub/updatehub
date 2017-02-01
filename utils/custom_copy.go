@@ -23,6 +23,7 @@ type FileOperationsImpl struct {
 type FileOperations interface {
 	Open(name string) (FileInterface, error)
 	Create(name string) (FileInterface, error)
+	OpenFile(name string, flag int, perm os.FileMode) (FileInterface, error)
 }
 
 type FileInterface interface {
@@ -41,6 +42,10 @@ func (foi FileOperationsImpl) Create(name string) (FileInterface, error) {
 	return os.Create(name)
 }
 
+func (foi FileOperationsImpl) OpenFile(name string, flag int, perm os.FileMode) (FileInterface, error) {
+	return os.OpenFile(name, flag, perm)
+}
+
 func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
 	source, err := cc.Open(sourcePath)
 
@@ -57,7 +62,12 @@ func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize i
 		return err
 	}
 
-	target, err := cc.Create(targetPath)
+	flags := os.O_RDWR | os.O_CREATE
+	if truncate {
+		flags = flags | os.O_TRUNC
+	}
+
+	target, err := cc.OpenFile(targetPath, flags, 0666)
 	if err != nil {
 		source.Close()
 		return err
