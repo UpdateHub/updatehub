@@ -1,8 +1,19 @@
 hash: a76e3f6004f8d640b8ad54ca7a00e4e2f2dcfc6831b1a2ea1d0d8c6142f2ae33
-updated: 2017-01-25T09:05:59.959177633-02:00
+updated: 2017-02-03T10:46:05.956324735-02:00
 imports:
+- name: github.com/go-ini/ini
+  version: e3c2d47c61e5333f9aa2974695dd94396eb69c75
 - name: github.com/pkg/errors
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
+- name: github.com/spf13/afero
+  version: 72b31426848c6ef12a7a8e216708cb0d1530f074
+  subpackages:
+  - mem
+- name: golang.org/x/text
+  version: 506f9d5c962f284575e88337e7d9296d27e729d3
+  subpackages:
+  - transform
+  - unicode/norm
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
