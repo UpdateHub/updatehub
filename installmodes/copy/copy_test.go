@@ -9,6 +9,7 @@ import (
 
 	"bitbucket.org/ossystems/agent/installmodes"
 	"bitbucket.org/ossystems/agent/utils"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -22,7 +23,7 @@ func TestCopyInit(t *testing.T) {
 		t.Error("Failed to cast return value of \"installmodes.GetObject()\" to CopyObject")
 	}
 
-	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileOperations: &utils.FileOperationsImpl{}}}
+	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileOperations: afero.NewOsFs()}}
 
 	assert.Equal(t, cp2, cp1)
 }
@@ -48,30 +49,6 @@ func TestCopySetupWithNotSupportedTargetTypes(t *testing.T) {
 	cp.TargetType = "someother"
 	err = cp.Setup()
 	assert.EqualError(t, err, "target-type 'someother' is not supported for the 'copy' handler. Its value must be 'device'")
-}
-
-type FileSystemHelperMock struct {
-	*mock.Mock
-}
-
-func (fsm FileSystemHelperMock) Format(targetDevice string, fsType string, formatOptions string) error {
-	args := fsm.Called(targetDevice, fsType, formatOptions)
-	return args.Error(0)
-}
-
-func (fsm FileSystemHelperMock) Mount(targetDevice string, mountPath string, fsType string, mountOptions string) error {
-	args := fsm.Called(targetDevice, mountPath, fsType, mountOptions)
-	return args.Error(0)
-}
-
-func (fsm FileSystemHelperMock) Umount(mountPath string) error {
-	args := fsm.Called(mountPath)
-	return args.Error(0)
-}
-
-func (fsm FileSystemHelperMock) TempDir(prefix string) (string, error) {
-	args := fsm.Called(prefix)
-	return args.String(0), args.Error(1)
 }
 
 func TestCopyInstallWithFormatError(t *testing.T) {
@@ -129,15 +106,6 @@ func TestCopyInstallWithMountError(t *testing.T) {
 	tempDirExists, err := utils.PathExists(tempDirPath)
 	assert.False(t, tempDirExists)
 	assert.NoError(t, err)
-}
-
-type CustomCopierMock struct {
-	*mock.Mock
-}
-
-func (ccm CustomCopierMock) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
-	args := ccm.Called(sourcePath, targetPath, chunkSize, skip, seek, count, truncate, compressed)
-	return args.Error(0)
 }
 
 func TestCopyInstallWithCopyFileError(t *testing.T) {

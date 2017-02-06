@@ -6,6 +6,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/spf13/afero"
+
 	"bitbucket.org/ossystems/agent/installmodes"
 	"bitbucket.org/ossystems/agent/metadata"
 	"bitbucket.org/ossystems/agent/utils"
@@ -16,7 +18,7 @@ func init() {
 		Name:              "copy",
 		CheckRequirements: func() error { return nil },
 		GetObject: func() interface{} {
-			return &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileOperations: &utils.FileOperationsImpl{}}}
+			return &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileOperations: afero.NewOsFs()}}
 		},
 	})
 }

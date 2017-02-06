@@ -1,11 +1,11 @@
 package utils
 
-// FIXME: test this whole file
-
 import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/spf13/afero"
 )
 
 type CustomCopier interface {
@@ -13,40 +13,11 @@ type CustomCopier interface {
 }
 
 type CustomCopy struct {
-	FileOperations
-}
-
-type FileOperationsImpl struct {
-}
-
-type FileOperations interface {
-	Open(name string) (FileInterface, error)
-	Create(name string) (FileInterface, error)
-	OpenFile(name string, flag int, perm os.FileMode) (FileInterface, error)
-}
-
-type FileInterface interface {
-	io.Closer
-	io.Reader
-	io.ReaderAt
-	io.Seeker
-	io.Writer
-}
-
-func (foi FileOperationsImpl) Open(name string) (FileInterface, error) {
-	return os.Open(name)
-}
-
-func (foi FileOperationsImpl) Create(name string) (FileInterface, error) {
-	return os.Create(name)
-}
-
-func (foi FileOperationsImpl) OpenFile(name string, flag int, perm os.FileMode) (FileInterface, error) {
-	return os.OpenFile(name, flag, perm)
+	FileOperations afero.Fs
 }
 
 func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
-	source, err := cc.Open(sourcePath)
+	source, err := cc.FileOperations.Open(sourcePath)
 
 	if err != nil {
 		if pathErr, ok := err.(*os.PathError); ok {
@@ -66,7 +37,7 @@ func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize i
 		flags = flags | os.O_TRUNC
 	}
 
-	target, err := cc.OpenFile(targetPath, flags, 0666)
+	target, err := cc.FileOperations.OpenFile(targetPath, flags, 0666)
 	if err != nil {
 		source.Close()
 		return err
