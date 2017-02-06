@@ -13,11 +13,11 @@ type CustomCopier interface {
 }
 
 type CustomCopy struct {
-	FileOperations afero.Fs
+	FileSystemBackend afero.Fs
 }
 
 func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
-	source, err := cc.FileOperations.Open(sourcePath)
+	source, err := cc.FileSystemBackend.Open(sourcePath)
 
 	if err != nil {
 		if pathErr, ok := err.(*os.PathError); ok {
@@ -37,7 +37,7 @@ func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize i
 		flags = flags | os.O_TRUNC
 	}
 
-	target, err := cc.FileOperations.OpenFile(targetPath, flags, 0666)
+	target, err := cc.FileSystemBackend.OpenFile(targetPath, flags, 0666)
 	if err != nil {
 		source.Close()
 		return err

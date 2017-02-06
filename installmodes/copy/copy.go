@@ -2,7 +2,6 @@ package copy
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"strings"
 
@@ -18,7 +17,12 @@ func init() {
 		Name:              "copy",
 		CheckRequirements: func() error { return nil },
 		GetObject: func() interface{} {
-			return &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileOperations: afero.NewOsFs()}}
+			osFs := afero.NewOsFs()
+			return &CopyObject{
+				FileSystemHelper:  &utils.FileSystem{},
+				CustomCopier:      &utils.CustomCopy{FileSystemBackend: osFs},
+				FileSystemBackend: osFs,
+			}
 		},
 	})
 }
@@ -28,6 +32,7 @@ type CopyObject struct {
 	metadata.CompressedObject
 	utils.FileSystemHelper `json:"-"`
 	utils.CustomCopier     `json:"-"`
+	FileSystemBackend      afero.Fs
 
 	Target        string `json:"target"`
 	TargetType    string `json:"target-type"`
@@ -65,7 +70,7 @@ func (cp CopyObject) Install() error {
 
 	err = cp.Mount(cp.Target, tempDirPath, cp.FSType, cp.MountOptions)
 	if err != nil {
-		os.RemoveAll(tempDirPath)
+		cp.FileSystemBackend.RemoveAll(tempDirPath)
 		return err
 	}
 
@@ -87,7 +92,7 @@ func (cp CopyObject) Install() error {
 	if umountErr != nil {
 		errorList = append(errorList, umountErr)
 	} else {
-		os.RemoveAll(tempDirPath)
+		cp.FileSystemBackend.RemoveAll(tempDirPath)
 	}
 
 	return mergeErrorList(errorList)

@@ -104,11 +104,11 @@ func (clm CmdLineExecuterMock) Execute(cmdline string) ([]byte, error) {
 func TestImxKobsInstallSuccessCases(t *testing.T) {
 	// FIXME: populate these fields with a json sample?
 	testCases := []struct {
-		Name            string
-		Add1KPadding    bool
-		SearchExponent  int
-		Chip0DevicePath string
-		Chip1DevicePath string
+		Name                    string
+		Add1KPadding            bool
+		SearchExponent          int
+		Chip0DevicePath         string
+		Chip1DevicePath         string
 		ExpectedCmdLineExecuter string
 	}{
 		{

@@ -24,7 +24,9 @@ func checkRequirements() error {
 }
 
 func getObject() interface{} {
-	return &ImxKobsObject{CmdLineExecuter: &utils.CmdLine{}}
+	return &ImxKobsObject{
+		CmdLineExecuter: &utils.CmdLine{},
+	}
 }
 
 type ImxKobsObject struct {

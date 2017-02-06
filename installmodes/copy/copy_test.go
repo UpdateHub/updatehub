@@ -2,8 +2,6 @@ package copy
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path"
 	"testing"
 
@@ -23,7 +21,8 @@ func TestCopyInit(t *testing.T) {
 		t.Error("Failed to cast return value of \"installmodes.GetObject()\" to CopyObject")
 	}
 
-	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileOperations: afero.NewOsFs()}}
+	osFs := afero.NewOsFs()
+	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileSystemBackend: osFs}, FileSystemBackend: osFs}
 
 	assert.Equal(t, cp2, cp1)
 }
@@ -52,13 +51,15 @@ func TestCopySetupWithNotSupportedTargetTypes(t *testing.T) {
 }
 
 func TestCopyInstallWithFormatError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
 	targetDevice := "/dev/xx1"
 	fsType := "ext4"
 	formatOptions := "-y"
 
 	fsm := FileSystemHelperMock{&mock.Mock{}}
 	fsm.On("Format", targetDevice, fsType, formatOptions).Return(fmt.Errorf("format error"))
-	cp := CopyObject{FileSystemHelper: fsm}
+	cp := CopyObject{FileSystemHelper: fsm, FileSystemBackend: memFs}
 	cp.MustFormat = true
 	cp.Target = targetDevice
 	cp.FSType = fsType
@@ -71,9 +72,11 @@ func TestCopyInstallWithFormatError(t *testing.T) {
 }
 
 func TestCopyInstallWithTempDirError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
 	fsm := FileSystemHelperMock{&mock.Mock{}}
 	fsm.On("TempDir", "copy-handler").Return("", fmt.Errorf("temp dir error"))
-	cp := CopyObject{FileSystemHelper: fsm}
+	cp := CopyObject{FileSystemHelper: fsm, FileSystemBackend: memFs}
 
 	err := cp.Install()
 
@@ -82,9 +85,10 @@ func TestCopyInstallWithTempDirError(t *testing.T) {
 }
 
 func TestCopyInstallWithMountError(t *testing.T) {
-	tempDirPath, err := ioutil.TempDir("", "copy-handler")
+	memFs := afero.NewMemMapFs()
+
+	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
 	assert.NoError(t, err)
-	defer os.RemoveAll(tempDirPath)
 
 	targetDevice := "/dev/xx1"
 	fsType := "ext4"
@@ -93,7 +97,7 @@ func TestCopyInstallWithMountError(t *testing.T) {
 	fsm := FileSystemHelperMock{&mock.Mock{}}
 	fsm.On("TempDir", "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(fmt.Errorf("mount error"))
-	cp := CopyObject{FileSystemHelper: fsm}
+	cp := CopyObject{FileSystemHelper: fsm, FileSystemBackend: memFs}
 	cp.Target = targetDevice
 	cp.FSType = fsType
 	cp.MountOptions = mountOptions
@@ -103,15 +107,16 @@ func TestCopyInstallWithMountError(t *testing.T) {
 	assert.EqualError(t, err, "mount error")
 	fsm.AssertExpectations(t)
 
-	tempDirExists, err := utils.PathExists(tempDirPath)
+	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.False(t, tempDirExists)
 	assert.NoError(t, err)
 }
 
 func TestCopyInstallWithCopyFileError(t *testing.T) {
-	tempDirPath, err := ioutil.TempDir("", "copy-handler")
+	memFs := afero.NewMemMapFs()
+
+	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
 	assert.NoError(t, err)
-	defer os.RemoveAll(tempDirPath)
 
 	targetDevice := "/dev/xx1"
 	targetPath := "/inner-path"
@@ -128,7 +133,7 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	cc := CustomCopierMock{&mock.Mock{}}
 	cc.On("CopyFile", sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
-	cp := CopyObject{FileSystemHelper: fsm, CustomCopier: cc}
+	cp := CopyObject{FileSystemHelper: fsm, CustomCopier: cc, FileSystemBackend: memFs}
 	cp.Target = targetDevice
 	cp.TargetPath = targetPath
 	cp.FSType = fsType
@@ -142,15 +147,16 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cc.AssertExpectations(t)
 
-	tempDirExists, err := utils.PathExists(tempDirPath)
+	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.False(t, tempDirExists)
 	assert.NoError(t, err)
 }
 
 func TestCopyInstallWithUmountError(t *testing.T) {
-	tempDirPath, err := ioutil.TempDir("", "copy-handler")
+	memFs := afero.NewMemMapFs()
+
+	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
 	assert.NoError(t, err)
-	defer os.RemoveAll(tempDirPath)
 
 	targetDevice := "/dev/xx1"
 	targetPath := "/inner-path"
@@ -167,7 +173,7 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	cc := CustomCopierMock{&mock.Mock{}}
 	cc.On("CopyFile", sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
 
-	cp := CopyObject{FileSystemHelper: fsm, CustomCopier: cc}
+	cp := CopyObject{FileSystemHelper: fsm, CustomCopier: cc, FileSystemBackend: memFs}
 	cp.Target = targetDevice
 	cp.TargetPath = targetPath
 	cp.FSType = fsType
@@ -181,15 +187,16 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cc.AssertExpectations(t)
 
-	tempDirExists, err := utils.PathExists(tempDirPath)
+	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.True(t, tempDirExists)
 	assert.NoError(t, err)
 }
 
 func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
-	tempDirPath, err := ioutil.TempDir("", "copy-handler")
+	memFs := afero.NewMemMapFs()
+
+	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
 	assert.NoError(t, err)
-	defer os.RemoveAll(tempDirPath)
 
 	targetDevice := "/dev/xx1"
 	targetPath := "/inner-path"
@@ -206,7 +213,7 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	cc := CustomCopierMock{&mock.Mock{}}
 	cc.On("CopyFile", sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
-	cp := CopyObject{FileSystemHelper: fsm, CustomCopier: cc}
+	cp := CopyObject{FileSystemHelper: fsm, CustomCopier: cc, FileSystemBackend: memFs}
 	cp.Target = targetDevice
 	cp.TargetPath = targetPath
 	cp.FSType = fsType
@@ -220,7 +227,7 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cc.AssertExpectations(t)
 
-	tempDirExists, err := utils.PathExists(tempDirPath)
+	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.True(t, tempDirExists)
 	assert.NoError(t, err)
 }
@@ -300,9 +307,10 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			tempDirPath, err := ioutil.TempDir("", "copy-handler")
+			memFs := afero.NewMemMapFs()
+
+			tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
 			assert.NoError(t, err)
-			defer os.RemoveAll(tempDirPath)
 
 			fsm := FileSystemHelperMock{&mock.Mock{}}
 			if tc.MustFormat {
@@ -315,7 +323,7 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			cc := CustomCopierMock{&mock.Mock{}}
 			cc.On("CopyFile", tc.Sha256sum, path.Join(tempDirPath, tc.TargetPath), tc.ExpectedChunkSize, 0, 0, -1, true, tc.Compressed).Return(nil)
 
-			cp := CopyObject{FileSystemHelper: fsm, CustomCopier: cc}
+			cp := CopyObject{FileSystemHelper: fsm, CustomCopier: cc, FileSystemBackend: memFs}
 			cp.Target = tc.Target
 			cp.TargetType = tc.TargetType
 			cp.TargetPath = tc.TargetPath
@@ -333,7 +341,7 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			fsm.AssertExpectations(t)
 			cc.AssertExpectations(t)
 
-			tempDirExists, err := utils.PathExists(tempDirPath)
+			tempDirExists, err := afero.Exists(memFs, tempDirPath)
 			assert.False(t, tempDirExists)
 			assert.NoError(t, err)
 		})

@@ -3,23 +3,7 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 )
-
-// FIXME: test this
-func PathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-
-	if err == nil {
-		return true, nil
-	}
-
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-
-	return true, err
-}
 
 type FileSystemHelper interface {
 	Format(targetDevice string, fsType string, formatOptions string) error
@@ -48,5 +32,6 @@ func (fs *FileSystem) Umount(mountPath string) error {
 
 func (fs *FileSystem) TempDir(prefix string) (string, error) {
 	// FIXME: test this
+	// FIXME: use afero.Fs (receive through parameter here or on struct?)
 	return ioutil.TempDir("", prefix)
 }

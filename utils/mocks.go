@@ -1,3 +1,5 @@
+// FIXME: pass all "mocks.go" to a separate package because of dependencies
+
 package utils
 
 import (
@@ -8,66 +10,66 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type FileOperationsMock struct {
+type FileSystemBackendMock struct {
 	*mock.Mock
 }
 
-func (fom FileOperationsMock) Open(name string) (afero.File, error) {
+func (fom FileSystemBackendMock) Open(name string) (afero.File, error) {
 	args := fom.Called(name)
 	return args.Get(0).(afero.File), args.Error(1)
 }
 
-func (fom FileOperationsMock) Create(name string) (afero.File, error) {
+func (fom FileSystemBackendMock) Create(name string) (afero.File, error) {
 	args := fom.Called(name)
 	return args.Get(0).(afero.File), args.Error(1)
 }
 
-func (fom FileOperationsMock) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
+func (fom FileSystemBackendMock) OpenFile(name string, flag int, perm os.FileMode) (afero.File, error) {
 	args := fom.Called(name, flag, perm)
 	return args.Get(0).(afero.File), args.Error(1)
 }
 
-func (fom FileOperationsMock) Chmod(name string, mode os.FileMode) error {
+func (fom FileSystemBackendMock) Chmod(name string, mode os.FileMode) error {
 	args := fom.Called(name, mode)
 	return args.Error(0)
 }
 
-func (fom FileOperationsMock) Chtimes(name string, atime time.Time, mtime time.Time) error {
+func (fom FileSystemBackendMock) Chtimes(name string, atime time.Time, mtime time.Time) error {
 	args := fom.Called(name, atime, mtime)
 	return args.Error(0)
 }
 
-func (fom FileOperationsMock) Mkdir(name string, perm os.FileMode) error {
+func (fom FileSystemBackendMock) Mkdir(name string, perm os.FileMode) error {
 	args := fom.Called(name, perm)
 	return args.Error(0)
 }
 
-func (fom FileOperationsMock) MkdirAll(path string, perm os.FileMode) error {
+func (fom FileSystemBackendMock) MkdirAll(path string, perm os.FileMode) error {
 	args := fom.Called(path, perm)
 	return args.Error(0)
 }
 
-func (fom FileOperationsMock) Name() string {
+func (fom FileSystemBackendMock) Name() string {
 	args := fom.Called()
 	return args.String(0)
 }
 
-func (fom FileOperationsMock) Remove(name string) error {
+func (fom FileSystemBackendMock) Remove(name string) error {
 	args := fom.Called(name)
 	return args.Error(0)
 }
 
-func (fom FileOperationsMock) RemoveAll(path string) error {
+func (fom FileSystemBackendMock) RemoveAll(path string) error {
 	args := fom.Called(path)
 	return args.Error(0)
 }
 
-func (fom FileOperationsMock) Rename(oldname, newname string) error {
+func (fom FileSystemBackendMock) Rename(oldname, newname string) error {
 	args := fom.Called(oldname, newname)
 	return args.Error(0)
 }
 
-func (fom FileOperationsMock) Stat(name string) (os.FileInfo, error) {
+func (fom FileSystemBackendMock) Stat(name string) (os.FileInfo, error) {
 	args := fom.Called(name)
 	return args.Get(0).(os.FileInfo), args.Error(1)
 }
