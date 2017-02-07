@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"bitbucket.org/ossystems/agent/libarchive"
+
 	"github.com/spf13/afero"
 )
 
@@ -17,20 +19,7 @@ type CustomCopy struct {
 }
 
 func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
-	source, err := cc.FileSystemBackend.Open(sourcePath)
-
-	if err != nil {
-		if pathErr, ok := err.(*os.PathError); ok {
-			return pathErr
-		}
-		return err
-	}
-
-	_, err = source.Seek(int64(skip*chunkSize), io.SeekStart)
-	if err != nil {
-		source.Close()
-		return err
-	}
+	var err error
 
 	flags := os.O_RDWR | os.O_CREATE
 	if truncate {
@@ -39,22 +28,35 @@ func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize i
 
 	target, err := cc.FileSystemBackend.OpenFile(targetPath, flags, 0666)
 	if err != nil {
-		source.Close()
 		return err
 	}
+	defer target.Close()
 
 	_, err = target.Seek(int64(seek*chunkSize), io.SeekStart)
 	if err != nil {
-		source.Close()
-		target.Close()
 		return err
 	}
 
-	cancel := make(chan bool)
-	_, err = Copy(target, source, time.Hour, cancel, chunkSize, count)
+	if compressed {
+		err = libarchive.Copy(target, sourcePath, chunkSize, skip, seek, count, truncate)
+	} else {
+		source, sourceErr := cc.FileSystemBackend.Open(sourcePath)
+		if sourceErr != nil {
+			if pathErr, ok := err.(*os.PathError); ok {
+				return pathErr
+			}
+			return sourceErr
+		}
+		defer source.Close()
 
-	source.Close()
-	target.Close()
+		_, sourceErr = source.Seek(int64(skip*chunkSize), io.SeekStart)
+		if sourceErr != nil {
+			return sourceErr
+		}
+
+		cancel := make(chan bool)
+		_, err = Copy(target, source, time.Hour, cancel, chunkSize, count)
+	}
 
 	return err
 }

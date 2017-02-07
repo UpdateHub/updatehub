@@ -3,7 +3,8 @@ package utils
 import (
 	"fmt"
 	"os/exec"
-	"strings"
+
+	shellwords "github.com/mattn/go-shellwords"
 )
 
 type CmdLineExecuter interface {
@@ -14,7 +15,9 @@ type CmdLine struct {
 }
 
 func (cl *CmdLine) Execute(cmdline string) ([]byte, error) {
-	list := strings.Split(cmdline, " ")
+	p := shellwords.NewParser()
+	list, err := p.Parse(cmdline)
+
 	cmd := exec.Command(list[0], list[1:]...)
 	ret, err := cmd.CombinedOutput()
 

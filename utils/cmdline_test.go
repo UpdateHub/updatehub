@@ -84,6 +84,40 @@ exit 0
 	}
 }
 
+func TestCmdLineExecuteWithNestedDoubleQuotes(t *testing.T) {
+	testPath, err := ioutil.TempDir("", "CmdLineExecute-test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(testPath)
+
+	binaryContent := `#!/bin/sh
+echo "stdout string $@"
+exit 0
+`
+
+	fakeCmdPath := path.Join(testPath, "binary")
+	fakeCmdFile, err := os.Create(fakeCmdPath)
+	assert.NoError(t, err)
+	err = os.Chmod(fakeCmdPath, 0777)
+	assert.NoError(t, err)
+	_, err = fakeCmdFile.WriteString(binaryContent)
+	assert.NoError(t, err)
+	err = fakeCmdFile.Close()
+	assert.NoError(t, err)
+
+	outputPath := path.Join(testPath, "output.txt")
+
+	c := &CmdLine{}
+	cmdString := fmt.Sprintf("sh -c \"%s -c arg.gz > %s\"", fakeCmdPath, outputPath)
+	output, err := c.Execute(cmdString)
+
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(""), output)
+
+	data, err := ioutil.ReadFile(outputPath)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("stdout string -c arg.gz\n"), data)
+}
+
 func TestCmdLineExecuteWithBinaryNotFound(t *testing.T) {
 	testPath, err := ioutil.TempDir("", "CmdLineExecute-test")
 	assert.Nil(t, err)
