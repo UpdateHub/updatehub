@@ -1,4 +1,4 @@
-package copy
+package testsmocks
 
 import "github.com/stretchr/testify/mock"
 
@@ -24,13 +24,4 @@ func (fsm FileSystemHelperMock) Umount(mountPath string) error {
 func (fsm FileSystemHelperMock) TempDir(prefix string) (string, error) {
 	args := fsm.Called(prefix)
 	return args.String(0), args.Error(1)
-}
-
-type CustomCopierMock struct {
-	*mock.Mock
-}
-
-func (ccm CustomCopierMock) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
-	args := ccm.Called(sourcePath, targetPath, chunkSize, skip, seek, count, truncate, compressed)
-	return args.Error(0)
 }

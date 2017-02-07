@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"bitbucket.org/ossystems/agent/installmodes"
+	"bitbucket.org/ossystems/agent/testsmocks"
 	"bitbucket.org/ossystems/agent/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -92,15 +93,6 @@ func TestImxKobsCleanupNil(t *testing.T) {
 	assert.Nil(t, ik.Cleanup())
 }
 
-type CmdLineExecuterMock struct {
-	*mock.Mock
-}
-
-func (clm CmdLineExecuterMock) Execute(cmdline string) ([]byte, error) {
-	args := clm.Called(cmdline)
-	return args.Get(0).([]byte), args.Error(1)
-}
-
 func TestImxKobsInstallSuccessCases(t *testing.T) {
 	// FIXME: populate these fields with a json sample?
 	testCases := []struct {
@@ -163,7 +155,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			clm := CmdLineExecuterMock{&mock.Mock{}}
+			clm := testsmocks.CmdLineExecuterMock{&mock.Mock{}}
 			clm.On("Execute", tc.ExpectedCmdLineExecuter).Return([]byte("combinedOutput"), nil)
 
 			ik := ImxKobsObject{CmdLineExecuter: clm}
@@ -184,7 +176,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 }
 
 func TestImxKobsInstallFailure(t *testing.T) {
-	clm := CmdLineExecuterMock{&mock.Mock{}}
+	clm := testsmocks.CmdLineExecuterMock{&mock.Mock{}}
 	expectedCmdline := "kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v"
 	combinedOutput := "combinedOutput"
 	clm.On("Execute", expectedCmdline).Return([]byte(combinedOutput), fmt.Errorf("Error executing 'kobs-ng'. Output: "+combinedOutput))

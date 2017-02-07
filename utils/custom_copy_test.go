@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"testing"
 
+	"bitbucket.org/ossystems/agent/testsmocks"
+
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -77,7 +79,7 @@ func TestCustomCopyFileWithSuccessUsingMocks(t *testing.T) {
 		chunkSize = 128 * 1024
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceContent := []uint8("test")
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -89,7 +91,7 @@ func TestCustomCopyFileWithSuccessUsingMocks(t *testing.T) {
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.EOF).Once()
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetContent := []uint8("")
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	targetMock.On("Write", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -98,7 +100,7 @@ func TestCustomCopyFileWithSuccessUsingMocks(t *testing.T) {
 	}).Return(len(targetContent), nil).Once()
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -120,7 +122,7 @@ func TestCustomCopyFileWithSuccessWithMultipleChunksUsingMocks(t *testing.T) {
 		chunkSize = 2
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceContent := []uint8("test")
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -136,7 +138,7 @@ func TestCustomCopyFileWithSuccessWithMultipleChunksUsingMocks(t *testing.T) {
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.EOF).Once()
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetContent := []uint8("")
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	targetMock.On("Write", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -149,7 +151,7 @@ func TestCustomCopyFileWithSuccessWithMultipleChunksUsingMocks(t *testing.T) {
 	}).Return(chunkSize, nil).Once()
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -173,7 +175,7 @@ func TestCustomCopyFileWithSuccessUsingSkipAndSeekWithMocks(t *testing.T) {
 		chunkSize = 4
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	readContent := []uint8("test")
 	sourceMock.On("Seek", int64(skip*chunkSize), io.SeekStart).Return(int64(skip*chunkSize), nil)
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -185,7 +187,7 @@ func TestCustomCopyFileWithSuccessUsingSkipAndSeekWithMocks(t *testing.T) {
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.EOF).Once()
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	writeContent := []uint8("")
 	targetMock.On("Seek", int64(seek*chunkSize), io.SeekStart).Return(int64(skip*chunkSize), nil)
 	targetMock.On("Write", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -194,7 +196,7 @@ func TestCustomCopyFileWithSuccessUsingSkipAndSeekWithMocks(t *testing.T) {
 	}).Return(len(writeContent), nil).Once()
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -217,7 +219,7 @@ func TestCustomCopyFileUsingCountWithMocks(t *testing.T) {
 		count     = 3
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceContent := []uint8("test")
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 
@@ -231,7 +233,7 @@ func TestCustomCopyFileUsingCountWithMocks(t *testing.T) {
 
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetContent := []uint8("")
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 
@@ -244,7 +246,7 @@ func TestCustomCopyFileUsingCountWithMocks(t *testing.T) {
 
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -268,7 +270,7 @@ func TestCustomCopyFileUsingNegativeCountWithMocks(t *testing.T) {
 		count     = -1
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceContent := []uint8("test")
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 
@@ -283,7 +285,7 @@ func TestCustomCopyFileUsingNegativeCountWithMocks(t *testing.T) {
 
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetContent := []uint8("")
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 
@@ -296,7 +298,7 @@ func TestCustomCopyFileUsingNegativeCountWithMocks(t *testing.T) {
 
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -318,7 +320,7 @@ func TestCustomCopyFileNotUsingTruncateWithMocks(t *testing.T) {
 		truncate = false
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceContent := []uint8("test")
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -328,7 +330,7 @@ func TestCustomCopyFileNotUsingTruncateWithMocks(t *testing.T) {
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.EOF).Once()
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetContent := []uint8("")
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	targetMock.On("Write", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -337,7 +339,7 @@ func TestCustomCopyFileNotUsingTruncateWithMocks(t *testing.T) {
 	}).Return(len(targetContent), nil).Once()
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -355,7 +357,7 @@ func TestCustomCopyFileNotUsingTruncateWithMocks(t *testing.T) {
 }
 
 func TestCustomCopyFileWithOpenError(t *testing.T) {
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 
 	pathError := &os.PathError{
 		Op:   "open",
@@ -363,8 +365,8 @@ func TestCustomCopyFileWithOpenError(t *testing.T) {
 		Err:  syscall.ENOSPC,
 	}
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
-	fom.On("Open", "source.txt").Return((*FileMock)(nil), pathError)
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
+	fom.On("Open", "source.txt").Return((*testsmocks.FileMock)(nil), pathError)
 
 	cc := CustomCopy{FileSystemBackend: fom}
 
@@ -377,7 +379,7 @@ func TestCustomCopyFileWithOpenError(t *testing.T) {
 }
 
 func TestCustomCopyFileWithOpenFileError(t *testing.T) {
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Close").Return(nil)
 
@@ -387,9 +389,9 @@ func TestCustomCopyFileWithOpenFileError(t *testing.T) {
 		Err:  syscall.ENOSPC,
 	}
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
-	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return((*FileMock)(nil), pathError)
+	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return((*testsmocks.FileMock)(nil), pathError)
 
 	cc := CustomCopy{FileSystemBackend: fom}
 
@@ -402,16 +404,16 @@ func TestCustomCopyFileWithOpenFileError(t *testing.T) {
 }
 
 func TestCustomCopyFileWithReadError(t *testing.T) {
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.ErrClosedPipe).Once()
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -427,7 +429,7 @@ func TestCustomCopyFileWithReadError(t *testing.T) {
 }
 
 func TestCustomCopyFileWithWriteError(t *testing.T) {
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceContent := []uint8("test")
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -436,7 +438,7 @@ func TestCustomCopyFileWithWriteError(t *testing.T) {
 	}).Return(len(sourceContent), nil).Once()
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetContent := []uint8("")
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	targetMock.On("Write", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
@@ -445,7 +447,7 @@ func TestCustomCopyFileWithWriteError(t *testing.T) {
 	}).Return(0, io.ErrClosedPipe).Once()
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -467,15 +469,15 @@ func TestCustomCopyFileWithZeroedChunkSize(t *testing.T) {
 		chunkSize = 0
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -495,15 +497,15 @@ func TestCustomCopyFileWithNegativeChunkSize(t *testing.T) {
 		chunkSize = -1
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
@@ -523,11 +525,11 @@ func TestCustomCopyFileWithSkipError(t *testing.T) {
 		chunkSize = 128 * 1024
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), fmt.Errorf("Seek: invalid whence"))
 	sourceMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 
 	cc := CustomCopy{FileSystemBackend: fom}
@@ -545,15 +547,15 @@ func TestCustomCopyFileWithSeekError(t *testing.T) {
 		chunkSize = 128 * 1024
 	)
 
-	sourceMock := FileMock{&mock.Mock{}}
+	sourceMock := testsmocks.FileMock{&mock.Mock{}}
 	sourceMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), nil)
 	sourceMock.On("Close").Return(nil)
 
-	targetMock := FileMock{&mock.Mock{}}
+	targetMock := testsmocks.FileMock{&mock.Mock{}}
 	targetMock.On("Seek", int64(0), io.SeekStart).Return(int64(0), fmt.Errorf("Seek: invalid whence"))
 	targetMock.On("Close").Return(nil)
 
-	fom := FileSystemBackendMock{&mock.Mock{}}
+	fom := testsmocks.FileSystemBackendMock{&mock.Mock{}}
 	fom.On("Open", "source.txt").Return(sourceMock, nil)
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
