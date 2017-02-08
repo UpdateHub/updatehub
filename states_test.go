@@ -10,9 +10,10 @@ import (
 )
 
 type testController struct {
-	extraPoll        int
-	updateAvailable  bool
-	fetchUpdateError error
+	extraPoll               int
+	updateAvailable         bool
+	fetchUpdateError        error
+	reportCurrentStateError error
 }
 
 var checkUpdateCases = []struct {
@@ -46,6 +47,10 @@ func (c *testController) CheckUpdate() (*metadata.UpdateMetadata, int) {
 
 func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
 	return c.fetchUpdateError
+}
+
+func (c *testController) ReportCurrentState() error {
+	return c.reportCurrentStateError
 }
 
 func TestStateUpdateCheck(t *testing.T) {
@@ -138,4 +143,19 @@ func TestPollTicks(t *testing.T) {
 			assert.Equal(t, fota.pollInterval+c.extraPoll, poll.(*PollState).ticksCount)
 		})
 	}
+}
+
+type testReportableState struct {
+	BaseState
+	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+func (state *testReportableState) Handle(fota *EasyFota) (State, bool) {
+	return nil, true
+}
+
+func (state *testReportableState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
 }

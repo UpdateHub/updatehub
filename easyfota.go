@@ -25,11 +25,13 @@ type EasyFota struct {
 	timeStep         time.Duration
 	api              *client.ApiClient
 	updater          client.Updater
+	reporter         client.Reporter
 }
 
 type Controller interface {
 	CheckUpdate() (*metadata.UpdateMetadata, int)
 	FetchUpdate(*metadata.UpdateMetadata, <-chan bool) error
+	ReportCurrentState() error
 }
 
 func (fota *EasyFota) CheckUpdate() (*metadata.UpdateMetadata, int) {
@@ -85,8 +87,22 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 	return nil
 }
 
+func (fota *EasyFota) ReportCurrentState() error {
+	if rs, ok := fota.state.(ReportableState); ok {
+		packageUID, _ := rs.UpdateMetadata().Checksum()
+		err := fota.reporter.ReportState(fota.api.Request(), packageUID, StateToString(fota.state.Id()))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (fota *EasyFota) MainLoop() {
 	for {
+		fota.ReportCurrentState()
+
 		fmt.Println("Handling state:", StateToString(fota.state.Id()))
 
 		state, cancelled := fota.state.Handle(fota)

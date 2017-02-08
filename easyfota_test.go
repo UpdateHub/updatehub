@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"path"
@@ -94,6 +95,30 @@ func TestEasyFotaFetchUpdate(t *testing.T) {
 	assert.Equal(t, updater.updateBytes, data)
 }
 
+func TestEasyFotaReportState(t *testing.T) {
+	mode := newTestInstallMode()
+
+	defer mode.Unregister()
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
+	assert.NoError(t, err)
+
+	state := &testReportableState{}
+	state.updateMetadata = updateMetadata
+
+	fota, _ := newTestEasyFota(state)
+	fota.reporter = client.Reporter(testReporter{})
+
+	err = fota.ReportCurrentState()
+	assert.NoError(t, err)
+
+	fota.reporter = client.Reporter(testReporter{reportStateError: errors.New("error")})
+
+	err = fota.ReportCurrentState()
+	assert.Error(t, err)
+	assert.EqualError(t, err, "error")
+}
+
 type testObject struct {
 	metadata.ObjectMetadata
 }
@@ -115,6 +140,14 @@ func (t testUpdater) CheckUpdate(api client.ApiRequester) (interface{}, int, err
 func (t testUpdater) FetchUpdate(api client.ApiRequester, uri string) (io.ReadCloser, int64, error) {
 	rd := bytes.NewReader(t.updateBytes)
 	return ioutil.NopCloser(rd), int64(len(t.updateBytes)), t.fetchUpdateError
+}
+
+type testReporter struct {
+	reportStateError error
+}
+
+func (r testReporter) ReportState(api client.ApiRequester, packageUID string, state string) error {
+	return r.reportStateError
 }
 
 func newTestInstallMode() installmodes.InstallMode {

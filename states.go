@@ -77,6 +77,10 @@ func NewErrorState(err EasyFotaErrorReporter) State {
 	}
 }
 
+type ReportableState interface {
+	UpdateMetadata() *metadata.UpdateMetadata
+}
+
 type PollState struct {
 	BaseState
 	CancellableState
@@ -166,6 +170,7 @@ func NewUpdateCheckState() *UpdateCheckState {
 type UpdateFetchState struct {
 	BaseState
 	CancellableState
+	ReportableState
 
 	updateMetadata *metadata.UpdateMetadata
 }
@@ -177,6 +182,10 @@ func (state *UpdateFetchState) Id() EasyFotaState {
 func (state *UpdateFetchState) Cancel(ok bool) bool {
 	state.CancellableState.Cancel(ok)
 	return ok
+}
+
+func (state *UpdateFetchState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
 }
 
 func (state *UpdateFetchState) Handle(fota *EasyFota) (State, bool) {
