@@ -53,6 +53,46 @@ func (c *testController) ReportCurrentState() error {
 	return c.reportCurrentStateError
 }
 
+func TestStatePoll(t *testing.T) {
+	testCases := []struct {
+		caseName  string
+		settings  *Settings
+		nextState State
+	}{
+		{
+			"PollingEnabled",
+			&Settings{
+				PollingSettings: PollingSettings{
+					PollingEnabled: true,
+				},
+			},
+			&UpdateCheckState{},
+		},
+
+		{
+			"PollingDisabled",
+			&Settings{
+				PollingSettings: PollingSettings{
+					PollingEnabled: false,
+				},
+			},
+			&PollState{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.caseName, func(t *testing.T) {
+			fota, err := newTestEasyFota(NewPollState())
+			assert.NoError(t, err)
+
+			fota.settings = tc.settings
+
+			next, _ := fota.state.Handle(fota)
+			assert.IsType(t, tc.nextState, next)
+		})
+	}
+}
+
 func TestStateUpdateCheck(t *testing.T) {
 	for _, tc := range checkUpdateCases {
 		t.Run(tc.name, func(t *testing.T) {

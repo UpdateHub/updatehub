@@ -103,6 +103,10 @@ func (state *PollState) Handle(fota *EasyFota) (State, bool) {
 
 	nextState = state
 
+	if !fota.settings.PollingEnabled {
+		return nextState, false
+	}
+
 	go func() {
 		for {
 			if state.ticksCount > 0 && state.ticksCount%(fota.pollInterval+state.extraPoll) == 0 {

@@ -160,10 +160,11 @@ func newTestInstallMode() installmodes.InstallMode {
 
 func newTestEasyFota(state State) (*EasyFota, error) {
 	fota := &EasyFota{
-		store:    afero.NewMemMapFs(),
-		state:    state,
-		timeStep: time.Millisecond,
-		api:      client.NewApiClient("localhost"),
+		store:        afero.NewMemMapFs(),
+		state:        state,
+		timeStep:     time.Millisecond,
+		pollInterval: 1,
+		api:          client.NewApiClient("localhost"),
 	}
 
 	settings, err := LoadSettings(bytes.NewReader([]byte("")))
