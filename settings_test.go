@@ -45,12 +45,14 @@ func TestLoadSettings(t *testing.T) {
 			"",
 			&Settings{
 				PollingSettings: PollingSettings{
-					PollingInterval:      defaultPollingInterval,
-					PollingEnabled:       true,
-					LastPoll:             0,
-					FirstPoll:            0,
-					ExtraPollingInterval: 0,
-					PollingRetries:       0,
+					PollingInterval: defaultPollingInterval,
+					PollingEnabled:  true,
+					PersistentPollingSettings: PersistentPollingSettings{
+						LastPoll:             0,
+						FirstPoll:            0,
+						ExtraPollingInterval: 0,
+						PollingRetries:       0,
+					},
 				},
 
 				StorageSettings: StorageSettings{
@@ -81,12 +83,14 @@ func TestLoadSettings(t *testing.T) {
 			customSettings,
 			&Settings{
 				PollingSettings: PollingSettings{
-					PollingInterval:      1,
-					PollingEnabled:       false,
-					LastPoll:             2,
-					FirstPoll:            3,
-					ExtraPollingInterval: 4,
-					PollingRetries:       5,
+					PollingInterval: 1,
+					PollingEnabled:  false,
+					PersistentPollingSettings: PersistentPollingSettings{
+						LastPoll:             2,
+						FirstPoll:            3,
+						ExtraPollingInterval: 4,
+						PollingRetries:       5,
+					},
 				},
 
 				StorageSettings: StorageSettings{

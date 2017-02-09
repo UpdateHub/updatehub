@@ -19,13 +19,21 @@ type Settings struct {
 	FirmwareSettings `ini:"Firmware"`
 }
 
+type PersistentSettings struct {
+	PersistentPollingSettings `ini:"Polling"`
+}
+
 type PollingSettings struct {
-	PollingInterval      int  `ini:"Interval,omitempty"`
-	PollingEnabled       bool `ini:"Enabled,omitempty"`
-	LastPoll             int  `ini:"LastPoll"`
-	FirstPoll            int  `ini:"FirstPoll"`
-	ExtraPollingInterval int  `ini:"ExtraInterval"`
-	PollingRetries       int  `ini:"Retries"`
+	PollingInterval           int  `ini:"Interval,omitempty"`
+	PollingEnabled            bool `ini:"Enabled,omitempty"`
+	PersistentPollingSettings `ini:"Polling"`
+}
+
+type PersistentPollingSettings struct {
+	LastPoll             int `ini:"LastPoll"`
+	FirstPoll            int `ini:"FirstPoll"`
+	ExtraPollingInterval int `ini:"ExtraInterval"`
+	PollingRetries       int `ini:"Retries"`
 }
 
 type StorageSettings struct {
@@ -61,12 +69,14 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 
 	s := &Settings{
 		PollingSettings: PollingSettings{
-			PollingInterval:      defaultPollingInterval,
-			PollingEnabled:       true,
-			LastPoll:             0,
-			FirstPoll:            0,
-			ExtraPollingInterval: 0,
-			PollingRetries:       0,
+			PollingInterval: defaultPollingInterval,
+			PollingEnabled:  true,
+			PersistentPollingSettings: PersistentPollingSettings{
+				LastPoll:             0,
+				FirstPoll:            0,
+				ExtraPollingInterval: 0,
+				PollingRetries:       0,
+			},
 		},
 
 		StorageSettings: StorageSettings{
@@ -100,9 +110,13 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 }
 
 func SaveSettings(s *Settings, w io.Writer) error {
+	ps := &PersistentSettings{
+		PersistentPollingSettings: s.PollingSettings.PersistentPollingSettings,
+	}
+
 	cfg := ini.Empty()
 
-	err := ini.ReflectFrom(cfg, s)
+	err := ini.ReflectFrom(cfg, ps)
 	if err != nil {
 		return err
 	}
