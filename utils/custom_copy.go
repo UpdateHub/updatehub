@@ -38,7 +38,8 @@ func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize i
 	}
 
 	if compressed {
-		err = libarchive.Copy(target, sourcePath, chunkSize, skip, seek, count, truncate)
+		a := libarchive.LibArchive{}
+		err = LACopy(a, target, sourcePath, chunkSize, skip, seek, count, truncate)
 	} else {
 		source, sourceErr := cc.FileSystemBackend.Open(sourcePath)
 		if sourceErr != nil {

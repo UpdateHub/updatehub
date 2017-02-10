@@ -4,6 +4,8 @@ import (
 	"errors"
 	"io"
 	"time"
+
+	"bitbucket.org/ossystems/agent/libarchive"
 )
 
 const ChunkSize = 128 * 1024
@@ -57,4 +59,69 @@ Loop:
 	}
 
 	return false, nil
+}
+
+// FIXME: test this libarchive copy with mocks
+// FIXME: is this the same algorithm as above? if yes, transform
+// libarchive.Archive to implement the io.Reader api so we can merge
+// the algorithms
+func LACopy(la libarchive.Api, target io.Writer, sourcePath string, chunkSize int, skip int, seek int, count int, truncate bool) error {
+	a := la.NewRead()
+
+	la.ReadSupportFilterAll(a)
+	la.ReadSupportFormatRaw(a)
+	la.ReadSupportFormatEmpty(a)
+
+	err := la.ReadOpenFileName(a, sourcePath, chunkSize)
+	if err != nil {
+		return err
+	}
+	defer la.ReadFree(a)
+
+	e := libarchive.ArchiveEntry{}
+	err = la.ReadNextHeader(a, e)
+
+	// empty file special case
+	if err == io.EOF {
+		_, err := target.Write([]byte(""))
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err != nil {
+		return err
+	}
+
+	toSkip := skip
+	looped := 0
+	for looped != count {
+		data := make([]byte, chunkSize)
+		bytesRead, err := la.ReadData(a, data, chunkSize)
+
+		if err != nil {
+			return err
+		}
+
+		if bytesRead == 0 {
+			break
+		}
+
+		if toSkip > 0 {
+			toSkip--
+		} else {
+			dataToBeWritten := make([]byte, bytesRead)
+			copy(dataToBeWritten, data)
+			_, err := target.Write(dataToBeWritten)
+			if err != nil {
+				return err
+			}
+
+			looped++
+		}
+	}
+
+	return nil
 }

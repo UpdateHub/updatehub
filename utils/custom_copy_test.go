@@ -75,6 +75,11 @@ func TestCustomCopyFileIntegration(t *testing.T) {
 			[]byte("content"),
 			true,
 		},
+		{
+			"CompressedWithZeroBytesSourceFile",
+			[]byte(""),
+			true,
+		},
 	}
 
 	for _, tc := range testCases {
