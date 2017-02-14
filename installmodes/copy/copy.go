@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/afero"
 
 	"bitbucket.org/ossystems/agent/installmodes"
+	"bitbucket.org/ossystems/agent/libarchive"
 	"bitbucket.org/ossystems/agent/metadata"
 	"bitbucket.org/ossystems/agent/utils"
 )
@@ -20,7 +21,7 @@ func init() {
 			osFs := afero.NewOsFs()
 			return &CopyObject{
 				FileSystemHelper:  &utils.FileSystem{},
-				CustomCopier:      &utils.CustomCopy{FileSystemBackend: osFs},
+				CustomCopier:      &utils.CustomCopy{FileSystemBackend: osFs, LibArchive: libarchive.LibArchive{}},
 				FileSystemBackend: osFs,
 			}
 		},

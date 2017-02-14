@@ -61,12 +61,12 @@ Loop:
 	return false, nil
 }
 
-// FIXME: test this libarchive copy with mocks
 // FIXME: is this the same algorithm as above? if yes, transform
 // libarchive.Archive to implement the io.Reader api so we can merge
 // the algorithms
 func LACopy(la libarchive.Api, target io.Writer, sourcePath string, chunkSize int, skip int, seek int, count int, truncate bool) error {
 	a := la.NewRead()
+	defer la.ReadFree(a)
 
 	la.ReadSupportFilterAll(a)
 	la.ReadSupportFormatRaw(a)
@@ -76,7 +76,6 @@ func LACopy(la libarchive.Api, target io.Writer, sourcePath string, chunkSize in
 	if err != nil {
 		return err
 	}
-	defer la.ReadFree(a)
 
 	e := libarchive.ArchiveEntry{}
 	err = la.ReadNextHeader(a, e)

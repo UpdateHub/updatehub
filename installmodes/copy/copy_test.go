@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"bitbucket.org/ossystems/agent/installmodes"
+	"bitbucket.org/ossystems/agent/libarchive"
 	"bitbucket.org/ossystems/agent/testsmocks"
 	"bitbucket.org/ossystems/agent/utils"
 	"github.com/spf13/afero"
@@ -23,7 +24,7 @@ func TestCopyInit(t *testing.T) {
 	}
 
 	osFs := afero.NewOsFs()
-	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileSystemBackend: osFs}, FileSystemBackend: osFs}
+	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, CustomCopier: &utils.CustomCopy{FileSystemBackend: osFs, LibArchive: libarchive.LibArchive{}}, FileSystemBackend: osFs}
 
 	assert.Equal(t, cp2, cp1)
 }

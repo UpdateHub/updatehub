@@ -16,6 +16,7 @@ type CustomCopier interface {
 
 type CustomCopy struct {
 	FileSystemBackend afero.Fs
+	LibArchive        libarchive.Api
 }
 
 func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
@@ -38,8 +39,7 @@ func (cc *CustomCopy) CopyFile(sourcePath string, targetPath string, chunkSize i
 	}
 
 	if compressed {
-		a := libarchive.LibArchive{}
-		err = LACopy(a, target, sourcePath, chunkSize, skip, seek, count, truncate)
+		err = LACopy(cc.LibArchive, target, sourcePath, chunkSize, skip, seek, count, truncate)
 	} else {
 		source, sourceErr := cc.FileSystemBackend.Open(sourcePath)
 		if sourceErr != nil {
