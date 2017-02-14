@@ -185,6 +185,36 @@ func TestPollTicks(t *testing.T) {
 	}
 }
 
+func TestPollingRetries(t *testing.T) {
+	fota, err := newTestEasyFota(NewPollState())
+	assert.NoError(t, err)
+
+	c := &testController{
+		updateAvailable: false,
+		extraPoll:       -1,
+	}
+
+	fota.Controller = c
+
+	next, _ := fota.state.Handle(fota)
+	assert.IsType(t, &UpdateCheckState{}, next)
+
+	for i := 1; i < 3; i++ {
+		state, _ := next.Handle(fota)
+		assert.IsType(t, &PollState{}, state)
+		next, _ = state.Handle(fota)
+		assert.IsType(t, &UpdateCheckState{}, next)
+		assert.Equal(t, i, fota.settings.PollingRetries)
+	}
+
+	c.updateAvailable = true
+	c.extraPoll = 0
+
+	next, _ = next.Handle(fota)
+	assert.IsType(t, &UpdateFetchState{}, next)
+	assert.Equal(t, 0, fota.settings.PollingRetries)
+}
+
 type testReportableState struct {
 	BaseState
 	ReportableState
