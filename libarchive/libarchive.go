@@ -94,3 +94,50 @@ func (la LibArchive) ReadData(a Archive, buffer []byte, length int) (int, error)
 
 	return int(r), nil
 }
+
+type Reader struct {
+	Api
+	Archive   Archive
+	ChunkSize int
+}
+
+func NewReader(api Api, sourcePath string, chunkSize int) (*Reader, error) {
+	a := api.NewRead()
+
+	api.ReadSupportFilterAll(a)
+	api.ReadSupportFormatRaw(a)
+	api.ReadSupportFormatEmpty(a)
+
+	err := api.ReadOpenFileName(a, sourcePath, chunkSize)
+	if err != nil {
+		api.ReadFree(a)
+		return nil, err
+	}
+
+	r := &Reader{api, a, chunkSize}
+
+	return r, nil
+}
+
+func (r Reader) Read(p []byte) (n int, err error) {
+	n, err = r.Api.ReadData(r.Archive, p, r.ChunkSize)
+
+	if n < 0 && err != nil {
+		return 0, err
+	}
+
+	if n == 0 && err == nil {
+		return 0, io.EOF
+	}
+
+	return n, err
+}
+
+func (r Reader) ReadNextHeader() error {
+	e := ArchiveEntry{}
+	return r.Api.ReadNextHeader(r.Archive, e)
+}
+
+func (r Reader) Free() {
+	r.Api.ReadFree(r.Archive)
+}

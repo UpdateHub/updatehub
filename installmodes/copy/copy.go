@@ -21,8 +21,9 @@ func init() {
 			osFs := afero.NewOsFs()
 			return &CopyObject{
 				FileSystemHelper:  &utils.FileSystem{},
-				CustomCopier:      &utils.CustomCopy{FileSystemBackend: osFs, LibArchive: libarchive.LibArchive{}},
+				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: osFs,
+				Copier:            &utils.ExtendedIO{},
 			}
 		},
 	})
@@ -32,8 +33,9 @@ type CopyObject struct {
 	metadata.ObjectMetadata
 	metadata.CompressedObject
 	utils.FileSystemHelper `json:"-"`
-	utils.CustomCopier     `json:"-"`
+	LibArchiveBackend      libarchive.Api `json:"-"`
 	FileSystemBackend      afero.Fs
+	utils.Copier           `json:"-"`
 
 	Target        string `json:"target"`
 	TargetType    string `json:"target-type"`
@@ -84,7 +86,7 @@ func (cp CopyObject) Install() error {
 	errorList := []error{}
 
 	// FIXME: on sourcePath we need to: path.Join(cp.UpdateDir, cp.Sha256sum)
-	err = cp.CopyFile(cp.Sha256sum, targetPath, cs, 0, 0, -1, true, cp.Compressed)
+	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, cp.Sha256sum, targetPath, cs, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
 	}

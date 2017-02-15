@@ -3,15 +3,35 @@ package utils
 import (
 	"errors"
 	"io"
+	"os"
 	"time"
 
 	"bitbucket.org/ossystems/agent/libarchive"
+	"github.com/spf13/afero"
 )
 
 const ChunkSize = 128 * 1024
 
+type Copier interface {
+	Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool, chunkSize int, skip int, count int, compressed bool) (bool, error)
+	CopyFile(
+		fsBackend afero.Fs,
+		libarchiveBackend libarchive.Api,
+		sourcePath string,
+		targetPath string,
+		chunkSize int,
+		skip int,
+		seek int,
+		count int,
+		truncate bool,
+		compressed bool) error
+}
+
+type ExtendedIO struct {
+}
+
 // Copy copies from rd to wr until EOF or timeout is reached on rd or it was cancelled
-func Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool, chunkSize int, count int) (bool, error) {
+func (eio ExtendedIO) Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool, chunkSize int, skip int, count int, compressed bool) (bool, error) {
 	if chunkSize < 1 {
 		return false, errors.New("Copy error: chunkSize can't be less than 1")
 	}
@@ -19,6 +39,7 @@ func Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool,
 	len := make(chan int)
 	buf := make([]byte, chunkSize)
 	readErrChan := make(chan error)
+	toSkip := skip
 
 Loop:
 	for i := 0; i != count; i++ {
@@ -51,9 +72,15 @@ Loop:
 				break Loop
 			}
 
-			_, err := wr.Write(buf[0:n])
-			if err != nil {
-				return false, err
+			// skip is done like this in compressed files
+			if compressed && toSkip > 0 {
+				toSkip--
+				i--
+			} else {
+				_, err := wr.Write(buf[0:n])
+				if err != nil {
+					return false, err
+				}
 			}
 		}
 	}
@@ -61,66 +88,85 @@ Loop:
 	return false, nil
 }
 
-// FIXME: is this the same algorithm as above? if yes, transform
-// libarchive.Archive to implement the io.Reader api so we can merge
-// the algorithms
-func LACopy(la libarchive.Api, target io.Writer, sourcePath string, chunkSize int, skip int, seek int, count int, truncate bool) error {
-	a := la.NewRead()
-	defer la.ReadFree(a)
+func (eio ExtendedIO) CopyFile(
+	fsBackend afero.Fs,
+	libarchiveBackend libarchive.Api,
+	sourcePath string,
+	targetPath string,
+	chunkSize int,
+	skip int,
+	seek int,
+	count int,
+	truncate bool,
+	compressed bool) error {
 
-	la.ReadSupportFilterAll(a)
-	la.ReadSupportFormatRaw(a)
-	la.ReadSupportFormatEmpty(a)
+	var err error
 
-	err := la.ReadOpenFileName(a, sourcePath, chunkSize)
+	flags := os.O_RDWR | os.O_CREATE
+	if truncate {
+		flags = flags | os.O_TRUNC
+	}
+
+	target, err := fsBackend.OpenFile(targetPath, flags, 0666)
+	if err != nil {
+		return err
+	}
+	defer target.Close()
+
+	_, err = target.Seek(int64(seek*chunkSize), io.SeekStart)
 	if err != nil {
 		return err
 	}
 
-	e := libarchive.ArchiveEntry{}
-	err = la.ReadNextHeader(a, e)
+	var source io.Reader
 
-	// empty file special case
-	if err == io.EOF {
-		_, err := target.Write([]byte(""))
-		if err != nil {
-			return err
+	if compressed {
+		reader, readerErr := libarchive.NewReader(libarchiveBackend, sourcePath, chunkSize)
+		if readerErr != nil {
+			return readerErr
 		}
+		defer reader.Free()
 
-		return nil
-	}
+		nextHeaderErr := reader.ReadNextHeader()
 
-	if err != nil {
-		return err
-	}
-
-	toSkip := skip
-	looped := 0
-	for looped != count {
-		data := make([]byte, chunkSize)
-		bytesRead, err := la.ReadData(a, data, chunkSize)
-
-		if err != nil {
-			return err
-		}
-
-		if bytesRead == 0 {
-			break
-		}
-
-		if toSkip > 0 {
-			toSkip--
-		} else {
-			dataToBeWritten := make([]byte, bytesRead)
-			copy(dataToBeWritten, data)
-			_, err := target.Write(dataToBeWritten)
-			if err != nil {
-				return err
+		// empty file special case
+		if nextHeaderErr == io.EOF {
+			_, writeErr := target.Write([]byte(""))
+			if writeErr != nil {
+				return writeErr
 			}
 
-			looped++
+			return nil
 		}
+
+		if nextHeaderErr != nil {
+			return nextHeaderErr
+		}
+
+		// the "skip" is done inside the "Copy" function for
+		// compressed files
+
+		source = reader
+	} else {
+		file, fileErr := fsBackend.Open(sourcePath)
+		if fileErr != nil {
+			if pathErr, ok := err.(*os.PathError); ok {
+				return pathErr
+			}
+			return fileErr
+		}
+		defer file.Close()
+
+		_, seekErr := file.Seek(int64(skip*chunkSize), io.SeekStart)
+		if seekErr != nil {
+			return seekErr
+		}
+
+		source = file
 	}
 
-	return nil
+	cancel := make(chan bool)
+	_, err = eio.Copy(target, source, time.Hour, cancel, chunkSize, skip, count, compressed)
+
+	return err
 }

@@ -86,7 +86,10 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 
 	wd := bufio.NewWriter(file)
 
-	utils.Copy(wd, rd, 30*time.Second, cancel, utils.ChunkSize, -1)
+	// FIXME: maybe use the "utils.Copier" interface here. if yes, we
+	// can mock it for the tests
+	eio := utils.ExtendedIO{}
+	eio.Copy(wd, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
 
 	wd.Flush()
 
