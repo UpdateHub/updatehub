@@ -1,6 +1,8 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -15,21 +17,25 @@ type UpdateClient struct {
 }
 
 type Updater interface {
-	CheckUpdate(api ApiRequester) (interface{}, int, error)
+	CheckUpdate(api ApiRequester, data interface{}) (interface{}, int, error)
 	FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error)
 }
 
-func (u *UpdateClient) CheckUpdate(api ApiRequester) (interface{}, int, error) {
+func (u *UpdateClient) CheckUpdate(api ApiRequester, data interface{}) (interface{}, int, error) {
 	if api == nil {
 		return nil, 0, errors.New("invalid api requester")
 	}
 
+	rawJSON, _ := json.Marshal(data)
+
 	url := serverURL(api.Client(), UpgradesEndpoint)
 
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(rawJSON))
 	if err != nil {
 		return nil, 0, errors.New("failed to create check update request")
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 
 	res, err := api.Do(req)
 	if err != nil {
