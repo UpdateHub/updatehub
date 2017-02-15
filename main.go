@@ -6,6 +6,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/imdario/mergo"
+	"github.com/spf13/afero"
 
 	"bitbucket.org/ossystems/agent/client"
 	_ "bitbucket.org/ossystems/agent/installmodes/copy"
@@ -33,6 +34,7 @@ func main() {
 		updater:      client.NewUpdateClient(),
 		timeStep:     time.Minute,
 		settings:     settings,
+		store:        afero.NewOsFs(),
 	}
 
 	fota.Controller = fota
