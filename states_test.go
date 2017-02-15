@@ -37,7 +37,7 @@ var checkUpdateCases = []struct {
 	},
 }
 
-func (c *testController) CheckUpdate() (*metadata.UpdateMetadata, int) {
+func (c *testController) CheckUpdate(retries int) (*metadata.UpdateMetadata, int) {
 	if c.updateAvailable {
 		return &metadata.UpdateMetadata{}, c.extraPoll
 	}

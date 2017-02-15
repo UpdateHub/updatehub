@@ -29,13 +29,21 @@ type EasyFota struct {
 }
 
 type Controller interface {
-	CheckUpdate() (*metadata.UpdateMetadata, int)
+	CheckUpdate(int) (*metadata.UpdateMetadata, int)
 	FetchUpdate(*metadata.UpdateMetadata, <-chan bool) error
 	ReportCurrentState() error
 }
 
-func (fota *EasyFota) CheckUpdate() (*metadata.UpdateMetadata, int) {
-	updateMetadata, extraPoll, err := fota.updater.CheckUpdate(fota.api.Request())
+func (fota *EasyFota) CheckUpdate(retries int) (*metadata.UpdateMetadata, int) {
+	var data struct {
+		Retries int `json:"retries"`
+		metadata.FirmwareMetadata
+	}
+
+	data.FirmwareMetadata = fota.firmwareMetadata
+	data.Retries = retries
+
+	updateMetadata, extraPoll, err := fota.updater.CheckUpdate(fota.api.Request(), data)
 	if err != nil || updateMetadata == nil {
 		return nil, -1
 	}

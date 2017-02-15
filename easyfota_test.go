@@ -61,7 +61,7 @@ func TestEasyfotaCheckUpdate(t *testing.T) {
 
 			fota.updater = client.Updater(updater)
 
-			updateMetadata, extraPoll := fota.CheckUpdate()
+			updateMetadata, extraPoll := fota.CheckUpdate(0)
 
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 			assert.Equal(t, tc.extraPoll, extraPoll)
@@ -133,7 +133,7 @@ type testUpdater struct {
 	fetchUpdateError error
 }
 
-func (t testUpdater) CheckUpdate(api client.ApiRequester) (interface{}, int, error) {
+func (t testUpdater) CheckUpdate(api client.ApiRequester, data interface{}) (interface{}, int, error) {
 	return t.updateMetadata, t.extraPoll, t.checkUpdateError
 }
 

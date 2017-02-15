@@ -146,7 +146,7 @@ func (state *UpdateCheckState) Id() EasyFotaState {
 }
 
 func (state *UpdateCheckState) Handle(fota *EasyFota) (State, bool) {
-	updateMetadata, extraPoll := fota.Controller.CheckUpdate()
+	updateMetadata, extraPoll := fota.Controller.CheckUpdate(fota.settings.PollingRetries)
 
 	// Reset polling retries in case of CheckUpdate success
 	if extraPoll != -1 {
