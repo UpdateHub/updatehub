@@ -14,7 +14,7 @@ type CopierMock struct {
 	*mock.Mock
 }
 
-func (cm CopierMock) CopyFile(fsBackend afero.Fs, libarchiveBackend libarchive.Api, sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
+func (cm CopierMock) CopyFile(fsBackend afero.Fs, libarchiveBackend libarchive.API, sourcePath string, targetPath string, chunkSize int, skip int, seek int, count int, truncate bool, compressed bool) error {
 	args := cm.Called(fsBackend, libarchiveBackend, sourcePath, targetPath, chunkSize, skip, seek, count, truncate, compressed)
 	return args.Error(0)
 }

@@ -33,7 +33,7 @@ type CopyObject struct {
 	metadata.ObjectMetadata
 	metadata.CompressedObject
 	utils.FileSystemHelper `json:"-"`
-	LibArchiveBackend      libarchive.Api `json:"-"`
+	LibArchiveBackend      libarchive.API `json:"-"`
 	FileSystemBackend      afero.Fs
 	utils.Copier           `json:"-"`
 

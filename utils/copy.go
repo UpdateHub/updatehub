@@ -16,7 +16,7 @@ type Copier interface {
 	Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool, chunkSize int, skip int, count int, compressed bool) (bool, error)
 	CopyFile(
 		fsBackend afero.Fs,
-		libarchiveBackend libarchive.Api,
+		libarchiveBackend libarchive.API,
 		sourcePath string,
 		targetPath string,
 		chunkSize int,
@@ -90,7 +90,7 @@ Loop:
 
 func (eio ExtendedIO) CopyFile(
 	fsBackend afero.Fs,
-	libarchiveBackend libarchive.Api,
+	libarchiveBackend libarchive.API,
 	sourcePath string,
 	targetPath string,
 	chunkSize int,
