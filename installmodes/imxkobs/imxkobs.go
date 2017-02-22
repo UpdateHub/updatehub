@@ -39,11 +39,11 @@ type ImxKobsObject struct {
 	Chip1DevicePath string `json:"chip_1_device_path,omitempty"`
 }
 
-func (ik ImxKobsObject) Setup() error {
+func (ik *ImxKobsObject) Setup() error {
 	return nil
 }
 
-func (ik ImxKobsObject) Install() error {
+func (ik *ImxKobsObject) Install() error {
 	cmdline := "kobs-ng init"
 
 	if ik.Add1KPadding {
@@ -72,7 +72,7 @@ func (ik ImxKobsObject) Install() error {
 	return err
 }
 
-func (ik ImxKobsObject) Cleanup() error {
+func (ik *ImxKobsObject) Cleanup() error {
 	return nil
 }
 

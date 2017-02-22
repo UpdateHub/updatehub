@@ -18,11 +18,10 @@ func init() {
 		Name:              "copy",
 		CheckRequirements: func() error { return nil },
 		GetObject: func() interface{} {
-			osFs := afero.NewOsFs()
 			return &CopyObject{
 				FileSystemHelper:  &utils.FileSystem{},
 				LibArchiveBackend: &libarchive.LibArchive{},
-				FileSystemBackend: osFs,
+				FileSystemBackend: afero.NewOsFs(),
 				Copier:            &utils.ExtendedIO{},
 			}
 		},
@@ -47,7 +46,7 @@ type CopyObject struct {
 	ChunkSize     int    `json:"chunk-size,omitempty"`
 }
 
-func (cp CopyObject) Setup() error {
+func (cp *CopyObject) Setup() error {
 	if cp.TargetType != "device" {
 		return fmt.Errorf("target-type '%s' is not supported for the 'copy' handler. Its value must be 'device'", cp.TargetType)
 	}
@@ -55,7 +54,7 @@ func (cp CopyObject) Setup() error {
 	return nil
 }
 
-func (cp CopyObject) Install() error {
+func (cp *CopyObject) Install() error {
 	if cp.MustFormat {
 		err := cp.Format(cp.Target, cp.FSType, cp.FormatOptions)
 		if err != nil {
@@ -101,7 +100,7 @@ func (cp CopyObject) Install() error {
 	return mergeErrorList(errorList)
 }
 
-func (cp CopyObject) Cleanup() error {
+func (cp *CopyObject) Cleanup() error {
 	return nil
 }
 
