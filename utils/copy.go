@@ -4,9 +4,11 @@ import (
 	"errors"
 	"io"
 	"os"
+	"os/exec"
 	"time"
 
 	"bitbucket.org/ossystems/agent/libarchive"
+	shellwords "github.com/mattn/go-shellwords"
 	"github.com/spf13/afero"
 )
 
@@ -24,6 +26,12 @@ type Copier interface {
 		seek int,
 		count int,
 		truncate bool,
+		compressed bool) error
+	CopyToProcessStdin(
+		fsBackend afero.Fs,
+		libarchiveBackend libarchive.API,
+		sourcePath string,
+		processCmdline string,
 		compressed bool) error
 }
 
@@ -118,6 +126,65 @@ func (eio ExtendedIO) CopyFile(
 		return err
 	}
 
+	err = eio.sharedCopyLogic(fsBackend, libarchiveBackend, target, sourcePath, chunkSize, skip, count, compressed)
+
+	return err
+}
+
+func (eio ExtendedIO) CopyToProcessStdin(
+	fsBackend afero.Fs,
+	libarchiveBackend libarchive.API,
+	sourcePath string,
+	processCmdline string,
+	compressed bool) error {
+
+	// processCmdline
+	p := shellwords.NewParser()
+	list, err := p.Parse(processCmdline)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command(list[0], list[1:]...)
+	processStdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	err = eio.sharedCopyLogic(fsBackend, libarchiveBackend, processStdin, sourcePath,
+		ChunkSize, 0, -1, compressed)
+
+	processStdin.Close()
+
+	if err != nil {
+		return err
+	}
+
+	err = cmd.Wait()
+	if waitErr, ok := err.(*exec.ExitError); ok {
+		if !waitErr.Success() {
+			return waitErr
+		}
+	}
+
+	return err
+}
+
+func (eio ExtendedIO) sharedCopyLogic(
+	fsBackend afero.Fs,
+	libarchiveBackend libarchive.API,
+	target io.Writer,
+	sourcePath string,
+	chunkSize int,
+	skip int,
+	count int,
+	compressed bool) error {
+
 	var source io.Reader
 
 	if compressed {
@@ -143,14 +210,14 @@ func (eio ExtendedIO) CopyFile(
 			return nextHeaderErr
 		}
 
-		// the "skip" is done inside the "Copy" function for
-		// compressed files
+		// for compressed files the "skip" is done inside the "Copy"
+		// function
 
 		source = reader
 	} else {
 		file, fileErr := fsBackend.Open(sourcePath)
 		if fileErr != nil {
-			if pathErr, ok := err.(*os.PathError); ok {
+			if pathErr, ok := fileErr.(*os.PathError); ok {
 				return pathErr
 			}
 			return fileErr
@@ -165,8 +232,9 @@ func (eio ExtendedIO) CopyFile(
 		source = file
 	}
 
+	// copy
 	cancel := make(chan bool)
-	_, err = eio.Copy(target, source, time.Hour, cancel, chunkSize, skip, count, compressed)
+	_, err := eio.Copy(target, source, time.Hour, cancel, chunkSize, skip, count, compressed)
 
 	return err
 }

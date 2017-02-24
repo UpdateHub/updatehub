@@ -1024,3 +1024,142 @@ uncompressed and compressed
 errors
 - when applying attributes (permission)
 */
+
+func TestCopyToProcessStdinIntegration(t *testing.T) {
+	testCases := []struct {
+		Name                      string
+		SourceFileContent         []byte
+		CmdLine                   string
+		ExistingTargetFileContent []byte
+		ExpectedError             error
+		ExpectedTargetFileContent []byte
+		Compressed                bool
+	}{
+		{
+			"SuccessNonCompressed",
+			[]byte("some_filler_data"),
+			"tee %s",
+			[]byte("old_content"),
+			nil,
+			[]byte("some_filler_data"),
+			false,
+		},
+		{
+			"SuccessCompressed",
+			[]byte("some_filler_data"),
+			"tee %s",
+			[]byte("old_content"),
+			nil,
+			[]byte("some_filler_data"),
+			true,
+		},
+		{
+			"WithCmdLineError",
+			[]byte("some_filler_data"),
+			"non-existant-command %s",
+			[]byte("old_content"),
+			fmt.Errorf(`exec: "non-existant-command": executable file not found in $PATH`),
+			[]byte("old_content"),
+			false,
+		},
+		{
+			"WithEmptyCompressedSourceFile",
+			[]byte(""),
+			"tee %s",
+			[]byte("old_content"),
+			nil,
+			[]byte(""),
+			true,
+		},
+		{
+			"WithInvalidCmdLine",
+			[]byte(""),
+			`tee "%s`,
+			[]byte("old_content"),
+			fmt.Errorf("invalid command line string"),
+			[]byte("old_content"),
+			false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			osFs := afero.NewOsFs()
+
+			testPath, err := afero.TempDir(osFs, "", "CopyFile-test")
+			assert.NoError(t, err)
+
+			sourcePath := path.Join(testPath, "source.txt")
+			source, err := osFs.Create(sourcePath)
+			assert.NoError(t, err)
+
+			if tc.Compressed {
+				content, err := compressData(tc.SourceFileContent, "gzip")
+				assert.NoError(t, err)
+
+				_, err = source.Write(content)
+				assert.NoError(t, err)
+			} else {
+				_, err = source.Write(tc.SourceFileContent)
+				assert.NoError(t, err)
+			}
+
+			err = source.Close()
+			assert.NoError(t, err)
+
+			targetPath := path.Join(testPath, "target.txt")
+			err = ioutil.WriteFile(targetPath, tc.ExistingTargetFileContent, 0666)
+			assert.NoError(t, err)
+
+			processCmdline := fmt.Sprintf(tc.CmdLine, targetPath)
+
+			eio := ExtendedIO{}
+			err = eio.CopyToProcessStdin(osFs, &libarchive.LibArchive{}, sourcePath, processCmdline, tc.Compressed)
+			if tc.ExpectedError == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tc.ExpectedError.Error())
+			}
+
+			pathExists, err := afero.Exists(osFs, targetPath)
+			assert.True(t, pathExists)
+			assert.NoError(t, err)
+
+			data, err := afero.ReadFile(osFs, targetPath)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.ExpectedTargetFileContent, data)
+		})
+	}
+}
+
+func TestCopyToProcessStdinWithProcessExitError(t *testing.T) {
+	testPath, err := ioutil.TempDir("", "CopyToProcessStdin-test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(testPath)
+
+	binaryContent := `#!/bin/sh
+echo "stdout string $@"
+exit 1
+`
+	fakeCmdPath := path.Join(testPath, "binary")
+	fakeCmdFile, err := os.Create(fakeCmdPath)
+	assert.Nil(t, err)
+	err = os.Chmod(fakeCmdPath, 0777)
+	assert.Nil(t, err)
+	_, err = fakeCmdFile.WriteString(binaryContent)
+	assert.Nil(t, err)
+	err = fakeCmdFile.Close()
+	assert.Nil(t, err)
+
+	cmdString := fakeCmdPath + " arg1"
+
+	osFs := afero.NewOsFs()
+
+	sourcePath := path.Join(testPath, "target.txt")
+	err = ioutil.WriteFile(sourcePath, []byte("existing_content"), 0666)
+	assert.NoError(t, err)
+
+	eio := ExtendedIO{}
+	err = eio.CopyToProcessStdin(osFs, &libarchive.LibArchive{}, sourcePath, cmdString, false)
+	assert.EqualError(t, err, "exit status 1")
+}

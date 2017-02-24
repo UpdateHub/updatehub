@@ -17,13 +17,16 @@ type CmdLine struct {
 func (cl *CmdLine) Execute(cmdline string) ([]byte, error) {
 	p := shellwords.NewParser()
 	list, err := p.Parse(cmdline)
+	if err != nil {
+		return nil, err
+	}
 
 	cmd := exec.Command(list[0], list[1:]...)
 	ret, err := cmd.CombinedOutput()
 
 	if exitErr, ok := err.(*exec.ExitError); ok {
 		if !exitErr.Success() {
-			return ret, fmt.Errorf(fmt.Sprintf("Error executing command '%s': %s", cmdline, string(ret)))
+			return ret, fmt.Errorf("Error executing command '%s': %s", cmdline, string(ret))
 		}
 	}
 

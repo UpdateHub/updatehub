@@ -79,7 +79,6 @@ exit 0
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.ExpectedOutput, output)
-
 		})
 	}
 }
@@ -129,6 +128,18 @@ func TestCmdLineExecuteWithBinaryNotFound(t *testing.T) {
 	output, err := c.Execute(fakeCmdPath)
 
 	assert.EqualError(t, err, fmt.Sprintf("fork/exec %s: no such file or directory", fakeCmdPath))
+	assert.Equal(t, []byte(nil), output)
+}
+
+func TestCmdLineExecuteWithInvalidCmdLine(t *testing.T) {
+	testPath, err := ioutil.TempDir("", "CmdLineExecute-test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(testPath)
+
+	c := &CmdLine{}
+	output, err := c.Execute(`tee "%s`)
+
+	assert.EqualError(t, err, "invalid command line string")
 	assert.Equal(t, []byte(nil), output)
 }
 
@@ -200,7 +211,6 @@ exit 1
 
 			assert.EqualError(t, err, fmt.Sprintf("Error executing command '%s': %s", cmdString, tc.ExpectedOutput))
 			assert.Equal(t, tc.ExpectedOutput, output)
-
 		})
 	}
 }

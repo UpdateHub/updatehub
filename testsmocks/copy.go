@@ -23,3 +23,8 @@ func (cm *CopierMock) Copy(wr io.Writer, rd io.Reader, timeout time.Duration, ca
 	args := cm.Called(wr, rd, timeout, cancel, chunkSize, skip, count, compressed)
 	return args.Bool(0), args.Error(1)
 }
+
+func (cm *CopierMock) CopyToProcessStdin(fsBackend afero.Fs, libarchiveBackend libarchive.API, sourcePath string, processCmdline string, compressed bool) error {
+	args := cm.Called(fsBackend, libarchiveBackend, sourcePath, processCmdline, compressed)
+	return args.Error(0)
+}

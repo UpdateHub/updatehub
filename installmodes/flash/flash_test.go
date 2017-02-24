@@ -2,12 +2,12 @@ package flash
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 
 	"bitbucket.org/ossystems/agent/installmodes"
+	"bitbucket.org/ossystems/agent/installmodes/internal/testsutils"
 	"bitbucket.org/ossystems/agent/testsmocks"
 	"bitbucket.org/ossystems/agent/utils"
 
@@ -47,24 +47,6 @@ func TestFlashGetObject(t *testing.T) {
 	}
 }
 
-func setupCheckRequirementsDir(t *testing.T) string {
-	// setup a temp dir
-	testPath, err := ioutil.TempDir("", "flash-test")
-	assert.NoError(t, err)
-
-	// setup the binaries on dir
-	err = ioutil.WriteFile(path.Join(testPath, "nandwrite"), []byte("dummy_data"), 0777)
-	assert.NoError(t, err)
-
-	err = ioutil.WriteFile(path.Join(testPath, "flashcp"), []byte("dummy_data"), 0777)
-	assert.NoError(t, err)
-
-	err = ioutil.WriteFile(path.Join(testPath, "flash_erase"), []byte("dummy_data"), 0777)
-	assert.NoError(t, err)
-
-	return testPath
-}
-
 func TestFlashCheckRequirementsWithBinariesNotFound(t *testing.T) {
 	testCases := []struct {
 		Name   string
@@ -87,7 +69,8 @@ func TestFlashCheckRequirementsWithBinariesNotFound(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			// setup a temp dir on PATH
-			testPath := setupCheckRequirementsDir(t)
+			testPath := testsutils.SetupCheckRequirementsDir(t, []string{"nandwrite", "flashcp", "flash_erase"})
+
 			defer os.RemoveAll(testPath)
 			err := os.Setenv("PATH", testPath)
 			assert.NoError(t, err)
@@ -105,7 +88,7 @@ func TestFlashCheckRequirementsWithBinariesNotFound(t *testing.T) {
 
 func TestFlashCheckRequirementsWithBinariesFound(t *testing.T) {
 	// setup a temp dir on PATH
-	testPath := setupCheckRequirementsDir(t)
+	testPath := testsutils.SetupCheckRequirementsDir(t, []string{"nandwrite", "flashcp", "flash_erase"})
 	defer os.RemoveAll(testPath)
 	err := os.Setenv("PATH", testPath)
 	assert.NoError(t, err)
