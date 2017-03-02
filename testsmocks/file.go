@@ -7,70 +7,70 @@ import (
 )
 
 type FileMock struct {
-	*mock.Mock
+	mock.Mock
 }
 
-func (fm FileMock) Read(p []byte) (n int, err error) {
+func (fm *FileMock) Read(p []byte) (n int, err error) {
 	args := fm.Called(p)
 	return args.Int(0), args.Error(1)
 }
 
-func (fm FileMock) ReadAt(b []byte, off int64) (n int, err error) {
+func (fm *FileMock) ReadAt(b []byte, off int64) (n int, err error) {
 	args := fm.Called(b, off)
 	return args.Int(0), args.Error(1)
 }
 
-func (fm FileMock) Seek(offset int64, whence int) (ret int64, err error) {
+func (fm *FileMock) Seek(offset int64, whence int) (ret int64, err error) {
 	args := fm.Called(offset, whence)
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (fm FileMock) Write(b []byte) (n int, err error) {
+func (fm *FileMock) Write(b []byte) (n int, err error) {
 	args := fm.Called(b)
 	return args.Int(0), args.Error(1)
 }
 
-func (fm FileMock) WriteAt(b []byte, off int64) (n int, err error) {
+func (fm *FileMock) WriteAt(b []byte, off int64) (n int, err error) {
 	args := fm.Called(b, off)
 	return args.Int(0), args.Error(1)
 }
 
-func (fm FileMock) Close() error {
+func (fm *FileMock) Close() error {
 	args := fm.Called()
 	return args.Error(0)
 }
 
-func (fm FileMock) Name() string {
+func (fm *FileMock) Name() string {
 	args := fm.Called()
 	return args.String(0)
 }
 
-func (fm FileMock) Readdir(count int) ([]os.FileInfo, error) {
+func (fm *FileMock) Readdir(count int) ([]os.FileInfo, error) {
 	args := fm.Called(count)
 	return args.Get(0).([]os.FileInfo), args.Error(1)
 }
 
-func (fm FileMock) Readdirnames(n int) ([]string, error) {
+func (fm *FileMock) Readdirnames(n int) ([]string, error) {
 	args := fm.Called(n)
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (fm FileMock) Stat() (os.FileInfo, error) {
+func (fm *FileMock) Stat() (os.FileInfo, error) {
 	args := fm.Called()
 	return args.Get(0).(os.FileInfo), args.Error(1)
 }
 
-func (fm FileMock) Sync() error {
+func (fm *FileMock) Sync() error {
 	args := fm.Called()
 	return args.Error(0)
 }
 
-func (fm FileMock) Truncate(size int64) error {
+func (fm *FileMock) Truncate(size int64) error {
 	args := fm.Called(size)
 	return args.Error(0)
 }
 
-func (fm FileMock) WriteString(s string) (ret int, err error) {
+func (fm *FileMock) WriteString(s string) (ret int, err error) {
 	args := fm.Called(s)
 	return args.Int(0), args.Error(1)
 }
