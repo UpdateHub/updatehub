@@ -23,7 +23,12 @@ func TestCopyInit(t *testing.T) {
 	}
 
 	osFs := afero.NewOsFs()
-	cp2 := &CopyObject{FileSystemHelper: &utils.FileSystem{}, LibArchiveBackend: &libarchive.LibArchive{}, FileSystemBackend: osFs, Copier: &utils.ExtendedIO{}}
+	cp2 := &CopyObject{
+		FileSystemHelper:  &utils.FileSystem{},
+		LibArchiveBackend: &libarchive.LibArchive{},
+		FileSystemBackend: osFs,
+		Copier:            &utils.ExtendedIO{},
+	}
 
 	assert.Equal(t, cp2, cp1)
 }
@@ -72,6 +77,8 @@ func TestCopyInstallWithFormatError(t *testing.T) {
 
 	assert.EqualError(t, err, "format error")
 	fsm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
 }
 
 func TestCopyInstallWithTempDirError(t *testing.T) {
@@ -87,6 +94,8 @@ func TestCopyInstallWithTempDirError(t *testing.T) {
 
 	assert.EqualError(t, err, "temp dir error")
 	fsm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
 }
 
 func TestCopyInstallWithMountError(t *testing.T) {
@@ -113,6 +122,8 @@ func TestCopyInstallWithMountError(t *testing.T) {
 
 	assert.EqualError(t, err, "mount error")
 	fsm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
 
 	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.False(t, tempDirExists)
@@ -154,6 +165,7 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	assert.EqualError(t, err, "copy file error")
 	fsm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
 
 	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.False(t, tempDirExists)
@@ -195,6 +207,7 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	assert.EqualError(t, err, "umount error")
 	fsm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
 
 	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.True(t, tempDirExists)
@@ -236,6 +249,7 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	assert.EqualError(t, err, "(copy file error); (umount error)")
 	fsm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
 
 	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.True(t, tempDirExists)
@@ -351,6 +365,7 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			assert.NoError(t, err)
 			fsm.AssertExpectations(t)
 			cm.AssertExpectations(t)
+			lam.AssertExpectations(t)
 
 			tempDirExists, err := afero.Exists(memFs, tempDirPath)
 			assert.False(t, tempDirExists)

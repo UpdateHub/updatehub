@@ -11,79 +11,8 @@ import (
 	"bitbucket.org/ossystems/agent/testsmocks"
 	"bitbucket.org/ossystems/agent/utils"
 
-	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
-
-const ubinfoStdoutTemplate string = `Volume ID:   %d (on ubi%d)
-Type:        dynamic
-Alignment:   1
-Size:        407 LEBs (52512768 bytes, 50.1 MiB)
-State:       OK
-Name:        %s
-Character device major/minor: 247:1`
-
-func TestUbifsHelperImplWithASingleDeviceNode(t *testing.T) {
-	ubivolume := "system0"
-	deviceNumber := 1
-	volumeID := 2
-
-	memFs := afero.NewMemMapFs()
-	memFs.MkdirAll("/dev", 0755)
-	afero.WriteFile(memFs, fmt.Sprintf("/dev/ubi%d", deviceNumber), []byte("ubi_content"), 0755)
-
-	clm := &testsmocks.CmdLineExecuterMock{}
-	clm.On("Execute", fmt.Sprintf("ubinfo -d %d -N %s", deviceNumber, ubivolume)).Return([]byte(fmt.Sprintf(ubinfoStdoutTemplate, volumeID, deviceNumber, ubivolume)), nil)
-
-	uhi := &UbifsHelperImpl{CmdLineExecuter: clm, FileSystemBackend: memFs}
-	targetDevice, err := uhi.GetTargetDeviceFromUbiVolumeName(ubivolume)
-
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("/dev/ubi%d_%d", deviceNumber, volumeID), targetDevice)
-
-	clm.AssertExpectations(t)
-}
-
-func TestUbifsHelperImplWithMultipleUbiDeviceNodes(t *testing.T) {
-	ubivolume := "system0"
-	deviceNumber := 1
-	volumeID := 2
-
-	memFs := afero.NewMemMapFs()
-	memFs.MkdirAll("/dev", 0755)
-	afero.WriteFile(memFs, fmt.Sprintf("/dev/ubi%d", deviceNumber-1), []byte("ubi_content"), 0755)
-	afero.WriteFile(memFs, fmt.Sprintf("/dev/ubi%d", deviceNumber), []byte("ubi_content"), 0755)
-	afero.WriteFile(memFs, fmt.Sprintf("/dev/ubi%d", deviceNumber+1), []byte("ubi_content"), 0755)
-
-	clm := &testsmocks.CmdLineExecuterMock{}
-	clm.On("Execute", fmt.Sprintf("ubinfo -d %d -N %s", deviceNumber-1, ubivolume)).Return([]byte(""), fmt.Errorf("Error executing command"))
-	clm.On("Execute", fmt.Sprintf("ubinfo -d %d -N %s", deviceNumber, ubivolume)).Return([]byte(fmt.Sprintf(ubinfoStdoutTemplate, volumeID, deviceNumber, ubivolume)), nil)
-
-	uhi := &UbifsHelperImpl{CmdLineExecuter: clm, FileSystemBackend: memFs}
-	targetDevice, err := uhi.GetTargetDeviceFromUbiVolumeName(ubivolume)
-
-	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("/dev/ubi%d_%d", deviceNumber, volumeID), targetDevice)
-
-	clm.AssertExpectations(t)
-}
-
-func TestUbifsHelperImplWithReadDirFailure(t *testing.T) {
-	ubivolume := "system0"
-
-	memFs := afero.NewMemMapFs()
-	memFs.RemoveAll("/dev")
-
-	clm := &testsmocks.CmdLineExecuterMock{}
-
-	uhi := &UbifsHelperImpl{CmdLineExecuter: clm, FileSystemBackend: memFs}
-	targetDevice, err := uhi.GetTargetDeviceFromUbiVolumeName(ubivolume)
-
-	assert.EqualError(t, err, "open /dev: file does not exist")
-	assert.Equal(t, "", targetDevice)
-
-	clm.AssertExpectations(t)
-}
 
 func TestUbifsInit(t *testing.T) {
 	val, err := installmodes.GetObject("ubifs")
@@ -203,10 +132,16 @@ func TestUbifsInstallWithSuccessNonCompressed(t *testing.T) {
 	clm := &testsmocks.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("ubiupdatevol %s %s", targetDevice, sha256sum)).Return([]byte("combinedoutput"), nil)
 
-	uhm := &testsmocks.UbifsHelperMock{}
-	uhm.On("GetTargetDeviceFromUbiVolumeName", ubivolume).Return(targetDevice, nil)
+	fsm := &testsmocks.FileSystemBackendMock{}
 
-	ufs := UbifsObject{CmdLineExecuter: clm, UbifsHelper: uhm}
+	uum := &testsmocks.UbifsUtilsMock{}
+	uum.On("GetTargetDeviceFromUbiVolumeName", fsm, ubivolume).Return(targetDevice, nil)
+
+	ufs := UbifsObject{
+		CmdLineExecuter:   clm,
+		UbifsUtils:        uum,
+		FileSystemBackend: fsm,
+	}
 	ufs.TargetType = "ubivolume"
 	ufs.Target = ubivolume
 	ufs.Sha256sum = sha256sum
@@ -215,7 +150,8 @@ func TestUbifsInstallWithSuccessNonCompressed(t *testing.T) {
 	assert.NoError(t, err)
 
 	clm.AssertExpectations(t)
-	uhm.AssertExpectations(t)
+	uum.AssertExpectations(t)
+	fsm.AssertExpectations(t)
 }
 
 func TestUbifsInstallWithSuccessCompressed(t *testing.T) {
@@ -229,19 +165,19 @@ func TestUbifsInstallWithSuccessCompressed(t *testing.T) {
 
 	clm := &testsmocks.CmdLineExecuterMock{}
 
-	uhm := &testsmocks.UbifsHelperMock{}
-	uhm.On("GetTargetDeviceFromUbiVolumeName", ubivolume).Return(targetDevice, nil)
+	fsm := &testsmocks.FileSystemBackendMock{}
+
+	uum := &testsmocks.UbifsUtilsMock{}
+	uum.On("GetTargetDeviceFromUbiVolumeName", fsm, ubivolume).Return(targetDevice, nil)
 
 	lam := &testsmocks.LibArchiveMock{}
-
-	fsm := &testsmocks.FileSystemBackendMock{}
 
 	cpm := &testsmocks.CopierMock{}
 	cpm.On("CopyToProcessStdin", fsm, lam, srcPath, cmdline, compressed).Return(nil)
 
 	ufs := UbifsObject{
 		CmdLineExecuter:   clm,
-		UbifsHelper:       uhm,
+		UbifsUtils:        uum,
 		LibArchiveBackend: lam,
 		FileSystemBackend: fsm,
 		Copier:            cpm,
@@ -256,7 +192,10 @@ func TestUbifsInstallWithSuccessCompressed(t *testing.T) {
 	assert.NoError(t, err)
 
 	clm.AssertExpectations(t)
-	uhm.AssertExpectations(t)
+	uum.AssertExpectations(t)
+	fsm.AssertExpectations(t)
+	lam.AssertExpectations(t)
+	cpm.AssertExpectations(t)
 }
 
 func TestUbifsInstallWithCopyToProcessStdinFailure(t *testing.T) {
@@ -270,19 +209,19 @@ func TestUbifsInstallWithCopyToProcessStdinFailure(t *testing.T) {
 
 	clm := &testsmocks.CmdLineExecuterMock{}
 
-	uhm := &testsmocks.UbifsHelperMock{}
-	uhm.On("GetTargetDeviceFromUbiVolumeName", ubivolume).Return(targetDevice, nil)
+	fsm := &testsmocks.FileSystemBackendMock{}
+
+	uum := &testsmocks.UbifsUtilsMock{}
+	uum.On("GetTargetDeviceFromUbiVolumeName", fsm, ubivolume).Return(targetDevice, nil)
 
 	lam := &testsmocks.LibArchiveMock{}
-
-	fsm := &testsmocks.FileSystemBackendMock{}
 
 	cpm := &testsmocks.CopierMock{}
 	cpm.On("CopyToProcessStdin", fsm, lam, srcPath, cmdline, compressed).Return(fmt.Errorf("process error"))
 
 	ufs := UbifsObject{
 		CmdLineExecuter:   clm,
-		UbifsHelper:       uhm,
+		UbifsUtils:        uum,
 		LibArchiveBackend: lam,
 		FileSystemBackend: fsm,
 		Copier:            cpm,
@@ -297,7 +236,10 @@ func TestUbifsInstallWithCopyToProcessStdinFailure(t *testing.T) {
 	assert.EqualError(t, err, "process error")
 
 	clm.AssertExpectations(t)
-	uhm.AssertExpectations(t)
+	uum.AssertExpectations(t)
+	fsm.AssertExpectations(t)
+	lam.AssertExpectations(t)
+	cpm.AssertExpectations(t)
 }
 
 func TestUbifsInstallWithGetTargetDeviceFromUbiVolumeNameFailure(t *testing.T) {
@@ -307,10 +249,16 @@ func TestUbifsInstallWithGetTargetDeviceFromUbiVolumeNameFailure(t *testing.T) {
 
 	clm := &testsmocks.CmdLineExecuterMock{}
 
-	uhm := &testsmocks.UbifsHelperMock{}
-	uhm.On("GetTargetDeviceFromUbiVolumeName", ubivolume).Return("", fmt.Errorf("UBI volume '%s' wasn't found", ubivolume))
+	fsm := &testsmocks.FileSystemBackendMock{}
 
-	ufs := UbifsObject{CmdLineExecuter: clm, UbifsHelper: uhm}
+	uum := &testsmocks.UbifsUtilsMock{}
+	uum.On("GetTargetDeviceFromUbiVolumeName", fsm, ubivolume).Return("", fmt.Errorf("UBI volume '%s' wasn't found", ubivolume))
+
+	ufs := UbifsObject{
+		CmdLineExecuter:   clm,
+		UbifsUtils:        uum,
+		FileSystemBackend: fsm,
+	}
 	ufs.TargetType = "ubivolume"
 	ufs.Target = ubivolume
 	ufs.Sha256sum = sha256sum
@@ -319,7 +267,8 @@ func TestUbifsInstallWithGetTargetDeviceFromUbiVolumeNameFailure(t *testing.T) {
 	assert.EqualError(t, err, fmt.Sprintf("UBI volume '%s' wasn't found", ubivolume))
 
 	clm.AssertExpectations(t)
-	uhm.AssertExpectations(t)
+	uum.AssertExpectations(t)
+	fsm.AssertExpectations(t)
 }
 
 func TestUbifsInstallWithUbiUpdateVolFailure(t *testing.T) {
@@ -331,10 +280,16 @@ func TestUbifsInstallWithUbiUpdateVolFailure(t *testing.T) {
 	clm := &testsmocks.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("ubiupdatevol %s %s", targetDevice, sha256sum)).Return([]byte("error"), fmt.Errorf("Error executing command"))
 
-	uhm := &testsmocks.UbifsHelperMock{}
-	uhm.On("GetTargetDeviceFromUbiVolumeName", ubivolume).Return(targetDevice, nil)
+	fsm := &testsmocks.FileSystemBackendMock{}
 
-	ufs := UbifsObject{CmdLineExecuter: clm, UbifsHelper: uhm}
+	uum := &testsmocks.UbifsUtilsMock{}
+	uum.On("GetTargetDeviceFromUbiVolumeName", fsm, ubivolume).Return(targetDevice, nil)
+
+	ufs := UbifsObject{
+		CmdLineExecuter:   clm,
+		UbifsUtils:        uum,
+		FileSystemBackend: fsm,
+	}
 	ufs.TargetType = "ubivolume"
 	ufs.Target = ubivolume
 	ufs.Sha256sum = sha256sum
@@ -343,5 +298,6 @@ func TestUbifsInstallWithUbiUpdateVolFailure(t *testing.T) {
 	assert.EqualError(t, err, "Error executing command")
 
 	clm.AssertExpectations(t)
-	uhm.AssertExpectations(t)
+	uum.AssertExpectations(t)
+	fsm.AssertExpectations(t)
 }

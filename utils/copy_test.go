@@ -288,6 +288,7 @@ func TestCopyFileIntegration(t *testing.T) {
 
 			testPath, err := afero.TempDir(memFs, "", "CopyFile-test")
 			assert.NoError(t, err)
+			defer memFs.RemoveAll(testPath)
 
 			sourcePath := path.Join(testPath, "source.txt")
 			source, err := memFs.Create(sourcePath)
@@ -822,7 +823,7 @@ func TestCopyFileWithSuccessUsingLibarchive(t *testing.T) {
 	libarchiveMock.On("ReadSupportFormatRaw", a)
 	libarchiveMock.On("ReadSupportFormatEmpty", a)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(nil)
-	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("ArchiveEntry")).Return(nil)
+	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("*libarchive.ArchiveEntry")).Return(nil)
 	libarchiveMock.On("ReadData", a, mock.AnythingOfType("[]uint8"), chunkSize).Run(func(args mock.Arguments) {
 		arg := args.Get(1).([]uint8)
 		// return the whole "sourceContent" since chunkSize is bigger
@@ -906,7 +907,7 @@ func TestCopyFileWithLibarchiveReadNextHeaderError(t *testing.T) {
 	libarchiveMock.On("ReadSupportFormatRaw", a)
 	libarchiveMock.On("ReadSupportFormatEmpty", a)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(nil)
-	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("ArchiveEntry")).Return(fmt.Errorf("Mock emulated error"))
+	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("*libarchive.ArchiveEntry")).Return(fmt.Errorf("Mock emulated error"))
 	libarchiveMock.On("ReadFree", a)
 
 	targetMock := &testsmocks.FileMock{}
@@ -943,7 +944,7 @@ func TestCopyFileWithLibarchiveReadDataError(t *testing.T) {
 	libarchiveMock.On("ReadSupportFormatRaw", a)
 	libarchiveMock.On("ReadSupportFormatEmpty", a)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(nil)
-	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("ArchiveEntry")).Return(nil)
+	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("*libarchive.ArchiveEntry")).Return(nil)
 	libarchiveMock.On("ReadData", a, mock.AnythingOfType("[]uint8"), chunkSize).Return(-30, fmt.Errorf("Mock emulated error")).Once()
 	libarchiveMock.On("ReadFree", a)
 
@@ -982,7 +983,7 @@ func TestCopyFileWithLibarchiveWriteError(t *testing.T) {
 	libarchiveMock.On("ReadSupportFormatRaw", a)
 	libarchiveMock.On("ReadSupportFormatEmpty", a)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(nil)
-	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("ArchiveEntry")).Return(nil)
+	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("*libarchive.ArchiveEntry")).Return(nil)
 	libarchiveMock.On("ReadData", a, mock.AnythingOfType("[]uint8"), chunkSize).Run(func(args mock.Arguments) {
 		arg := args.Get(1).([]uint8)
 		// return the whole "sourceContent" since chunkSize is bigger
@@ -1086,8 +1087,9 @@ func TestCopyToProcessStdinIntegration(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			osFs := afero.NewOsFs()
 
-			testPath, err := afero.TempDir(osFs, "", "CopyFile-test")
+			testPath, err := afero.TempDir(osFs, "", "CopyToProcessstdin-test")
 			assert.NoError(t, err)
+			defer osFs.RemoveAll(testPath)
 
 			sourcePath := path.Join(testPath, "source.txt")
 			source, err := osFs.Create(sourcePath)

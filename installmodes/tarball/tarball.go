@@ -1,4 +1,4 @@
-package copy
+package tarball
 
 import (
 	"fmt"
@@ -15,26 +15,32 @@ import (
 
 func init() {
 	installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "copy",
+		Name:              "tarball",
 		CheckRequirements: func() error { return nil },
 		GetObject: func() interface{} {
-			return &CopyObject{
+			return &TarballObject{
 				FileSystemHelper:  &utils.FileSystem{},
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
 				Copier:            &utils.ExtendedIO{},
+				MtdUtils:          &utils.MtdUtilsImpl{},
+				UbifsUtils: &utils.UbifsUtilsImpl{
+					CmdLineExecuter: &utils.CmdLine{},
+				},
 			}
 		},
 	})
 }
 
-type CopyObject struct {
+type TarballObject struct {
 	metadata.ObjectMetadata
 	metadata.CompressedObject
 	utils.FileSystemHelper `json:"-"`
 	LibArchiveBackend      libarchive.API `json:"-"`
 	FileSystemBackend      afero.Fs
 	utils.Copier           `json:"-"`
+	utils.MtdUtils
+	utils.UbifsUtils
 
 	Target        string `json:"target"`
 	TargetType    string `json:"target-type"`
@@ -43,26 +49,44 @@ type CopyObject struct {
 	FormatOptions string `json:"format-options,omitempty"`
 	MustFormat    bool   `json:"format?,omitempty"`
 	MountOptions  string `json:"mount-options,omitempty"`
-	ChunkSize     int    `json:"chunk-size,omitempty"`
+
+	targetDevice string // this is NOT obtained from the json but from the "Setup()"
 }
 
-func (cp *CopyObject) Setup() error {
-	if cp.TargetType != "device" {
-		return fmt.Errorf("target-type '%s' is not supported for the 'copy' handler. Its value must be 'device'", cp.TargetType)
+func (tb *TarballObject) Setup() error {
+	switch tb.TargetType {
+	case "device":
+		tb.targetDevice = tb.Target
+	case "mtdname":
+		td, err := tb.MtdUtils.GetTargetDeviceFromMtdName(tb.FileSystemBackend, tb.Target)
+		if err != nil {
+			return err
+		}
+
+		tb.targetDevice = td
+	case "ubivolume":
+		td, err := tb.GetTargetDeviceFromUbiVolumeName(tb.FileSystemBackend, tb.Target)
+		if err != nil {
+			return err
+		}
+
+		tb.targetDevice = td
+	default:
+		return fmt.Errorf("target-type '%s' is not supported for the 'tarball' handler. Its value must be one of: 'device', 'ubivolume' or 'mtdname'", tb.TargetType)
 	}
 
 	return nil
 }
 
-func (cp *CopyObject) Install() error {
-	if cp.MustFormat {
-		err := cp.Format(cp.Target, cp.FSType, cp.FormatOptions)
+func (tb *TarballObject) Install() error {
+	if tb.MustFormat {
+		err := tb.Format(tb.Target, tb.FSType, tb.FormatOptions)
 		if err != nil {
 			return err
 		}
 	}
 
-	tempDirPath, err := cp.TempDir("copy-handler")
+	tempDirPath, err := tb.TempDir("tarball-handler")
 	if err != nil {
 		return err
 	}
@@ -70,38 +94,32 @@ func (cp *CopyObject) Install() error {
 	// could happen an "Umount" error and then the mounted dir
 	// contents would be removed as well
 
-	err = cp.Mount(cp.Target, tempDirPath, cp.FSType, cp.MountOptions)
+	err = tb.Mount(tb.Target, tempDirPath, tb.FSType, tb.MountOptions)
 	if err != nil {
-		cp.FileSystemBackend.RemoveAll(tempDirPath)
+		tb.FileSystemBackend.RemoveAll(tempDirPath)
 		return err
 	}
 
-	targetPath := path.Join(tempDirPath, cp.TargetPath)
-	cs := 128 * 1024
-	if cp.ChunkSize > 0 {
-		cs = cp.ChunkSize
-	}
+	targetPath := path.Join(tempDirPath, tb.TargetPath)
 
 	errorList := []error{}
 
-	// FIXME: on sourcePath we need to: path.Join(cp.UpdateDir, cp.Sha256sum)
-	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, cp.Sha256sum, targetPath, cs, 0, 0, -1, true, cp.Compressed)
+	// FIXME: on sourcePath we need to: path.Join(tb.UpdateDir, tb.Sha256sum)
+	err = tb.LibArchiveBackend.Unpack(tb.Sha256sum, targetPath, false)
 	if err != nil {
 		errorList = append(errorList, err)
 	}
 
-	umountErr := cp.Umount(tempDirPath)
+	umountErr := tb.Umount(tempDirPath)
 	if umountErr != nil {
 		errorList = append(errorList, umountErr)
 	} else {
-		cp.FileSystemBackend.RemoveAll(tempDirPath)
+		tb.FileSystemBackend.RemoveAll(tempDirPath)
 	}
 
 	return testsutils.MergeErrorList(errorList)
 }
 
-func (cp *CopyObject) Cleanup() error {
+func (tb *TarballObject) Cleanup() error {
 	return nil
 }
-
-// FIXME: install-different stuff

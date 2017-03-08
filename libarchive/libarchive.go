@@ -12,6 +12,8 @@ import "C"
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"unsafe"
 )
 
@@ -30,11 +32,20 @@ type API interface {
 	NewRead() Archive
 	ReadSupportFilterAll(a Archive)
 	ReadSupportFormatRaw(a Archive)
+	ReadSupportFormatAll(a Archive)
 	ReadSupportFormatEmpty(a Archive)
 	ReadOpenFileName(a Archive, filename string, blockSize int) error
 	ReadFree(a Archive)
-	ReadNextHeader(a Archive, e ArchiveEntry) error
+	ReadNextHeader(a Archive, e *ArchiveEntry) error
 	ReadData(a Archive, buffer []byte, length int) (int, error)
+	WriteDiskNew() Archive
+	WriteDiskSetOptions(a Archive, flags int)
+	WriteDiskSetStandardLookup(a Archive)
+	WriteFree(a Archive)
+	WriteHeader(a Archive, e ArchiveEntry) error
+	WriteFinishEntry(a Archive) error
+	EntrySize(e ArchiveEntry) int64
+	Unpack(tarballPath string, targetPath string, enableRaw bool) error
 }
 
 // LibArchive is the default implementation of API
@@ -56,6 +67,11 @@ func (la LibArchive) ReadSupportFilterAll(a Archive) {
 // ReadSupportFormatRaw is a wrapper for "C.archive_read_support_format_raw()"
 func (la LibArchive) ReadSupportFormatRaw(a Archive) {
 	C.archive_read_support_format_raw(a.archive)
+}
+
+// ReadSupportFormatAll is a wrapper for "C.archive_read_support_format_all()"
+func (la LibArchive) ReadSupportFormatAll(a Archive) {
+	C.archive_read_support_format_all(a.archive)
 }
 
 // ReadSupportFormatEmpty is a wrapper for "C.archive_read_support_format_empty()"
@@ -82,7 +98,7 @@ func (la LibArchive) ReadFree(a Archive) {
 }
 
 // ReadNextHeader is a wrapper for "C.archive_read_next_header()"
-func (la LibArchive) ReadNextHeader(a Archive, e ArchiveEntry) error {
+func (la LibArchive) ReadNextHeader(a Archive, e *ArchiveEntry) error {
 	r := C.archive_read_next_header(a.archive, &e.entry)
 
 	if r == C.ARCHIVE_EOF {
@@ -105,6 +121,82 @@ func (la LibArchive) ReadData(a Archive, buffer []byte, length int) (int, error)
 	}
 
 	return int(r), nil
+}
+
+// WriteDiskNew is a wrapper for "C.archive_write_disk_new()"
+func (la LibArchive) WriteDiskNew() Archive {
+	a := Archive{}
+	a.archive = C.archive_write_disk_new()
+	return a
+}
+
+// WriteDiskSetOptions is a wrapper for "C.archive_write_disk_set_options()"
+func (la LibArchive) WriteDiskSetOptions(a Archive, flags int) {
+	C.archive_write_disk_set_options(a.archive, C.int(flags))
+}
+
+// WriteDiskSetStandardLookup is a wrapper for "C.archive_write_disk_set_standard_lookup()"
+func (la LibArchive) WriteDiskSetStandardLookup(a Archive) {
+	C.archive_write_disk_set_standard_lookup(a.archive)
+}
+
+// WriteFree is a wrapper for "C.archive_write_free()"
+func (la LibArchive) WriteFree(a Archive) {
+	C.archive_write_free(a.archive)
+}
+
+// WriteHeader is a wrapper for "C.archive_write_header()"
+func (la LibArchive) WriteHeader(a Archive, e ArchiveEntry) error {
+	r := C.archive_write_header(a.archive, e.entry)
+
+	if r != C.ARCHIVE_OK {
+		return fmt.Errorf(C.GoString(C.archive_error_string(a.archive)))
+	}
+
+	return nil
+}
+
+// WriteFinishEntry is a wrapper for "C.archive_write_finish_entry()"
+func (la LibArchive) WriteFinishEntry(a Archive) error {
+	r := C.archive_write_finish_entry(a.archive)
+
+	if r != C.ARCHIVE_OK {
+		return fmt.Errorf(C.GoString(C.archive_error_string(a.archive)))
+	}
+
+	return nil
+}
+
+// EntrySize is a wrapper for "C.archive_entry_size()"
+func (la LibArchive) EntrySize(e ArchiveEntry) int64 {
+	r := C.archive_entry_size(e.entry)
+	return int64(r)
+}
+
+// Unpack contains the algorithm to extract files from a tarball and
+// put them on a directory
+func (la LibArchive) Unpack(tarballPath string, targetPath string, enableRaw bool) error {
+	originalDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		return err
+	}
+
+	err = os.Chdir(targetPath)
+	if err != nil {
+		return err
+	}
+
+	err = extractTarball(la, tarballPath, enableRaw)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chdir(originalDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Reader is an abstraction that implements the io.Reader interface
@@ -153,10 +245,95 @@ func (r Reader) Read(p []byte) (n int, err error) {
 // ReadNextHeader setups the Archive for a set of reads
 func (r Reader) ReadNextHeader() error {
 	e := ArchiveEntry{}
-	return r.API.ReadNextHeader(r.Archive, e)
+	return r.API.ReadNextHeader(r.Archive, &e)
 }
 
 // Free frees the Archive
 func (r Reader) Free() {
 	r.API.ReadFree(r.Archive)
+}
+
+func extractTarball(api API, filename string, enableRaw bool) error {
+	source := api.NewRead()
+	defer api.ReadFree(source)
+
+	api.ReadSupportFilterAll(source)
+	api.ReadSupportFormatAll(source)
+
+	if enableRaw {
+		api.ReadSupportFormatRaw(source)
+	}
+
+	flags := C.ARCHIVE_EXTRACT_TIME
+	flags |= C.ARCHIVE_EXTRACT_PERM
+	flags |= C.ARCHIVE_EXTRACT_ACL
+	flags |= C.ARCHIVE_EXTRACT_FFLAGS
+
+	target := api.WriteDiskNew()
+	defer api.WriteFree(target)
+
+	api.WriteDiskSetOptions(target, flags)
+	api.WriteDiskSetStandardLookup(target)
+
+	err := api.ReadOpenFileName(source, filename, 10240)
+	if err != nil {
+		return err
+	}
+
+	entry := ArchiveEntry{}
+	for {
+		err = api.ReadNextHeader(source, &entry)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return err
+		}
+
+		err = api.WriteHeader(target, entry)
+		if err != nil {
+			return err
+		}
+
+		if api.EntrySize(entry) > 0 {
+			err = copyData(api, source, target)
+			if err != nil {
+				return err
+			}
+
+		}
+
+		err = api.WriteFinishEntry(target)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func copyData(api API, ar Archive, aw Archive) error {
+	var buff *C.void
+	b := unsafe.Pointer(buff)
+	var size C.size_t
+	var offset C.la_int64_t
+
+	for {
+		r := C.archive_read_data_block(ar.archive, &b, &size, &offset)
+
+		if r == C.ARCHIVE_EOF {
+			return nil
+		}
+
+		if r < C.ARCHIVE_OK {
+			return fmt.Errorf(C.GoString(C.archive_error_string(ar.archive)))
+		}
+
+		w := C.archive_write_data_block(aw.archive, b, size, offset)
+
+		if w < C.ARCHIVE_OK {
+			return fmt.Errorf(C.GoString(C.archive_error_string(aw.archive)))
+		}
+	}
 }
