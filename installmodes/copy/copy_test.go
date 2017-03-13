@@ -28,6 +28,7 @@ func TestCopyInit(t *testing.T) {
 		LibArchiveBackend: &libarchive.LibArchive{},
 		FileSystemBackend: osFs,
 		Copier:            &utils.ExtendedIO{},
+		ChunkSize:         128 * 1024,
 	}
 
 	assert.Equal(t, cp2, cp1)
@@ -152,7 +153,13 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	cm := &testsmocks.CopierMock{}
 	cm.On("CopyFile", memFs, lam, sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
-	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+	cp := CopyObject{
+		FileSystemHelper:  fsm,
+		Copier:            cm,
+		FileSystemBackend: memFs,
+		LibArchiveBackend: lam,
+		ChunkSize:         128 * 1024,
+	}
 	cp.Target = targetDevice
 	cp.TargetPath = targetPath
 	cp.FSType = fsType
@@ -194,7 +201,13 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	cm := &testsmocks.CopierMock{}
 	cm.On("CopyFile", memFs, lam, sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
 
-	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+	cp := CopyObject{
+		FileSystemHelper:  fsm,
+		Copier:            cm,
+		FileSystemBackend: memFs,
+		LibArchiveBackend: lam,
+		ChunkSize:         128 * 1024,
+	}
 	cp.Target = targetDevice
 	cp.TargetPath = targetPath
 	cp.FSType = fsType
@@ -236,7 +249,13 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	cm := &testsmocks.CopierMock{}
 	cm.On("CopyFile", memFs, lam, sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
-	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+	cp := CopyObject{
+		FileSystemHelper:  fsm,
+		Copier:            cm,
+		FileSystemBackend: memFs,
+		LibArchiveBackend: lam,
+		ChunkSize:         128 * 1024,
+	}
 	cp.Target = targetDevice
 	cp.TargetPath = targetPath
 	cp.FSType = fsType
@@ -258,18 +277,17 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 
 func TestCopyInstallWithSuccess(t *testing.T) {
 	testCases := []struct {
-		Name              string
-		Sha256sum         string
-		Target            string
-		TargetType        string
-		TargetPath        string
-		FSType            string
-		FormatOptions     string
-		MustFormat        bool
-		MountOptions      string
-		ChunkSize         int
-		ExpectedChunkSize int
-		Compressed        bool
+		Name          string
+		Sha256sum     string
+		Target        string
+		TargetType    string
+		TargetPath    string
+		FSType        string
+		FormatOptions string
+		MustFormat    bool
+		MountOptions  string
+		ChunkSize     int
+		Compressed    bool
 	}{
 		{
 			"WithAllFields",
@@ -281,7 +299,6 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			"-y",
 			true,
 			"-o rw",
-			2048,
 			2048,
 			false,
 		},
@@ -296,7 +313,6 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			true,
 			"-o rw",
 			-1,
-			128 * 1024,
 			false,
 		},
 		{
@@ -310,7 +326,6 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			false,
 			"-o rw",
 			0,
-			128 * 1024,
 			false,
 		},
 		{
@@ -323,7 +338,6 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			"",
 			false,
 			"-o rw",
-			2048,
 			2048,
 			true,
 		},
@@ -346,18 +360,23 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			fsm.On("Umount", tempDirPath).Return(nil)
 
 			cm := &testsmocks.CopierMock{}
-			cm.On("CopyFile", memFs, lam, tc.Sha256sum, path.Join(tempDirPath, tc.TargetPath), tc.ExpectedChunkSize, 0, 0, -1, true, tc.Compressed).Return(nil)
+			cm.On("CopyFile", memFs, lam, tc.Sha256sum, path.Join(tempDirPath, tc.TargetPath), tc.ChunkSize, 0, 0, -1, true, tc.Compressed).Return(nil)
 
-			cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
-			cp.Target = tc.Target
-			cp.TargetType = tc.TargetType
-			cp.TargetPath = tc.TargetPath
-			cp.FSType = tc.FSType
-			cp.MountOptions = tc.MountOptions
+			cp := CopyObject{
+				FileSystemHelper:  fsm,
+				Copier:            cm,
+				FileSystemBackend: memFs,
+				LibArchiveBackend: lam,
+				Target:            tc.Target,
+				TargetType:        tc.TargetType,
+				TargetPath:        tc.TargetPath,
+				FSType:            tc.FSType,
+				MountOptions:      tc.MountOptions,
+				FormatOptions:     tc.FormatOptions,
+				MustFormat:        tc.MustFormat,
+				ChunkSize:         tc.ChunkSize,
+			}
 			cp.Sha256sum = tc.Sha256sum
-			cp.FormatOptions = tc.FormatOptions
-			cp.MustFormat = tc.MustFormat
-			cp.ChunkSize = tc.ChunkSize
 			cp.Compressed = tc.Compressed
 
 			err = cp.Install()

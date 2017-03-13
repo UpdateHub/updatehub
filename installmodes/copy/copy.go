@@ -23,6 +23,7 @@ func init() {
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
 				Copier:            &utils.ExtendedIO{},
+				ChunkSize:         128 * 1024,
 			}
 		},
 	})
@@ -77,15 +78,11 @@ func (cp *CopyObject) Install() error {
 	}
 
 	targetPath := path.Join(tempDirPath, cp.TargetPath)
-	cs := 128 * 1024
-	if cp.ChunkSize > 0 {
-		cs = cp.ChunkSize
-	}
 
 	errorList := []error{}
 
 	// FIXME: on sourcePath we need to: path.Join(cp.UpdateDir, cp.Sha256sum)
-	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, cp.Sha256sum, targetPath, cs, 0, 0, -1, true, cp.Compressed)
+	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, cp.Sha256sum, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
 	}
