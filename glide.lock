@@ -1,5 +1,5 @@
-hash: 3bc6d675aa34dbbcb056811cc874e0941d9d78c1cc0da0e59d066fa826dfe420
-updated: 2017-02-09T14:57:33.414862285-02:00
+hash: 8d3e34e3f93c83b632994af02e913bb9aa787fd1a76c5c0349b994a5f5f5f4f5
+updated: 2017-03-15T11:34:59.19110422-03:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
@@ -7,14 +7,20 @@ imports:
   - spew
 - name: github.com/go-ini/ini
   version: e3c2d47c61e5333f9aa2974695dd94396eb69c75
+- name: github.com/imdario/mergo
+  version: 50d4dbd4eb0e84778abe37cefef140271d96fade
 - name: github.com/julienschmidt/httprouter
   version: 8a45e95fc75cb77048068a62daed98cc22fdac7c
+- name: github.com/mattn/go-shellwords
+  version: 005a0944d84452842197c2108bd9168ced206f78
 - name: github.com/pkg/errors
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
+- name: github.com/Sirupsen/logrus
+  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/spf13/afero
   version: 72b31426848c6ef12a7a8e216708cb0d1530f074
   subpackages:
@@ -26,6 +32,10 @@ imports:
   subpackages:
   - assert
   - mock
+- name: golang.org/x/sys
+  version: 99f16d856c9836c42d24e7ab64ea72916925fa97
+  subpackages:
+  - unix
 - name: golang.org/x/text
   version: 506f9d5c962f284575e88337e7d9296d27e729d3
   subpackages:
