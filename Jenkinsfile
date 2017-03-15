@@ -7,7 +7,7 @@ node('docker') {
         docker.image('golang').inside("-v $WORKSPACE:/go/src/${GOPKG}") {
             sh "cd ${GOPATH} && glide --no-color install"
             sh "cd ${GOPATH} && go build -v"
-            sh "cd ${GOPATH} && go install && gometalinter --aggregate > lint.txt || true"
+            sh "cd ${GOPATH} && go install && gometalinter --deadline=30s --aggregate > lint.txt || true"
         }
 
         step([$class: 'WarningsPublisher',
