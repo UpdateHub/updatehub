@@ -8,8 +8,8 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/spf13/afero"
 
-	"bitbucket.org/ossystems/agent/client"
-	_ "bitbucket.org/ossystems/agent/installmodes/copy"
+	"code.ossystems.com.br/updatehub/agent/client"
+	_ "code.ossystems.com.br/updatehub/agent/installmodes/copy"
 )
 
 var (

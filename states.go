@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"bitbucket.org/ossystems/agent/metadata"
+	"code.ossystems.com.br/updatehub/agent/metadata"
 )
 
 type EasyFotaState int

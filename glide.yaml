@@ -1,4 +1,4 @@
-package: bitbucket.org/ossystems/agent
+package: code.ossystems.com.br/updatehub/agent
 import:
 - package: github.com/go-ini/ini
 - package: github.com/julienschmidt/httprouter

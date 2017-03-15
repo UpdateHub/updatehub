@@ -3,7 +3,7 @@ package metadata
 import (
 	"testing"
 
-	"bitbucket.org/ossystems/agent/installmodes"
+	"code.ossystems.com.br/updatehub/agent/installmodes"
 	"github.com/stretchr/testify/assert"
 )
 

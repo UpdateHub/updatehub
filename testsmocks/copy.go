@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"bitbucket.org/ossystems/agent/libarchive"
+	"code.ossystems.com.br/updatehub/agent/libarchive"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/mock"

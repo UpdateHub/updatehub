@@ -5,10 +5,10 @@ import (
 	"path"
 	"testing"
 
-	"bitbucket.org/ossystems/agent/installmodes"
-	"bitbucket.org/ossystems/agent/libarchive"
-	"bitbucket.org/ossystems/agent/testsmocks"
-	"bitbucket.org/ossystems/agent/utils"
+	"code.ossystems.com.br/updatehub/agent/installmodes"
+	"code.ossystems.com.br/updatehub/agent/libarchive"
+	"code.ossystems.com.br/updatehub/agent/testsmocks"
+	"code.ossystems.com.br/updatehub/agent/utils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

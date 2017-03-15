@@ -12,9 +12,9 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
-	"bitbucket.org/ossystems/agent/client"
-	"bitbucket.org/ossystems/agent/installmodes"
-	"bitbucket.org/ossystems/agent/metadata"
+	"code.ossystems.com.br/updatehub/agent/client"
+	"code.ossystems.com.br/updatehub/agent/installmodes"
+	"code.ossystems.com.br/updatehub/agent/metadata"
 )
 
 const validUpdateMetadata = `{

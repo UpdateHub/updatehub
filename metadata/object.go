@@ -5,8 +5,8 @@ import (
 	"errors"
 	"reflect"
 
-	"bitbucket.org/ossystems/agent/handlers"
-	"bitbucket.org/ossystems/agent/installmodes"
+	"code.ossystems.com.br/updatehub/agent/handlers"
+	"code.ossystems.com.br/updatehub/agent/installmodes"
 )
 
 // ObjectMetadata contains the common properties of a package's object from JSON metadata

@@ -1,7 +1,7 @@
 package testsmocks
 
 import (
-	"bitbucket.org/ossystems/agent/libarchive"
+	"code.ossystems.com.br/updatehub/agent/libarchive"
 
 	"github.com/stretchr/testify/mock"
 )

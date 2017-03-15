@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/afero"
 
-	"bitbucket.org/ossystems/agent/utils"
+	"code.ossystems.com.br/updatehub/agent/utils"
 )
 
 type FirmwareMetadata struct {

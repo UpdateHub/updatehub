@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"bitbucket.org/ossystems/agent/libarchive"
+	"code.ossystems.com.br/updatehub/agent/libarchive"
 	shellwords "github.com/mattn/go-shellwords"
 	"github.com/spf13/afero"
 )

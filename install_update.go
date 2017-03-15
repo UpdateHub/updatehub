@@ -1,6 +1,6 @@
 package main
 
-import "bitbucket.org/ossystems/agent/handlers"
+import "code.ossystems.com.br/updatehub/agent/handlers"
 
 func InstallUpdate(h handlers.InstallUpdateHandler) error {
 	if err := h.Setup(); err != nil {

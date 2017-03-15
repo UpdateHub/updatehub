@@ -6,11 +6,11 @@ import (
 
 	"github.com/spf13/afero"
 
-	"bitbucket.org/ossystems/agent/installmodes"
-	"bitbucket.org/ossystems/agent/installmodes/internal/testsutils"
-	"bitbucket.org/ossystems/agent/libarchive"
-	"bitbucket.org/ossystems/agent/metadata"
-	"bitbucket.org/ossystems/agent/utils"
+	"code.ossystems.com.br/updatehub/agent/installmodes"
+	"code.ossystems.com.br/updatehub/agent/installmodes/internal/testsutils"
+	"code.ossystems.com.br/updatehub/agent/libarchive"
+	"code.ossystems.com.br/updatehub/agent/metadata"
+	"code.ossystems.com.br/updatehub/agent/utils"
 )
 
 func init() {

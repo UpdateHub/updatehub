@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"bitbucket.org/ossystems/agent/metadata"
+	"code.ossystems.com.br/updatehub/agent/metadata"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"bitbucket.org/ossystems/agent/libarchive"
-	"bitbucket.org/ossystems/agent/testsmocks"
+	"code.ossystems.com.br/updatehub/agent/libarchive"
+	"code.ossystems.com.br/updatehub/agent/testsmocks"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"

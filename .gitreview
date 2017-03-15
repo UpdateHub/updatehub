@@ -1,5 +1,5 @@
 [gerrit]
 host=code.ossystems.com.br
 port=29418
-project=easyfota/agent.git
+project=updatehub/agent.git
 defaultbranch=master

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"bitbucket.org/ossystems/agent/metadata"
+	"code.ossystems.com.br/updatehub/agent/metadata"
 )
 
 type UpdateClient struct {
