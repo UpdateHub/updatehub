@@ -32,6 +32,7 @@ func init() {
 	})
 }
 
+// TarballObject encapsulates the "tarball" handler data and functions
 type TarballObject struct {
 	metadata.ObjectMetadata
 	metadata.CompressedObject
@@ -53,6 +54,7 @@ type TarballObject struct {
 	targetDevice string // this is NOT obtained from the json but from the "Setup()"
 }
 
+// Setup implementation for the "tarball" handler
 func (tb *TarballObject) Setup() error {
 	switch tb.TargetType {
 	case "device":
@@ -78,6 +80,7 @@ func (tb *TarballObject) Setup() error {
 	return nil
 }
 
+// Install implementation for the "tarball" handler
 func (tb *TarballObject) Install() error {
 	if tb.MustFormat {
 		err := tb.Format(tb.Target, tb.FSType, tb.FormatOptions)
@@ -120,6 +123,7 @@ func (tb *TarballObject) Install() error {
 	return testsutils.MergeErrorList(errorList)
 }
 
+// Cleanup implementation for the "tarball" handler
 func (tb *TarballObject) Cleanup() error {
 	return nil
 }

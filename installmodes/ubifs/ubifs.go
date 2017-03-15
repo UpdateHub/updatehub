@@ -45,6 +45,7 @@ func getObject() interface{} {
 	}
 }
 
+// UbifsObject encapsulates the "ubifs" handler data and functions
 type UbifsObject struct {
 	metadata.ObjectMetadata
 	metadata.CompressedObject
@@ -58,6 +59,7 @@ type UbifsObject struct {
 	TargetType string `json:"target-type"`
 }
 
+// Setup implementation for the "ubifs" handler
 func (ufs *UbifsObject) Setup() error {
 	if ufs.TargetType != "ubivolume" {
 		return fmt.Errorf("target-type '%s' is not supported for the 'ubifs' handler. Its value must be 'ubivolume'", ufs.TargetType)
@@ -66,6 +68,7 @@ func (ufs *UbifsObject) Setup() error {
 	return nil
 }
 
+// Install implementation for the "ubifs" handler
 func (ufs *UbifsObject) Install() error {
 	targetDevice, err := ufs.GetTargetDeviceFromUbiVolumeName(ufs.FileSystemBackend, ufs.Target)
 	if err != nil {
@@ -87,6 +90,7 @@ func (ufs *UbifsObject) Install() error {
 	return err
 }
 
+// Cleanup implementation for the "ubifs" handler
 func (ufs *UbifsObject) Cleanup() error {
 	return nil
 }

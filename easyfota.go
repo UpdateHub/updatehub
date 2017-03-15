@@ -101,7 +101,7 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 func (fota *EasyFota) ReportCurrentState() error {
 	if rs, ok := fota.state.(ReportableState); ok {
 		packageUID, _ := rs.UpdateMetadata().Checksum()
-		err := fota.reporter.ReportState(fota.api.Request(), packageUID, StateToString(fota.state.Id()))
+		err := fota.reporter.ReportState(fota.api.Request(), packageUID, StateToString(fota.state.ID()))
 		if err != nil {
 			return err
 		}
@@ -114,11 +114,11 @@ func (fota *EasyFota) MainLoop() {
 	for {
 		fota.ReportCurrentState()
 
-		fmt.Println("Handling state:", StateToString(fota.state.Id()))
+		fmt.Println("Handling state:", StateToString(fota.state.ID()))
 
 		state, cancelled := fota.state.Handle(fota)
 
-		if state.Id() == EasyFotaStateError {
+		if state.ID() == EasyFotaStateError {
 			if es, ok := state.(*ErrorState); ok {
 				// FIXME: log error
 				fmt.Println(es.cause)

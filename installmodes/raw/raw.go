@@ -28,6 +28,7 @@ func init() {
 	})
 }
 
+// RawObject encapsulates the "raw" handler data and functions
 type RawObject struct {
 	metadata.ObjectMetadata
 	metadata.CompressedObject
@@ -44,6 +45,7 @@ type RawObject struct {
 	Truncate   bool   `json:"truncate,omitempty"`
 }
 
+// Setup implementation for the "raw" handler
 func (r *RawObject) Setup() error {
 	if r.TargetType != "device" {
 		return fmt.Errorf("target-type '%s' is not supported for the 'raw' handler. Its value must be 'device'", r.TargetType)
@@ -52,11 +54,13 @@ func (r *RawObject) Setup() error {
 	return nil
 }
 
+// Install implementation for the "raw" handler
 func (r *RawObject) Install() error {
 	// FIXME: on sourcePath we need to: path.Join(r.UpdateDir, r.Sha256sum)
 	return r.CopyFile(r.FileSystemBackend, r.LibArchiveBackend, r.Sha256sum, r.Target, r.ChunkSize, r.Skip, r.Seek, r.Count, r.Truncate, r.Compressed)
 }
 
+// Cleanup implementation for the "raw" handler
 func (r *RawObject) Cleanup() error {
 	return nil
 }

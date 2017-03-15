@@ -29,6 +29,7 @@ func init() {
 	})
 }
 
+// CopyObject encapsulates the "copy" handler data and functions
 type CopyObject struct {
 	metadata.ObjectMetadata
 	metadata.CompressedObject
@@ -47,6 +48,7 @@ type CopyObject struct {
 	ChunkSize     int    `json:"chunk-size,omitempty"`
 }
 
+// Setup implementation for the "copy" handler
 func (cp *CopyObject) Setup() error {
 	if cp.TargetType != "device" {
 		return fmt.Errorf("target-type '%s' is not supported for the 'copy' handler. Its value must be 'device'", cp.TargetType)
@@ -55,6 +57,7 @@ func (cp *CopyObject) Setup() error {
 	return nil
 }
 
+// Install implementation for the "copy" handler
 func (cp *CopyObject) Install() error {
 	if cp.MustFormat {
 		err := cp.Format(cp.Target, cp.FSType, cp.FormatOptions)
@@ -97,6 +100,7 @@ func (cp *CopyObject) Install() error {
 	return testsutils.MergeErrorList(errorList)
 }
 
+// Cleanup implementation for the "copy" handler
 func (cp *CopyObject) Cleanup() error {
 	return nil
 }

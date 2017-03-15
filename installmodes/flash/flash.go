@@ -38,6 +38,7 @@ func getObject() interface{} {
 	}
 }
 
+// FlashObject encapsulates the "flash" handler data and functions
 type FlashObject struct {
 	metadata.ObjectMetadata
 	utils.CmdLineExecuter
@@ -50,6 +51,7 @@ type FlashObject struct {
 	targetDevice string // this is NOT obtained from the json but from the "Setup()"
 }
 
+// Setup implementation for the "flash" handler
 func (f *FlashObject) Setup() error {
 	switch f.TargetType {
 	case "device":
@@ -68,6 +70,7 @@ func (f *FlashObject) Setup() error {
 	return nil
 }
 
+// Install implementation for the "flash" handler
 func (f *FlashObject) Install() error {
 	isNand, err := f.MtdUtils.MtdIsNAND(f.targetDevice)
 	if err != nil {
@@ -93,6 +96,7 @@ func (f *FlashObject) Install() error {
 	return err
 }
 
+// Cleanup implementation for the "flash" handler
 func (f *FlashObject) Cleanup() error {
 	return nil
 }

@@ -119,7 +119,7 @@ func TestStateUpdateFetch(t *testing.T) {
 			"WithoutError",
 			&testController{fetchUpdateError: nil},
 			NewUpdateFetchState(&metadata.UpdateMetadata{}),
-			&InstallUpdateState{},
+			&UpdateInstallState{},
 		},
 
 		{

@@ -29,6 +29,7 @@ func getObject() interface{} {
 	}
 }
 
+// ImxKobsObject encapsulates the "imxkobs" handler data and functions
 type ImxKobsObject struct {
 	metadata.ObjectMetadata
 	utils.CmdLineExecuter
@@ -39,10 +40,12 @@ type ImxKobsObject struct {
 	Chip1DevicePath string `json:"chip_1_device_path,omitempty"`
 }
 
+// Setup implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Setup() error {
 	return nil
 }
 
+// Install implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Install() error {
 	cmdline := "kobs-ng init"
 
@@ -72,6 +75,7 @@ func (ik *ImxKobsObject) Install() error {
 	return err
 }
 
+// Cleanup implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Cleanup() error {
 	return nil
 }
