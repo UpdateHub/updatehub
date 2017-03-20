@@ -15,10 +15,6 @@ package libarchive
 #include <archive.h>
 #include <archive_entry.h>
 #include <stdlib.h>
-
-# if ARCHIVE_VERSION_NUMBER < 3002001
-typedef int64_t la_int64_t;
-# endif
 */
 import "C"
 import (
@@ -329,7 +325,7 @@ func copyData(api API, ar Archive, aw Archive) error {
 	var buff *C.void
 	b := unsafe.Pointer(buff)
 	var size C.size_t
-	var offset C.la_int64_t
+	var offset C.__LA_INT64_T
 
 	for {
 		r := C.archive_read_data_block(ar.archive, &b, &size, &offset)
