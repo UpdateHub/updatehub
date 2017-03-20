@@ -1,0 +1,30 @@
+language: go
+
+go:
+  - 1.7
+  - 1.8
+  - master
+
+go_import_path: github.com/UpdateHub/updatehub
+
+matrix:
+  allow_failures:
+    - go: master
+
+addons:
+  apt:
+    sources:
+      - sourceline: 'ppa:masterminds/glide'
+    packages:
+      - libarchive-dev
+      - glide
+
+before_install:
+  - go get -u github.com/alecthomas/gometalinter
+  - gometalinter --install
+  - glide install
+
+install: true
+
+script:
+  - go test $(glide novendor)
