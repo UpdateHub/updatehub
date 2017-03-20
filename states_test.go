@@ -10,12 +10,13 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/bouk/monkey"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -302,4 +303,90 @@ func (state *testReportableState) Handle(uh *UpdateHub) (State, bool) {
 
 func (state *testReportableState) UpdateMetadata() *metadata.UpdateMetadata {
 	return state.updateMetadata
+}
+
+func TestStateUpdateInstall(t *testing.T) {
+	m := &metadata.UpdateMetadata{}
+	s := NewUpdateInstallState(m)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewInstallingState(m)
+	assert.Equal(t, expectedState, nextState)
+}
+
+func TestStateUpdateInstallWithChecksumError(t *testing.T) {
+	expectedErr := fmt.Errorf("checksum error")
+
+	m := &metadata.UpdateMetadata{}
+
+	guard := monkey.PatchInstanceMethod(reflect.TypeOf(m), "Checksum", func(*metadata.UpdateMetadata) (string, error) {
+		return "", expectedErr
+	})
+	defer guard.Unpatch()
+
+	s := NewUpdateInstallState(m)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+}
+
+func TestStateUpdateInstallWithUpdateMetadataAlreadyInstalled(t *testing.T) {
+	m := &metadata.UpdateMetadata{}
+	s := NewUpdateInstallState(m)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	uh.lastInstalledPackageUID, _ = m.Checksum()
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewWaitingForRebootState(m)
+	assert.Equal(t, expectedState, nextState)
+}
+
+func TestStateInstalling(t *testing.T) {
+	m := &metadata.UpdateMetadata{}
+	s := NewInstallingState(m)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewInstalledState(m)
+	assert.Equal(t, expectedState, nextState)
+}
+
+func TestStateWaitingForReboot(t *testing.T) {
+	m := &metadata.UpdateMetadata{}
+	s := NewWaitingForRebootState(m)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewPollState()
+	// we can't assert Equal here because NewPollState() creates a
+	// channel dynamically
+	assert.IsType(t, expectedState, nextState)
+}
+
+func TestStateInstalled(t *testing.T) {
+	m := &metadata.UpdateMetadata{}
+	s := NewInstalledState(m)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewPollState()
+	// we can't assert Equal here because NewPollState() creates a
+	// channel dynamically
+	assert.IsType(t, expectedState, nextState)
 }

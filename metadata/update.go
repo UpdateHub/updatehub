@@ -57,13 +57,13 @@ func NewUpdateMetadata(bytes []byte) (*UpdateMetadata, error) {
 	return &metadata, nil
 }
 
-func (m UpdateMetadata) Checksum() (string, error) {
+func (m *UpdateMetadata) Checksum() (string, error) {
 	var wrapper struct {
 		UpdateMetadata
 		Objects [][]Object `json:"objects"`
 	}
 
-	wrapper.UpdateMetadata = m
+	wrapper.UpdateMetadata = *m
 	wrapper.Objects = m.Objects
 
 	data, err := json.Marshal(wrapper)
