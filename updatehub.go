@@ -9,9 +9,9 @@ import (
 
 	"github.com/spf13/afero"
 
-	"code.ossystems.com.br/updatehub/agent/client"
-	"code.ossystems.com.br/updatehub/agent/metadata"
-	"code.ossystems.com.br/updatehub/agent/utils"
+	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 type UpdateHub struct {

@@ -1,6 +1,6 @@
 package main
 
-import "code.ossystems.com.br/updatehub/agent/handlers"
+import "github.com/UpdateHub/updatehub/handlers"
 
 func InstallUpdate(h handlers.InstallUpdateHandler) error {
 	if err := h.Setup(); err != nil {

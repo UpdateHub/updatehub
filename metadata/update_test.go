@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"code.ossystems.com.br/updatehub/agent/installmodes"
+	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/stretchr/testify/assert"
 )
 

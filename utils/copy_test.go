@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"code.ossystems.com.br/updatehub/agent/libarchive"
-	"code.ossystems.com.br/updatehub/agent/testsmocks"
+	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/testsmocks"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"

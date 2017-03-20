@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	"code.ossystems.com.br/updatehub/agent/libarchive"
+	"github.com/UpdateHub/updatehub/libarchive"
 	shellwords "github.com/mattn/go-shellwords"
 	"github.com/spf13/afero"
 )

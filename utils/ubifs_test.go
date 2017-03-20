@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"code.ossystems.com.br/updatehub/agent/testsmocks"
+	"github.com/UpdateHub/updatehub/testsmocks"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

@@ -6,10 +6,10 @@ import (
 	"path"
 	"testing"
 
-	"code.ossystems.com.br/updatehub/agent/installmodes"
-	"code.ossystems.com.br/updatehub/agent/installmodes/internal/testsutils"
-	"code.ossystems.com.br/updatehub/agent/testsmocks"
-	"code.ossystems.com.br/updatehub/agent/utils"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/installmodes/internal/testsutils"
+	"github.com/UpdateHub/updatehub/testsmocks"
+	"github.com/UpdateHub/updatehub/utils"
 
 	"github.com/stretchr/testify/assert"
 )

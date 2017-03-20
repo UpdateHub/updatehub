@@ -6,9 +6,9 @@ import (
 
 	"github.com/spf13/afero"
 
-	"code.ossystems.com.br/updatehub/agent/installmodes"
-	"code.ossystems.com.br/updatehub/agent/metadata"
-	"code.ossystems.com.br/updatehub/agent/utils"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 func init() {

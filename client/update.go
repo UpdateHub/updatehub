@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.ossystems.com.br/updatehub/agent/metadata"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 type UpdateClient struct {

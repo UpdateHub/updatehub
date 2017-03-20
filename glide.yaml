@@ -1,4 +1,4 @@
-package: code.ossystems.com.br/updatehub/agent
+package: github.com/UpdateHub/updatehub
 import:
 - package: github.com/go-ini/ini
 - package: github.com/julienschmidt/httprouter

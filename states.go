@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"code.ossystems.com.br/updatehub/agent/metadata"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 // UpdateHubState holds the possible states for the agent

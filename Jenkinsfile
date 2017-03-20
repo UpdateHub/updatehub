@@ -1,4 +1,4 @@
-def GOPKG = 'code.ossystems.com.br/updatehub/agent'
+def GOPKG = 'github.com/UpdateHub/updatehub'
 def GOPATH = "/go/src/${GOPKG}"
 
 node('docker') {
