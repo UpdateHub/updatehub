@@ -1,5 +1,0 @@
-[gerrit]
-host=code.ossystems.com.br
-port=29418
-project=updatehub/agent.git
-defaultbranch=master
