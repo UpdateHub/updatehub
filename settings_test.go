@@ -28,7 +28,7 @@ SupportedInstallModes=mode1,mode2
 
 [Network]
 DisableHttps=true
-EasyFotaServerAddress=localhost
+UpdateHubServerAddress=localhost
 
 [Firmware]
 MetadataPath=/tmp/metadata

@@ -82,12 +82,12 @@ func TestStatePoll(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.caseName, func(t *testing.T) {
-			fota, err := newTestEasyFota(NewPollState())
+			uh, err := newTestUpdateHub(NewPollState())
 			assert.NoError(t, err)
 
-			fota.settings = tc.settings
+			uh.settings = tc.settings
 
-			next, _ := fota.state.Handle(fota)
+			next, _ := uh.state.Handle(uh)
 			assert.IsType(t, tc.nextState, next)
 		})
 	}
@@ -96,12 +96,12 @@ func TestStatePoll(t *testing.T) {
 func TestStateUpdateCheck(t *testing.T) {
 	for _, tc := range checkUpdateCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fota, err := newTestEasyFota(tc.initialState)
+			uh, err := newTestUpdateHub(tc.initialState)
 			assert.NoError(t, err)
 
-			fota.Controller = tc.controller
+			uh.Controller = tc.controller
 
-			next, _ := fota.state.Handle(fota)
+			next, _ := uh.state.Handle(uh)
 
 			assert.IsType(t, tc.nextState, next)
 		})
@@ -132,12 +132,12 @@ func TestStateUpdateFetch(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fota, err := newTestEasyFota(tc.initialState)
+			uh, err := newTestUpdateHub(tc.initialState)
 			assert.NoError(t, err)
 
-			fota.Controller = tc.controller
+			uh.Controller = tc.controller
 
-			next, _ := fota.state.Handle(fota)
+			next, _ := uh.state.Handle(uh)
 
 			assert.IsType(t, tc.nextState, next)
 		})
@@ -165,7 +165,7 @@ func TestPollTicks(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			fota, err := newTestEasyFota(NewUpdateCheckState())
+			uh, err := newTestUpdateHub(NewUpdateCheckState())
 			assert.NoError(t, err)
 
 			c := &testController{
@@ -173,20 +173,20 @@ func TestPollTicks(t *testing.T) {
 				extraPoll:       tc.extraPoll,
 			}
 
-			fota.pollInterval = tc.pollInterval
-			fota.Controller = c
+			uh.pollInterval = tc.pollInterval
+			uh.Controller = c
 
-			poll, _ := fota.state.Handle(fota)
+			poll, _ := uh.state.Handle(uh)
 			assert.IsType(t, &PollState{}, poll)
 
-			poll.Handle(fota)
-			assert.Equal(t, fota.pollInterval+c.extraPoll, poll.(*PollState).ticksCount)
+			poll.Handle(uh)
+			assert.Equal(t, uh.pollInterval+c.extraPoll, poll.(*PollState).ticksCount)
 		})
 	}
 }
 
 func TestPollingRetries(t *testing.T) {
-	fota, err := newTestEasyFota(NewPollState())
+	uh, err := newTestUpdateHub(NewPollState())
 	assert.NoError(t, err)
 
 	c := &testController{
@@ -194,25 +194,25 @@ func TestPollingRetries(t *testing.T) {
 		extraPoll:       -1,
 	}
 
-	fota.Controller = c
+	uh.Controller = c
 
-	next, _ := fota.state.Handle(fota)
+	next, _ := uh.state.Handle(uh)
 	assert.IsType(t, &UpdateCheckState{}, next)
 
 	for i := 1; i < 3; i++ {
-		state, _ := next.Handle(fota)
+		state, _ := next.Handle(uh)
 		assert.IsType(t, &PollState{}, state)
-		next, _ = state.Handle(fota)
+		next, _ = state.Handle(uh)
 		assert.IsType(t, &UpdateCheckState{}, next)
-		assert.Equal(t, i, fota.settings.PollingRetries)
+		assert.Equal(t, i, uh.settings.PollingRetries)
 	}
 
 	c.updateAvailable = true
 	c.extraPoll = 0
 
-	next, _ = next.Handle(fota)
+	next, _ = next.Handle(uh)
 	assert.IsType(t, &UpdateFetchState{}, next)
-	assert.Equal(t, 0, fota.settings.PollingRetries)
+	assert.Equal(t, 0, uh.settings.PollingRetries)
 }
 
 type testReportableState struct {
@@ -222,7 +222,7 @@ type testReportableState struct {
 	updateMetadata *metadata.UpdateMetadata
 }
 
-func (state *testReportableState) Handle(fota *EasyFota) (State, bool) {
+func (state *testReportableState) Handle(uh *UpdateHub) (State, bool) {
 	return nil, true
 }
 

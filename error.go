@@ -2,26 +2,26 @@ package main
 
 import "github.com/pkg/errors"
 
-type EasyFotaErrorReporter interface {
+type UpdateHubErrorReporter interface {
 	Cause() error
 	IsFatal() bool
 	error
 }
 
-type EasyFotaError struct {
+type UpdateHubError struct {
 	cause error
 	fatal bool
 }
 
-func (e *EasyFotaError) Cause() error {
+func (e *UpdateHubError) Cause() error {
 	return e.cause
 }
 
-func (e *EasyFotaError) IsFatal() bool {
+func (e *UpdateHubError) IsFatal() bool {
 	return e.fatal
 }
 
-func (e *EasyFotaError) Error() string {
+func (e *UpdateHubError) Error() string {
 	var err error
 
 	if e.fatal {
@@ -33,15 +33,15 @@ func (e *EasyFotaError) Error() string {
 	return err.Error()
 }
 
-func NewFatalError(err error) EasyFotaErrorReporter {
-	return &EasyFotaError{
+func NewFatalError(err error) UpdateHubErrorReporter {
+	return &UpdateHubError{
 		cause: err,
 		fatal: true,
 	}
 }
 
-func NewTransientError(err error) EasyFotaErrorReporter {
-	return &EasyFotaError{
+func NewTransientError(err error) UpdateHubErrorReporter {
+	return &UpdateHubError{
 		cause: err,
 		fatal: false,
 	}

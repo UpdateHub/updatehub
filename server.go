@@ -9,7 +9,7 @@ import (
 type Server struct {
 	ServerController
 
-	fota   *EasyFota
+	uh   *UpdateHub
 	router *httprouter.Router
 }
 
@@ -25,9 +25,9 @@ func (s *Server) CreateRouter() {
 func (s *Server) Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
-func NewServer(fota *EasyFota) *Server {
+func NewServer(uh *UpdateHub) *Server {
 	s := &Server{
-		fota: fota,
+		uh: uh,
 	}
 
 	s.ServerController = s

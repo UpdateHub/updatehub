@@ -50,7 +50,7 @@ type UpdateSettings struct {
 
 type NetworkSettings struct {
 	DisableHTTPS  bool   `ini:"DisableHttps"`
-	ServerAddress string `ini:"EasyFotaServerAddress"`
+	ServerAddress string `ini:"UpdateHubServerAddress"`
 }
 
 type FirmwareSettings struct {

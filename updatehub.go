@@ -14,7 +14,7 @@ import (
 	"code.ossystems.com.br/updatehub/agent/utils"
 )
 
-type EasyFota struct {
+type UpdateHub struct {
 	Controller
 
 	settings         *Settings
@@ -34,16 +34,16 @@ type Controller interface {
 	ReportCurrentState() error
 }
 
-func (fota *EasyFota) CheckUpdate(retries int) (*metadata.UpdateMetadata, int) {
+func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, int) {
 	var data struct {
 		Retries int `json:"retries"`
 		metadata.FirmwareMetadata
 	}
 
-	data.FirmwareMetadata = fota.firmwareMetadata
+	data.FirmwareMetadata = uh.firmwareMetadata
 	data.Retries = retries
 
-	updateMetadata, extraPoll, err := fota.updater.CheckUpdate(fota.api.Request(), data)
+	updateMetadata, extraPoll, err := uh.updater.CheckUpdate(uh.api.Request(), data)
 	if err != nil || updateMetadata == nil {
 		return nil, -1
 	}
@@ -51,7 +51,7 @@ func (fota *EasyFota) CheckUpdate(retries int) (*metadata.UpdateMetadata, int) {
 	return updateMetadata.(*metadata.UpdateMetadata), extraPoll
 }
 
-func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
+func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
 	// For now, we installs the first object
 	// FIXME: What object I should to install?
 	obj := updateMetadata.Objects[0][0]
@@ -68,18 +68,18 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 	objectUID := obj.GetObjectMetadata().Sha256sum
 
 	uri := "/"
-	uri = path.Join(uri, fota.firmwareMetadata.ProductUID)
+	uri = path.Join(uri, uh.firmwareMetadata.ProductUID)
 	uri = path.Join(uri, packageUID)
 	uri = path.Join(uri, objectUID)
 
-	file, err := fota.store.Create(path.Join(fota.settings.DownloadDir, objectUID))
+	file, err := uh.store.Create(path.Join(uh.settings.DownloadDir, objectUID))
 	if err != nil {
 		return err
 	}
 
 	defer file.Close()
 
-	rd, contentLength, err := fota.updater.FetchUpdate(fota.api.Request(), uri)
+	rd, contentLength, err := uh.updater.FetchUpdate(uh.api.Request(), uri)
 	if err != nil {
 		return err
 	}
@@ -98,10 +98,10 @@ func (fota *EasyFota) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cance
 	return nil
 }
 
-func (fota *EasyFota) ReportCurrentState() error {
-	if rs, ok := fota.state.(ReportableState); ok {
+func (uh *UpdateHub) ReportCurrentState() error {
+	if rs, ok := uh.state.(ReportableState); ok {
 		packageUID, _ := rs.UpdateMetadata().Checksum()
-		err := fota.reporter.ReportState(fota.api.Request(), packageUID, StateToString(fota.state.ID()))
+		err := uh.reporter.ReportState(uh.api.Request(), packageUID, StateToString(uh.state.ID()))
 		if err != nil {
 			return err
 		}
@@ -110,15 +110,15 @@ func (fota *EasyFota) ReportCurrentState() error {
 	return nil
 }
 
-func (fota *EasyFota) MainLoop() {
+func (uh *UpdateHub) MainLoop() {
 	for {
-		fota.ReportCurrentState()
+		uh.ReportCurrentState()
 
-		fmt.Println("Handling state:", StateToString(fota.state.ID()))
+		fmt.Println("Handling state:", StateToString(uh.state.ID()))
 
-		state, cancelled := fota.state.Handle(fota)
+		state, cancelled := uh.state.Handle(uh)
 
-		if state.ID() == EasyFotaStateError {
+		if state.ID() == UpdateHubStateError {
 			if es, ok := state.(*ErrorState); ok {
 				// FIXME: log error
 				fmt.Println(es.cause)
@@ -129,6 +129,6 @@ func (fota *EasyFota) MainLoop() {
 			fmt.Println("State cancelled")
 		}
 
-		fota.state = state
+		uh.state = state
 	}
 }

@@ -14,10 +14,10 @@ import (
 
 var (
 	// The system settings are the settings configured in the client-side and will be read-only
-	systemSettingsPath = "/etc/easyfota-agent.conf"
-	// The runtime settings are the settings that may can change during the execution of EasyFota
+	systemSettingsPath = "/etc/updatehub-agent.conf"
+	// The runtime settings are the settings that may can change during the execution of UpdateHub
 	// These settings are persisted to keep the behaviour across of device's reboot
-	runtimeSettingsPath = "/var/lib/easyfota-agent.conf"
+	runtimeSettingsPath = "/var/lib/updatehub-agent.conf"
 )
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fota := &EasyFota{
+	uh := &UpdateHub{
 		state:        NewPollState(),
 		pollInterval: 5,
 		api:          client.NewApiClient("localhost:8080"),
@@ -37,9 +37,9 @@ func main() {
 		store:        afero.NewOsFs(),
 	}
 
-	fota.Controller = fota
+	uh.Controller = uh
 
-	fota.MainLoop()
+	uh.MainLoop()
 }
 
 func combineSettingsFromFiles() (*Settings, error) {

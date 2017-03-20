@@ -26,7 +26,7 @@ const validUpdateMetadata = `{
   ]
 }`
 
-func TestEasyfotaCheckUpdate(t *testing.T) {
+func TestUpdateHubCheckUpdate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		updateMetadata string
@@ -48,7 +48,7 @@ func TestEasyfotaCheckUpdate(t *testing.T) {
 		},
 	}
 
-	fota, _ := newTestEasyFota(&PollState{})
+	uh, _ := newTestUpdateHub(&PollState{})
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -59,9 +59,9 @@ func TestEasyfotaCheckUpdate(t *testing.T) {
 				extraPoll:      tc.extraPoll,
 			}
 
-			fota.updater = client.Updater(updater)
+			uh.updater = client.Updater(updater)
 
-			updateMetadata, extraPoll := fota.CheckUpdate(0)
+			updateMetadata, extraPoll := uh.CheckUpdate(0)
 
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 			assert.Equal(t, tc.extraPoll, extraPoll)
@@ -69,12 +69,12 @@ func TestEasyfotaCheckUpdate(t *testing.T) {
 	}
 }
 
-func TestEasyFotaFetchUpdate(t *testing.T) {
+func TestUpdateHubFetchUpdate(t *testing.T) {
 	mode := newTestInstallMode()
 
 	defer mode.Unregister()
 
-	fota, _ := newTestEasyFota(&PollState{})
+	uh, _ := newTestUpdateHub(&PollState{})
 
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
 	assert.NoError(t, err)
@@ -85,17 +85,17 @@ func TestEasyFotaFetchUpdate(t *testing.T) {
 		updateBytes:    []byte("0123456789"),
 	}
 
-	fota.updater = client.Updater(updater)
+	uh.updater = client.Updater(updater)
 
-	err = fota.FetchUpdate(updateMetadata, nil)
+	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.NoError(t, err)
 
-	data, err := afero.ReadFile(fota.store, path.Join(fota.settings.DownloadDir, updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum))
+	data, err := afero.ReadFile(uh.store, path.Join(uh.settings.DownloadDir, updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum))
 	assert.NoError(t, err)
 	assert.Equal(t, updater.updateBytes, data)
 }
 
-func TestEasyFotaReportState(t *testing.T) {
+func TestUpdateHubReportState(t *testing.T) {
 	mode := newTestInstallMode()
 
 	defer mode.Unregister()
@@ -106,15 +106,15 @@ func TestEasyFotaReportState(t *testing.T) {
 	state := &testReportableState{}
 	state.updateMetadata = updateMetadata
 
-	fota, _ := newTestEasyFota(state)
-	fota.reporter = client.Reporter(testReporter{})
+	uh, _ := newTestUpdateHub(state)
+	uh.reporter = client.Reporter(testReporter{})
 
-	err = fota.ReportCurrentState()
+	err = uh.ReportCurrentState()
 	assert.NoError(t, err)
 
-	fota.reporter = client.Reporter(testReporter{reportStateError: errors.New("error")})
+	uh.reporter = client.Reporter(testReporter{reportStateError: errors.New("error")})
 
-	err = fota.ReportCurrentState()
+	err = uh.ReportCurrentState()
 	assert.Error(t, err)
 	assert.EqualError(t, err, "error")
 }
@@ -158,8 +158,8 @@ func newTestInstallMode() installmodes.InstallMode {
 	})
 }
 
-func newTestEasyFota(state State) (*EasyFota, error) {
-	fota := &EasyFota{
+func newTestUpdateHub(state State) (*UpdateHub, error) {
+	uh := &UpdateHub{
 		store:        afero.NewMemMapFs(),
 		state:        state,
 		timeStep:     time.Millisecond,
@@ -172,7 +172,7 @@ func newTestEasyFota(state State) (*EasyFota, error) {
 		return nil, err
 	}
 
-	fota.settings = settings
+	uh.settings = settings
 
-	return fota, err
+	return uh, err
 }
