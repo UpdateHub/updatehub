@@ -1,5 +1,5 @@
-hash: 8d3e34e3f93c83b632994af02e913bb9aa787fd1a76c5c0349b994a5f5f5f4f5
-updated: 2017-03-15T11:34:59.19110422-03:00
+hash: f568badfc6a82687e54c753d78b539faddf90d79805dd653f0496615924342f0
+updated: 2017-03-20T16:32:11.06733583-03:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
@@ -20,7 +20,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/Sirupsen/logrus
-  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
+  version: 10f801ebc38b33738c9d17d50860f484a0988ff5
 - name: github.com/spf13/afero
   version: 72b31426848c6ef12a7a8e216708cb0d1530f074
   subpackages:
