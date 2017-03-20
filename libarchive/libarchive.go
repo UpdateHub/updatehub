@@ -1,3 +1,11 @@
+/*
+ * UpdateHub
+ * Copyright (C) 2017
+ * O.S. Systems Sofware LTDA: contato@ossystems.com.br
+ *
+ * SPDX-License-Identifier:     GPL-2.0
+ */
+
 package libarchive
 
 // FIXME: test this whole file
@@ -7,6 +15,10 @@ package libarchive
 #include <archive.h>
 #include <archive_entry.h>
 #include <stdlib.h>
+
+# if ARCHIVE_VERSION_NUMBER < 3002001
+typedef int64_t la_int64_t;
+# endif
 */
 import "C"
 import (
