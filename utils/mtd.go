@@ -15,6 +15,7 @@ package utils
 #include <unistd.h>
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <linux/version.h>
 #include <mtd/mtd-abi.h>
 
 int open_wrapper(const char *pathname, int flags) {
@@ -28,6 +29,13 @@ int errno_wrapper() {
 int ioctl_wrapper(int fd, unsigned long request, struct mtd_info_user *mtd) {
     return ioctl(fd, request, mtd);
 }
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0)
+static inline int mtd_type_is_nand_user(const struct mtd_info_user *mtd)
+{
+       return mtd->type == MTD_NANDFLASH || mtd->type == MTD_MLCNANDFLASH;
+}
+#endif
 */
 import "C"
 
