@@ -29,7 +29,6 @@ type UpdateHub struct {
 	store            afero.Fs
 	firmwareMetadata metadata.FirmwareMetadata
 	state            State
-	pollInterval     int
 	timeStep         time.Duration
 	api              *client.ApiClient
 	updater          client.Updater

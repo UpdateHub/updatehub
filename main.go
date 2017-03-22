@@ -36,13 +36,12 @@ func main() {
 	}
 
 	uh := &UpdateHub{
-		state:        NewPollState(),
-		pollInterval: 5,
-		api:          client.NewApiClient("localhost:8080"),
-		updater:      client.NewUpdateClient(),
-		timeStep:     time.Minute,
-		settings:     settings,
-		store:        afero.NewOsFs(),
+		state:    NewPollState(),
+		api:      client.NewApiClient("localhost:8080"),
+		updater:  client.NewUpdateClient(),
+		timeStep: time.Minute,
+		settings: settings,
+		store:    afero.NewOsFs(),
 	}
 
 	uh.Controller = uh
