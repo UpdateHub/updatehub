@@ -7,3 +7,4 @@ import:
 - package: github.com/stretchr/testify
   subpackages:
   - mock
+- package: github.com/bouk/monkey
