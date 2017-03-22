@@ -115,12 +115,6 @@ func TestCancelCopy(t *testing.T) {
 	cancel := make(chan bool)
 	wait := make(chan bool)
 
-	go func() {
-		eio := ExtendedIO{}
-		cancelled, err = eio.Copy(wr, rd, time.Minute, cancel, ChunkSize, 0, -1, false)
-		wait <- false
-	}()
-
 	var ticks int
 	rd.onRead = func() {
 		if ticks == 2 {
@@ -129,6 +123,12 @@ func TestCancelCopy(t *testing.T) {
 
 		ticks++
 	}
+
+	go func() {
+		eio := ExtendedIO{}
+		cancelled, err = eio.Copy(wr, rd, time.Minute, cancel, ChunkSize, 0, -1, false)
+		wait <- false
+	}()
 
 	<-wait
 
