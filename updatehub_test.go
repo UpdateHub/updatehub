@@ -168,11 +168,10 @@ func newTestInstallMode() installmodes.InstallMode {
 
 func newTestUpdateHub(state State) (*UpdateHub, error) {
 	uh := &UpdateHub{
-		store:        afero.NewMemMapFs(),
-		state:        state,
-		timeStep:     time.Millisecond,
-		pollInterval: 1,
-		api:          client.NewApiClient("localhost"),
+		store:    afero.NewMemMapFs(),
+		state:    state,
+		timeStep: time.Millisecond,
+		api:      client.NewApiClient("localhost"),
 	}
 
 	settings, err := LoadSettings(bytes.NewReader([]byte("")))
@@ -181,6 +180,7 @@ func newTestUpdateHub(state State) (*UpdateHub, error) {
 	}
 
 	uh.settings = settings
+	uh.settings.PollingInterval = 1
 
 	return uh, err
 }

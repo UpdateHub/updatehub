@@ -71,7 +71,8 @@ func TestStatePoll(t *testing.T) {
 			"PollingEnabled",
 			&Settings{
 				PollingSettings: PollingSettings{
-					PollingEnabled: true,
+					PollingEnabled:  true,
+					PollingInterval: 1,
 				},
 			},
 			&UpdateCheckState{},
@@ -154,9 +155,9 @@ func TestStateUpdateFetch(t *testing.T) {
 
 func TestPollTicks(t *testing.T) {
 	testCases := []struct {
-		name         string
-		pollInterval int
-		extraPoll    int
+		name            string
+		pollingInterval int
+		extraPoll       int
 	}{
 		{
 			"PollWithoutExtraPoll",
@@ -181,14 +182,14 @@ func TestPollTicks(t *testing.T) {
 				extraPoll:       tc.extraPoll,
 			}
 
-			uh.pollInterval = tc.pollInterval
+			uh.settings.PollingInterval = tc.pollingInterval
 			uh.Controller = c
 
 			poll, _ := uh.state.Handle(uh)
 			assert.IsType(t, &PollState{}, poll)
 
 			poll.Handle(uh)
-			assert.Equal(t, uh.pollInterval+c.extraPoll, poll.(*PollState).ticksCount)
+			assert.Equal(t, uh.settings.PollingInterval+c.extraPoll, poll.(*PollState).ticksCount)
 		})
 	}
 }
