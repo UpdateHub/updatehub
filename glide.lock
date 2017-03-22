@@ -1,6 +1,8 @@
-hash: f568badfc6a82687e54c753d78b539faddf90d79805dd653f0496615924342f0
-updated: 2017-03-20T16:32:11.06733583-03:00
+hash: e1c6dcd6e234f43ad31024b0eee919748f98002b46e49c029123e1f911d92532
+updated: 2017-03-22T14:54:32.754895242-03:00
 imports:
+- name: github.com/bouk/monkey
+  version: 5dace501dd6dad5b369748946db553903c8e839c
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:

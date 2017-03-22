@@ -25,14 +25,15 @@ import (
 type UpdateHub struct {
 	Controller
 
-	settings         *Settings
-	store            afero.Fs
-	firmwareMetadata metadata.FirmwareMetadata
-	state            State
-	timeStep         time.Duration
-	api              *client.ApiClient
-	updater          client.Updater
-	reporter         client.Reporter
+	settings            *Settings
+	store               afero.Fs
+	firmwareMetadata    metadata.FirmwareMetadata
+	state               State
+	timeStep            time.Duration
+	api                 *client.ApiClient
+	updater             client.Updater
+	reporter            client.Reporter
+	pollingIntervalSpan int
 }
 
 type Controller interface {

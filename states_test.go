@@ -11,8 +11,10 @@ package main
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/bouk/monkey"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -182,6 +184,7 @@ func TestPollTicks(t *testing.T) {
 				extraPoll:       tc.extraPoll,
 			}
 
+			uh.settings.FirstPoll = int(time.Now().Add(-1 * time.Second).Unix())
 			uh.settings.PollingInterval = tc.pollingInterval
 			uh.Controller = c
 
@@ -192,6 +195,41 @@ func TestPollTicks(t *testing.T) {
 			assert.Equal(t, uh.settings.PollingInterval+c.extraPoll, poll.(*PollState).ticksCount)
 		})
 	}
+}
+
+func TestFirstPoll(t *testing.T) {
+	uh, err := newTestUpdateHub(NewUpdateCheckState())
+	assert.NoError(t, err)
+
+	now := time.Now()
+	count := -1
+	guard := monkey.Patch(time.Now, func() time.Time {
+		count++
+		if count == 0 {
+			return now
+		}
+		return now.Add(time.Second * time.Duration(count))
+	})
+	defer guard.Unpatch()
+
+	c := &testController{
+		updateAvailable: false,
+		extraPoll:       0,
+	}
+
+	uh.pollingIntervalSpan = 5
+	uh.settings.FirstPoll = 0
+	uh.settings.PollingInterval = 10
+
+	uh.Controller = c
+
+	poll, _ := uh.state.Handle(uh)
+	assert.IsType(t, &PollState{}, poll)
+
+	state, _ := poll.Handle(uh)
+	assert.Equal(t, int(now.Unix())+uh.pollingIntervalSpan, uh.settings.FirstPoll)
+	assert.Equal(t, uh.pollingIntervalSpan, poll.(*PollState).ticksCount)
+	assert.IsType(t, &UpdateCheckState{}, state)
 }
 
 func TestPollingRetries(t *testing.T) {

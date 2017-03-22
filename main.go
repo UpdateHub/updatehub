@@ -9,6 +9,7 @@
 package main
 
 import (
+	"math/rand"
 	"os"
 	"time"
 
@@ -36,12 +37,13 @@ func main() {
 	}
 
 	uh := &UpdateHub{
-		state:    NewPollState(),
-		api:      client.NewApiClient("localhost:8080"),
-		updater:  client.NewUpdateClient(),
-		timeStep: time.Minute,
-		settings: settings,
-		store:    afero.NewOsFs(),
+		state:               NewPollState(),
+		api:                 client.NewApiClient("localhost:8080"),
+		updater:             client.NewUpdateClient(),
+		timeStep:            time.Minute,
+		settings:            settings,
+		store:               afero.NewOsFs(),
+		pollingIntervalSpan: rand.Intn(settings.PollingInterval),
 	}
 
 	uh.Controller = uh
