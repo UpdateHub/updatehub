@@ -33,6 +33,7 @@ env:
   secure: "kOUj3gVeb04V95LTj1g3DwyLVtSCksHzuXCOK+TR293rXioGNgbXmdXqvs9GQasfNtQCMlg35yfdfRNxtGDQRv58uQFyJ2xROon1+9SY4Xi62gDywDziAijU82IK9PPk9stCgZP+LfyMKiAEcc2MTDkWo9WIy5ISfIG2+GRjBQ7MvSEd6WkiTV19UAGkGDXF0UqzCtq7/xuEYtk1KFOhF0ojBBukPDveq4J1Gl3WMlUsEceO7FIuSQNA+pWRAEWnKtxvdbYfjpkeUPsAo53uctqIc3nQ6yRprX6vsf28FTTvuo/DuPWahs/yZn1X2kCgSpDPLgq7xvtryN6vF6+l2JCsFWVtRLrOybgVfYWALoSdGko2R7pQy+DxdRxf649mZjkwgIIkQgZMTWTwr2B6WwwTKmPiMa2o3d40WNQ7TLUTK/WxFfpq7zmKyyrkHajBdkgLPIHWZdcGuiqfF6QPkXkfR6Mned1tgYPEMsyf6iG8u//bcTe6U26ZU5dQ+wU66eRvbBZruPxd86FuTk3Rlf6iVvPTuDf9iY0kBhV4Lkuoruo58VANtvXoJuU6mfTj9qb1hM7fl6rIQ9UJJRqyey5xFkcw2DHcZkPgrRIRHaVrunbi/z0iG1BXmzP1sQCHcNRmvlVvoQh/9LTR49D1hJWLHNtPBrhlnI7zN82TzUQ="
 
 script:
+  - gometalinter --deadline=30s --aggregate
   - go test -race $(glide novendor)
   - overalls -project=github.com/UpdateHub/updatehub -covermode=count -ignore=.git,vendor -debug
 
