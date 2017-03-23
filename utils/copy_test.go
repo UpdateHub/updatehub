@@ -1148,7 +1148,8 @@ func TestCopyToProcessStdinWithProcessExitError(t *testing.T) {
 	defer os.RemoveAll(testPath)
 
 	binaryContent := `#!/bin/sh
-echo "stdout string $@"
+read stuff
+echo "stdout string $stuff"
 exit 1
 `
 	fakeCmdPath := path.Join(testPath, "binary")
