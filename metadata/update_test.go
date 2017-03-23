@@ -26,6 +26,27 @@ const (
 	  ]
 	}`
 
+	validJSONMetadataWithActiveInactive = `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	    [
+	      {
+            "mode": "test",
+            "target": "/dev/xx1",
+            "target-type": "device"
+          }
+	    ]
+        ,
+	    [
+	      {
+            "mode": "test",
+            "target": "/dev/xx2",
+            "target-type": "device"
+          }
+	    ]
+	  ]
+	}`
+
 	validJSONMetadataWithCompressedObject = `{
 	  "product-uid": "0123456789",
 	  "objects": [
@@ -67,6 +88,28 @@ func TestMetadataFromValidJson(t *testing.T) {
 	assert.NotEmpty(t, m.Objects)
 	assert.NotEmpty(t, m.Objects[0])
 	assert.IsType(t, TestObject{}, m.Objects[0][0])
+}
+
+func TestMetadataFromValidJsonWithActiveInactive(t *testing.T) {
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return TestObject{} },
+	})
+
+	defer mode.Unregister()
+
+	m, err := NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	if !assert.NotNil(t, m) {
+		t.Fatal(err)
+	}
+
+	assert.NotEmpty(t, m.Objects)
+	assert.Equal(t, 2, len(m.Objects))
+	assert.NotEmpty(t, m.Objects[0])
+	assert.NotEmpty(t, m.Objects[1])
+	assert.IsType(t, TestObject{}, m.Objects[0][0])
+	assert.IsType(t, TestObject{}, m.Objects[1][0])
 }
 
 func TestCompressedObject(t *testing.T) {
