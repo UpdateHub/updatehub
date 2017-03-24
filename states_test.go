@@ -200,63 +200,6 @@ func TestPollTicks(t *testing.T) {
 	}
 }
 
-func TestFirstPoll(t *testing.T) {
-	poll := NewPollState()
-	uh, err := newTestUpdateHub(poll)
-	assert.NoError(t, err)
-
-	now := time.Now()
-	count := -1
-	guard := monkey.Patch(time.Now, func() time.Time {
-		count++
-		if count == 0 {
-			return now
-		}
-		return now.Add(time.Second * time.Duration(count))
-	})
-	defer guard.Unpatch()
-
-	c := &testController{
-		updateAvailable: false,
-		extraPoll:       0,
-	}
-
-	uh.pollingIntervalSpan = 5
-	uh.settings.FirstPoll = 0
-	uh.settings.PollingInterval = 10
-
-	uh.Controller = c
-
-	nextState, _ := poll.Handle(uh)
-	assert.IsType(t, &UpdateCheckState{}, nextState)
-
-	assert.Equal(t, int(now.Unix())+uh.pollingIntervalSpan, uh.settings.FirstPoll)
-	assert.Equal(t, uh.pollingIntervalSpan, poll.ticksCount)
-}
-
-func TestDelayedPolling(t *testing.T) {
-	poll := NewPollState()
-	uh, err := newTestUpdateHub(poll)
-	assert.NoError(t, err)
-
-	now := time.Now()
-
-	c := &testController{
-		updateAvailable: false,
-		extraPoll:       0,
-	}
-
-	uh.settings.FirstPoll = int(now.Add(-1 * time.Second).Unix())
-	uh.settings.LastPoll = 0
-
-	uh.Controller = c
-
-	nextState, _ := poll.Handle(uh)
-	assert.IsType(t, &UpdateCheckState{}, nextState)
-
-	assert.Equal(t, 0, poll.ticksCount)
-}
-
 func TestPollingRetries(t *testing.T) {
 	uh, err := newTestUpdateHub(NewPollState())
 	assert.NoError(t, err)

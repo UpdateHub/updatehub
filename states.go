@@ -146,19 +146,6 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 	go func() {
 		pollingInterval := uh.settings.PollingInterval
 
-		now := time.Now()
-
-		if uh.settings.FirstPoll == 0 {
-			uh.settings.FirstPoll = int(now.Unix()) + uh.pollingIntervalSpan
-			pollingInterval = 1
-		}
-
-		if uh.settings.LastPoll == 0 && uh.settings.FirstPoll <= int(now.Unix()) {
-			nextState = NewUpdateCheckState()
-			state.Cancel(true)
-			return
-		}
-
 		for {
 			shouldPoll := int(time.Now().Unix()) > uh.settings.FirstPoll
 
