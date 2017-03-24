@@ -119,9 +119,8 @@ type PollState struct {
 	BaseState
 	CancellableState
 
-	elapsedTime int
-	extraPoll   int
-	ticksCount  int
+	extraPoll  int
+	ticksCount int
 }
 
 // ID returns the state id
