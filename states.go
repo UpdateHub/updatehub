@@ -119,9 +119,8 @@ type PollState struct {
 	BaseState
 	CancellableState
 
-	elapsedTime int
-	extraPoll   int
-	ticksCount  int
+	extraPoll  int
+	ticksCount int
 }
 
 // ID returns the state id
@@ -212,6 +211,8 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 	if extraPoll != -1 {
 		uh.settings.PollingRetries = 0
 	}
+
+	uh.settings.LastPoll = int(time.Now().Unix())
 
 	if updateMetadata != nil {
 		return NewUpdateFetchState(updateMetadata), false
