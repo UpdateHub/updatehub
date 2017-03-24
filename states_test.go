@@ -201,7 +201,8 @@ func TestPollTicks(t *testing.T) {
 }
 
 func TestFirstPoll(t *testing.T) {
-	uh, err := newTestUpdateHub(NewUpdateCheckState())
+	poll := NewPollState()
+	uh, err := newTestUpdateHub(poll)
 	assert.NoError(t, err)
 
 	now := time.Now()
@@ -226,17 +227,16 @@ func TestFirstPoll(t *testing.T) {
 
 	uh.Controller = c
 
-	poll, _ := uh.state.Handle(uh)
-	assert.IsType(t, &PollState{}, poll)
+	nextState, _ := poll.Handle(uh)
+	assert.IsType(t, &UpdateCheckState{}, nextState)
 
-	state, _ := poll.Handle(uh)
 	assert.Equal(t, int(now.Unix())+uh.pollingIntervalSpan, uh.settings.FirstPoll)
-	assert.Equal(t, uh.pollingIntervalSpan, poll.(*PollState).ticksCount)
-	assert.IsType(t, &UpdateCheckState{}, state)
+	assert.Equal(t, uh.pollingIntervalSpan, poll.ticksCount)
 }
 
 func TestDelayedPolling(t *testing.T) {
-	uh, err := newTestUpdateHub(NewUpdateCheckState())
+	poll := NewPollState()
+	uh, err := newTestUpdateHub(poll)
 	assert.NoError(t, err)
 
 	now := time.Now()
@@ -251,12 +251,10 @@ func TestDelayedPolling(t *testing.T) {
 
 	uh.Controller = c
 
-	poll, _ := uh.state.Handle(uh)
-	assert.IsType(t, &PollState{}, poll)
+	nextState, _ := poll.Handle(uh)
+	assert.IsType(t, &UpdateCheckState{}, nextState)
 
-	state, _ := poll.Handle(uh)
-	assert.Equal(t, 0, poll.(*PollState).ticksCount)
-	assert.IsType(t, &UpdateCheckState{}, state)
+	assert.Equal(t, 0, poll.ticksCount)
 }
 
 func TestPollingRetries(t *testing.T) {
