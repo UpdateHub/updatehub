@@ -212,6 +212,8 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 		uh.settings.PollingRetries = 0
 	}
 
+	uh.settings.LastPoll = int(time.Now().Unix())
+
 	if updateMetadata != nil {
 		return NewUpdateFetchState(updateMetadata), false
 	}
