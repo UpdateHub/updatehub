@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bouk/monkey"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
@@ -125,6 +126,64 @@ func TestUpdateHubReportState(t *testing.T) {
 	err = uh.ReportCurrentState()
 	assert.Error(t, err)
 	assert.EqualError(t, err, "error")
+}
+
+func TestStartPolling(t *testing.T) {
+	now := time.Now()
+
+	// Simulate time passage from now
+	defer func() *monkey.PatchGuard {
+		seconds := -1
+		return monkey.Patch(time.Now, func() time.Time {
+			seconds++
+			return now.Add(time.Second * time.Duration(seconds))
+		})
+	}()
+
+	testCases := []struct {
+		name            string
+		pollingInterval time.Duration
+		firstPoll       int
+		lastPoll        int
+		expectedState   State
+	}{
+		{
+			"RegularPoll",
+			time.Second,
+			0,
+			0,
+			&PollState{},
+		},
+
+		{
+			"NeverDidPollBefore",
+			time.Second,
+			int(now.Add(-1 * time.Second).Unix()),
+			0,
+			&UpdateCheckState{},
+		},
+
+		{
+			"PendingRegularPoll",
+			time.Second,
+			int(now.Add(-2 * time.Second).Unix()),
+			int(now.Add(-1 * time.Second).Unix()),
+			&UpdateCheckState{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			uh, _ := newTestUpdateHub(nil)
+
+			uh.settings.PollingInterval = int(tc.pollingInterval)
+			uh.settings.FirstPoll = tc.firstPoll
+			uh.settings.LastPoll = tc.lastPoll
+
+			uh.StartPolling()
+			assert.IsType(t, tc.expectedState, uh.state)
+		})
+	}
 }
 
 type testObject struct {

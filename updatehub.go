@@ -12,6 +12,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"math/rand"
 	"path"
 	"time"
 
@@ -33,7 +34,6 @@ type UpdateHub struct {
 	api                     *client.ApiClient
 	updater                 client.Updater
 	reporter                client.Reporter
-	pollingIntervalSpan     int
 	lastInstalledPackageUID string
 }
 
@@ -117,6 +117,24 @@ func (uh *UpdateHub) ReportCurrentState() error {
 	}
 
 	return nil
+}
+
+// StartPolling starts the polling process
+func (uh *UpdateHub) StartPolling() {
+	now := time.Now()
+
+	uh.state = NewPollState()
+
+	if uh.settings.FirstPoll == 0 {
+		// Apply an offset in first poll
+		uh.settings.FirstPoll = int(now.Add(time.Duration(rand.Intn(uh.settings.PollingInterval))).Unix())
+	} else if uh.settings.LastPoll == 0 && uh.settings.FirstPoll <= int(now.Unix()) {
+		// it never did a poll before
+		uh.state = NewUpdateCheckState()
+	} else if time.Unix(int64(uh.settings.LastPoll), 0).Add(time.Duration(uh.settings.PollingInterval)).Before(now) {
+		// pending regular interval
+		uh.state = NewUpdateCheckState()
+	}
 }
 
 func (uh *UpdateHub) MainLoop() {
