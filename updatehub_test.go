@@ -138,7 +138,7 @@ func TestStartPolling(t *testing.T) {
 			seconds++
 			return now.Add(time.Second * time.Duration(seconds))
 		})
-	}()
+	}().Unpatch()
 
 	testCases := []struct {
 		name            string
