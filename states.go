@@ -274,7 +274,7 @@ func (state *UpdateFetchState) Handle(uh *UpdateHub) (State, bool) {
 	nextState = state
 
 	if err := uh.Controller.FetchUpdate(state.updateMetadata, state.cancel); err == nil {
-		return NewUpdateInstallState(), false
+		return NewUpdateInstallState(state.updateMetadata), false
 	}
 
 	return nextState, false
@@ -293,6 +293,9 @@ func NewUpdateFetchState(updateMetadata *metadata.UpdateMetadata) *UpdateFetchSt
 // UpdateInstallState is the State interface implementation for the UpdateHubStateUpdateInstall
 type UpdateInstallState struct {
 	BaseState
+	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
 }
 
 // ID returns the state id
@@ -302,17 +305,123 @@ func (state *UpdateInstallState) ID() UpdateHubState {
 
 // Handle for UpdateInstallState setups the installation process
 func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
-	var nextState State
+	packageUID, err := state.updateMetadata.Checksum()
+	if err != nil {
+		return NewErrorState(NewTransientError(err)), false
+	}
 
-	nextState = state
+	if packageUID == uh.lastInstalledPackageUID {
+		return NewWaitingForRebootState(state.updateMetadata), false
+	}
 
-	return nextState, false
+	// register the packageUID at the start so it won't redo the
+	// operations in case of an install error occurs
+	uh.lastInstalledPackageUID = packageUID
+
+	// FIXME: check supported hardware
+
+	return NewInstallingState(state.updateMetadata), false
 }
 
 // NewUpdateInstallState creates a new UpdateInstallState
-func NewUpdateInstallState() *UpdateInstallState {
+func NewUpdateInstallState(updateMetadata *metadata.UpdateMetadata) *UpdateInstallState {
 	state := &UpdateInstallState{
-		BaseState: BaseState{id: UpdateHubStateUpdateInstall},
+		BaseState:      BaseState{id: UpdateHubStateUpdateInstall},
+		updateMetadata: updateMetadata,
+	}
+
+	return state
+}
+
+// InstallingState is the State interface implementation for the UpdateHubStateInstalling
+type InstallingState struct {
+	BaseState
+	CancellableState
+	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+// ID returns the state id
+func (state *InstallingState) ID() UpdateHubState {
+	return state.id
+}
+
+// Cancel cancels a state if it is cancellable
+func (state *InstallingState) Cancel(ok bool) bool {
+	return state.CancellableState.Cancel(ok)
+}
+
+// Handle for InstallingState implements the installation process itself
+func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
+	// FIXME: not yet implemented
+	return NewInstalledState(state.updateMetadata), false
+}
+
+// NewInstallingState creates a new InstallingState
+func NewInstallingState(updateMetadata *metadata.UpdateMetadata) *InstallingState {
+	state := &InstallingState{
+		BaseState:      BaseState{id: UpdateHubStateInstalling},
+		updateMetadata: updateMetadata,
+	}
+
+	return state
+}
+
+// WaitingForRebootState is the State interface implementation for the UpdateHubStateWaitingForReboot
+type WaitingForRebootState struct {
+	BaseState
+	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+// ID returns the state id
+func (state *WaitingForRebootState) ID() UpdateHubState {
+	return state.id
+}
+
+// Handle for WaitingForRebootState tells us that an installation has
+// been made and it is waiting for a reboot
+func (state *WaitingForRebootState) Handle(uh *UpdateHub) (State, bool) {
+	// FIXME: not yet implemented
+	return NewPollState(), false
+}
+
+// NewWaitingForRebootState creates a new WaitingForRebootState
+func NewWaitingForRebootState(updateMetadata *metadata.UpdateMetadata) *WaitingForRebootState {
+	state := &WaitingForRebootState{
+		BaseState:      BaseState{id: UpdateHubStateWaitingForReboot},
+		updateMetadata: updateMetadata,
+	}
+
+	return state
+}
+
+// InstalledState is the State interface implementation for the UpdateHubStateInstalled
+type InstalledState struct {
+	BaseState
+	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+// ID returns the state id
+func (state *InstalledState) ID() UpdateHubState {
+	return state.id
+}
+
+// Handle for InstalledState implements the installation process itself
+func (state *InstalledState) Handle(uh *UpdateHub) (State, bool) {
+	// FIXME: not yet implemented
+	return NewPollState(), false
+}
+
+// NewInstalledState creates a new InstalledState
+func NewInstalledState(updateMetadata *metadata.UpdateMetadata) *InstalledState {
+	state := &InstalledState{
+		BaseState:      BaseState{id: UpdateHubStateInstalled},
+		updateMetadata: updateMetadata,
 	}
 
 	return state
