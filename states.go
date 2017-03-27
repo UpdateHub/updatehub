@@ -94,7 +94,7 @@ func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
 		panic(state.cause)
 	}
 
-	return NewPollState(), false
+	return uh.NewPollState(), false
 }
 
 // NewErrorState creates a new ErrorState from a UpdateHubErrorReporter
@@ -119,7 +119,7 @@ type PollState struct {
 	BaseState
 	CancellableState
 
-	extraPoll  int
+	interval   int
 	ticksCount int
 }
 
@@ -144,11 +144,8 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 	}
 
 	go func() {
-		pollingInterval := uh.settings.PollingInterval
-
 		for {
-			if state.ticksCount > 0 && state.ticksCount%((pollingInterval/int(uh.timeStep))+state.extraPoll) == 0 {
-				state.extraPoll = 0
+			if state.ticksCount > 0 && state.ticksCount%(state.interval/int(uh.timeStep)) == 0 {
 				nextState = NewUpdateCheckState()
 				break
 			}
@@ -171,6 +168,7 @@ func NewPollState() *PollState {
 	state := &PollState{
 		BaseState:        BaseState{id: UpdateHubStatePoll},
 		CancellableState: CancellableState{cancel: make(chan bool)},
+		interval:         int(time.Second),
 	}
 
 	return state
@@ -203,10 +201,10 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 		return NewUpdateFetchState(updateMetadata), false
 	}
 
-	poll := NewPollState()
+	poll := uh.NewPollState()
 
 	if extraPoll > 0 {
-		poll.extraPoll = extraPoll
+		poll.interval = extraPoll
 
 		return poll, false
 	}
@@ -371,7 +369,7 @@ func (state *WaitingForRebootState) ID() UpdateHubState {
 // been made and it is waiting for a reboot
 func (state *WaitingForRebootState) Handle(uh *UpdateHub) (State, bool) {
 	// FIXME: not yet implemented
-	return NewPollState(), false
+	return uh.NewPollState(), false
 }
 
 // NewWaitingForRebootState creates a new WaitingForRebootState
@@ -400,7 +398,7 @@ func (state *InstalledState) ID() UpdateHubState {
 // Handle for InstalledState implements the installation process itself
 func (state *InstalledState) Handle(uh *UpdateHub) (State, bool) {
 	// FIXME: not yet implemented
-	return NewPollState(), false
+	return uh.NewPollState(), false
 }
 
 // NewInstalledState creates a new InstalledState
