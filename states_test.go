@@ -157,49 +157,6 @@ func TestStateUpdateFetch(t *testing.T) {
 	}
 }
 
-func TestPollTicks(t *testing.T) {
-	testCases := []struct {
-		name            string
-		pollingInterval int
-		extraPoll       int
-	}{
-		{
-			"PollWithoutExtraPoll",
-			10,
-			0,
-		},
-
-		{
-			"PollWithExtraPoll",
-			13,
-			88,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			uh, err := newTestUpdateHub(NewUpdateCheckState())
-			assert.NoError(t, err)
-
-			c := &testController{
-				updateAvailable: false,
-				extraPoll:       tc.extraPoll,
-			}
-
-			uh.settings.FirstPoll = int(time.Now().Add(-1 * time.Second).Unix())
-			uh.settings.LastPoll = int(time.Now().Add(-2 * time.Second).Unix())
-			uh.settings.PollingInterval = tc.pollingInterval
-			uh.Controller = c
-
-			poll, _ := uh.state.Handle(uh)
-			assert.IsType(t, &PollState{}, poll)
-
-			poll.Handle(uh)
-			assert.Equal(t, uh.settings.PollingInterval+c.extraPoll, poll.(*PollState).ticksCount)
-		})
-	}
-}
-
 func TestPollingRetries(t *testing.T) {
 	uh, err := newTestUpdateHub(NewPollState())
 	assert.NoError(t, err)
