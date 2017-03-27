@@ -147,9 +147,7 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 		pollingInterval := uh.settings.PollingInterval
 
 		for {
-			shouldPoll := int(time.Now().Unix()) > uh.settings.FirstPoll
-
-			if shouldPoll && state.ticksCount > 0 && state.ticksCount%(pollingInterval+state.extraPoll) == 0 {
+			if state.ticksCount > 0 && state.ticksCount%(pollingInterval+state.extraPoll) == 0 {
 				state.extraPoll = 0
 				nextState = NewUpdateCheckState()
 				break
