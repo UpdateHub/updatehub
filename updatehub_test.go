@@ -229,7 +229,7 @@ func newTestUpdateHub(state State) (*UpdateHub, error) {
 	uh := &UpdateHub{
 		store:    afero.NewMemMapFs(),
 		state:    state,
-		timeStep: time.Millisecond,
+		timeStep: time.Second,
 		api:      client.NewApiClient("localhost"),
 	}
 

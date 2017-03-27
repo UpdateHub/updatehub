@@ -75,7 +75,7 @@ func TestStatePoll(t *testing.T) {
 			&Settings{
 				PollingSettings: PollingSettings{
 					PollingEnabled:  true,
-					PollingInterval: 1,
+					PollingInterval: int(time.Second),
 				},
 			},
 			&UpdateCheckState{},
@@ -91,6 +91,23 @@ func TestStatePoll(t *testing.T) {
 			&PollState{},
 		},
 	}
+
+	now := time.Now()
+
+	// Simulate time sleep
+	defer func() *monkey.PatchGuard {
+		return monkey.Patch(time.Sleep, func(d time.Duration) {
+		})
+	}().Unpatch()
+
+	// Simulate time passage from now
+	defer func() *monkey.PatchGuard {
+		seconds := -1
+		return monkey.Patch(time.Now, func() time.Time {
+			seconds++
+			return now.Add(time.Second * time.Duration(seconds))
+		})
+	}().Unpatch()
 
 	for _, tc := range testCases {
 		t.Run(tc.caseName, func(t *testing.T) {
@@ -161,12 +178,19 @@ func TestPollingRetries(t *testing.T) {
 	uh, err := newTestUpdateHub(NewPollState())
 	assert.NoError(t, err)
 
+	// Simulate time sleep
+	defer func() *monkey.PatchGuard {
+		return monkey.Patch(time.Sleep, func(d time.Duration) {
+		})
+	}().Unpatch()
+
 	c := &testController{
 		updateAvailable: false,
 		extraPoll:       -1,
 	}
 
 	uh.Controller = c
+	uh.settings.PollingInterval = int(time.Second)
 	uh.settings.LastPoll = int(time.Now().Unix())
 
 	next, _ := uh.state.Handle(uh)
