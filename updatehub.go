@@ -135,6 +135,13 @@ func (uh *UpdateHub) StartPolling() {
 	} else if time.Unix(int64(uh.settings.LastPoll), 0).Add(time.Duration(uh.settings.PollingInterval)).Before(now) {
 		// pending regular interval
 		uh.state = NewUpdateCheckState()
+	} else {
+		nextPoll := time.Unix(int64(uh.settings.FirstPoll), 0)
+		for nextPoll.Before(now) {
+			nextPoll = nextPoll.Add(time.Duration(uh.settings.PollingInterval))
+		}
+
+		uh.state.(*PollState).ticksCount = int((int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.timeStep))
 	}
 }
 

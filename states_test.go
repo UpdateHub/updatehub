@@ -212,6 +212,67 @@ func TestPollingRetries(t *testing.T) {
 	assert.Equal(t, 0, uh.settings.PollingRetries)
 }
 
+func TestPolling(t *testing.T) {
+	now := time.Now()
+
+	testCases := []struct {
+		name                string
+		pollingInterval     int
+		firstPoll           int
+		expectedElapsedTime time.Duration
+	}{
+		{
+			"Now",
+			10 * int(time.Second),
+			int(now.Unix()),
+			0,
+		},
+
+		{
+			"NextRegularPoll",
+			30 * int(time.Second),
+			int(now.Add(-15 * time.Second).Unix()),
+			15 * time.Second,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			uh, _ := newTestUpdateHub(nil)
+
+			var elapsed time.Duration
+
+			// Simulate time sleep
+			defer func() *monkey.PatchGuard {
+				return monkey.Patch(time.Sleep, func(d time.Duration) {
+					elapsed += d
+				})
+			}().Unpatch()
+
+			// Simulate time passage from now
+			defer func() *monkey.PatchGuard {
+				seconds := -1
+				return monkey.Patch(time.Now, func() time.Time {
+					seconds++
+					return now.Add(time.Second * time.Duration(seconds))
+				})
+			}().Unpatch()
+
+			uh.settings.PollingInterval = tc.pollingInterval
+			uh.settings.FirstPoll = tc.firstPoll
+			uh.settings.LastPoll = tc.firstPoll
+
+			uh.StartPolling()
+
+			poll := uh.state
+			assert.IsType(t, &PollState{}, poll)
+
+			poll.Handle(uh)
+			assert.Equal(t, tc.expectedElapsedTime, elapsed)
+		})
+	}
+}
+
 type testReportableState struct {
 	BaseState
 	ReportableState
