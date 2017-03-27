@@ -122,6 +122,7 @@ func (uh *UpdateHub) ReportCurrentState() error {
 // StartPolling starts the polling process
 func (uh *UpdateHub) StartPolling() {
 	now := time.Now()
+	now = time.Unix(now.Unix(), 0)
 
 	uh.state = NewPollState()
 
