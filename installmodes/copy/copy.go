@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/installmodes"
-	"github.com/UpdateHub/updatehub/installmodes/internal/testsutils"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
@@ -97,7 +96,7 @@ func (cp *CopyObject) Install() error {
 		cp.FileSystemBackend.RemoveAll(tempDirPath)
 	}
 
-	return testsutils.MergeErrorList(errorList)
+	return utils.MergeErrorList(errorList)
 }
 
 // Cleanup implementation for the "copy" handler

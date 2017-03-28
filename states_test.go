@@ -15,7 +15,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/UpdateHub/updatehub/activeinactive"
+	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,6 +30,40 @@ type testController struct {
 	fetchUpdateError        error
 	reportCurrentStateError error
 }
+
+const (
+	validJSONMetadata = `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	    [
+	      {
+            "mode": "test"
+          }
+	    ]
+	  ]
+	}`
+
+	validJSONMetadataWithActiveInactive = `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	    [
+	      {
+            "mode": "test",
+            "target": "/dev/xx1",
+            "target-type": "device"
+          }
+	    ]
+        ,
+	    [
+	      {
+            "mode": "test",
+            "target": "/dev/xx2",
+            "target-type": "device"
+          }
+	    ]
+	  ]
+	}`
+)
 
 var checkUpdateCases = []struct {
 	name         string
@@ -289,7 +327,7 @@ func TestStateUpdateInstall(t *testing.T) {
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewInstallingState(m)
+	expectedState := NewInstallingState(m, &activeinactive.DefaultImpl{})
 	assert.Equal(t, expectedState, nextState)
 }
 
@@ -327,9 +365,30 @@ func TestStateUpdateInstallWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 	assert.Equal(t, expectedState, nextState)
 }
 
+type TestObject struct {
+	metadata.Object
+}
+
 func TestStateInstalling(t *testing.T) {
-	m := &metadata.UpdateMetadata{}
-	s := NewInstallingState(m)
+	om := &objectmock.ObjectMock{}
+	om.On("Setup").Return(nil)
+	om.On("Install").Return(nil)
+	om.On("Cleanup").Return(nil)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	s := NewInstallingState(m, aim)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -337,6 +396,365 @@ func TestStateInstalling(t *testing.T) {
 	nextState, _ := s.Handle(uh)
 	expectedState := NewInstalledState(m)
 	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestStateInstallingWithActiveInactive(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+	om.On("Setup").Return(nil)
+	om.On("Install").Return(nil)
+	om.On("Cleanup").Return(nil)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(1, nil)
+	aim.On("SetActive", 0).Return(nil)
+
+	s := NewInstallingState(m, aim)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewInstalledState(m)
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestStateInstallingWithActiveError(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	assert.NoError(t, err)
+
+	expectedErr := fmt.Errorf("active error")
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(0, expectedErr)
+
+	s := NewInstallingState(m, aim)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestStateInstallingWithSetActiveError(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+	om.On("Setup").Return(nil)
+	om.On("Install").Return(nil)
+	om.On("Cleanup").Return(nil)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	assert.NoError(t, err)
+
+	expectedErr := fmt.Errorf("set active error")
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(1, nil)
+	aim.On("SetActive", 0).Return(expectedErr)
+
+	s := NewInstallingState(m, aim)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestStateInstallingWithSetupError(t *testing.T) {
+	expectedErr := fmt.Errorf("setup error")
+
+	om := &objectmock.ObjectMock{}
+	om.On("Setup").Return(expectedErr)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	s := NewInstallingState(m, aim)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestStateInstallingWithInstallError(t *testing.T) {
+	expectedErr := fmt.Errorf("install error")
+
+	om := &objectmock.ObjectMock{}
+	om.On("Setup").Return(nil)
+	om.On("Install").Return(expectedErr)
+	om.On("Cleanup").Return(nil)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	s := NewInstallingState(m, aim)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestStateInstallingWithCleanupError(t *testing.T) {
+	expectedErr := fmt.Errorf("cleanup error")
+
+	om := &objectmock.ObjectMock{}
+	om.On("Setup").Return(nil)
+	om.On("Install").Return(nil)
+	om.On("Cleanup").Return(expectedErr)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	s := NewInstallingState(m, aim)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+	om.On("Setup").Return(nil)
+	om.On("Install").Return(fmt.Errorf("install error"))
+	om.On("Cleanup").Return(fmt.Errorf("cleanup error"))
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	s := NewInstallingState(m, aim)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(fmt.Errorf("(install error); (cleanup error)")))
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestGetIndexOfObjectToBeInstalled(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(m.Objects))
+
+	testCases := []struct {
+		caseName  string
+		active    int
+		installTo int
+	}{
+		{
+			"ActiveZero",
+			0,
+			1,
+		},
+		{
+			"ActiveOne",
+			1,
+			0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.caseName, func(t *testing.T) {
+			aim := &activeinactivemock.ActiveInactiveMock{}
+			aim.On("Active").Return(tc.active, nil)
+			index, err := GetIndexOfObjectToBeInstalled(aim, m)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.installTo, index)
+		})
+	}
+}
+
+func TestGetIndexOfObjectToBeInstalledWithActiveError(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(m.Objects))
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(1, fmt.Errorf("active error"))
+	index, err := GetIndexOfObjectToBeInstalled(aim, m)
+	assert.EqualError(t, err, "active error")
+	assert.Equal(t, 0, index)
+}
+
+func TestGetIndexOfObjectToBeInstalledWithMoreThanTwoObjects(t *testing.T) {
+	activeInactiveJSONMetadataWithThreeObjects := `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	    [
+	      {
+            "mode": "copy",
+            "target": "/dev/xx1",
+            "target-type": "device"
+          }
+	    ]
+        ,
+	    [
+	      {
+            "mode": "copy",
+            "target": "/dev/xx2",
+            "target-type": "device"
+          }
+	    ]
+        ,
+	    [
+	      {
+            "mode": "copy",
+            "target": "/dev/xx3",
+            "target-type": "device"
+          }
+	    ]
+	  ]
+	}`
+
+	m, err := metadata.NewUpdateMetadata([]byte(activeInactiveJSONMetadataWithThreeObjects))
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(m.Objects))
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	index, err := GetIndexOfObjectToBeInstalled(aim, m)
+	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 3")
+	assert.Equal(t, 0, index)
+}
+
+func TestGetIndexOfObjectToBeInstalledWithNoObjects(t *testing.T) {
+	activeInactiveJSONMetadataWithThreeObjects := `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	  ]
+	}`
+
+	m, err := metadata.NewUpdateMetadata([]byte(activeInactiveJSONMetadataWithThreeObjects))
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(m.Objects))
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	index, err := GetIndexOfObjectToBeInstalled(aim, m)
+	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 0")
+	assert.Equal(t, 0, index)
 }
 
 func TestStateWaitingForReboot(t *testing.T) {

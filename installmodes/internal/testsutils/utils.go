@@ -1,10 +1,8 @@
 package testsutils
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,21 +20,4 @@ func SetupCheckRequirementsDir(t *testing.T, binaries []string) string {
 	}
 
 	return testPath
-}
-
-func MergeErrorList(errorList []error) error {
-	if len(errorList) == 0 {
-		return nil
-	}
-
-	if len(errorList) == 1 {
-		return errorList[0]
-	}
-
-	errorMessages := []string{}
-	for _, err := range errorList {
-		errorMessages = append(errorMessages, fmt.Sprintf("(%v)", err))
-	}
-
-	return fmt.Errorf("%s", strings.Join(errorMessages[:], "; "))
 }

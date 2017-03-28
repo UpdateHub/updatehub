@@ -10,9 +10,13 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/UpdateHub/updatehub/activeinactive"
+	"github.com/UpdateHub/updatehub/handlers"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 // UpdateHubState holds the possible states for the agent
@@ -342,7 +346,7 @@ func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
 
 	// FIXME: check supported hardware
 
-	return NewInstallingState(state.updateMetadata), false
+	return NewInstallingState(state.updateMetadata, &activeinactive.DefaultImpl{}), false
 }
 
 // NewUpdateInstallState creates a new UpdateInstallState
@@ -360,6 +364,7 @@ type InstallingState struct {
 	BaseState
 	CancellableState
 	ReportableState
+	ActiveInactiveBackend activeinactive.Interface
 
 	updateMetadata *metadata.UpdateMetadata
 }
@@ -376,15 +381,61 @@ func (state *InstallingState) Cancel(ok bool) bool {
 
 // Handle for InstallingState implements the installation process itself
 func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
-	// FIXME: not yet implemented
+	indexToInstall, err := GetIndexOfObjectToBeInstalled(state.ActiveInactiveBackend, state.updateMetadata)
+	if err != nil {
+		return NewErrorState(NewTransientError(err)), false
+	}
+
+	for _, o := range state.updateMetadata.Objects[indexToInstall] {
+		var handler handlers.InstallUpdateHandler = o
+
+		// FIXME: check whether the source file exists
+		// FIXME: verify the sha256sum
+
+		err := handler.Setup()
+		if err != nil {
+			return NewErrorState(NewTransientError(err)), false
+		}
+
+		errorList := []error{}
+
+		// FIXME: implement install-if-different check here
+		installIfDifferent := true
+		if installIfDifferent {
+			err = handler.Install()
+			if err != nil {
+				errorList = append(errorList, err)
+			}
+		}
+
+		err = handler.Cleanup()
+		if err != nil {
+			errorList = append(errorList, err)
+		}
+
+		if len(errorList) > 0 {
+			return NewErrorState(NewTransientError(utils.MergeErrorList(errorList))), false
+		}
+
+		// 2 objects means that ActiveInactive is enabled, so we need
+		// to set the new active object
+		if len(state.updateMetadata.Objects) == 2 {
+			err := state.ActiveInactiveBackend.SetActive(indexToInstall)
+			if err != nil {
+				return NewErrorState(NewTransientError(err)), false
+			}
+		}
+	}
+
 	return NewInstalledState(state.updateMetadata), false
 }
 
 // NewInstallingState creates a new InstallingState
-func NewInstallingState(updateMetadata *metadata.UpdateMetadata) *InstallingState {
+func NewInstallingState(updateMetadata *metadata.UpdateMetadata, aii activeinactive.Interface) *InstallingState {
 	state := &InstallingState{
-		BaseState:      BaseState{id: UpdateHubStateInstalling},
-		updateMetadata: updateMetadata,
+		BaseState:             BaseState{id: UpdateHubStateInstalling},
+		updateMetadata:        updateMetadata,
+		ActiveInactiveBackend: aii,
 	}
 
 	return state
@@ -447,4 +498,25 @@ func NewInstalledState(updateMetadata *metadata.UpdateMetadata) *InstalledState 
 	}
 
 	return state
+}
+
+// GetIndexOfObjectToBeInstalled selects which object will be installed from the update metadata
+func GetIndexOfObjectToBeInstalled(aii activeinactive.Interface, um *metadata.UpdateMetadata) (int, error) {
+	if len(um.Objects) < 1 || len(um.Objects) > 2 {
+		return 0, fmt.Errorf("update metadata must have 1 or 2 objects. Found %d", len(um.Objects))
+	}
+
+	// 2 objects means that ActiveInactive is enabled
+	if len(um.Objects) == 2 {
+		activeIndex, err := aii.Active()
+		if err != nil {
+			return 0, err
+		}
+
+		inactiveIndex := (activeIndex - 1) * -1
+
+		return inactiveIndex, nil
+	}
+
+	return 0, nil
 }
