@@ -119,11 +119,19 @@ func (uh *UpdateHub) ReportCurrentState() error {
 	return nil
 }
 
+// NewPollState creates a NewPollState with a predefined interval
+func (uh *UpdateHub) NewPollState() *PollState {
+	poll := NewPollState()
+	poll.interval = uh.settings.PollingInterval
+	return poll
+}
+
 // StartPolling starts the polling process
 func (uh *UpdateHub) StartPolling() {
 	now := time.Now()
+	now = time.Unix(now.Unix(), 0)
 
-	uh.state = NewPollState()
+	uh.state = uh.NewPollState()
 
 	if uh.settings.FirstPoll == 0 {
 		// Apply an offset in first poll
@@ -134,6 +142,13 @@ func (uh *UpdateHub) StartPolling() {
 	} else if time.Unix(int64(uh.settings.LastPoll), 0).Add(time.Duration(uh.settings.PollingInterval)).Before(now) {
 		// pending regular interval
 		uh.state = NewUpdateCheckState()
+	} else {
+		nextPoll := time.Unix(int64(uh.settings.FirstPoll), 0)
+		for nextPoll.Before(now) {
+			nextPoll = nextPoll.Add(time.Duration(uh.settings.PollingInterval))
+		}
+
+		uh.state.(*PollState).ticksCount = int((int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.timeStep))
 	}
 }
 

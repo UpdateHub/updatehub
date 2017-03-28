@@ -75,7 +75,7 @@ func TestStatePoll(t *testing.T) {
 			&Settings{
 				PollingSettings: PollingSettings{
 					PollingEnabled:  true,
-					PollingInterval: 1,
+					PollingInterval: int(time.Second),
 				},
 			},
 			&UpdateCheckState{},
@@ -91,6 +91,23 @@ func TestStatePoll(t *testing.T) {
 			&PollState{},
 		},
 	}
+
+	now := time.Now()
+
+	// Simulate time sleep
+	defer func() *monkey.PatchGuard {
+		return monkey.Patch(time.Sleep, func(d time.Duration) {
+		})
+	}().Unpatch()
+
+	// Simulate time passage from now
+	defer func() *monkey.PatchGuard {
+		seconds := -1
+		return monkey.Patch(time.Now, func() time.Time {
+			seconds++
+			return now.Add(time.Second * time.Duration(seconds))
+		})
+	}().Unpatch()
 
 	for _, tc := range testCases {
 		t.Run(tc.caseName, func(t *testing.T) {
@@ -157,52 +174,15 @@ func TestStateUpdateFetch(t *testing.T) {
 	}
 }
 
-func TestPollTicks(t *testing.T) {
-	testCases := []struct {
-		name            string
-		pollingInterval int
-		extraPoll       int
-	}{
-		{
-			"PollWithoutExtraPoll",
-			10,
-			0,
-		},
-
-		{
-			"PollWithExtraPoll",
-			13,
-			88,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			uh, err := newTestUpdateHub(NewUpdateCheckState())
-			assert.NoError(t, err)
-
-			c := &testController{
-				updateAvailable: false,
-				extraPoll:       tc.extraPoll,
-			}
-
-			uh.settings.FirstPoll = int(time.Now().Add(-1 * time.Second).Unix())
-			uh.settings.LastPoll = int(time.Now().Add(-2 * time.Second).Unix())
-			uh.settings.PollingInterval = tc.pollingInterval
-			uh.Controller = c
-
-			poll, _ := uh.state.Handle(uh)
-			assert.IsType(t, &PollState{}, poll)
-
-			poll.Handle(uh)
-			assert.Equal(t, uh.settings.PollingInterval+c.extraPoll, poll.(*PollState).ticksCount)
-		})
-	}
-}
-
 func TestPollingRetries(t *testing.T) {
 	uh, err := newTestUpdateHub(NewPollState())
 	assert.NoError(t, err)
+
+	// Simulate time sleep
+	defer func() *monkey.PatchGuard {
+		return monkey.Patch(time.Sleep, func(d time.Duration) {
+		})
+	}().Unpatch()
 
 	c := &testController{
 		updateAvailable: false,
@@ -210,6 +190,7 @@ func TestPollingRetries(t *testing.T) {
 	}
 
 	uh.Controller = c
+	uh.settings.PollingInterval = int(time.Second)
 	uh.settings.LastPoll = int(time.Now().Unix())
 
 	next, _ := uh.state.Handle(uh)
@@ -229,6 +210,67 @@ func TestPollingRetries(t *testing.T) {
 	next, _ = next.Handle(uh)
 	assert.IsType(t, &UpdateFetchState{}, next)
 	assert.Equal(t, 0, uh.settings.PollingRetries)
+}
+
+func TestPolling(t *testing.T) {
+	now := time.Now()
+
+	testCases := []struct {
+		name                string
+		pollingInterval     int
+		firstPoll           int
+		expectedElapsedTime time.Duration
+	}{
+		{
+			"Now",
+			10 * int(time.Second),
+			int(now.Unix()),
+			0,
+		},
+
+		{
+			"NextRegularPoll",
+			30 * int(time.Second),
+			int(now.Add(-15 * time.Second).Unix()),
+			15 * time.Second,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			uh, _ := newTestUpdateHub(nil)
+
+			var elapsed time.Duration
+
+			// Simulate time sleep
+			defer func() *monkey.PatchGuard {
+				return monkey.Patch(time.Sleep, func(d time.Duration) {
+					elapsed += d
+				})
+			}().Unpatch()
+
+			// Simulate time passage from now
+			defer func() *monkey.PatchGuard {
+				seconds := -1
+				return monkey.Patch(time.Now, func() time.Time {
+					seconds++
+					return now.Add(time.Second * time.Duration(seconds))
+				})
+			}().Unpatch()
+
+			uh.settings.PollingInterval = tc.pollingInterval
+			uh.settings.FirstPoll = tc.firstPoll
+			uh.settings.LastPoll = tc.firstPoll
+
+			uh.StartPolling()
+
+			poll := uh.state
+			assert.IsType(t, &PollState{}, poll)
+
+			poll.Handle(uh)
+			assert.Equal(t, tc.expectedElapsedTime, elapsed)
+		})
+	}
 }
 
 type testReportableState struct {
