@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/testsmocks"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultImplActive(t *testing.T) {
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", "updatehub-active-get").Return([]byte("1"), nil)
 
 	di := DefaultImpl{
@@ -33,7 +33,7 @@ func TestDefaultImplActive(t *testing.T) {
 }
 
 func TestDefaultImplActiveWithExecuteError(t *testing.T) {
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", "updatehub-active-get").Return([]byte(""), fmt.Errorf("execute error"))
 
 	di := DefaultImpl{
@@ -49,7 +49,7 @@ func TestDefaultImplActiveWithExecuteError(t *testing.T) {
 }
 
 func TestDefaultImplActiveWithParseIntError(t *testing.T) {
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", "updatehub-active-get").Return([]byte("a"), nil)
 
 	di := DefaultImpl{
@@ -65,7 +65,7 @@ func TestDefaultImplActiveWithParseIntError(t *testing.T) {
 }
 
 func TestDefaultImplSetActive(t *testing.T) {
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", "updatehub-active-set 1").Return([]byte(""), nil)
 
 	di := DefaultImpl{
@@ -79,7 +79,7 @@ func TestDefaultImplSetActive(t *testing.T) {
 }
 
 func TestDefaultImplSetActiveWithExecuteError(t *testing.T) {
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", "updatehub-active-set 1").Return([]byte(""), fmt.Errorf("execute error"))
 
 	di := DefaultImpl{

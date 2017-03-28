@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/UpdateHub/updatehub/installmodes"
-	"github.com/UpdateHub/updatehub/testsmocks"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 	"github.com/UpdateHub/updatehub/utils"
 
 	"github.com/stretchr/testify/assert"
@@ -154,7 +154,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			clm := &testsmocks.CmdLineExecuterMock{}
+			clm := &cmdlinemock.CmdLineExecuterMock{}
 			clm.On("Execute", tc.ExpectedCmdLineExecuter).Return([]byte("combinedOutput"), nil)
 
 			ik := ImxKobsObject{CmdLineExecuter: clm}
@@ -175,7 +175,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 }
 
 func TestImxKobsInstallFailure(t *testing.T) {
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	expectedCmdline := "kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v"
 	combinedOutput := "combinedOutput"
 	clm.On("Execute", expectedCmdline).Return([]byte(combinedOutput), fmt.Errorf("Error executing 'kobs-ng'. Output: "+combinedOutput))

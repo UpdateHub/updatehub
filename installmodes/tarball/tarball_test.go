@@ -7,7 +7,11 @@ import (
 
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
-	"github.com/UpdateHub/updatehub/testsmocks"
+	"github.com/UpdateHub/updatehub/testsmocks/copymock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/mtdmock"
+	"github.com/UpdateHub/updatehub/testsmocks/ubifsmock"
 	"github.com/UpdateHub/updatehub/utils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +62,7 @@ func TestTarballSetupWithMtdnameTargetType(t *testing.T) {
 	mtdname := "system0"
 	targetDevice := "/dev/mtd5"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("GetTargetDeviceFromMtdName", memFs, mtdname).Return(targetDevice, nil)
 
 	tb := TarballObject{FileSystemBackend: memFs, MtdUtils: mum}
@@ -78,7 +82,7 @@ func TestTarballSetupWithMtdnameTargetTypeWithError(t *testing.T) {
 
 	mtdname := "system0"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("GetTargetDeviceFromMtdName", memFs, mtdname).Return("", fmt.Errorf("some error"))
 
 	tb := TarballObject{FileSystemBackend: memFs, MtdUtils: mum}
@@ -99,7 +103,7 @@ func TestTarballSetupWithUbivolumeTargetType(t *testing.T) {
 	ubivolume := "system0"
 	targetDevice := "/dev/ubi5_6"
 
-	uum := &testsmocks.UbifsUtilsMock{}
+	uum := &ubifsmock.UbifsUtilsMock{}
 	uum.On("GetTargetDeviceFromUbiVolumeName", memFs, ubivolume).Return(targetDevice, nil)
 
 	tb := TarballObject{FileSystemBackend: memFs, UbifsUtils: uum}
@@ -119,7 +123,7 @@ func TestTarballSetupWithUbivolumeTargetTypeWithError(t *testing.T) {
 
 	ubivolume := "system0"
 
-	uum := &testsmocks.UbifsUtilsMock{}
+	uum := &ubifsmock.UbifsUtilsMock{}
 	uum.On("GetTargetDeviceFromUbiVolumeName", memFs, ubivolume).Return("", fmt.Errorf("some error"))
 
 	tb := TarballObject{FileSystemBackend: memFs, UbifsUtils: uum}
@@ -144,14 +148,14 @@ func TestTarballSetupWithNotSupportedTargetTypes(t *testing.T) {
 
 func TestTarballInstallWithFormatError(t *testing.T) {
 	memFs := afero.NewMemMapFs()
-	lam := &testsmocks.LibArchiveMock{}
-	cm := &testsmocks.CopierMock{}
+	lam := &libarchivemock.LibArchiveMock{}
+	cm := &copymock.CopierMock{}
 
 	targetDevice := "/dev/xx1"
 	fsType := "ext4"
 	formatOptions := "-y"
 
-	fsm := &testsmocks.FileSystemHelperMock{}
+	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("Format", targetDevice, fsType, formatOptions).Return(fmt.Errorf("format error"))
 	tb := TarballObject{
 		FileSystemHelper:  fsm,
@@ -175,10 +179,10 @@ func TestTarballInstallWithFormatError(t *testing.T) {
 
 func TestTarballInstallWithTempDirError(t *testing.T) {
 	memFs := afero.NewMemMapFs()
-	lam := &testsmocks.LibArchiveMock{}
-	cm := &testsmocks.CopierMock{}
+	lam := &libarchivemock.LibArchiveMock{}
+	cm := &copymock.CopierMock{}
 
-	fsm := &testsmocks.FileSystemHelperMock{}
+	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return("", fmt.Errorf("temp dir error"))
 	tb := TarballObject{
 		FileSystemHelper:  fsm,
@@ -197,8 +201,8 @@ func TestTarballInstallWithTempDirError(t *testing.T) {
 
 func TestTarballInstallWithMountError(t *testing.T) {
 	memFs := afero.NewMemMapFs()
-	lam := &testsmocks.LibArchiveMock{}
-	cm := &testsmocks.CopierMock{}
+	lam := &libarchivemock.LibArchiveMock{}
+	cm := &copymock.CopierMock{}
 
 	tempDirPath, err := afero.TempDir(memFs, "", "tarball-handler")
 	assert.NoError(t, err)
@@ -207,7 +211,7 @@ func TestTarballInstallWithMountError(t *testing.T) {
 	fsType := "ext4"
 	mountOptions := "-o rw"
 
-	fsm := &testsmocks.FileSystemHelperMock{}
+	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(fmt.Errorf("mount error"))
 	tb := TarballObject{
@@ -245,14 +249,14 @@ func TestTarballInstallWithExtractError(t *testing.T) {
 	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
 	compressed := true
 
-	fsm := &testsmocks.FileSystemHelperMock{}
+	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(nil)
 
-	cm := &testsmocks.CopierMock{}
+	cm := &copymock.CopierMock{}
 
-	lam := &testsmocks.LibArchiveMock{}
+	lam := &libarchivemock.LibArchiveMock{}
 	lam.On("Unpack", sha256sum, path.Join(tempDirPath, targetPath), false).Return(fmt.Errorf("unpack error"))
 
 	tb := TarballObject{
@@ -294,14 +298,14 @@ func TestTarballInstallWithUmountError(t *testing.T) {
 	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
 	compressed := true
 
-	fsm := &testsmocks.FileSystemHelperMock{}
+	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
-	cm := &testsmocks.CopierMock{}
+	cm := &copymock.CopierMock{}
 
-	lam := &testsmocks.LibArchiveMock{}
+	lam := &libarchivemock.LibArchiveMock{}
 	lam.On("Unpack", sha256sum, path.Join(tempDirPath, targetPath), false).Return(nil)
 
 	tb := TarballObject{
@@ -343,14 +347,14 @@ func TestTarballInstallWithUnpackANDUmountErrors(t *testing.T) {
 	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
 	compressed := true
 
-	fsm := &testsmocks.FileSystemHelperMock{}
+	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
-	cm := &testsmocks.CopierMock{}
+	cm := &copymock.CopierMock{}
 
-	lam := &testsmocks.LibArchiveMock{}
+	lam := &libarchivemock.LibArchiveMock{}
 	lam.On("Unpack", sha256sum, path.Join(tempDirPath, targetPath), false).Return(fmt.Errorf("unpack error"))
 
 	tb := TarballObject{
@@ -392,14 +396,14 @@ func TestTarballInstallWithSuccess(t *testing.T) {
 	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
 	compressed := true
 
-	fsm := &testsmocks.FileSystemHelperMock{}
+	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(nil)
 
-	cm := &testsmocks.CopierMock{}
+	cm := &copymock.CopierMock{}
 
-	lam := &testsmocks.LibArchiveMock{}
+	lam := &libarchivemock.LibArchiveMock{}
 	lam.On("Unpack", sha256sum, path.Join(tempDirPath, targetPath), false).Return(nil)
 
 	tb := TarballObject{

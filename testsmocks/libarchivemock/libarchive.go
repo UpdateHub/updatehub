@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package testsmocks
+package libarchivemock
 
 import (
 	"github.com/UpdateHub/updatehub/libarchive"
