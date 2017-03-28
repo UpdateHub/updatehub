@@ -36,7 +36,7 @@ func main() {
 	}
 
 	uh := &UpdateHub{
-		state:    NewPollState(),
+		state:    NewIdleState(),
 		api:      client.NewApiClient("localhost:8080"),
 		updater:  client.NewUpdateClient(),
 		timeStep: time.Minute,

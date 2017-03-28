@@ -44,7 +44,7 @@ var checkUpdateCases = []struct {
 		"UpdateNotAvailable",
 		&testController{updateAvailable: false},
 		NewUpdateCheckState(),
-		&PollState{},
+		&IdleState{},
 	},
 }
 
@@ -62,65 +62,6 @@ func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, ca
 
 func (c *testController) ReportCurrentState() error {
 	return c.reportCurrentStateError
-}
-
-func TestStatePoll(t *testing.T) {
-	testCases := []struct {
-		caseName  string
-		settings  *Settings
-		nextState State
-	}{
-		{
-			"PollingEnabled",
-			&Settings{
-				PollingSettings: PollingSettings{
-					PollingEnabled:  true,
-					PollingInterval: int(time.Second),
-				},
-			},
-			&UpdateCheckState{},
-		},
-
-		{
-			"PollingDisabled",
-			&Settings{
-				PollingSettings: PollingSettings{
-					PollingEnabled: false,
-				},
-			},
-			&PollState{},
-		},
-	}
-
-	now := time.Now()
-
-	// Simulate time sleep
-	defer func() *monkey.PatchGuard {
-		return monkey.Patch(time.Sleep, func(d time.Duration) {
-		})
-	}().Unpatch()
-
-	// Simulate time passage from now
-	defer func() *monkey.PatchGuard {
-		seconds := -1
-		return monkey.Patch(time.Now, func() time.Time {
-			seconds++
-			return now.Add(time.Second * time.Duration(seconds))
-		})
-	}().Unpatch()
-
-	for _, tc := range testCases {
-		t.Run(tc.caseName, func(t *testing.T) {
-			uh, err := newTestUpdateHub(NewPollState())
-			assert.NoError(t, err)
-
-			uh.settings = tc.settings
-			uh.settings.LastPoll = int(time.Now().Unix())
-
-			next, _ := uh.state.Handle(uh)
-			assert.IsType(t, tc.nextState, next)
-		})
-	}
 }
 
 func TestStateUpdateCheck(t *testing.T) {
@@ -198,8 +139,10 @@ func TestPollingRetries(t *testing.T) {
 
 	for i := 1; i < 3; i++ {
 		state, _ := next.Handle(uh)
-		assert.IsType(t, &PollState{}, state)
+		assert.IsType(t, &IdleState{}, state)
 		next, _ = state.Handle(uh)
+		assert.IsType(t, &PollState{}, next)
+		next, _ = next.Handle(uh)
 		assert.IsType(t, &UpdateCheckState{}, next)
 		assert.Equal(t, i, uh.settings.PollingRetries)
 	}
@@ -269,6 +212,56 @@ func TestPolling(t *testing.T) {
 
 			poll.Handle(uh)
 			assert.Equal(t, tc.expectedElapsedTime, elapsed)
+		})
+	}
+}
+
+func TestNewIdleState(t *testing.T) {
+	state := NewIdleState()
+	assert.IsType(t, &IdleState{}, state)
+	assert.Equal(t, UpdateHubState(UpdateHubStateIdle), state.ID())
+}
+
+func TestStateIdle(t *testing.T) {
+	testCases := []struct {
+		caseName  string
+		settings  *Settings
+		nextState State
+	}{
+		{
+			"PollingEnabled",
+			&Settings{
+				PollingSettings: PollingSettings{
+					PollingEnabled: true,
+				},
+			},
+			&PollState{},
+		},
+
+		{
+			"PollingDisabled",
+			&Settings{
+				PollingSettings: PollingSettings{
+					PollingEnabled: false,
+				},
+			},
+			&IdleState{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.caseName, func(t *testing.T) {
+			uh, err := newTestUpdateHub(NewIdleState())
+			assert.NoError(t, err)
+
+			uh.settings = tc.settings
+
+			go func() {
+				uh.state.Cancel(false)
+			}()
+
+			next, _ := uh.state.Handle(uh)
+			assert.IsType(t, tc.nextState, next)
 		})
 	}
 }
@@ -354,7 +347,7 @@ func TestStateWaitingForReboot(t *testing.T) {
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewPollState()
+	expectedState := NewIdleState()
 	// we can't assert Equal here because NewPollState() creates a
 	// channel dynamically
 	assert.IsType(t, expectedState, nextState)
@@ -368,7 +361,7 @@ func TestStateInstalled(t *testing.T) {
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewPollState()
+	expectedState := NewIdleState()
 	// we can't assert Equal here because NewPollState() creates a
 	// channel dynamically
 	assert.IsType(t, expectedState, nextState)
