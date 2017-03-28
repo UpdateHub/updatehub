@@ -11,6 +11,7 @@ package main
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,8 +20,8 @@ const customSettings = `
 [Polling]
 Interval=1
 Enabled=false
-LastPoll=2
-FirstPoll=3
+LastPoll=2017-01-01T00:00:00Z
+FirstPoll=2017-02-02T00:00:00Z
 ExtraInterval=4
 Retries=5
 
@@ -56,8 +57,8 @@ func TestLoadSettings(t *testing.T) {
 					PollingInterval: defaultPollingInterval,
 					PollingEnabled:  true,
 					PersistentPollingSettings: PersistentPollingSettings{
-						LastPoll:             0,
-						FirstPoll:            0,
+						LastPoll:             (time.Time{}).UTC(),
+						FirstPoll:            (time.Time{}).UTC(),
 						ExtraPollingInterval: 0,
 						PollingRetries:       0,
 					},
@@ -94,8 +95,8 @@ func TestLoadSettings(t *testing.T) {
 					PollingInterval: 1,
 					PollingEnabled:  false,
 					PersistentPollingSettings: PersistentPollingSettings{
-						LastPoll:             2,
-						FirstPoll:            3,
+						LastPoll:             time.Date(2017, time.January, 1, 0, 0, 0, 0, time.UTC),
+						FirstPoll:            time.Date(2017, time.February, 2, 0, 0, 0, 0, time.UTC),
 						ExtraPollingInterval: 4,
 						PollingRetries:       5,
 					},
