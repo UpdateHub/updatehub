@@ -19,8 +19,10 @@ import (
 type UpdateHubState int
 
 const (
+	// UpdateHubStateIdle is set when the agent is in the "idle" mode
+	UpdateHubStateIdle = iota
 	// UpdateHubStatePoll is set when the agent is in the "polling" mode
-	UpdateHubStatePoll = iota
+	UpdateHubStatePoll
 	// UpdateHubStateUpdateCheck is set when the agent is running a
 	// "checkUpdate" procedure
 	UpdateHubStateUpdateCheck
@@ -44,6 +46,7 @@ const (
 )
 
 var statusNames = map[UpdateHubState]string{
+	UpdateHubStateIdle:             "idle",
 	UpdateHubStatePoll:             "poll",
 	UpdateHubStateUpdateCheck:      "update-check",
 	UpdateHubStateUpdateFetch:      "update-fetch",
@@ -94,7 +97,7 @@ func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
 		panic(state.cause)
 	}
 
-	return uh.NewPollState(), false
+	return NewIdleState(), false
 }
 
 // NewErrorState creates a new ErrorState from a UpdateHubErrorReporter
@@ -112,6 +115,42 @@ func NewErrorState(err UpdateHubErrorReporter) State {
 // ReportableState interface describes the necessary operations for a State to be reportable
 type ReportableState interface {
 	UpdateMetadata() *metadata.UpdateMetadata
+}
+
+// IdleState is the State interface implementation for the UpdateHubStateIdle
+type IdleState struct {
+	BaseState
+	CancellableState
+}
+
+// ID returns the state id
+func (state *IdleState) ID() UpdateHubState {
+	return state.id
+}
+
+// Cancel cancels a state if it is cancellable
+func (state *IdleState) Cancel(ok bool) bool {
+	return state.CancellableState.Cancel(ok)
+}
+
+// Handle for IdleState
+func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
+	if !uh.settings.PollingEnabled {
+		state.Wait()
+		return state, false
+	}
+
+	return uh.NewPollState(), false
+}
+
+// NewIdleState creates a new IdleState
+func NewIdleState() *IdleState {
+	state := &IdleState{
+		BaseState:        BaseState{id: UpdateHubStateIdle},
+		CancellableState: CancellableState{cancel: make(chan bool)},
+	}
+
+	return state
 }
 
 // PollState is the State interface implementation for the UpdateHubStatePoll
@@ -201,9 +240,8 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 		return NewUpdateFetchState(updateMetadata), false
 	}
 
-	poll := uh.NewPollState()
-
 	if extraPoll > 0 {
+		poll := uh.NewPollState()
 		poll.interval = extraPoll
 
 		return poll, false
@@ -212,7 +250,7 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 	// Increment the number of polling retries in case of CheckUpdate failure
 	uh.settings.PollingRetries++
 
-	return poll, false
+	return NewIdleState(), false
 }
 
 // NewUpdateCheckState creates a new UpdateCheckState
@@ -369,7 +407,7 @@ func (state *WaitingForRebootState) ID() UpdateHubState {
 // been made and it is waiting for a reboot
 func (state *WaitingForRebootState) Handle(uh *UpdateHub) (State, bool) {
 	// FIXME: not yet implemented
-	return uh.NewPollState(), false
+	return NewIdleState(), false
 }
 
 // NewWaitingForRebootState creates a new WaitingForRebootState
@@ -398,7 +436,7 @@ func (state *InstalledState) ID() UpdateHubState {
 // Handle for InstalledState implements the installation process itself
 func (state *InstalledState) Handle(uh *UpdateHub) (State, bool) {
 	// FIXME: not yet implemented
-	return uh.NewPollState(), false
+	return NewIdleState(), false
 }
 
 // NewInstalledState creates a new InstalledState
