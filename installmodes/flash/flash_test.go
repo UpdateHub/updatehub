@@ -8,7 +8,8 @@ import (
 
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/installmodes/internal/testsutils"
-	"github.com/UpdateHub/updatehub/testsmocks"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/mtdmock"
 	"github.com/UpdateHub/updatehub/utils"
 
 	"github.com/spf13/afero"
@@ -104,7 +105,7 @@ func TestFlashSetupWithDeviceTargetType(t *testing.T) {
 
 	mtddevice := "/dev/mtd8"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum}
 	f.TargetType = "device"
@@ -122,7 +123,7 @@ func TestFlashSetupWithMtdnameTargetType(t *testing.T) {
 	mtdname := "system0"
 	mtddevice := "/dev/mtd5"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("GetTargetDeviceFromMtdName", memFs, mtdname).Return(mtddevice, nil)
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum}
@@ -140,7 +141,7 @@ func TestFlashSetupWithMtdnameTargetTypeWithTargetDeviceError(t *testing.T) {
 
 	mtdname := "system0"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("GetTargetDeviceFromMtdName", memFs, mtdname).Return("", fmt.Errorf("Couldn't find a flash device corresponding to the mtdname '%s'", mtdname))
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum}
@@ -156,7 +157,7 @@ func TestFlashSetupWithMtdnameTargetTypeWithTargetDeviceError(t *testing.T) {
 func TestFlashSetupWithNotSupportedTargetTypes(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum}
 
@@ -184,10 +185,10 @@ func TestFlashInstallSuccessWithNAND(t *testing.T) {
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(true, nil)
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("combinedOutput"), nil)
 	clm.On("Execute", fmt.Sprintf("nandwrite -p %s %s", mtddevice, sha256sum)).Return([]byte("combinedOutput"), nil)
 
@@ -207,10 +208,10 @@ func TestFlashInstallSuccessWithNOR(t *testing.T) {
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(false, nil)
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("combinedOutput"), nil)
 	clm.On("Execute", fmt.Sprintf("flashcp %s %s", sha256sum, mtddevice)).Return([]byte("combinedOutput"), nil)
 
@@ -230,10 +231,10 @@ func TestFlashInstallWithMtdIsNANDFailure(t *testing.T) {
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(false, fmt.Errorf("Error opening %s: no such device", mtddevice))
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum, CmdLineExecuter: clm}
 	f.targetDevice = mtddevice
@@ -251,10 +252,10 @@ func TestFlashInstallWithFlashEraseFailure(t *testing.T) {
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(false, nil)
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("error"), fmt.Errorf("flash_erase error"))
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum, CmdLineExecuter: clm}
@@ -273,10 +274,10 @@ func TestFlashInstallWithFlashcpFailure(t *testing.T) {
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(false, nil)
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("combinedOutput"), nil)
 	clm.On("Execute", fmt.Sprintf("flashcp %s %s", sha256sum, mtddevice)).Return([]byte("error"), fmt.Errorf("flashcp error"))
 
@@ -296,10 +297,10 @@ func TestFlashInstallWithNandwriteFailure(t *testing.T) {
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
 
-	mum := &testsmocks.MtdUtilsMock{}
+	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(true, nil)
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("combinedOutput"), nil)
 	clm.On("Execute", fmt.Sprintf("nandwrite -p %s %s", mtddevice, sha256sum)).Return([]byte("error"), fmt.Errorf("nandwrite error"))
 

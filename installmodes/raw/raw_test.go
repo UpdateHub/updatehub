@@ -6,7 +6,9 @@ import (
 
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
-	"github.com/UpdateHub/updatehub/testsmocks"
+	"github.com/UpdateHub/updatehub/testsmocks/copymock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
 	"github.com/UpdateHub/updatehub/utils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -60,15 +62,15 @@ func TestRawSetupWithNotSupportedTargetTypes(t *testing.T) {
 }
 
 func TestRawInstallWithCopyFileError(t *testing.T) {
-	fsbm := &testsmocks.FileSystemBackendMock{}
+	fsbm := &filesystemmock.FileSystemBackendMock{}
 
-	lam := &testsmocks.LibArchiveMock{}
+	lam := &libarchivemock.LibArchiveMock{}
 
 	targetDevice := "/dev/xx1"
 	sha256sum := "5bdbf286cb4adcff26befa2183f3167c053bc565036736eaa2ae429fe910d93c"
 	compressed := false
 
-	cm := &testsmocks.CopierMock{}
+	cm := &copymock.CopierMock{}
 	cm.On("CopyFile", fsbm, lam, sha256sum, targetDevice, 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
 	r := RawObject{
@@ -122,11 +124,11 @@ func TestRawInstallWithSuccess(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			fsbm := &testsmocks.FileSystemBackendMock{}
+			fsbm := &filesystemmock.FileSystemBackendMock{}
 
-			lam := &testsmocks.LibArchiveMock{}
+			lam := &libarchivemock.LibArchiveMock{}
 
-			cm := &testsmocks.CopierMock{}
+			cm := &copymock.CopierMock{}
 			cm.On("CopyFile", fsbm, lam, tc.Sha256sum, tc.Target, tc.ExpectedChunkSize, tc.Skip, tc.Seek, tc.Count, tc.Truncate, tc.Compressed).Return(nil)
 
 			r := RawObject{Copier: cm, FileSystemBackend: fsbm, LibArchiveBackend: lam}

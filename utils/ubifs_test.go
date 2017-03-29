@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/testsmocks"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,7 +34,7 @@ func TestUbifsUtilsImplWithASingleDeviceNode(t *testing.T) {
 	memFs.MkdirAll("/dev", 0755)
 	afero.WriteFile(memFs, fmt.Sprintf("/dev/ubi%d", deviceNumber), []byte("ubi_content"), 0755)
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("ubinfo -d %d -N %s", deviceNumber, ubivolume)).Return([]byte(fmt.Sprintf(ubinfoStdoutTemplate, volumeID, deviceNumber, ubivolume)), nil)
 
 	uui := &UbifsUtilsImpl{CmdLineExecuter: clm}
@@ -57,7 +57,7 @@ func TestUbifsUtilsImplWithMultipleUbiDeviceNodes(t *testing.T) {
 	afero.WriteFile(memFs, fmt.Sprintf("/dev/ubi%d", deviceNumber), []byte("ubi_content"), 0755)
 	afero.WriteFile(memFs, fmt.Sprintf("/dev/ubi%d", deviceNumber+1), []byte("ubi_content"), 0755)
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("ubinfo -d %d -N %s", deviceNumber-1, ubivolume)).Return([]byte(""), fmt.Errorf("Error executing command"))
 	clm.On("Execute", fmt.Sprintf("ubinfo -d %d -N %s", deviceNumber, ubivolume)).Return([]byte(fmt.Sprintf(ubinfoStdoutTemplate, volumeID, deviceNumber, ubivolume)), nil)
 
@@ -76,7 +76,7 @@ func TestUbifsUtilsImplWithReadDirFailure(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 	memFs.RemoveAll("/dev")
 
-	clm := &testsmocks.CmdLineExecuterMock{}
+	clm := &cmdlinemock.CmdLineExecuterMock{}
 
 	uui := &UbifsUtilsImpl{CmdLineExecuter: clm}
 	targetDevice, err := uui.GetTargetDeviceFromUbiVolumeName(memFs, ubivolume)
