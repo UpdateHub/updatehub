@@ -182,10 +182,6 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 
 	nextState = state
 
-	if !uh.settings.PollingEnabled {
-		return nextState, false
-	}
-
 	go func() {
 		for {
 			if state.ticksCount > 0 && state.ticksCount%(state.interval/int(uh.timeStep)) == 0 {
