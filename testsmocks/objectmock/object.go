@@ -14,12 +14,8 @@ import (
 )
 
 type ObjectMock struct {
+	metadata.ObjectMetadata
 	mock.Mock
-}
-
-func (om *ObjectMock) GetObjectMetadata() metadata.ObjectMetadata {
-	args := om.Called()
-	return args.Get(0).(metadata.ObjectMetadata)
 }
 
 func (om *ObjectMock) Setup() error {

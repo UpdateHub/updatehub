@@ -9,14 +9,18 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"path"
 	"time"
 
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/handlers"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
+	"github.com/spf13/afero"
 )
 
 // UpdateHubState holds the possible states for the agent
@@ -59,6 +63,37 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubStateInstalled:        "installed",
 	UpdateHubStateWaitingForReboot: "waiting-for-reboot",
 	UpdateHubStateError:            "error",
+}
+
+type Sha256Checker interface {
+	CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) error
+}
+
+type Sha256CheckerImpl struct {
+	utils.Copier
+}
+
+func (s *Sha256CheckerImpl) CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) error {
+	file, err := fsBackend.Open(path.Join(downloadDir, expectedSha256sum))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	hash := sha256.New()
+
+	cancel := make(chan bool)
+	_, err = s.Copy(hash, file, time.Minute, cancel, utils.ChunkSize, 0, -1, false)
+	if err != nil {
+		return err
+	}
+
+	calculatedSha256sum := hex.EncodeToString(hash.Sum(nil))
+	if calculatedSha256sum != expectedSha256sum {
+		return fmt.Errorf("sha256sum's don't match. Expected: %s / Calculated: %s", expectedSha256sum, calculatedSha256sum)
+	}
+
+	return nil
 }
 
 // BaseState is the state from which all others must do composition
@@ -354,7 +389,10 @@ func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
 
 	// FIXME: check supported hardware
 
-	return NewInstallingState(state.updateMetadata, &activeinactive.DefaultImpl{}), false
+	return NewInstallingState(state.updateMetadata,
+		&activeinactive.DefaultImpl{},
+		&Sha256CheckerImpl{&utils.ExtendedIO{}},
+		afero.NewOsFs()), false
 }
 
 // NewUpdateInstallState creates a new UpdateInstallState
@@ -372,7 +410,9 @@ type InstallingState struct {
 	BaseState
 	CancellableState
 	ReportableState
+	Sha256Checker
 	ActiveInactiveBackend activeinactive.Interface
+	FileSystemBackend     afero.Fs
 
 	updateMetadata *metadata.UpdateMetadata
 }
@@ -397,10 +437,12 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 	for _, o := range state.updateMetadata.Objects[indexToInstall] {
 		var handler handlers.InstallUpdateHandler = o
 
-		// FIXME: check whether the source file exists
-		// FIXME: verify the sha256sum
+		err := state.CheckDownloadedObjectSha256sum(state.FileSystemBackend, uh.settings.DownloadDir, o.GetObjectMetadata().Sha256sum)
+		if err != nil {
+			return NewErrorState(NewTransientError(err)), false
+		}
 
-		err := handler.Setup()
+		err = handler.Setup()
 		if err != nil {
 			return NewErrorState(NewTransientError(err)), false
 		}
@@ -439,11 +481,13 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 }
 
 // NewInstallingState creates a new InstallingState
-func NewInstallingState(updateMetadata *metadata.UpdateMetadata, aii activeinactive.Interface) *InstallingState {
+func NewInstallingState(updateMetadata *metadata.UpdateMetadata, aii activeinactive.Interface, sc Sha256Checker, fsb afero.Fs) *InstallingState {
 	state := &InstallingState{
 		BaseState:             BaseState{id: UpdateHubStateInstalling},
 		updateMetadata:        updateMetadata,
 		ActiveInactiveBackend: aii,
+		Sha256Checker:         sc,
+		FileSystemBackend:     fsb,
 	}
 
 	return state
