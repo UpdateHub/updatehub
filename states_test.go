@@ -215,14 +215,14 @@ func TestPolling(t *testing.T) {
 		expectedElapsedTime time.Duration
 	}{
 		{
-			"Now",
+			"NextRegularPollFromNow",
 			10 * time.Second,
 			now,
-			0,
+			10 * time.Second,
 		},
 
 		{
-			"NextRegularPoll",
+			"NextRegularPollFromPast",
 			30 * time.Second,
 			now.Add(-15 * time.Second),
 			15 * time.Second,
@@ -245,7 +245,7 @@ func TestPolling(t *testing.T) {
 						C: c,
 					}
 
-					c <- time.Now().Add(elapsed * time.Second)
+					c <- now.Add(elapsed)
 
 					return ticker
 				})
