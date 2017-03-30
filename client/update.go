@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/UpdateHub/updatehub/metadata"
 )
@@ -25,11 +26,11 @@ type UpdateClient struct {
 }
 
 type Updater interface {
-	CheckUpdate(api ApiRequester, data interface{}) (interface{}, int, error)
+	CheckUpdate(api ApiRequester, data interface{}) (interface{}, time.Duration, error)
 	FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error)
 }
 
-func (u *UpdateClient) CheckUpdate(api ApiRequester, data interface{}) (interface{}, int, error) {
+func (u *UpdateClient) CheckUpdate(api ApiRequester, data interface{}) (interface{}, time.Duration, error) {
 	if api == nil {
 		return nil, 0, errors.New("invalid api requester")
 	}
@@ -52,19 +53,19 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester, data interface{}) (interfac
 
 	defer res.Body.Close()
 
-	var extraPoll int
+	var extraPoll int64
 
 	r, err := processUpgradeResponse(res)
 	if err == nil {
 		if v, ok := res.Header["Add-Extra-Poll"]; ok {
-			extraPoll, err = strconv.Atoi(strings.Join(v, ""))
+			extraPoll, err = strconv.ParseInt(strings.Join(v, ""), 10, 0)
 			if err != nil {
 				return nil, 0, errors.New("failed to parse extra poll header")
 			}
 		}
 	}
 
-	return r, extraPoll, err
+	return r, time.Duration(extraPoll), err
 }
 
 func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error) {

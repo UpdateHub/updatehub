@@ -38,12 +38,12 @@ type UpdateHub struct {
 }
 
 type Controller interface {
-	CheckUpdate(int) (*metadata.UpdateMetadata, int)
+	CheckUpdate(int) (*metadata.UpdateMetadata, time.Duration)
 	FetchUpdate(*metadata.UpdateMetadata, <-chan bool) error
 	ReportCurrentState() error
 }
 
-func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, int) {
+func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
 	var data struct {
 		Retries int `json:"retries"`
 		metadata.FirmwareMetadata
@@ -132,23 +132,24 @@ func (uh *UpdateHub) StartPolling() {
 	now = time.Unix(now.Unix(), 0)
 
 	uh.state = uh.NewPollState()
+	timeZero := (time.Time{}).UTC()
 
-	if uh.settings.FirstPoll == 0 {
+	if uh.settings.FirstPoll == timeZero {
 		// Apply an offset in first poll
-		uh.settings.FirstPoll = int(now.Add(time.Duration(rand.Intn(uh.settings.PollingInterval))).Unix())
-	} else if uh.settings.LastPoll == 0 && uh.settings.FirstPoll <= int(now.Unix()) {
+		uh.settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.settings.PollingInterval))))
+	} else if uh.settings.LastPoll == timeZero && now.After(uh.settings.FirstPoll) {
 		// it never did a poll before
 		uh.state = NewUpdateCheckState()
-	} else if time.Unix(int64(uh.settings.LastPoll), 0).Add(time.Duration(uh.settings.PollingInterval)).Before(now) {
+	} else if uh.settings.LastPoll.Add(uh.settings.PollingInterval).Before(now) {
 		// pending regular interval
 		uh.state = NewUpdateCheckState()
 	} else {
-		nextPoll := time.Unix(int64(uh.settings.FirstPoll), 0)
+		nextPoll := time.Unix(uh.settings.FirstPoll.Unix(), 0)
 		for nextPoll.Before(now) {
-			nextPoll = nextPoll.Add(time.Duration(uh.settings.PollingInterval))
+			nextPoll = nextPoll.Add(uh.settings.PollingInterval)
 		}
 
-		uh.state.(*PollState).ticksCount = int((int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.timeStep))
+		uh.state.(*PollState).ticksCount = (int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.timeStep)
 	}
 }
 

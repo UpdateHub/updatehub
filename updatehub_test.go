@@ -39,7 +39,7 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 	testCases := []struct {
 		name           string
 		updateMetadata string
-		extraPoll      int
+		extraPoll      time.Duration
 		err            error
 	}{
 		{
@@ -143,31 +143,31 @@ func TestStartPolling(t *testing.T) {
 	testCases := []struct {
 		name            string
 		pollingInterval time.Duration
-		firstPoll       int
-		lastPoll        int
+		firstPoll       time.Time
+		lastPoll        time.Time
 		expectedState   State
 	}{
 		{
 			"RegularPoll",
 			time.Second,
-			0,
-			0,
+			(time.Time{}).UTC(),
+			(time.Time{}).UTC(),
 			&PollState{},
 		},
 
 		{
 			"NeverDidPollBefore",
 			time.Second,
-			int(now.Add(-1 * time.Second).Unix()),
-			0,
+			now.Add(-1 * time.Second),
+			(time.Time{}).UTC(),
 			&UpdateCheckState{},
 		},
 
 		{
 			"PendingRegularPoll",
 			time.Second,
-			int(now.Add(-2 * time.Second).Unix()),
-			int(now.Add(-1 * time.Second).Unix()),
+			now.Add(-2 * time.Second),
+			now.Add(-1 * time.Second),
 			&UpdateCheckState{},
 		},
 	}
@@ -176,7 +176,7 @@ func TestStartPolling(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			uh, _ := newTestUpdateHub(nil)
 
-			uh.settings.PollingInterval = int(tc.pollingInterval)
+			uh.settings.PollingInterval = tc.pollingInterval
 			uh.settings.FirstPoll = tc.firstPoll
 			uh.settings.LastPoll = tc.lastPoll
 
@@ -193,14 +193,14 @@ type testObject struct {
 type testUpdater struct {
 	// CheckUpdate
 	updateMetadata   *metadata.UpdateMetadata
-	extraPoll        int
+	extraPoll        time.Duration
 	checkUpdateError error
 	// FetchUpdate
 	updateBytes      []byte
 	fetchUpdateError error
 }
 
-func (t testUpdater) CheckUpdate(api client.ApiRequester, data interface{}) (interface{}, int, error) {
+func (t testUpdater) CheckUpdate(api client.ApiRequester, data interface{}) (interface{}, time.Duration, error) {
 	return t.updateMetadata, t.extraPoll, t.checkUpdateError
 }
 

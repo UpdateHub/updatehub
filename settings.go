@@ -11,6 +11,7 @@ package main
 import (
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/go-ini/ini"
 )
@@ -32,16 +33,16 @@ type PersistentSettings struct {
 }
 
 type PollingSettings struct {
-	PollingInterval           int  `ini:"Interval,omitempty"`
-	PollingEnabled            bool `ini:"Enabled,omitempty"`
+	PollingInterval           time.Duration `ini:"Interval,omitempty"`
+	PollingEnabled            bool          `ini:"Enabled,omitempty"`
 	PersistentPollingSettings `ini:"Polling"`
 }
 
 type PersistentPollingSettings struct {
-	LastPoll             int `ini:"LastPoll"`
-	FirstPoll            int `ini:"FirstPoll"`
-	ExtraPollingInterval int `ini:"ExtraInterval"`
-	PollingRetries       int `ini:"Retries"`
+	LastPoll             time.Time     `ini:"LastPoll"`
+	FirstPoll            time.Time     `ini:"FirstPoll"`
+	ExtraPollingInterval time.Duration `ini:"ExtraInterval"`
+	PollingRetries       int           `ini:"Retries"`
 }
 
 type StorageSettings struct {
@@ -80,8 +81,8 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 			PollingInterval: defaultPollingInterval,
 			PollingEnabled:  true,
 			PersistentPollingSettings: PersistentPollingSettings{
-				LastPoll:             0,
-				FirstPoll:            0,
+				LastPoll:             (time.Time{}).UTC(),
+				FirstPoll:            (time.Time{}).UTC(),
 				ExtraPollingInterval: 0,
 				PollingRetries:       0,
 			},

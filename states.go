@@ -162,8 +162,8 @@ type PollState struct {
 	BaseState
 	CancellableState
 
-	interval   int
-	ticksCount int
+	interval   time.Duration
+	ticksCount int64
 }
 
 // ID returns the state id
@@ -186,7 +186,7 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 		ticks := state.ticksCount
 
 		for {
-			if ticks > 0 && ticks%(state.interval/int(uh.timeStep)) == 0 {
+			if ticks > 0 && ticks%int64(state.interval/uh.timeStep) == 0 {
 				nextState = NewUpdateCheckState()
 				break
 			}
@@ -219,7 +219,7 @@ func NewPollState() *PollState {
 	state := &PollState{
 		BaseState:        BaseState{id: UpdateHubStatePoll},
 		CancellableState: CancellableState{cancel: make(chan bool)},
-		interval:         int(time.Second),
+		interval:         time.Second,
 	}
 
 	return state
@@ -246,7 +246,7 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 		uh.settings.PollingRetries = 0
 	}
 
-	uh.settings.LastPoll = int(time.Now().Unix())
+	uh.settings.LastPoll = time.Now()
 
 	if updateMetadata != nil {
 		return NewUpdateFetchState(updateMetadata), false

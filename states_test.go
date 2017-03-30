@@ -25,7 +25,7 @@ import (
 )
 
 type testController struct {
-	extraPoll               int
+	extraPoll               time.Duration
 	updateAvailable         bool
 	fetchUpdateError        error
 	reportCurrentStateError error
@@ -86,7 +86,7 @@ var checkUpdateCases = []struct {
 	},
 }
 
-func (c *testController) CheckUpdate(retries int) (*metadata.UpdateMetadata, int) {
+func (c *testController) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
 	if c.updateAvailable {
 		return &metadata.UpdateMetadata{}, c.extraPoll
 	}
@@ -181,8 +181,8 @@ func TestPollingRetries(t *testing.T) {
 	}
 
 	uh.Controller = c
-	uh.settings.PollingInterval = int(time.Second)
-	uh.settings.LastPoll = int(time.Now().Unix())
+	uh.settings.PollingInterval = time.Second
+	uh.settings.LastPoll = time.Now()
 
 	next, _ := uh.state.Handle(uh)
 	assert.IsType(t, &UpdateCheckState{}, next)
@@ -210,21 +210,21 @@ func TestPolling(t *testing.T) {
 
 	testCases := []struct {
 		name                string
-		pollingInterval     int
-		firstPoll           int
+		pollingInterval     time.Duration
+		firstPoll           time.Time
 		expectedElapsedTime time.Duration
 	}{
 		{
 			"Now",
-			10 * int(time.Second),
-			int(now.Unix()),
+			10 * time.Second,
+			now,
 			0,
 		},
 
 		{
 			"NextRegularPoll",
-			30 * int(time.Second),
-			int(now.Add(-15 * time.Second).Unix()),
+			30 * time.Second,
+			now.Add(-15 * time.Second),
 			15 * time.Second,
 		},
 	}
@@ -279,7 +279,7 @@ func TestCancelPollState(t *testing.T) {
 	uh, _ := newTestUpdateHub(nil)
 
 	poll := NewPollState()
-	poll.interval = int(10 * time.Second)
+	poll.interval = 10 * time.Second
 
 	go func() {
 		assert.True(t, poll.Cancel(true))
@@ -287,7 +287,7 @@ func TestCancelPollState(t *testing.T) {
 
 	poll.Handle(uh)
 
-	assert.Equal(t, 0, poll.ticksCount)
+	assert.Equal(t, int64(0), poll.ticksCount)
 }
 
 func TestNewIdleState(t *testing.T) {
