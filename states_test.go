@@ -157,9 +157,21 @@ func TestPollingRetries(t *testing.T) {
 	uh, err := newTestUpdateHub(NewPollState())
 	assert.NoError(t, err)
 
-	// Simulate time sleep
+	var elapsed time.Duration
+
+	// Simulate ticker
 	defer func() *monkey.PatchGuard {
-		return monkey.Patch(time.Sleep, func(d time.Duration) {
+		return monkey.Patch(time.NewTicker, func(d time.Duration) *time.Ticker {
+			elapsed += d
+
+			c := make(chan time.Time, 1)
+			ticker := &time.Ticker{
+				C: c,
+			}
+
+			c <- time.Now().Add(elapsed * time.Second)
+
+			return ticker
 		})
 	}().Unpatch()
 
@@ -223,10 +235,19 @@ func TestPolling(t *testing.T) {
 
 			var elapsed time.Duration
 
-			// Simulate time sleep
+			// Simulate ticker
 			defer func() *monkey.PatchGuard {
-				return monkey.Patch(time.Sleep, func(d time.Duration) {
+				return monkey.Patch(time.NewTicker, func(d time.Duration) *time.Ticker {
 					elapsed += d
+
+					c := make(chan time.Time, 1)
+					ticker := &time.Ticker{
+						C: c,
+					}
+
+					c <- time.Now().Add(elapsed * time.Second)
+
+					return ticker
 				})
 			}().Unpatch()
 
@@ -252,6 +273,21 @@ func TestPolling(t *testing.T) {
 			assert.Equal(t, tc.expectedElapsedTime, elapsed)
 		})
 	}
+}
+
+func TestCancelPollState(t *testing.T) {
+	uh, _ := newTestUpdateHub(nil)
+
+	poll := NewPollState()
+	poll.interval = int(10 * time.Second)
+
+	go func() {
+		assert.True(t, poll.Cancel(true))
+	}()
+
+	poll.Handle(uh)
+
+	assert.Equal(t, 0, poll.ticksCount)
 }
 
 func TestNewIdleState(t *testing.T) {

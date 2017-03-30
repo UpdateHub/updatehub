@@ -183,18 +183,30 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 	nextState = state
 
 	go func() {
+		ticks := state.ticksCount
+
 		for {
-			if state.ticksCount > 0 && state.ticksCount%(state.interval/int(uh.timeStep)) == 0 {
+			if ticks > 0 && ticks%(state.interval/int(uh.timeStep)) == 0 {
 				nextState = NewUpdateCheckState()
 				break
 			}
 
-			time.Sleep(uh.timeStep)
+			ticker := time.NewTicker(uh.timeStep)
+			ticks++
 
-			state.ticksCount++
+			defer ticker.Stop()
+
+			select {
+			case <-ticker.C:
+				continue
+			case <-state.cancel:
+				break
+			}
 		}
 
 		state.Cancel(true)
+
+		state.ticksCount = ticks
 	}()
 
 	state.Wait()
