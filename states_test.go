@@ -169,7 +169,7 @@ func TestPollingRetries(t *testing.T) {
 				C: c,
 			}
 
-			c <- time.Now().Add(elapsed * time.Second)
+			c <- time.Now().Add(elapsed)
 
 			return ticker
 		})
