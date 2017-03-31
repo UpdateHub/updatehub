@@ -16,56 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	validJSONMetadata = `{
-	  "product-uid": "0123456789",
-	  "objects": [
-	    [
-	      { "mode": "test" }
-	    ]
-	  ]
-	}`
-
-	validJSONMetadataWithActiveInactive = `{
-	  "product-uid": "0123456789",
-	  "objects": [
-	    [
-	      {
-            "mode": "test",
-            "target": "/dev/xx1",
-            "target-type": "device"
-          }
-	    ]
-        ,
-	    [
-	      {
-            "mode": "test",
-            "target": "/dev/xx2",
-            "target-type": "device"
-          }
-	    ]
-	  ]
-	}`
-
-	validJSONMetadataWithCompressedObject = `{
-	  "product-uid": "0123456789",
-	  "objects": [
-	    [
-	      { "mode": "compressed-object", "compressed": true }
-	    ]
-	  ]
-	}`
-
-	validJSONMetadataWithoutCompressedObject = `{
-	  "product-uid": "0123456789",
-	  "objects": [
-	    [
-	      { "mode": "test", "compressed": true }
-	    ]
-	  ]
-	}`
-)
-
 type TestObjectCompressed struct {
 	Object
 	CompressedObject
@@ -80,7 +30,7 @@ func TestMetadataFromValidJson(t *testing.T) {
 
 	defer mode.Unregister()
 
-	m, err := NewUpdateMetadata([]byte(validJSONMetadata))
+	m, err := NewUpdateMetadata([]byte(ValidJSONMetadata))
 	if !assert.NotNil(t, m) {
 		t.Fatal(err)
 	}
@@ -99,7 +49,7 @@ func TestMetadataFromValidJsonWithActiveInactive(t *testing.T) {
 
 	defer mode.Unregister()
 
-	m, err := NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	m, err := NewUpdateMetadata([]byte(ValidJSONMetadataWithActiveInactive))
 	if !assert.NotNil(t, m) {
 		t.Fatal(err)
 	}
@@ -121,7 +71,7 @@ func TestCompressedObject(t *testing.T) {
 
 	defer mode.Unregister()
 
-	obj, err := NewUpdateMetadata([]byte(validJSONMetadataWithCompressedObject))
+	obj, err := NewUpdateMetadata([]byte(ValidJSONMetadataWithCompressedObject))
 	if !assert.NotNil(t, obj) {
 		t.Fatal(err)
 	}
@@ -136,7 +86,7 @@ func TestInvalidCompressedObject(t *testing.T) {
 
 	defer mode.Unregister()
 
-	_, err := NewUpdateMetadata([]byte(validJSONMetadataWithoutCompressedObject))
+	_, err := NewUpdateMetadata([]byte(ValidJSONMetadataWithoutCompressedObject))
 	if assert.Error(t, err) {
 		assert.Equal(t, err, errors.New("Compressed object does not embed CompressedObject struct"))
 	}

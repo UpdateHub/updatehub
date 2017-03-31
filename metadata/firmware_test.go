@@ -9,8 +9,10 @@
 package metadata
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -69,4 +71,60 @@ func TestNewFirmwareMetadata(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, expected, firmwareMetadata)
+}
+
+func TestCheckSupportedHardware(t *testing.T) {
+	testCases := []struct {
+		name             string
+		hardware         string
+		hardwareRevision string
+		expectedErr      error
+	}{
+		{
+			"WithNeitherHardwareNorHardwareRevisionOnFirmwareMetadata",
+			"",
+			"",
+			nil,
+		},
+
+		{
+			"WithMatch",
+			"hardware2",
+			"revB",
+			nil,
+		},
+
+		{
+			"WithNoMatch",
+			"hardware-value",
+			"hardware-revision-value",
+			fmt.Errorf("this hardware doesn't match the hardware supported by the update"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fm := &FirmwareMetadata{
+				ProductUID:       "productuid-value",
+				DeviceIdentity:   map[string]string{"id1": "id1-value"},
+				DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+				Hardware:         tc.hardware,
+				HardwareRevision: tc.hardwareRevision,
+				Version:          "version-value",
+			}
+
+			mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+				Name:              "test",
+				CheckRequirements: func() error { return nil },
+				GetObject:         func() interface{} { return TestObject{} },
+			})
+			defer mode.Unregister()
+
+			um, err := NewUpdateMetadata([]byte(ValidJSONMetadata))
+			assert.NoError(t, err)
+
+			err = fm.CheckSupportedHardware(um)
+			assert.Equal(t, tc.expectedErr, err)
+		})
+	}
 }
