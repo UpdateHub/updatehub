@@ -140,9 +140,11 @@ func TestUbifsInstallWithSuccessNonCompressed(t *testing.T) {
 	compressed := false
 	targetDevice := "/dev/mtd3"
 	sha256sum := "71c88745e5a72067f94aae0ecec6d45af8b0f6e1a37ef695df0b56711e192b86"
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
-	clm.On("Execute", fmt.Sprintf("ubiupdatevol %s %s", targetDevice, sha256sum)).Return([]byte("combinedoutput"), nil)
+	clm.On("Execute", fmt.Sprintf("ubiupdatevol %s %s", targetDevice, sourcePath)).Return([]byte("combinedoutput"), nil)
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 
@@ -158,7 +160,7 @@ func TestUbifsInstallWithSuccessNonCompressed(t *testing.T) {
 	ufs.Target = ubivolume
 	ufs.Sha256sum = sha256sum
 	ufs.Compressed = compressed
-	err := ufs.Install()
+	err := ufs.Install(downloadDir)
 	assert.NoError(t, err)
 
 	clm.AssertExpectations(t)
@@ -171,9 +173,10 @@ func TestUbifsInstallWithSuccessCompressed(t *testing.T) {
 	compressed := true
 	targetDevice := "/dev/mtd3"
 	sha256sum := "71c88745e5a72067f94aae0ecec6d45af8b0f6e1a37ef695df0b56711e192b86"
-	srcPath := sha256sum
 	uncompressedSize := 12345678.0
 	cmdline := fmt.Sprintf("ubiupdatevol -s %.0f %s -", uncompressedSize, targetDevice)
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
@@ -185,7 +188,7 @@ func TestUbifsInstallWithSuccessCompressed(t *testing.T) {
 	lam := &libarchivemock.LibArchiveMock{}
 
 	cpm := &copymock.CopierMock{}
-	cpm.On("CopyToProcessStdin", fsm, lam, srcPath, cmdline, compressed).Return(nil)
+	cpm.On("CopyToProcessStdin", fsm, lam, sourcePath, cmdline, compressed).Return(nil)
 
 	ufs := UbifsObject{
 		CmdLineExecuter:   clm,
@@ -200,7 +203,7 @@ func TestUbifsInstallWithSuccessCompressed(t *testing.T) {
 	ufs.Compressed = compressed
 	ufs.UncompressedSize = uncompressedSize
 
-	err := ufs.Install()
+	err := ufs.Install(downloadDir)
 	assert.NoError(t, err)
 
 	clm.AssertExpectations(t)
@@ -215,9 +218,10 @@ func TestUbifsInstallWithCopyToProcessStdinFailure(t *testing.T) {
 	compressed := true
 	targetDevice := "/dev/mtd3"
 	sha256sum := "71c88745e5a72067f94aae0ecec6d45af8b0f6e1a37ef695df0b56711e192b86"
-	srcPath := sha256sum
 	uncompressedSize := 12345678.0
 	cmdline := fmt.Sprintf("ubiupdatevol -s %.0f %s -", uncompressedSize, targetDevice)
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
@@ -229,7 +233,7 @@ func TestUbifsInstallWithCopyToProcessStdinFailure(t *testing.T) {
 	lam := &libarchivemock.LibArchiveMock{}
 
 	cpm := &copymock.CopierMock{}
-	cpm.On("CopyToProcessStdin", fsm, lam, srcPath, cmdline, compressed).Return(fmt.Errorf("process error"))
+	cpm.On("CopyToProcessStdin", fsm, lam, sourcePath, cmdline, compressed).Return(fmt.Errorf("process error"))
 
 	ufs := UbifsObject{
 		CmdLineExecuter:   clm,
@@ -244,7 +248,7 @@ func TestUbifsInstallWithCopyToProcessStdinFailure(t *testing.T) {
 	ufs.Compressed = compressed
 	ufs.UncompressedSize = uncompressedSize
 
-	err := ufs.Install()
+	err := ufs.Install(downloadDir)
 	assert.EqualError(t, err, "process error")
 
 	clm.AssertExpectations(t)
@@ -258,6 +262,7 @@ func TestUbifsInstallWithGetTargetDeviceFromUbiVolumeNameFailure(t *testing.T) {
 	ubivolume := "system0"
 	compressed := false
 	sha256sum := "71c88745e5a72067f94aae0ecec6d45af8b0f6e1a37ef695df0b56711e192b86"
+	downloadDir := "/dummy-download-dir"
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
@@ -275,7 +280,7 @@ func TestUbifsInstallWithGetTargetDeviceFromUbiVolumeNameFailure(t *testing.T) {
 	ufs.Target = ubivolume
 	ufs.Sha256sum = sha256sum
 	ufs.Compressed = compressed
-	err := ufs.Install()
+	err := ufs.Install(downloadDir)
 	assert.EqualError(t, err, fmt.Sprintf("UBI volume '%s' wasn't found", ubivolume))
 
 	clm.AssertExpectations(t)
@@ -288,9 +293,11 @@ func TestUbifsInstallWithUbiUpdateVolFailure(t *testing.T) {
 	compressed := false
 	targetDevice := "/dev/mtd3"
 	sha256sum := "71c88745e5a72067f94aae0ecec6d45af8b0f6e1a37ef695df0b56711e192b86"
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
-	clm.On("Execute", fmt.Sprintf("ubiupdatevol %s %s", targetDevice, sha256sum)).Return([]byte("error"), fmt.Errorf("Error executing command"))
+	clm.On("Execute", fmt.Sprintf("ubiupdatevol %s %s", targetDevice, sourcePath)).Return([]byte("error"), fmt.Errorf("Error executing command"))
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 
@@ -306,7 +313,7 @@ func TestUbifsInstallWithUbiUpdateVolFailure(t *testing.T) {
 	ufs.Target = ubivolume
 	ufs.Sha256sum = sha256sum
 	ufs.Compressed = compressed
-	err := ufs.Install()
+	err := ufs.Install(downloadDir)
 	assert.EqualError(t, err, "Error executing command")
 
 	clm.AssertExpectations(t)

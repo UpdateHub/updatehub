@@ -88,7 +88,7 @@ func (tb *TarballObject) Setup() error {
 }
 
 // Install implementation for the "tarball" handler
-func (tb *TarballObject) Install() error {
+func (tb *TarballObject) Install(downloadDir string) error {
 	if tb.MustFormat {
 		err := tb.Format(tb.Target, tb.FSType, tb.FormatOptions)
 		if err != nil {
@@ -114,8 +114,8 @@ func (tb *TarballObject) Install() error {
 
 	errorList := []error{}
 
-	// FIXME: on sourcePath we need to: path.Join(tb.UpdateDir, tb.Sha256sum)
-	err = tb.LibArchiveBackend.Unpack(tb.Sha256sum, targetPath, false)
+	sourcePath := path.Join(downloadDir, tb.Sha256sum)
+	err = tb.LibArchiveBackend.Unpack(sourcePath, targetPath, false)
 	if err != nil {
 		errorList = append(errorList, err)
 	}

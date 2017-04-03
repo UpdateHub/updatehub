@@ -10,6 +10,7 @@ package raw
 
 import (
 	"fmt"
+	"path"
 	"testing"
 
 	"github.com/UpdateHub/updatehub/installmodes"
@@ -77,9 +78,11 @@ func TestRawInstallWithCopyFileError(t *testing.T) {
 	targetDevice := "/dev/xx1"
 	sha256sum := "5bdbf286cb4adcff26befa2183f3167c053bc565036736eaa2ae429fe910d93c"
 	compressed := false
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	cm := &copymock.CopierMock{}
-	cm.On("CopyFile", fsbm, lam, sha256sum, targetDevice, 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
+	cm.On("CopyFile", fsbm, lam, sourcePath, targetDevice, 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
 	r := RawObject{
 		Copier:            cm,
@@ -93,7 +96,7 @@ func TestRawInstallWithCopyFileError(t *testing.T) {
 	r.Sha256sum = sha256sum
 	r.Compressed = compressed
 
-	err := r.Install()
+	err := r.Install(downloadDir)
 
 	assert.EqualError(t, err, "copy file error")
 	cm.AssertExpectations(t)
@@ -136,8 +139,11 @@ func TestRawInstallWithSuccess(t *testing.T) {
 
 			lam := &libarchivemock.LibArchiveMock{}
 
+			downloadDir := "/dummy-download-dir"
+			sourcePath := path.Join(downloadDir, tc.Sha256sum)
+
 			cm := &copymock.CopierMock{}
-			cm.On("CopyFile", fsbm, lam, tc.Sha256sum, tc.Target, tc.ExpectedChunkSize, tc.Skip, tc.Seek, tc.Count, tc.Truncate, tc.Compressed).Return(nil)
+			cm.On("CopyFile", fsbm, lam, sourcePath, tc.Target, tc.ExpectedChunkSize, tc.Skip, tc.Seek, tc.Count, tc.Truncate, tc.Compressed).Return(nil)
 
 			r := RawObject{Copier: cm, FileSystemBackend: fsbm, LibArchiveBackend: lam}
 			r.Target = tc.Target
@@ -150,7 +156,7 @@ func TestRawInstallWithSuccess(t *testing.T) {
 			r.Truncate = tc.Truncate
 			r.Compressed = tc.Compressed
 
-			err := r.Install()
+			err := r.Install(downloadDir)
 
 			assert.NoError(t, err)
 			cm.AssertExpectations(t)

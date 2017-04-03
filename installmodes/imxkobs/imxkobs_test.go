@@ -101,6 +101,10 @@ func TestImxKobsCleanupNil(t *testing.T) {
 }
 
 func TestImxKobsInstallSuccessCases(t *testing.T) {
+	downloadDir := "/dummy-download-dir"
+	sha256sum := "a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123"
+	sourcePath := path.Join(downloadDir, sha256sum)
+
 	// FIXME: populate these fields with a json sample?
 	testCases := []struct {
 		Name                    string
@@ -116,7 +120,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 			1,
 			"/dev/mtd0",
 			"/dev/mtd1",
-			"kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v",
+			fmt.Sprintf("kobs-ng init -x %s --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v", sourcePath),
 		},
 		{
 			"SuccessWithoutAdd1kPadding",
@@ -124,7 +128,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 			1,
 			"/dev/mtd0",
 			"/dev/mtd1",
-			"kobs-ng init a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v",
+			fmt.Sprintf("kobs-ng init %s --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v", sourcePath),
 		},
 		{
 			"SuccessWithoutSearchExponent",
@@ -132,7 +136,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 			0,
 			"/dev/mtd0",
 			"/dev/mtd1",
-			"kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v",
+			fmt.Sprintf("kobs-ng init -x %s --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v", sourcePath),
 		},
 		{
 			"SuccessWithoutChip0DevicePath",
@@ -140,7 +144,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 			1,
 			"",
 			"/dev/mtd1",
-			"kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_1_device_path=/dev/mtd1 -v",
+			fmt.Sprintf("kobs-ng init -x %s --search_exponent=1 --chip_1_device_path=/dev/mtd1 -v", sourcePath),
 		},
 		{
 			"SuccessWithoutChip1DevicePath",
@@ -148,7 +152,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 			1,
 			"/dev/mtd0",
 			"",
-			"kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 -v",
+			fmt.Sprintf("kobs-ng init -x %s --search_exponent=1 --chip_0_device_path=/dev/mtd0 -v", sourcePath),
 		},
 		{
 			"SuccessWithNegativeSearchExponent",
@@ -156,7 +160,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 			-1,
 			"/dev/mtd0",
 			"/dev/mtd1",
-			"kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v",
+			fmt.Sprintf("kobs-ng init -x %s --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v", sourcePath),
 		},
 	}
 
@@ -174,7 +178,7 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 			ik.Chip0DevicePath = tc.Chip0DevicePath
 			ik.Chip1DevicePath = tc.Chip1DevicePath
 
-			err := ik.Install()
+			err := ik.Install(downloadDir)
 			assert.NoError(t, err)
 
 			clm.AssertExpectations(t)
@@ -184,7 +188,12 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 
 func TestImxKobsInstallFailure(t *testing.T) {
 	clm := &cmdlinemock.CmdLineExecuterMock{}
-	expectedCmdline := "kobs-ng init -x a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123 --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v"
+
+	downloadDir := "/dummy-download-dir"
+	sha256sum := "a562ce06ed7398848eb910bb60c8c6f68ff36c33701afc30705a96d8eab12123"
+	sourcePath := path.Join(downloadDir, sha256sum)
+
+	expectedCmdline := fmt.Sprintf("kobs-ng init -x %s --search_exponent=1 --chip_0_device_path=/dev/mtd0 --chip_1_device_path=/dev/mtd1 -v", sourcePath)
 	combinedOutput := "combinedOutput"
 	clm.On("Execute", expectedCmdline).Return([]byte(combinedOutput), fmt.Errorf("Error executing 'kobs-ng'. Output: "+combinedOutput))
 
@@ -197,7 +206,7 @@ func TestImxKobsInstallFailure(t *testing.T) {
 	ik.Chip0DevicePath = "/dev/mtd0"
 	ik.Chip1DevicePath = "/dev/mtd1"
 
-	err := ik.Install()
+	err := ik.Install(downloadDir)
 	assert.EqualError(t, err, "Error executing 'kobs-ng'. Output: combinedOutput")
 
 	clm.AssertExpectations(t)

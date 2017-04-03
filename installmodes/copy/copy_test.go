@@ -84,7 +84,7 @@ func TestCopyInstallWithFormatError(t *testing.T) {
 	cp.FSType = fsType
 	cp.FormatOptions = formatOptions
 
-	err := cp.Install()
+	err := cp.Install("/dummy-download-dir")
 
 	assert.EqualError(t, err, "format error")
 	fsm.AssertExpectations(t)
@@ -101,7 +101,7 @@ func TestCopyInstallWithTempDirError(t *testing.T) {
 	fsm.On("TempDir", "copy-handler").Return("", fmt.Errorf("temp dir error"))
 	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
 
-	err := cp.Install()
+	err := cp.Install("/dummy-download-dir")
 
 	assert.EqualError(t, err, "temp dir error")
 	fsm.AssertExpectations(t)
@@ -129,7 +129,7 @@ func TestCopyInstallWithMountError(t *testing.T) {
 	cp.FSType = fsType
 	cp.MountOptions = mountOptions
 
-	err = cp.Install()
+	err = cp.Install("/dummy-download-dir")
 
 	assert.EqualError(t, err, "mount error")
 	fsm.AssertExpectations(t)
@@ -160,8 +160,10 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(nil)
 
+	downloadDir := "/dummy-download-dir"
+
 	cm := &copymock.CopierMock{}
-	cm.On("CopyFile", memFs, lam, sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
+	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
@@ -177,7 +179,7 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	cp.Sha256sum = sha256sum
 	cp.Compressed = compressed
 
-	err = cp.Install()
+	err = cp.Install(downloadDir)
 
 	assert.EqualError(t, err, "copy file error")
 	fsm.AssertExpectations(t)
@@ -208,8 +210,10 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
+	downloadDir := "/dummy-download-dir"
+
 	cm := &copymock.CopierMock{}
-	cm.On("CopyFile", memFs, lam, sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
+	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
@@ -225,7 +229,7 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	cp.Sha256sum = sha256sum
 	cp.Compressed = compressed
 
-	err = cp.Install()
+	err = cp.Install(downloadDir)
 
 	assert.EqualError(t, err, "umount error")
 	fsm.AssertExpectations(t)
@@ -256,8 +260,10 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
+	downloadDir := "/dummy-download-dir"
+
 	cm := &copymock.CopierMock{}
-	cm.On("CopyFile", memFs, lam, sha256sum, path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
+	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
@@ -273,7 +279,7 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	cp.Sha256sum = sha256sum
 	cp.Compressed = compressed
 
-	err = cp.Install()
+	err = cp.Install(downloadDir)
 
 	assert.EqualError(t, err, "(copy file error); (umount error)")
 	fsm.AssertExpectations(t)
@@ -369,8 +375,10 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			fsm.On("Mount", tc.Target, tempDirPath, tc.FSType, tc.MountOptions).Return(nil)
 			fsm.On("Umount", tempDirPath).Return(nil)
 
+			downloadDir := "/dummy-download-dir"
+
 			cm := &copymock.CopierMock{}
-			cm.On("CopyFile", memFs, lam, tc.Sha256sum, path.Join(tempDirPath, tc.TargetPath), tc.ChunkSize, 0, 0, -1, true, tc.Compressed).Return(nil)
+			cm.On("CopyFile", memFs, lam, path.Join(downloadDir, tc.Sha256sum), path.Join(tempDirPath, tc.TargetPath), tc.ChunkSize, 0, 0, -1, true, tc.Compressed).Return(nil)
 
 			cp := CopyObject{
 				FileSystemHelper:  fsm,
@@ -389,7 +397,7 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			cp.Sha256sum = tc.Sha256sum
 			cp.Compressed = tc.Compressed
 
-			err = cp.Install()
+			err = cp.Install(downloadDir)
 
 			assert.NoError(t, err)
 			fsm.AssertExpectations(t)

@@ -23,8 +23,8 @@ func (om *ObjectMock) Setup() error {
 	return args.Error(0)
 }
 
-func (om *ObjectMock) Install() error {
-	args := om.Called()
+func (om *ObjectMock) Install(downloadDir string) error {
+	args := om.Called(downloadDir)
 	return args.Error(0)
 }
 

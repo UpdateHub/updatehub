@@ -11,6 +11,7 @@ package ubifs
 import (
 	"fmt"
 	"os/exec"
+	"path"
 
 	"github.com/spf13/afero"
 
@@ -77,14 +78,13 @@ func (ufs *UbifsObject) Setup() error {
 }
 
 // Install implementation for the "ubifs" handler
-func (ufs *UbifsObject) Install() error {
+func (ufs *UbifsObject) Install(downloadDir string) error {
 	targetDevice, err := ufs.GetTargetDeviceFromUbiVolumeName(ufs.FileSystemBackend, ufs.Target)
 	if err != nil {
 		return err
 	}
 
-	// FIXME: for srcPath we need to: path.Join(ufs.UpdateDir, ufs.Sha256sum)
-	srcPath := ufs.Sha256sum
+	srcPath := path.Join(downloadDir, ufs.Sha256sum)
 
 	if ufs.Compressed {
 		cmdline := fmt.Sprintf("ubiupdatevol -s %.0f %s -", ufs.UncompressedSize, targetDevice)
