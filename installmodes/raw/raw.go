@@ -10,6 +10,7 @@ package raw
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/spf13/afero"
 
@@ -63,9 +64,9 @@ func (r *RawObject) Setup() error {
 }
 
 // Install implementation for the "raw" handler
-func (r *RawObject) Install() error {
-	// FIXME: on sourcePath we need to: path.Join(r.UpdateDir, r.Sha256sum)
-	return r.CopyFile(r.FileSystemBackend, r.LibArchiveBackend, r.Sha256sum, r.Target, r.ChunkSize, r.Skip, r.Seek, r.Count, r.Truncate, r.Compressed)
+func (r *RawObject) Install(downloadDir string) error {
+	srcPath := path.Join(downloadDir, r.Sha256sum)
+	return r.CopyFile(r.FileSystemBackend, r.LibArchiveBackend, srcPath, r.Target, r.ChunkSize, r.Skip, r.Seek, r.Count, r.Truncate, r.Compressed)
 }
 
 // Cleanup implementation for the "raw" handler

@@ -10,6 +10,6 @@ package handlers
 
 type InstallUpdateHandler interface {
 	Setup() error
-	Install() error
+	Install(downloadDir string) error
 	Cleanup() error
 }

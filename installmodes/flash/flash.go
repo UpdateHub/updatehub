@@ -11,6 +11,7 @@ package flash
 import (
 	"fmt"
 	"os/exec"
+	"path"
 
 	"github.com/spf13/afero"
 
@@ -79,7 +80,7 @@ func (f *FlashObject) Setup() error {
 }
 
 // Install implementation for the "flash" handler
-func (f *FlashObject) Install() error {
+func (f *FlashObject) Install(downloadDir string) error {
 	isNand, err := f.MtdUtils.MtdIsNAND(f.targetDevice)
 	if err != nil {
 		return err
@@ -90,8 +91,7 @@ func (f *FlashObject) Install() error {
 		return err
 	}
 
-	// FIXME: for srcPath we need to: path.Join(f.UpdateDir, f.Sha256sum)
-	srcPath := f.Sha256sum
+	srcPath := path.Join(downloadDir, f.Sha256sum)
 
 	if isNand {
 		_, nandErr := f.Execute(fmt.Sprintf("nandwrite -p %s %s", f.targetDevice, srcPath))

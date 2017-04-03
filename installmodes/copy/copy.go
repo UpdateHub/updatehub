@@ -65,7 +65,7 @@ func (cp *CopyObject) Setup() error {
 }
 
 // Install implementation for the "copy" handler
-func (cp *CopyObject) Install() error {
+func (cp *CopyObject) Install(downloadDir string) error {
 	if cp.MustFormat {
 		err := cp.Format(cp.Target, cp.FSType, cp.FormatOptions)
 		if err != nil {
@@ -91,8 +91,8 @@ func (cp *CopyObject) Install() error {
 
 	errorList := []error{}
 
-	// FIXME: on sourcePath we need to: path.Join(cp.UpdateDir, cp.Sha256sum)
-	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, cp.Sha256sum, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
+	sourcePath := path.Join(downloadDir, cp.Sha256sum)
+	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
 	}

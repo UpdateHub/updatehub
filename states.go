@@ -470,7 +470,7 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 		// FIXME: implement install-if-different check here
 		installIfDifferent := true
 		if installIfDifferent {
-			err = handler.Install()
+			err = handler.Install(uh.settings.DownloadDir)
 			if err != nil {
 				errorList = append(errorList, err)
 			}

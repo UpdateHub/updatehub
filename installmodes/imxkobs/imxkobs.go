@@ -10,6 +10,7 @@ package imxkobs
 
 import (
 	"os/exec"
+	"path"
 	"strconv"
 
 	"github.com/UpdateHub/updatehub/installmodes"
@@ -54,15 +55,14 @@ func (ik *ImxKobsObject) Setup() error {
 }
 
 // Install implementation for the "imxkobs" handler
-func (ik *ImxKobsObject) Install() error {
+func (ik *ImxKobsObject) Install(downloadDir string) error {
 	cmdline := "kobs-ng init"
 
 	if ik.Add1KPadding {
 		cmdline += " -x"
 	}
 
-	// FIXME: for cmdline we need to: path.Join(ik.UpdateDir, ik.Sha256sum)
-	cmdline += " " + ik.Sha256sum
+	cmdline += " " + path.Join(downloadDir, ik.Sha256sum)
 
 	if ik.SearchExponent > 0 {
 		cmdline += " --search_exponent=" + strconv.Itoa(ik.SearchExponent)

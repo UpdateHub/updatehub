@@ -177,7 +177,7 @@ func TestTarballInstallWithFormatError(t *testing.T) {
 	tb.FSType = fsType
 	tb.FormatOptions = formatOptions
 
-	err := tb.Install()
+	err := tb.Install("/dummy-download-dir")
 
 	assert.EqualError(t, err, "format error")
 	fsm.AssertExpectations(t)
@@ -199,7 +199,7 @@ func TestTarballInstallWithTempDirError(t *testing.T) {
 		LibArchiveBackend: lam,
 	}
 
-	err := tb.Install()
+	err := tb.Install("/dummy-download-dir")
 
 	assert.EqualError(t, err, "temp dir error")
 	fsm.AssertExpectations(t)
@@ -232,7 +232,7 @@ func TestTarballInstallWithMountError(t *testing.T) {
 	tb.FSType = fsType
 	tb.MountOptions = mountOptions
 
-	err = tb.Install()
+	err = tb.Install("/dummy-download-dir")
 
 	assert.EqualError(t, err, "mount error")
 	fsm.AssertExpectations(t)
@@ -256,6 +256,8 @@ func TestTarballInstallWithExtractError(t *testing.T) {
 	mountOptions := "-o rw"
 	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
 	compressed := true
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
@@ -265,7 +267,7 @@ func TestTarballInstallWithExtractError(t *testing.T) {
 	cm := &copymock.CopierMock{}
 
 	lam := &libarchivemock.LibArchiveMock{}
-	lam.On("Unpack", sha256sum, path.Join(tempDirPath, targetPath), false).Return(fmt.Errorf("unpack error"))
+	lam.On("Unpack", sourcePath, path.Join(tempDirPath, targetPath), false).Return(fmt.Errorf("unpack error"))
 
 	tb := TarballObject{
 		FileSystemHelper:  fsm,
@@ -281,7 +283,7 @@ func TestTarballInstallWithExtractError(t *testing.T) {
 	tb.Sha256sum = sha256sum
 	tb.Compressed = compressed
 
-	err = tb.Install()
+	err = tb.Install(downloadDir)
 
 	assert.EqualError(t, err, "unpack error")
 	fsm.AssertExpectations(t)
@@ -305,6 +307,8 @@ func TestTarballInstallWithUmountError(t *testing.T) {
 	mountOptions := "-o rw"
 	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
 	compressed := true
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
@@ -314,7 +318,7 @@ func TestTarballInstallWithUmountError(t *testing.T) {
 	cm := &copymock.CopierMock{}
 
 	lam := &libarchivemock.LibArchiveMock{}
-	lam.On("Unpack", sha256sum, path.Join(tempDirPath, targetPath), false).Return(nil)
+	lam.On("Unpack", sourcePath, path.Join(tempDirPath, targetPath), false).Return(nil)
 
 	tb := TarballObject{
 		FileSystemHelper:  fsm,
@@ -330,7 +334,7 @@ func TestTarballInstallWithUmountError(t *testing.T) {
 	tb.Sha256sum = sha256sum
 	tb.Compressed = compressed
 
-	err = tb.Install()
+	err = tb.Install(downloadDir)
 
 	assert.EqualError(t, err, "umount error")
 	fsm.AssertExpectations(t)
@@ -354,6 +358,8 @@ func TestTarballInstallWithUnpackANDUmountErrors(t *testing.T) {
 	mountOptions := "-o rw"
 	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
 	compressed := true
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
@@ -363,7 +369,7 @@ func TestTarballInstallWithUnpackANDUmountErrors(t *testing.T) {
 	cm := &copymock.CopierMock{}
 
 	lam := &libarchivemock.LibArchiveMock{}
-	lam.On("Unpack", sha256sum, path.Join(tempDirPath, targetPath), false).Return(fmt.Errorf("unpack error"))
+	lam.On("Unpack", sourcePath, path.Join(tempDirPath, targetPath), false).Return(fmt.Errorf("unpack error"))
 
 	tb := TarballObject{
 		FileSystemHelper:  fsm,
@@ -379,7 +385,7 @@ func TestTarballInstallWithUnpackANDUmountErrors(t *testing.T) {
 	tb.Sha256sum = sha256sum
 	tb.Compressed = compressed
 
-	err = tb.Install()
+	err = tb.Install(downloadDir)
 
 	assert.EqualError(t, err, "(unpack error); (umount error)")
 	fsm.AssertExpectations(t)
@@ -403,6 +409,8 @@ func TestTarballInstallWithSuccess(t *testing.T) {
 	mountOptions := "-o rw"
 	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
 	compressed := true
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
@@ -412,7 +420,7 @@ func TestTarballInstallWithSuccess(t *testing.T) {
 	cm := &copymock.CopierMock{}
 
 	lam := &libarchivemock.LibArchiveMock{}
-	lam.On("Unpack", sha256sum, path.Join(tempDirPath, targetPath), false).Return(nil)
+	lam.On("Unpack", sourcePath, path.Join(tempDirPath, targetPath), false).Return(nil)
 
 	tb := TarballObject{
 		FileSystemHelper:  fsm,
@@ -428,7 +436,7 @@ func TestTarballInstallWithSuccess(t *testing.T) {
 	tb.Sha256sum = sha256sum
 	tb.Compressed = compressed
 
-	err = tb.Install()
+	err = tb.Install(downloadDir)
 
 	assert.NoError(t, err)
 	fsm.AssertExpectations(t)

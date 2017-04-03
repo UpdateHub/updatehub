@@ -192,18 +192,20 @@ func TestFlashInstallSuccessWithNAND(t *testing.T) {
 
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(true, nil)
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("combinedOutput"), nil)
-	clm.On("Execute", fmt.Sprintf("nandwrite -p %s %s", mtddevice, sha256sum)).Return([]byte("combinedOutput"), nil)
+	clm.On("Execute", fmt.Sprintf("nandwrite -p %s %s", mtddevice, sourcePath)).Return([]byte("combinedOutput"), nil)
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum, CmdLineExecuter: clm}
 	f.targetDevice = mtddevice
 	f.Sha256sum = sha256sum
-	err := f.Install()
+	err := f.Install(downloadDir)
 	assert.NoError(t, err)
 
 	mum.AssertExpectations(t)
@@ -215,18 +217,20 @@ func TestFlashInstallSuccessWithNOR(t *testing.T) {
 
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(false, nil)
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("combinedOutput"), nil)
-	clm.On("Execute", fmt.Sprintf("flashcp %s %s", sha256sum, mtddevice)).Return([]byte("combinedOutput"), nil)
+	clm.On("Execute", fmt.Sprintf("flashcp %s %s", sourcePath, mtddevice)).Return([]byte("combinedOutput"), nil)
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum, CmdLineExecuter: clm}
 	f.targetDevice = mtddevice
 	f.Sha256sum = sha256sum
-	err := f.Install()
+	err := f.Install(downloadDir)
 	assert.NoError(t, err)
 
 	mum.AssertExpectations(t)
@@ -238,6 +242,8 @@ func TestFlashInstallWithMtdIsNANDFailure(t *testing.T) {
 
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(false, fmt.Errorf("Error opening %s: no such device", mtddevice))
@@ -247,7 +253,7 @@ func TestFlashInstallWithMtdIsNANDFailure(t *testing.T) {
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum, CmdLineExecuter: clm}
 	f.targetDevice = mtddevice
 	f.Sha256sum = sha256sum
-	err := f.Install()
+	err := f.Install(sourcePath)
 	assert.EqualError(t, err, fmt.Sprintf("Error opening %s: no such device", mtddevice))
 
 	mum.AssertExpectations(t)
@@ -259,6 +265,7 @@ func TestFlashInstallWithFlashEraseFailure(t *testing.T) {
 
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
+	downloadDir := "/dummy-download-dir"
 
 	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(false, nil)
@@ -269,7 +276,7 @@ func TestFlashInstallWithFlashEraseFailure(t *testing.T) {
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum, CmdLineExecuter: clm}
 	f.targetDevice = mtddevice
 	f.Sha256sum = sha256sum
-	err := f.Install()
+	err := f.Install(downloadDir)
 	assert.EqualError(t, err, "flash_erase error")
 
 	mum.AssertExpectations(t)
@@ -281,18 +288,20 @@ func TestFlashInstallWithFlashcpFailure(t *testing.T) {
 
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(false, nil)
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("combinedOutput"), nil)
-	clm.On("Execute", fmt.Sprintf("flashcp %s %s", sha256sum, mtddevice)).Return([]byte("error"), fmt.Errorf("flashcp error"))
+	clm.On("Execute", fmt.Sprintf("flashcp %s %s", sourcePath, mtddevice)).Return([]byte("error"), fmt.Errorf("flashcp error"))
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum, CmdLineExecuter: clm}
 	f.targetDevice = mtddevice
 	f.Sha256sum = sha256sum
-	err := f.Install()
+	err := f.Install(downloadDir)
 	assert.EqualError(t, err, "flashcp error")
 
 	mum.AssertExpectations(t)
@@ -304,18 +313,20 @@ func TestFlashInstallWithNandwriteFailure(t *testing.T) {
 
 	mtddevice := "/dev/mtd9"
 	sha256sum := "8e29c9df2bc3c417b460b02b566edc668195da9c75a1fcf2f63829a7c59fc07d"
+	downloadDir := "/dummy-download-dir"
+	sourcePath := path.Join(downloadDir, sha256sum)
 
 	mum := &mtdmock.MtdUtilsMock{}
 	mum.On("MtdIsNAND", mtddevice).Return(true, nil)
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", fmt.Sprintf("flash_erase %s 0 0", mtddevice)).Return([]byte("combinedOutput"), nil)
-	clm.On("Execute", fmt.Sprintf("nandwrite -p %s %s", mtddevice, sha256sum)).Return([]byte("error"), fmt.Errorf("nandwrite error"))
+	clm.On("Execute", fmt.Sprintf("nandwrite -p %s %s", mtddevice, sourcePath)).Return([]byte("error"), fmt.Errorf("nandwrite error"))
 
 	f := FlashObject{FileSystemBackend: memFs, MtdUtils: mum, CmdLineExecuter: clm}
 	f.targetDevice = mtddevice
 	f.Sha256sum = sha256sum
-	err := f.Install()
+	err := f.Install(downloadDir)
 	assert.EqualError(t, err, "nandwrite error")
 
 	mum.AssertExpectations(t)

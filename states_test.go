@@ -573,9 +573,6 @@ func TestStateInstalling(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
 	om := &objectmock.ObjectMock{}
-	om.On("Setup").Return(nil)
-	om.On("Install").Return(nil)
-	om.On("Cleanup").Return(nil)
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
@@ -596,6 +593,10 @@ func TestStateInstalling(t *testing.T) {
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
 
+	om.On("Setup").Return(nil)
+	om.On("Install", uh.settings.DownloadDir).Return(nil)
+	om.On("Cleanup").Return(nil)
+
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
 	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
@@ -613,9 +614,6 @@ func TestStateInstallingWithActiveInactive(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
 	om := &objectmock.ObjectMock{}
-	om.On("Setup").Return(nil)
-	om.On("Install").Return(nil)
-	om.On("Cleanup").Return(nil)
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
@@ -637,6 +635,10 @@ func TestStateInstallingWithActiveInactive(t *testing.T) {
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
+
+	om.On("Setup").Return(nil)
+	om.On("Install", uh.settings.DownloadDir).Return(nil)
+	om.On("Cleanup").Return(nil)
 
 	// "expectedSha256sum" got from "validJSONMetadataWithActiveInactive" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
@@ -691,9 +693,6 @@ func TestStateInstallingWithSetActiveError(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
 	om := &objectmock.ObjectMock{}
-	om.On("Setup").Return(nil)
-	om.On("Install").Return(nil)
-	om.On("Cleanup").Return(nil)
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
@@ -717,6 +716,10 @@ func TestStateInstallingWithSetActiveError(t *testing.T) {
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
+
+	om.On("Setup").Return(nil)
+	om.On("Install", uh.settings.DownloadDir).Return(nil)
+	om.On("Cleanup").Return(nil)
 
 	// "expectedSha256sum" got from "validJSONMetadataWithActiveInactive" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
@@ -777,9 +780,6 @@ func TestStateInstallingWithInstallError(t *testing.T) {
 	expectedErr := fmt.Errorf("install error")
 
 	om := &objectmock.ObjectMock{}
-	om.On("Setup").Return(nil)
-	om.On("Install").Return(expectedErr)
-	om.On("Cleanup").Return(nil)
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
@@ -799,6 +799,10 @@ func TestStateInstallingWithInstallError(t *testing.T) {
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
+
+	om.On("Setup").Return(nil)
+	om.On("Install", uh.settings.DownloadDir).Return(expectedErr)
+	om.On("Cleanup").Return(nil)
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
@@ -819,9 +823,6 @@ func TestStateInstallingWithCleanupError(t *testing.T) {
 	expectedErr := fmt.Errorf("cleanup error")
 
 	om := &objectmock.ObjectMock{}
-	om.On("Setup").Return(nil)
-	om.On("Install").Return(nil)
-	om.On("Cleanup").Return(expectedErr)
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
@@ -841,6 +842,10 @@ func TestStateInstallingWithCleanupError(t *testing.T) {
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
+
+	om.On("Setup").Return(nil)
+	om.On("Install", uh.settings.DownloadDir).Return(nil)
+	om.On("Cleanup").Return(expectedErr)
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
@@ -859,9 +864,6 @@ func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
 	om := &objectmock.ObjectMock{}
-	om.On("Setup").Return(nil)
-	om.On("Install").Return(fmt.Errorf("install error"))
-	om.On("Cleanup").Return(fmt.Errorf("cleanup error"))
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
@@ -881,6 +883,10 @@ func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
+
+	om.On("Setup").Return(nil)
+	om.On("Install", uh.settings.DownloadDir).Return(fmt.Errorf("install error"))
+	om.On("Cleanup").Return(fmt.Errorf("cleanup error"))
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
