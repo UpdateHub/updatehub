@@ -440,8 +440,17 @@ func (state *testReportableState) UpdateMetadata() *metadata.UpdateMetadata {
 func TestStateUpdateInstall(t *testing.T) {
 	memFs := afero.NewOsFs()
 
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
 	m := &metadata.UpdateMetadata{}
-	s := NewUpdateInstallState(m)
+	s := NewUpdateInstallState(m, fm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -451,8 +460,40 @@ func TestStateUpdateInstall(t *testing.T) {
 	assert.Equal(t, expectedState, nextState)
 }
 
+func TestStateUpdateInstallWithCheckSupportedHardwareError(t *testing.T) {
+	expectedErr := fmt.Errorf("this hardware doesn't match the hardware supported by the update")
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "hardware-value",
+		HardwareRevision: "hardware-revision-value",
+		Version:          "version-value",
+	}
+
+	m := &metadata.UpdateMetadata{}
+	s := NewUpdateInstallState(m, fm)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+}
+
 func TestStateUpdateInstallWithChecksumError(t *testing.T) {
 	expectedErr := fmt.Errorf("checksum error")
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "hardware-value",
+		HardwareRevision: "hardware-revision-value",
+		Version:          "version-value",
+	}
 
 	m := &metadata.UpdateMetadata{}
 
@@ -461,7 +502,7 @@ func TestStateUpdateInstallWithChecksumError(t *testing.T) {
 	})
 	defer guard.Unpatch()
 
-	s := NewUpdateInstallState(m)
+	s := NewUpdateInstallState(m, fm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -472,8 +513,17 @@ func TestStateUpdateInstallWithChecksumError(t *testing.T) {
 }
 
 func TestStateUpdateInstallWithUpdateMetadataAlreadyInstalled(t *testing.T) {
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "hardware-value",
+		HardwareRevision: "hardware-revision-value",
+		Version:          "version-value",
+	}
+
 	m := &metadata.UpdateMetadata{}
-	s := NewUpdateInstallState(m)
+	s := NewUpdateInstallState(m, fm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)

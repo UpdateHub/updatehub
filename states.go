@@ -343,7 +343,7 @@ func (state *UpdateFetchState) Handle(uh *UpdateHub) (State, bool) {
 	nextState = state
 
 	if err := uh.Controller.FetchUpdate(state.updateMetadata, state.cancel); err == nil {
-		return NewUpdateInstallState(state.updateMetadata), false
+		return NewUpdateInstallState(state.updateMetadata, &uh.firmwareMetadata), false
 	}
 
 	return nextState, false
@@ -363,6 +363,7 @@ func NewUpdateFetchState(updateMetadata *metadata.UpdateMetadata) *UpdateFetchSt
 type UpdateInstallState struct {
 	BaseState
 	ReportableState
+	metadata.SupportedHardwareChecker
 
 	updateMetadata *metadata.UpdateMetadata
 }
@@ -387,7 +388,10 @@ func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
 	// operations in case of an install error occurs
 	uh.lastInstalledPackageUID = packageUID
 
-	// FIXME: check supported hardware
+	err = state.CheckSupportedHardware(state.updateMetadata)
+	if err != nil {
+		return NewErrorState(NewTransientError(err)), false
+	}
 
 	return NewInstallingState(state.updateMetadata,
 		&activeinactive.DefaultImpl{},
@@ -396,10 +400,11 @@ func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
 }
 
 // NewUpdateInstallState creates a new UpdateInstallState
-func NewUpdateInstallState(updateMetadata *metadata.UpdateMetadata) *UpdateInstallState {
+func NewUpdateInstallState(updateMetadata *metadata.UpdateMetadata, shc metadata.SupportedHardwareChecker) *UpdateInstallState {
 	state := &UpdateInstallState{
-		BaseState:      BaseState{id: UpdateHubStateUpdateInstall},
-		updateMetadata: updateMetadata,
+		BaseState:                BaseState{id: UpdateHubStateUpdateInstall},
+		SupportedHardwareChecker: shc,
+		updateMetadata:           updateMetadata,
 	}
 
 	return state

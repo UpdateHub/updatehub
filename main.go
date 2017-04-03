@@ -18,6 +18,8 @@ import (
 
 	"github.com/UpdateHub/updatehub/client"
 	_ "github.com/UpdateHub/updatehub/installmodes/copy"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 var (
@@ -26,6 +28,8 @@ var (
 	// The runtime settings are the settings that may can change during the execution of UpdateHub
 	// These settings are persisted to keep the behaviour across of device's reboot
 	runtimeSettingsPath = "/var/lib/updatehub-agent.conf"
+	// The path on which will be located the scripts that provide the firmware metadata
+	firmwareMetadataDirPath = "/usr/share/updatehub-agent"
 )
 
 func main() {
@@ -35,13 +39,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	osFs := afero.NewOsFs()
+
+	fm, err := metadata.NewFirmwareMetadata(firmwareMetadataDirPath, osFs, &utils.CmdLine{})
+	if err != nil {
+		log.Errorln(err)
+		os.Exit(1)
+	}
+
 	uh := &UpdateHub{
-		state:    NewIdleState(),
-		api:      client.NewApiClient("localhost:8080"),
-		updater:  client.NewUpdateClient(),
-		timeStep: time.Minute,
-		settings: settings,
-		store:    afero.NewOsFs(),
+		state:            NewIdleState(),
+		api:              client.NewApiClient("localhost:8080"),
+		updater:          client.NewUpdateClient(),
+		timeStep:         time.Minute,
+		settings:         settings,
+		store:            osFs,
+		firmwareMetadata: *fm,
 	}
 
 	uh.Controller = uh

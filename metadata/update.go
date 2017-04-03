@@ -16,10 +16,16 @@ import (
 	"io"
 )
 
+type Hardware struct {
+	Hardware         string `json:"hardware"`
+	HardwareRevision string `json:"hardware-revision"`
+}
+
 type UpdateMetadata struct {
-	ProductUID string     `json:"product-uid"`
-	Version    string     `json:"version"`
-	Objects    [][]Object `json:"-"`
+	ProductUID        string     `json:"product-uid"`
+	Version           string     `json:"version"`
+	Objects           [][]Object `json:"-"`
+	SupportedHardware []Hardware `json:"supported-hardware"`
 }
 
 func NewUpdateMetadata(bytes []byte) (*UpdateMetadata, error) {

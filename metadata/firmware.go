@@ -20,6 +20,10 @@ import (
 	"github.com/UpdateHub/updatehub/utils"
 )
 
+type SupportedHardwareChecker interface {
+	CheckSupportedHardware(um *UpdateMetadata) error
+}
+
 type FirmwareMetadata struct {
 	ProductUID       string            `json:"product-uid"`
 	DeviceIdentity   map[string]string `json:"device-identity"`
@@ -104,4 +108,18 @@ func executeHooks(basePath string, store afero.Fs, cmd utils.CmdLineExecuter) (m
 	}
 
 	return keyValueMap, nil
+}
+
+func (fm *FirmwareMetadata) CheckSupportedHardware(um *UpdateMetadata) error {
+	if fm.Hardware == "" && fm.HardwareRevision == "" {
+		return nil
+	}
+
+	for _, h := range um.SupportedHardware {
+		if h.Hardware == fm.Hardware && h.HardwareRevision == fm.HardwareRevision {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("this hardware doesn't match the hardware supported by the update")
 }
