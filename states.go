@@ -282,16 +282,29 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 	}
 
 	uh.settings.LastPoll = time.Now()
+	uh.settings.ExtraPollingInterval = 0
 
 	if updateMetadata != nil {
 		return NewUpdateFetchState(updateMetadata), false
 	}
 
 	if extraPoll > 0 {
-		poll := uh.NewPollState()
-		poll.interval = extraPoll
+		now := time.Now()
+		nextPoll := time.Unix(uh.settings.FirstPoll.Unix(), 0)
+		extraPollTime := now.Add(extraPoll)
 
-		return poll, false
+		for nextPoll.Before(now) {
+			nextPoll = nextPoll.Add(uh.settings.PollingInterval)
+		}
+
+		if extraPollTime.Before(nextPoll) {
+			uh.settings.ExtraPollingInterval = extraPoll
+
+			poll := uh.NewPollState()
+			poll.interval = extraPoll
+
+			return poll, false
+		}
 	}
 
 	// Increment the number of polling retries in case of CheckUpdate failure
