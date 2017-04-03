@@ -35,6 +35,7 @@ import (
 
 type testController struct {
 	extraPoll               time.Duration
+	pollingInterval         time.Duration
 	updateAvailable         bool
 	fetchUpdateError        error
 	reportCurrentStateError error
@@ -80,21 +81,47 @@ const (
 var checkUpdateCases = []struct {
 	name         string
 	controller   *testController
+	settings     *Settings
 	initialState State
 	nextState    State
+	subTest      func(t *testing.T, uh *UpdateHub, state State)
 }{
 	{
 		"UpdateAvailable",
 		&testController{updateAvailable: true},
+		&Settings{},
 		NewUpdateCheckState(),
 		&UpdateFetchState{},
+		func(t *testing.T, uh *UpdateHub, state State) {},
 	},
 
 	{
 		"UpdateNotAvailable",
 		&testController{updateAvailable: false},
+		&Settings{},
 		NewUpdateCheckState(),
 		&IdleState{},
+		func(t *testing.T, uh *UpdateHub, state State) {},
+	},
+
+	{
+		"ExtraPoll",
+		&testController{updateAvailable: false, extraPoll: 5 * time.Second},
+		&Settings{
+			PollingSettings: PollingSettings{
+				PersistentPollingSettings: PersistentPollingSettings{
+					FirstPoll: time.Now().Add(-5 * time.Second),
+				},
+				PollingInterval: 15 * time.Second,
+			},
+		},
+		NewUpdateCheckState(),
+		&PollState{},
+		func(t *testing.T, uh *UpdateHub, state State) {
+			poll := state.(*PollState)
+			assert.Equal(t, 5*time.Second, poll.interval)
+			assert.Equal(t, 5*time.Second, uh.settings.ExtraPollingInterval)
+		},
 	},
 }
 
@@ -191,10 +218,13 @@ func TestStateUpdateCheck(t *testing.T) {
 			assert.NoError(t, err)
 
 			uh.Controller = tc.controller
+			uh.settings = tc.settings
 
 			next, _ := uh.state.Handle(uh)
 
 			assert.IsType(t, tc.nextState, next)
+
+			tc.subTest(t, uh, next)
 		})
 	}
 }
