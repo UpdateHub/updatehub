@@ -18,12 +18,14 @@ import (
 	"time"
 
 	"github.com/UpdateHub/updatehub/activeinactive"
+	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/copymock"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/testsmocks/installifdifferentmock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 	"github.com/UpdateHub/updatehub/testsmocks/statesmock"
 	"github.com/UpdateHub/updatehub/utils"
@@ -495,7 +497,7 @@ func (state *testReportableState) UpdateMetadata() *metadata.UpdateMetadata {
 }
 
 func TestStateUpdateInstall(t *testing.T) {
-	memFs := afero.NewOsFs()
+	memFs := afero.NewMemMapFs()
 
 	fm := &metadata.FirmwareMetadata{
 		ProductUID:       "productuid-value",
@@ -513,7 +515,12 @@ func TestStateUpdateInstall(t *testing.T) {
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewInstallingState(m, &activeinactive.DefaultImpl{}, &Sha256CheckerImpl{&utils.ExtendedIO{}}, memFs)
+	expectedState := NewInstallingState(
+		m,
+		&activeinactive.DefaultImpl{},
+		&Sha256CheckerImpl{&utils.ExtendedIO{}},
+		memFs,
+		&installifdifferent.DefaultImpl{memFs})
 	assert.Equal(t, expectedState, nextState)
 }
 
@@ -615,7 +622,10 @@ func TestStateInstalling(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+	iidm.On("Proceed", om).Return(true, nil)
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -635,6 +645,7 @@ func TestStateInstalling(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithActiveInactive(t *testing.T) {
@@ -658,7 +669,10 @@ func TestStateInstallingWithActiveInactive(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+	iidm.On("Proceed", om).Return(true, nil)
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -678,6 +692,7 @@ func TestStateInstallingWithActiveInactive(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithActiveError(t *testing.T) {
@@ -702,7 +717,9 @@ func TestStateInstallingWithActiveError(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -714,6 +731,7 @@ func TestStateInstallingWithActiveError(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithSetActiveError(t *testing.T) {
@@ -739,7 +757,10 @@ func TestStateInstallingWithSetActiveError(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+	iidm.On("Proceed", om).Return(true, nil)
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -759,6 +780,7 @@ func TestStateInstallingWithSetActiveError(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithSetupError(t *testing.T) {
@@ -783,7 +805,9 @@ func TestStateInstallingWithSetupError(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -799,6 +823,7 @@ func TestStateInstallingWithSetupError(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithInstallError(t *testing.T) {
@@ -822,7 +847,10 @@ func TestStateInstallingWithInstallError(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+	iidm.On("Proceed", om).Return(true, nil)
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -842,6 +870,7 @@ func TestStateInstallingWithInstallError(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithCleanupError(t *testing.T) {
@@ -865,7 +894,10 @@ func TestStateInstallingWithCleanupError(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+	iidm.On("Proceed", om).Return(true, nil)
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -885,6 +917,7 @@ func TestStateInstallingWithCleanupError(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
@@ -906,7 +939,10 @@ func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+	iidm.On("Proceed", om).Return(true, nil)
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -926,6 +962,7 @@ func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithSha256Error(t *testing.T) {
@@ -949,7 +986,9 @@ func TestStateInstallingWithSha256Error(t *testing.T) {
 
 	scm := &statesmock.Sha256CheckerMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs)
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
 
 	uh, err := newTestUpdateHub(s)
 	assert.NoError(t, err)
@@ -965,6 +1004,53 @@ func TestStateInstallingWithSha256Error(t *testing.T) {
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
+}
+
+func TestStateInstallingWithInstallIfDifferentError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	expectedErr := fmt.Errorf("installifdifferent error")
+
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	scm := &statesmock.Sha256CheckerMock{}
+
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+	iidm.On("Proceed", om).Return(false, expectedErr)
+
+	s := NewInstallingState(m, aim, scm, memFs, iidm)
+
+	uh, err := newTestUpdateHub(s)
+	assert.NoError(t, err)
+
+	om.On("Setup").Return(nil)
+	om.On("Cleanup").Return(nil)
+
+	// "expectedSha256sum" got from "validJSONMetadata" content
+	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
 }
 
 func TestGetIndexOfObjectToBeInstalled(t *testing.T) {

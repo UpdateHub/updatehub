@@ -182,6 +182,8 @@ func TestImxKobsInstallSuccessCases(t *testing.T) {
 			assert.NoError(t, err)
 
 			clm.AssertExpectations(t)
+
+			assert.Equal(t, "/dev/mtd0ro", ik.GetTarget())
 		})
 	}
 }
@@ -210,4 +212,19 @@ func TestImxKobsInstallFailure(t *testing.T) {
 	assert.EqualError(t, err, "Error executing 'kobs-ng'. Output: combinedOutput")
 
 	clm.AssertExpectations(t)
+
+	assert.Equal(t, "/dev/mtd0ro", ik.GetTarget())
+}
+
+func TestImxKobsGetTarget(t *testing.T) {
+	clm := &cmdlinemock.CmdLineExecuterMock{}
+
+	ik := ImxKobsObject{CmdLineExecuter: clm}
+
+	// default value
+	assert.Equal(t, "/dev/mtd0ro", ik.GetTarget())
+
+	// chip0 value
+	ik.Chip0DevicePath = "/dev/mtd7"
+	assert.Equal(t, "/dev/mtd7ro", ik.GetTarget())
 }

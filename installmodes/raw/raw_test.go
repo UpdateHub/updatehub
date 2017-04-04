@@ -102,6 +102,8 @@ func TestRawInstallWithCopyFileError(t *testing.T) {
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
 	fsbm.AssertExpectations(t)
+
+	assert.Equal(t, targetDevice, r.GetTarget())
 }
 
 func TestRawInstallWithSuccess(t *testing.T) {
@@ -162,6 +164,8 @@ func TestRawInstallWithSuccess(t *testing.T) {
 			cm.AssertExpectations(t)
 			lam.AssertExpectations(t)
 			fsbm.AssertExpectations(t)
+
+			assert.Equal(t, tc.Target, r.GetTarget())
 		})
 	}
 }

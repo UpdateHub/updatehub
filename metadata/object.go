@@ -21,9 +21,10 @@ import (
 type ObjectMetadata struct {
 	Object `json:"-"`
 
-	Sha256sum  string `json:"sha256sum"`
-	Mode       string `json:"mode"`
-	Compressed bool   `json:"bool"`
+	Sha256sum          string      `json:"sha256sum"`
+	Mode               string      `json:"mode"`
+	Compressed         bool        `json:"bool"`
+	InstallIfDifferent interface{} `json:"install-if-different,omitempty"`
 }
 
 func NewObjectMetadata(bytes []byte) (Object, error) {

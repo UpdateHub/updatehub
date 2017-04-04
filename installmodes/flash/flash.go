@@ -15,6 +15,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
@@ -53,6 +54,7 @@ type FlashObject struct {
 	utils.CmdLineExecuter
 	FileSystemBackend afero.Fs
 	utils.MtdUtils
+	installifdifferent.TargetGetter
 
 	Target     string `json:"target"`
 	TargetType string `json:"target-type"`
@@ -109,4 +111,7 @@ func (f *FlashObject) Cleanup() error {
 	return nil
 }
 
-// FIXME: install-different stuff?
+// GetTarget implementation for the "flash" handler
+func (f *FlashObject) GetTarget() string {
+	return f.targetDevice + "ro"
+}
