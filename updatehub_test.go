@@ -131,57 +131,81 @@ func TestUpdateHubReportState(t *testing.T) {
 func TestStartPolling(t *testing.T) {
 	now := time.Now()
 
-	// Simulate time passage from now
-	defer func() *monkey.PatchGuard {
-		seconds := -1
-		return monkey.Patch(time.Now, func() time.Time {
-			seconds++
-			return now.Add(time.Second * time.Duration(seconds))
-		})
-	}().Unpatch()
-
 	testCases := []struct {
-		name            string
-		pollingInterval time.Duration
-		firstPoll       time.Time
-		lastPoll        time.Time
-		expectedState   State
+		name                 string
+		pollingInterval      time.Duration
+		extraPollingInterval time.Duration
+		firstPoll            time.Time
+		lastPoll             time.Time
+		expectedState        State
+		subTest              func(t *testing.T, uh *UpdateHub, state State)
 	}{
 		{
 			"RegularPoll",
 			time.Second,
+			0,
 			(time.Time{}).UTC(),
 			(time.Time{}).UTC(),
 			&PollState{},
+			func(t *testing.T, uh *UpdateHub, state State) {},
 		},
 
 		{
 			"NeverDidPollBefore",
 			time.Second,
+			0,
 			now.Add(-1 * time.Second),
 			(time.Time{}).UTC(),
 			&UpdateCheckState{},
+			func(t *testing.T, uh *UpdateHub, state State) {},
 		},
 
 		{
 			"PendingRegularPoll",
 			time.Second,
+			0,
+			now.Add(-4 * time.Second),
 			now.Add(-2 * time.Second),
-			now.Add(-1 * time.Second),
 			&UpdateCheckState{},
+			func(t *testing.T, uh *UpdateHub, state State) {},
+		},
+
+		{
+			"PendingExtraPoll",
+			10 * time.Second,
+			3 * time.Second,
+			now.Add(-25 * time.Second),
+			now.Add(-5 * time.Second),
+			&PollState{},
+			func(t *testing.T, uh *UpdateHub, state State) {
+				poll := state.(*PollState)
+				assert.Equal(t, 3*time.Second, poll.interval)
+			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Simulate time passage from now
+			defer func() *monkey.PatchGuard {
+				seconds := -1
+				return monkey.Patch(time.Now, func() time.Time {
+					seconds++
+					return now.Add(time.Second * time.Duration(seconds))
+				})
+			}().Unpatch()
+
 			uh, _ := newTestUpdateHub(nil)
 
 			uh.settings.PollingInterval = tc.pollingInterval
+			uh.settings.ExtraPollingInterval = tc.extraPollingInterval
 			uh.settings.FirstPoll = tc.firstPoll
 			uh.settings.LastPoll = tc.lastPoll
 
 			uh.StartPolling()
 			assert.IsType(t, tc.expectedState, uh.state)
+
+			tc.subTest(t, uh, uh.state)
 		})
 	}
 }
