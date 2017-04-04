@@ -131,7 +131,10 @@ func (uh *UpdateHub) StartPolling() {
 	now := time.Now()
 	now = time.Unix(now.Unix(), 0)
 
-	uh.state = uh.NewPollState()
+	poll := uh.NewPollState()
+
+	uh.state = poll
+
 	timeZero := (time.Time{}).UTC()
 
 	if uh.settings.FirstPoll == timeZero {
@@ -149,7 +152,16 @@ func (uh *UpdateHub) StartPolling() {
 			nextPoll = nextPoll.Add(uh.settings.PollingInterval)
 		}
 
-		uh.state.(*PollState).ticksCount = (int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.timeStep)
+		if uh.settings.ExtraPollingInterval > 0 {
+			extraPoll := uh.settings.LastPoll.Add(uh.settings.ExtraPollingInterval)
+
+			if extraPoll.Before(nextPoll) {
+				// Set polling interval to the pending extra poll interval
+				poll.interval = uh.settings.ExtraPollingInterval
+			}
+		} else {
+			poll.ticksCount = (int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.timeStep)
+		}
 	}
 }
 
