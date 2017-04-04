@@ -433,6 +433,20 @@ func TestStateIdle(t *testing.T) {
 			},
 			&IdleState{},
 		},
+
+		{
+			"ExtraPollingBeforeNow",
+			&Settings{
+				PollingSettings: PollingSettings{
+					PersistentPollingSettings: PersistentPollingSettings{
+						LastPoll:             time.Now().Add(-10 * time.Second),
+						ExtraPollingInterval: 5 * time.Second,
+					},
+					PollingEnabled: true,
+				},
+			},
+			&UpdateCheckState{},
+		},
 	}
 
 	for _, tc := range testCases {

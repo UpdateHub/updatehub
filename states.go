@@ -179,6 +179,16 @@ func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
 		return state, false
 	}
 
+	now := time.Now()
+
+	if uh.settings.ExtraPollingInterval > 0 {
+		extraPollTime := uh.settings.LastPoll.Add(uh.settings.ExtraPollingInterval)
+
+		if extraPollTime.Before(now) {
+			return NewUpdateCheckState(), false
+		}
+	}
+
 	return uh.NewPollState(), false
 }
 
