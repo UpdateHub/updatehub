@@ -27,8 +27,10 @@ import (
 type UpdateHubState int
 
 const (
+	// UpdateHubDummyState is a dummy state
+	UpdateHubDummyState = iota
 	// UpdateHubStateIdle is set when the agent is in the "idle" mode
-	UpdateHubStateIdle = iota
+	UpdateHubStateIdle
 	// UpdateHubStatePoll is set when the agent is in the "polling" mode
 	UpdateHubStatePoll
 	// UpdateHubStateUpdateCheck is set when the agent is running a

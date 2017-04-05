@@ -164,26 +164,3 @@ func (uh *UpdateHub) StartPolling() {
 		}
 	}
 }
-
-func (uh *UpdateHub) MainLoop() {
-	for {
-		uh.ReportCurrentState()
-
-		fmt.Println("Handling state:", StateToString(uh.state.ID()))
-
-		state, cancelled := uh.state.Handle(uh)
-
-		if state.ID() == UpdateHubStateError {
-			if es, ok := state.(*ErrorState); ok {
-				// FIXME: log error
-				fmt.Println(es.cause)
-			}
-		}
-
-		if cancelled {
-			fmt.Println("State cancelled")
-		}
-
-		uh.state = state
-	}
-}
