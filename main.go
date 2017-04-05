@@ -58,9 +58,10 @@ func main() {
 	}
 
 	uh.Controller = uh
-
 	uh.StartPolling()
-	uh.MainLoop()
+
+	d := NewDaemon(uh)
+	d.Run()
 }
 
 func combineSettingsFromFiles() (*Settings, error) {
