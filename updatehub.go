@@ -119,19 +119,12 @@ func (uh *UpdateHub) ReportCurrentState() error {
 	return nil
 }
 
-// NewPollState creates a NewPollState with a predefined interval
-func (uh *UpdateHub) NewPollState() *PollState {
-	poll := NewPollState()
-	poll.interval = uh.settings.PollingInterval
-	return poll
-}
-
 // StartPolling starts the polling process
 func (uh *UpdateHub) StartPolling() {
 	now := time.Now()
 	now = time.Unix(now.Unix(), 0)
 
-	poll := uh.NewPollState()
+	poll := NewPollState(uh)
 
 	uh.state = poll
 

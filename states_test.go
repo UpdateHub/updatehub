@@ -265,8 +265,19 @@ func TestStateUpdateFetch(t *testing.T) {
 	}
 }
 
+func TestNewPollState(t *testing.T) {
+	uh, _ := newTestUpdateHub(nil)
+
+	uh.settings.PollingInterval = time.Second
+
+	state := NewPollState(uh)
+	assert.IsType(t, &PollState{}, state)
+	assert.Equal(t, UpdateHubState(UpdateHubStatePoll), state.ID())
+	assert.Equal(t, uh.settings.PollingInterval, state.interval)
+}
+
 func TestPollingRetries(t *testing.T) {
-	uh, err := newTestUpdateHub(NewPollState())
+	uh, err := newTestUpdateHub(nil)
 	assert.NoError(t, err)
 
 	var elapsed time.Duration
@@ -295,6 +306,8 @@ func TestPollingRetries(t *testing.T) {
 	uh.Controller = c
 	uh.settings.PollingInterval = time.Second
 	uh.settings.LastPoll = time.Now()
+
+	uh.state = NewPollState(uh)
 
 	next, _ := uh.state.Handle(uh)
 	assert.IsType(t, &UpdateCheckState{}, next)
@@ -390,7 +403,7 @@ func TestPolling(t *testing.T) {
 func TestCancelPollState(t *testing.T) {
 	uh, _ := newTestUpdateHub(nil)
 
-	poll := NewPollState()
+	poll := NewPollState(uh)
 	poll.interval = 10 * time.Second
 
 	go func() {
