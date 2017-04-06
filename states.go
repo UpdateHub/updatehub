@@ -191,7 +191,7 @@ func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
 		}
 	}
 
-	return uh.NewPollState(), false
+	return NewPollState(uh), false
 }
 
 // NewIdleState creates a new IdleState
@@ -262,12 +262,13 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 }
 
 // NewPollState creates a new PollState
-func NewPollState() *PollState {
+func NewPollState(uh *UpdateHub) *PollState {
 	state := &PollState{
 		BaseState:        BaseState{id: UpdateHubStatePoll},
 		CancellableState: CancellableState{cancel: make(chan bool)},
-		interval:         time.Second,
 	}
+
+	state.interval = uh.settings.PollingInterval
 
 	return state
 }
@@ -312,7 +313,7 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 		if extraPollTime.Before(nextPoll) {
 			uh.settings.ExtraPollingInterval = extraPoll
 
-			poll := uh.NewPollState()
+			poll := NewPollState(uh)
 			poll.interval = extraPoll
 
 			return poll, false
