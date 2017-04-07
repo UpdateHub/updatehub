@@ -90,6 +90,8 @@ func TestCopyInstallWithFormatError(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
+
+	assert.Equal(t, "", cp.GetTarget())
 }
 
 func TestCopyInstallWithTempDirError(t *testing.T) {
@@ -107,6 +109,8 @@ func TestCopyInstallWithTempDirError(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
+
+	assert.Equal(t, "", cp.GetTarget())
 }
 
 func TestCopyInstallWithMountError(t *testing.T) {
@@ -139,6 +143,8 @@ func TestCopyInstallWithMountError(t *testing.T) {
 	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.False(t, tempDirExists)
 	assert.NoError(t, err)
+
+	assert.Equal(t, "", cp.GetTarget())
 }
 
 func TestCopyInstallWithCopyFileError(t *testing.T) {
@@ -189,6 +195,9 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.False(t, tempDirExists)
 	assert.NoError(t, err)
+
+	expectedTargetPath := path.Join(tempDirPath, targetPath)
+	assert.Equal(t, expectedTargetPath, cp.GetTarget())
 }
 
 func TestCopyInstallWithUmountError(t *testing.T) {
@@ -239,6 +248,9 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.True(t, tempDirExists)
 	assert.NoError(t, err)
+
+	expectedTargetPath := path.Join(tempDirPath, targetPath)
+	assert.Equal(t, expectedTargetPath, cp.GetTarget())
 }
 
 func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
@@ -289,6 +301,9 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	tempDirExists, err := afero.Exists(memFs, tempDirPath)
 	assert.True(t, tempDirExists)
 	assert.NoError(t, err)
+
+	expectedTargetPath := path.Join(tempDirPath, targetPath)
+	assert.Equal(t, expectedTargetPath, cp.GetTarget())
 }
 
 func TestCopyInstallWithSuccess(t *testing.T) {
@@ -407,6 +422,9 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			tempDirExists, err := afero.Exists(memFs, tempDirPath)
 			assert.False(t, tempDirExists)
 			assert.NoError(t, err)
+
+			expectedTargetPath := path.Join(tempDirPath, tc.TargetPath)
+			assert.Equal(t, expectedTargetPath, cp.GetTarget())
 		})
 	}
 }

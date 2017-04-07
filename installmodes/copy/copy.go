@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/metadata"
@@ -44,6 +45,8 @@ type CopyObject struct {
 	LibArchiveBackend      libarchive.API `json:"-"`
 	FileSystemBackend      afero.Fs
 	utils.Copier           `json:"-"`
+	installifdifferent.TargetGetter
+	targetPath string
 
 	Target        string `json:"target"`
 	TargetType    string `json:"target-type"`
@@ -87,12 +90,14 @@ func (cp *CopyObject) Install(downloadDir string) error {
 		return err
 	}
 
-	targetPath := path.Join(tempDirPath, cp.TargetPath)
+	// this line is important because "cp.targetPath" is the value
+	// used on GetTarget() which is the implementation for install-if-different
+	cp.targetPath = path.Join(tempDirPath, cp.TargetPath)
 
 	errorList := []error{}
 
 	sourcePath := path.Join(downloadDir, cp.Sha256sum)
-	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
+	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, cp.targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
 	}
@@ -112,4 +117,7 @@ func (cp *CopyObject) Cleanup() error {
 	return nil
 }
 
-// FIXME: install-different stuff
+// GetTarget implementation for the "copy" handler
+func (cp *CopyObject) GetTarget() string {
+	return cp.targetPath
+}

@@ -18,6 +18,7 @@ import (
 
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/handlers"
+	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
 	"github.com/spf13/afero"
@@ -422,7 +423,8 @@ func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
 	return NewInstallingState(state.updateMetadata,
 		&activeinactive.DefaultImpl{},
 		&Sha256CheckerImpl{&utils.ExtendedIO{}},
-		afero.NewOsFs()), false
+		uh.store,
+		&installifdifferent.DefaultImpl{uh.store}), false
 }
 
 // NewUpdateInstallState creates a new UpdateInstallState
@@ -442,8 +444,9 @@ type InstallingState struct {
 	CancellableState
 	ReportableState
 	Sha256Checker
-	ActiveInactiveBackend activeinactive.Interface
-	FileSystemBackend     afero.Fs
+	ActiveInactiveBackend     activeinactive.Interface
+	FileSystemBackend         afero.Fs
+	InstallIfDifferentBackend installifdifferent.Interface
 
 	updateMetadata *metadata.UpdateMetadata
 }
@@ -480,9 +483,12 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 
 		errorList := []error{}
 
-		// FIXME: implement install-if-different check here
-		installIfDifferent := true
-		if installIfDifferent {
+		install, err := state.InstallIfDifferentBackend.Proceed(o)
+		if err != nil {
+			errorList = append(errorList, err)
+		}
+
+		if install {
 			err = handler.Install(uh.settings.DownloadDir)
 			if err != nil {
 				errorList = append(errorList, err)
@@ -512,13 +518,19 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 }
 
 // NewInstallingState creates a new InstallingState
-func NewInstallingState(updateMetadata *metadata.UpdateMetadata, aii activeinactive.Interface, sc Sha256Checker, fsb afero.Fs) *InstallingState {
+func NewInstallingState(
+	updateMetadata *metadata.UpdateMetadata,
+	aii activeinactive.Interface,
+	sc Sha256Checker,
+	fsb afero.Fs,
+	iid installifdifferent.Interface) *InstallingState {
 	state := &InstallingState{
-		BaseState:             BaseState{id: UpdateHubStateInstalling},
-		updateMetadata:        updateMetadata,
-		ActiveInactiveBackend: aii,
-		Sha256Checker:         sc,
-		FileSystemBackend:     fsb,
+		BaseState:                 BaseState{id: UpdateHubStateInstalling},
+		updateMetadata:            updateMetadata,
+		ActiveInactiveBackend:     aii,
+		Sha256Checker:             sc,
+		FileSystemBackend:         fsb,
+		InstallIfDifferentBackend: iid,
 	}
 
 	return state

@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/metadata"
@@ -44,6 +45,7 @@ type RawObject struct {
 	LibArchiveBackend libarchive.API `json:"-"`
 	FileSystemBackend afero.Fs
 	utils.Copier      `json:"-"`
+	installifdifferent.TargetGetter
 
 	Target     string `json:"target"`
 	TargetType string `json:"target-type"`
@@ -74,4 +76,7 @@ func (r *RawObject) Cleanup() error {
 	return nil
 }
 
-// FIXME: install-different stuff
+// GetTarget implementation for the "raw" handler
+func (r *RawObject) GetTarget() string {
+	return r.Target
+}

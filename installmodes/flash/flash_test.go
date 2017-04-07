@@ -210,6 +210,9 @@ func TestFlashInstallSuccessWithNAND(t *testing.T) {
 
 	mum.AssertExpectations(t)
 	clm.AssertExpectations(t)
+
+	expectedTargetDevice := mtddevice + "ro"
+	assert.Equal(t, expectedTargetDevice, f.GetTarget())
 }
 
 func TestFlashInstallSuccessWithNOR(t *testing.T) {
@@ -235,6 +238,9 @@ func TestFlashInstallSuccessWithNOR(t *testing.T) {
 
 	mum.AssertExpectations(t)
 	clm.AssertExpectations(t)
+
+	expectedTargetDevice := mtddevice + "ro"
+	assert.Equal(t, expectedTargetDevice, f.GetTarget())
 }
 
 func TestFlashInstallWithMtdIsNANDFailure(t *testing.T) {
@@ -258,6 +264,9 @@ func TestFlashInstallWithMtdIsNANDFailure(t *testing.T) {
 
 	mum.AssertExpectations(t)
 	clm.AssertExpectations(t)
+
+	expectedTargetDevice := mtddevice + "ro"
+	assert.Equal(t, expectedTargetDevice, f.GetTarget())
 }
 
 func TestFlashInstallWithFlashEraseFailure(t *testing.T) {
@@ -281,6 +290,9 @@ func TestFlashInstallWithFlashEraseFailure(t *testing.T) {
 
 	mum.AssertExpectations(t)
 	clm.AssertExpectations(t)
+
+	expectedTargetDevice := mtddevice + "ro"
+	assert.Equal(t, expectedTargetDevice, f.GetTarget())
 }
 
 func TestFlashInstallWithFlashcpFailure(t *testing.T) {
@@ -306,6 +318,9 @@ func TestFlashInstallWithFlashcpFailure(t *testing.T) {
 
 	mum.AssertExpectations(t)
 	clm.AssertExpectations(t)
+
+	expectedTargetDevice := mtddevice + "ro"
+	assert.Equal(t, expectedTargetDevice, f.GetTarget())
 }
 
 func TestFlashInstallWithNandwriteFailure(t *testing.T) {
@@ -331,4 +346,7 @@ func TestFlashInstallWithNandwriteFailure(t *testing.T) {
 
 	mum.AssertExpectations(t)
 	clm.AssertExpectations(t)
+
+	expectedTargetDevice := mtddevice + "ro"
+	assert.Equal(t, expectedTargetDevice, f.GetTarget())
 }

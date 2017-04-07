@@ -13,6 +13,7 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
@@ -42,6 +43,7 @@ func getObject() interface{} {
 type ImxKobsObject struct {
 	metadata.ObjectMetadata
 	utils.CmdLineExecuter
+	installifdifferent.TargetGetter
 
 	Add1KPadding    bool   `json:"1k_padding,omitempty"`
 	SearchExponent  int    `json:"search_exponent,omitempty"`
@@ -88,4 +90,13 @@ func (ik *ImxKobsObject) Cleanup() error {
 	return nil
 }
 
-// FIXME: install-different stuff?
+// GetTarget implementation for the "imxkobs" handler
+func (ik *ImxKobsObject) GetTarget() string {
+	mtdDevicePath := "/dev/mtd0"
+
+	if ik.Chip0DevicePath != "" {
+		mtdDevicePath = ik.Chip0DevicePath
+	}
+
+	return mtdDevicePath + "ro"
+}
