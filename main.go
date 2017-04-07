@@ -13,7 +13,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/imdario/mergo"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/client"
@@ -23,12 +22,6 @@ import (
 )
 
 func main() {
-	settings, err := combineSettingsFromFiles()
-	if err != nil {
-		log.Errorln(err)
-		os.Exit(1)
-	}
-
 	osFs := afero.NewOsFs()
 
 	fm, err := metadata.NewFirmwareMetadata(firmwareMetadataDirPath, osFs, &utils.CmdLine{})
@@ -42,40 +35,15 @@ func main() {
 		api:              client.NewApiClient("localhost:8080"),
 		updater:          client.NewUpdateClient(),
 		timeStep:         time.Minute,
-		settings:         settings,
 		store:            osFs,
 		firmwareMetadata: *fm,
 	}
 
 	uh.Controller = uh
+
+	uh.LoadSettings()
 	uh.StartPolling()
 
 	d := NewDaemon(uh)
 	d.Run()
-}
-
-func combineSettingsFromFiles() (*Settings, error) {
-	files := []string{systemSettingsPath, runtimeSettingsPath}
-	settings := []*Settings{}
-
-	for _, name := range files {
-		file, err := os.Open(name)
-		if err != nil {
-			return nil, err
-		}
-
-		s, err := LoadSettings(file)
-		if err != nil {
-			return nil, err
-		}
-
-		settings = append(settings, s)
-	}
-
-	err := mergo.Merge(settings[0], settings[1])
-	if err != nil {
-		return nil, err
-	}
-
-	return settings[0], nil
 }

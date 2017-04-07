@@ -16,6 +16,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/imdario/mergo"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/client"
@@ -115,6 +116,35 @@ func (uh *UpdateHub) ReportCurrentState() error {
 			return err
 		}
 	}
+
+	return nil
+}
+
+// LoadSettings loads system and runtime settings
+func (uh *UpdateHub) LoadSettings() error {
+	files := []string{systemSettingsPath, runtimeSettingsPath}
+	settings := []*Settings{}
+
+	for _, name := range files {
+		file, err := uh.store.Open(name)
+		if err != nil {
+			return err
+		}
+
+		s, err := LoadSettings(file)
+		if err != nil {
+			return err
+		}
+
+		settings = append(settings, s)
+	}
+
+	err := mergo.Merge(settings[0], settings[1])
+	if err != nil {
+		return err
+	}
+
+	uh.settings = settings[0]
 
 	return nil
 }
