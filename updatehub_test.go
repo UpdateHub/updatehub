@@ -13,11 +13,14 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/bouk/monkey"
+	"github.com/go-ini/ini"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
@@ -206,6 +209,79 @@ func TestStartPolling(t *testing.T) {
 			assert.IsType(t, tc.expectedState, uh.state)
 
 			tc.subTest(t, uh, uh.state)
+		})
+	}
+}
+
+func TestLoadUpdateHubSettings(t *testing.T) {
+	testCases := []struct {
+		name            string
+		systemSettings  string
+		runtimeSettings string
+		expectedError   interface{}
+		subTest         func(t *testing.T, settings *Settings, err error)
+	}{
+		{
+			"SystemSettingsNotFound",
+			"",
+			"",
+			&os.PathError{},
+			func(t *testing.T, settings *Settings, err error) {
+				assert.Equal(t, err.(*os.PathError).Path, systemSettingsPath)
+			},
+		},
+
+		{
+			"RuntimeSettingsNotFound",
+			"[Polling]\nEnabled=true",
+			"",
+			&os.PathError{},
+			func(t *testing.T, settings *Settings, err error) {
+				assert.Equal(t, err.(*os.PathError).Path, runtimeSettingsPath)
+			},
+		},
+
+		{
+			"InvalidSettingsFile",
+			"test",
+			"test",
+			ini.ErrDelimiterNotFound{},
+			func(t *testing.T, settings *Settings, err error) {
+			},
+		},
+
+		{
+			"ValidSettingsFile",
+			"[Polling]\nEnabled=true",
+			"[Polling]\nExtraInterval=1",
+			nil,
+			func(t *testing.T, settings *Settings, err error) {
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			uh, _ := newTestUpdateHub(nil)
+
+			if tc.systemSettings != "" {
+				err := uh.store.MkdirAll(filepath.Dir(systemSettingsPath), 0755)
+				assert.NoError(t, err)
+				err = afero.WriteFile(uh.store, systemSettingsPath, []byte(tc.systemSettings), 0644)
+				assert.NoError(t, err)
+			}
+
+			if tc.runtimeSettings != "" {
+				err := uh.store.MkdirAll(filepath.Dir(runtimeSettingsPath), 0755)
+				assert.NoError(t, err)
+				err = afero.WriteFile(uh.store, runtimeSettingsPath, []byte(tc.runtimeSettings), 0644)
+				assert.NoError(t, err)
+			}
+
+			err := uh.LoadSettings()
+			assert.IsType(t, tc.expectedError, err)
+
+			tc.subTest(t, uh.settings, err)
 		})
 	}
 }
