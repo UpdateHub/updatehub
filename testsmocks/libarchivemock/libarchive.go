@@ -90,6 +90,11 @@ func (lam *LibArchiveMock) EntrySize(e libarchive.ArchiveEntry) int64 {
 	return args.Get(0).(int64)
 }
 
+func (lam *LibArchiveMock) EntrySizeIsSet(e libarchive.ArchiveEntry) bool {
+	args := lam.Called(e)
+	return args.Bool(0)
+}
+
 func (lam *LibArchiveMock) Unpack(tarballPath string, targetPath string, enableRaw bool) error {
 	args := lam.Called(tarballPath, targetPath, enableRaw)
 	return args.Error(0)

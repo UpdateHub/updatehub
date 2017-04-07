@@ -9,11 +9,14 @@
 package installifdifferent
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/testsmocks/filemock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,7 +27,7 @@ const (
         "target": "/tmp/dev/xx1",
         "target-type": "device",
         "target-path": "/path",
-        "install-if-different": "73a625b0271d75702cc4205061da9efc6112e9fe94033ed0f9033157109ebe75"
+        "install-if-different": "b5a2c96250612366ea272ffac6d9744aaf4b45aacd96aa7cfcb931ee3b558259"
 	}`
 
 	ObjectWithInstallIfDifferentPattern = `{
@@ -35,7 +38,7 @@ const (
         "install-if-different": {
             "version": "2.0",
             "pattern": {
-                "regexp": ".+",
+                "regexp": "\\d\\.\\d",
                 "seek": 1024,
                 "buffer-size": 2024
             },
@@ -56,6 +59,34 @@ const (
         "target-type": "device",
         "target-path": "/path",
         "install-if-different": [ 1, 2, 3 ]
+	}`
+
+	ObjectWithInstallIfDifferentPatternWithArrayPattern = `{
+        "mode": "test",
+        "target": "/tmp/dev/xx1",
+        "target-type": "device",
+        "target-path": "/path",
+        "install-if-different": {
+            "version": "2.0",
+            "pattern": [],
+            "extra": "property"
+        }
+	}`
+
+	ObjectWithInstallIfDifferentPatternWithInvalidPattern = `{
+        "mode": "test",
+        "target": "/tmp/dev/xx1",
+        "target-type": "device",
+        "target-path": "/path",
+        "install-if-different": {
+            "version": "2.0",
+            "pattern": {
+                "regexp": ".+",
+                "seek": -1,
+                "buffer-size": -1
+            },
+            "extra": "property"
+        }
 	}`
 
 	testObjectGetTargetReturn = "/tmp/get-target-return"
@@ -98,7 +129,7 @@ func TestProceedWithoutInstallIfDifferentSupport(t *testing.T) {
 	assert.True(t, install)
 }
 
-func TestProceedWithSha256Sum(t *testing.T) {
+func TestProceedWithSha256SumMatch(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
 	err := afero.WriteFile(memFs, testObjectGetTargetReturn, []byte("dummy"), 0666)
@@ -118,20 +149,118 @@ func TestProceedWithSha256Sum(t *testing.T) {
 	assert.NoError(t, err)
 
 	install, err := iif.Proceed(o)
-	/*
-		    FIXME: this is supposed to be successful like this commented
-		    asserts. We are testing for "non-implemented yet" temporarily as
-		    an itermediate step since this feature is enormous.
-
-			assert.NoError(t, err)
-			assert.True(t, install)
-	*/
-
-	assert.EqualError(t, err, "installIfDifferent: Sha256Sum not yet implemented")
+	assert.NoError(t, err)
 	assert.False(t, install)
 }
 
-func TestProceedWithPattern(t *testing.T) {
+func TestProceedWithSha256SumWithoutMatch(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	err := afero.WriteFile(memFs, testObjectGetTargetReturn, []byte("no-match"), 0666)
+	assert.NoError(t, err)
+	defer memFs.Remove(testObjectGetTargetReturn)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObject{} },
+	})
+	defer mode.Unregister()
+
+	iif := &DefaultImpl{memFs}
+
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentSha256Sum))
+	assert.NoError(t, err)
+
+	install, err := iif.Proceed(o)
+	assert.NoError(t, err)
+	assert.True(t, install)
+}
+
+func TestProceedWithSha256SumWithOpenError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObject{} },
+	})
+	defer mode.Unregister()
+
+	iif := &DefaultImpl{memFs}
+
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentSha256Sum))
+	assert.NoError(t, err)
+
+	install, err := iif.Proceed(o)
+	assert.EqualError(t, err, fmt.Sprintf("open %s: file does not exist", testObjectGetTargetReturn))
+	assert.False(t, install)
+}
+
+func TestProceedWithPatternWithVersionMatch(t *testing.T) {
+	// when version match means it should NOT install
+	fs := afero.NewOsFs()
+
+	var content bytes.Buffer
+	for i := 0; i < 1024; i++ {
+		content.WriteString(" ")
+	}
+	content.WriteString("2.0   ")
+
+	err := afero.WriteFile(fs, testObjectGetTargetReturn, content.Bytes(), 0666)
+	assert.NoError(t, err)
+	defer fs.Remove(testObjectGetTargetReturn)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObject{} },
+	})
+	defer mode.Unregister()
+
+	iif := &DefaultImpl{fs}
+
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentPattern))
+	assert.NoError(t, err)
+
+	install, err := iif.Proceed(o)
+	assert.NoError(t, err)
+	assert.False(t, install)
+}
+
+func TestProceedWithPatternWithoutVersionMatch(t *testing.T) {
+	// when version don't match means it should install
+	fs := afero.NewOsFs()
+
+	var content bytes.Buffer
+	for i := 0; i < 1024; i++ {
+		content.WriteString(" ")
+	}
+	content.WriteString("3.3   ")
+
+	// the string "dummy" won't match the pattern in "ObjectWithInstallIfDifferentPattern"
+	err := afero.WriteFile(fs, testObjectGetTargetReturn, content.Bytes(), 0666)
+	assert.NoError(t, err)
+	defer fs.Remove(testObjectGetTargetReturn)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObject{} },
+	})
+	defer mode.Unregister()
+
+	iif := &DefaultImpl{fs}
+
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentPattern))
+	assert.NoError(t, err)
+
+	install, err := iif.Proceed(o)
+	assert.NoError(t, err)
+	assert.True(t, install)
+}
+
+func TestProceedWithPatternWithUnknownPattern(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
 	err := afero.WriteFile(memFs, testObjectGetTargetReturn, []byte("dummy"), 0666)
@@ -147,21 +276,59 @@ func TestProceedWithPattern(t *testing.T) {
 
 	iif := &DefaultImpl{memFs}
 
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentPatternWithArrayPattern))
+	assert.NoError(t, err)
+
+	install, err := iif.Proceed(o)
+	assert.EqualError(t, err, "install-if-different pattern is unknown")
+	assert.False(t, install)
+}
+
+func TestProceedWithPatternWithInvalidPattern(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	err := afero.WriteFile(memFs, testObjectGetTargetReturn, []byte("dummy"), 0666)
+	assert.NoError(t, err)
+	defer memFs.Remove(testObjectGetTargetReturn)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObject{} },
+	})
+	defer mode.Unregister()
+
+	iif := &DefaultImpl{memFs}
+
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentPatternWithInvalidPattern))
+	assert.NoError(t, err)
+
+	install, err := iif.Proceed(o)
+	assert.NoError(t, err)
+	assert.False(t, install)
+}
+
+func TestProceedWithPatternWithCaptureError(t *testing.T) {
+	fs := &filesystemmock.FileSystemBackendMock{}
+	fs.On("Open", testObjectGetTargetReturn).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObject{} },
+	})
+	defer mode.Unregister()
+
+	iif := &DefaultImpl{fs}
+
 	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentPattern))
 	assert.NoError(t, err)
 
 	install, err := iif.Proceed(o)
-	/*
-		    FIXME: this is supposed to be successful like this commented
-		    asserts. We are testing for "non-implemented yet" temporarily as
-		    an itermediate step since this feature is enormous.
-
-			assert.NoError(t, err)
-			assert.True(t, install)
-	*/
-
-	assert.EqualError(t, err, "installIfDifferent: Pattern not yet implemented")
+	assert.EqualError(t, err, "open error")
 	assert.False(t, install)
+
+	fs.AssertExpectations(t)
 }
 
 func TestProceedWithUnknownFormatError(t *testing.T) {
@@ -185,25 +352,5 @@ func TestProceedWithUnknownFormatError(t *testing.T) {
 
 	install, err := iif.Proceed(o)
 	assert.EqualError(t, err, "unknown install-if-different format")
-	assert.False(t, install)
-}
-
-func TestProceedWithTargetNotFoundError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return &testObject{} },
-	})
-	defer mode.Unregister()
-
-	iif := &DefaultImpl{memFs}
-
-	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentUnknownFormat))
-	assert.NoError(t, err)
-
-	install, err := iif.Proceed(o)
-	assert.EqualError(t, err, fmt.Sprintf("install-if-different: target '%s' not found", testObjectGetTargetReturn))
 	assert.False(t, install)
 }
