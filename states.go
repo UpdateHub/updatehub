@@ -52,6 +52,8 @@ const (
 	// UpdateHubStateWaitingForReboot is set when the agent is waiting
 	// for reboot
 	UpdateHubStateWaitingForReboot
+	// UpdateHubStateExit is set when the daemon is about to quit
+	UpdateHubStateExit
 	// UpdateHubStateError is set when an error occured on the agent
 	UpdateHubStateError
 )
@@ -65,6 +67,7 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubStateInstalling:       "installing",
 	UpdateHubStateInstalled:        "installed",
 	UpdateHubStateWaitingForReboot: "waiting-for-reboot",
+	UpdateHubStateExit:             "exit",
 	UpdateHubStateError:            "error",
 }
 
@@ -135,8 +138,10 @@ type ErrorState struct {
 // Handle for ErrorState calls "panic" if the error is fatal or
 // triggers a poll state otherwise
 func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
+	uh.logger.Warn(state.cause)
+
 	if state.cause.IsFatal() {
-		panic(state.cause)
+		return NewExitState(1), false
 	}
 
 	return NewIdleState(), false
@@ -593,6 +598,26 @@ func NewInstalledState(updateMetadata *metadata.UpdateMetadata) *InstalledState 
 	}
 
 	return state
+}
+
+// ExitState is the final state of the state machine
+type ExitState struct {
+	BaseState
+
+	exitCode int
+}
+
+// NewExitState creates a new ExitState
+func NewExitState(exitCode int) *ExitState {
+	return &ExitState{
+		BaseState: BaseState{id: UpdateHubStateExit},
+		exitCode:  exitCode,
+	}
+}
+
+// Handle for ExitState
+func (state *ExitState) Handle(uh *UpdateHub) (State, bool) {
+	panic("ExitState handler should not be called")
 }
 
 // GetIndexOfObjectToBeInstalled selects which object will be installed from the update metadata

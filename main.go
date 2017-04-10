@@ -48,5 +48,6 @@ func main() {
 	uh.StartPolling()
 
 	d := NewDaemon(uh)
-	d.Run()
+
+	os.Exit(d.Run())
 }
