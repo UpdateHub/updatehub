@@ -12,7 +12,7 @@ import (
 	"os"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/client"
@@ -22,11 +22,13 @@ import (
 )
 
 func main() {
+	logger := logrus.New()
+
 	osFs := afero.NewOsFs()
 
 	fm, err := metadata.NewFirmwareMetadata(firmwareMetadataDirPath, osFs, &utils.CmdLine{})
 	if err != nil {
-		log.Errorln(err)
+		logger.Errorln(err)
 		os.Exit(1)
 	}
 
@@ -37,6 +39,7 @@ func main() {
 		timeStep:         time.Minute,
 		store:            osFs,
 		firmwareMetadata: *fm,
+		logger:           logger,
 	}
 
 	uh.Controller = uh
