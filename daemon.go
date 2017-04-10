@@ -8,11 +8,7 @@
 
 package main
 
-import (
-	"fmt"
-
-	"github.com/Sirupsen/logrus"
-)
+import "github.com/Sirupsen/logrus"
 
 type Daemon struct {
 	uh   *UpdateHub
@@ -42,8 +38,7 @@ func (d *Daemon) Run() {
 
 		if state.ID() == UpdateHubStateError {
 			if es, ok := state.(*ErrorState); ok {
-				// FIXME: log error
-				fmt.Println(es.cause)
+				d.uh.logger.Warn(es.cause)
 			}
 		}
 
