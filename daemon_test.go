@@ -9,8 +9,13 @@
 package main
 
 import (
+	"errors"
+	"reflect"
 	"testing"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus/hooks/test"
+	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,6 +47,29 @@ func TestDaemonStop(t *testing.T) {
 	d.Stop()
 
 	assert.True(t, d.stop)
+}
+
+func TestDaemonFailedToReportStatus(t *testing.T) {
+	logger, hook := test.NewNullLogger()
+
+	defer hook.Reset()
+
+	uh, _ := newTestUpdateHub(nil)
+	uh.logger = logger
+
+	d := NewDaemon(uh)
+
+	uh.state = NewStateTest(d)
+
+	defer monkey.PatchInstanceMethod(reflect.TypeOf(uh), "ReportCurrentState", func(uh *UpdateHub) error {
+		return errors.New("")
+	}).Unpatch()
+
+	d.Run()
+
+	assert.Equal(t, 1, len(hook.Entries))
+	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
+	assert.Equal(t, "Failed to report status", hook.LastEntry().Message)
 }
 
 type StateTest struct {

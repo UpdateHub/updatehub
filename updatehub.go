@@ -16,6 +16,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/imdario/mergo"
 	"github.com/spf13/afero"
 
@@ -35,6 +36,7 @@ type UpdateHub struct {
 	api                     *client.ApiClient
 	updater                 client.Updater
 	reporter                client.Reporter
+	logger                  *logrus.Logger
 	lastInstalledPackageUID string
 }
 

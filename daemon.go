@@ -8,7 +8,11 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/Sirupsen/logrus"
+)
 
 type Daemon struct {
 	uh   *UpdateHub
@@ -27,7 +31,12 @@ func (d *Daemon) Stop() {
 
 func (d *Daemon) Run() {
 	for {
-		d.uh.ReportCurrentState()
+		err := d.uh.ReportCurrentState()
+		if err != nil {
+			d.uh.logger.WithFields(logrus.Fields{
+				"state": StateToString(d.uh.state.ID()),
+			}).Warn("Failed to report status")
+		}
 
 		state, _ := d.uh.state.Handle(d.uh)
 
