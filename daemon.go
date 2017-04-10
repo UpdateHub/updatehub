@@ -25,7 +25,7 @@ func (d *Daemon) Stop() {
 	d.stop = true
 }
 
-func (d *Daemon) Run() {
+func (d *Daemon) Run() int {
 	for {
 		err := d.uh.ReportCurrentState()
 		if err != nil {
@@ -36,16 +36,14 @@ func (d *Daemon) Run() {
 
 		state, _ := d.uh.state.Handle(d.uh)
 
-		if state.ID() == UpdateHubStateError {
-			if es, ok := state.(*ErrorState); ok {
-				d.uh.logger.Warn(es.cause)
-			}
-		}
-
 		d.uh.state = state
 
-		if d.stop {
-			return
+		if d.stop || state.ID() == UpdateHubStateExit {
+			if finalState, _ := state.(*ExitState); finalState != nil {
+				return finalState.exitCode
+			}
+
+			return 0
 		}
 	}
 }

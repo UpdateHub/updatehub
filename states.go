@@ -138,8 +138,10 @@ type ErrorState struct {
 // Handle for ErrorState calls "panic" if the error is fatal or
 // triggers a poll state otherwise
 func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
+	uh.logger.Warn(state.cause)
+
 	if state.cause.IsFatal() {
-		panic(state.cause)
+		return NewExitState(1), false
 	}
 
 	return NewIdleState(), false

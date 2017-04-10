@@ -72,6 +72,27 @@ func TestDaemonFailedToReportStatus(t *testing.T) {
 	assert.Equal(t, "Failed to report status", hook.LastEntry().Message)
 }
 
+func TestDaemonExitStateStop(t *testing.T) {
+	logger, hook := test.NewNullLogger()
+
+	defer hook.Reset()
+
+	uh, _ := newTestUpdateHub(nil)
+	uh.logger = logger
+
+	d := NewDaemon(uh)
+
+	uh.state = NewErrorState(NewFatalError(errors.New("test")))
+
+	assert.Equal(t, 1, d.Run())
+
+	assert.IsType(t, &ExitState{}, uh.state)
+	assert.Equal(t, 1, len(hook.Entries))
+	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
+	assert.Equal(t, "fatal error: test", hook.LastEntry().Message)
+	assert.Equal(t, 1, uh.state.(*ExitState).exitCode)
+}
+
 type StateTest struct {
 	BaseState
 	CancellableState
