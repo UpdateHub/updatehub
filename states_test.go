@@ -1200,3 +1200,18 @@ func TestStateInstalled(t *testing.T) {
 	// channel dynamically
 	assert.IsType(t, expectedState, nextState)
 }
+
+func TestNewExitState(t *testing.T) {
+	state := NewExitState(1)
+
+	assert.IsType(t, &ExitState{}, state)
+	assert.Equal(t, 1, state.exitCode)
+}
+
+func TestExitStateHandle(t *testing.T) {
+	state := NewExitState(1)
+
+	assert.Panics(t, func() {
+		state.Handle(nil)
+	})
+}
