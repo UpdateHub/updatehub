@@ -44,7 +44,11 @@ func main() {
 
 	uh.Controller = uh
 
-	uh.LoadSettings()
+	if err = uh.LoadSettings(); err != nil {
+		logger.Errorln(err)
+		os.Exit(1)
+	}
+
 	uh.StartPolling()
 
 	d := NewDaemon(uh)
