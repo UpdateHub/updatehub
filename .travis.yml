@@ -38,4 +38,4 @@ script:
   - overalls -project=github.com/UpdateHub/updatehub -covermode=count -ignore=.git,vendor -debug
 
 after_success:
-  - goveralls -coverprofile=overalls.coverprofile
+  - goveralls -coverprofile=overalls.coverprofile -ignore main.go
