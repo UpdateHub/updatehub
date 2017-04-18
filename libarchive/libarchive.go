@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"unsafe"
 )
 
@@ -184,7 +183,7 @@ func (la LibArchive) EntrySize(e ArchiveEntry) int64 {
 // Unpack contains the algorithm to extract files from a tarball and
 // put them on a directory
 func (la LibArchive) Unpack(tarballPath string, targetPath string, enableRaw bool) error {
-	originalDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	originalDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
@@ -193,13 +192,9 @@ func (la LibArchive) Unpack(tarballPath string, targetPath string, enableRaw boo
 	if err != nil {
 		return err
 	}
+	defer os.Chdir(originalDir)
 
 	err = extractTarball(la, tarballPath, enableRaw)
-	if err != nil {
-		return err
-	}
-
-	err = os.Chdir(originalDir)
 	if err != nil {
 		return err
 	}

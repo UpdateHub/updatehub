@@ -12,6 +12,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"log"
+	"os"
 	"path"
 	"testing"
 
@@ -27,6 +28,9 @@ func TestUnpackIntegration(t *testing.T) {
 	defer memFs.RemoveAll(targetPath)
 
 	tarballPath, err := generateTarball(memFs)
+	assert.NoError(t, err)
+
+	originalDir, err := os.Getwd()
 	assert.NoError(t, err)
 
 	la := LibArchive{}
@@ -53,6 +57,48 @@ func TestUnpackIntegration(t *testing.T) {
 	data3, err := afero.ReadFile(memFs, path.Join(targetPath, "source3.txt"))
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("content3"), data3)
+
+	newDir, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.Equal(t, originalDir, newDir)
+}
+
+func TestUnpackWithExtractTarballError(t *testing.T) {
+	fs := afero.NewOsFs()
+
+	targetPath, err := afero.TempDir(fs, "", "Unpack-test")
+	assert.NoError(t, err)
+	defer fs.RemoveAll(targetPath)
+
+	tarballPath, err := generateCorruptedTarball(fs)
+	assert.NoError(t, err)
+
+	originalDir, err := os.Getwd()
+	assert.NoError(t, err)
+
+	la := LibArchive{}
+	err = la.Unpack(tarballPath, targetPath, false)
+	assert.EqualError(t, err, "Unrecognized archive format")
+
+	newDir, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.Equal(t, originalDir, newDir)
+}
+
+func generateCorruptedTarball(fsBackend afero.Fs) (string, error) {
+	tarballPath := "/tmp/output.tar.gz"
+	file, err := fsBackend.Create(tarballPath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	_, err = file.Write([]byte("random stuff"))
+	if err != nil {
+		return "", err
+	}
+
+	return tarballPath, nil
 }
 
 func generateTarball(fsBackend afero.Fs) (string, error) {
