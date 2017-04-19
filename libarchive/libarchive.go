@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"unsafe"
 )
 
@@ -53,6 +52,7 @@ type API interface {
 	WriteHeader(a Archive, e ArchiveEntry) error
 	WriteFinishEntry(a Archive) error
 	EntrySize(e ArchiveEntry) int64
+	EntrySizeIsSet(e ArchiveEntry) bool
 	Unpack(tarballPath string, targetPath string, enableRaw bool) error
 }
 
@@ -181,10 +181,21 @@ func (la LibArchive) EntrySize(e ArchiveEntry) int64 {
 	return int64(r)
 }
 
+// EntrySizeIsSet is a wrapper for "C.archive_entry_size_is_set()"
+func (la LibArchive) EntrySizeIsSet(e ArchiveEntry) bool {
+	r := C.archive_entry_size_is_set(e.entry)
+
+	if r == 0 {
+		return false
+	}
+
+	return true
+}
+
 // Unpack contains the algorithm to extract files from a tarball and
 // put them on a directory
 func (la LibArchive) Unpack(tarballPath string, targetPath string, enableRaw bool) error {
-	originalDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	originalDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
@@ -304,7 +315,7 @@ func extractTarball(api API, filename string, enableRaw bool) error {
 			return err
 		}
 
-		if api.EntrySize(entry) > 0 {
+		if !api.EntrySizeIsSet(entry) || api.EntrySize(entry) > 0 {
 			err = copyData(api, source, target)
 			if err != nil {
 				return err
