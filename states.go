@@ -557,7 +557,6 @@ func (state *WaitingForRebootState) ID() UpdateHubState {
 // Handle for WaitingForRebootState tells us that an installation has
 // been made and it is waiting for a reboot
 func (state *WaitingForRebootState) Handle(uh *UpdateHub) (State, bool) {
-	// FIXME: not yet implemented
 	return NewIdleState(), false
 }
 
@@ -586,7 +585,6 @@ func (state *InstalledState) ID() UpdateHubState {
 
 // Handle for InstalledState implements the installation process itself
 func (state *InstalledState) Handle(uh *UpdateHub) (State, bool) {
-	// FIXME: not yet implemented
 	return NewIdleState(), false
 }
 
