@@ -204,13 +204,9 @@ func (la LibArchive) Unpack(tarballPath string, targetPath string, enableRaw boo
 	if err != nil {
 		return err
 	}
+	defer os.Chdir(originalDir)
 
 	err = extractTarball(la, tarballPath, enableRaw)
-	if err != nil {
-		return err
-	}
-
-	err = os.Chdir(originalDir)
 	if err != nil {
 		return err
 	}
