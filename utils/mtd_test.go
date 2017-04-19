@@ -9,11 +9,41 @@
 package utils
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMtdIsNANDWithOpenError(t *testing.T) {
+	mui := MtdUtilsImpl{}
+
+	isNand, err := mui.MtdIsNAND("/tmp/non-existant")
+
+	assert.EqualError(t, err, "Couldn't open flash device '/tmp/non-existant': No such file or directory")
+	assert.False(t, isNand)
+}
+
+func TestMtdIsNANDWithIoctlError(t *testing.T) {
+	mui := MtdUtilsImpl{}
+
+	tempFile, err := ioutil.TempFile("", "copy-test")
+	assert.NoError(t, err)
+	defer os.Remove(tempFile.Name())
+
+	_, err = tempFile.Write([]byte("dummy"))
+	assert.NoError(t, err)
+
+	tempFile.Close()
+
+	isNand, err := mui.MtdIsNAND(tempFile.Name())
+
+	assert.EqualError(t, err, fmt.Sprintf("Error executing MEMGETINFO ioctl on '%s': Inappropriate ioctl for device", tempFile.Name()))
+	assert.False(t, isNand)
+}
 
 func TestGetTargetDeviceFromMtdName(t *testing.T) {
 	mtdname := "system0"
