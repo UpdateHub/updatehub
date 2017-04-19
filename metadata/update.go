@@ -9,11 +9,9 @@
 package metadata
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
-	"io"
+
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 type Hardware struct {
@@ -26,6 +24,7 @@ type UpdateMetadata struct {
 	Version           string     `json:"version"`
 	Objects           [][]Object `json:"-"`
 	SupportedHardware []Hardware `json:"supported-hardware"`
+	RawBytes          []byte
 }
 
 func NewUpdateMetadata(bytes []byte) (*UpdateMetadata, error) {
@@ -41,6 +40,7 @@ func NewUpdateMetadata(bytes []byte) (*UpdateMetadata, error) {
 
 	// Unwraps metadata
 	metadata := wrapper.UpdateMetadata
+	metadata.RawBytes = bytes
 
 	for _, list := range wrapper.RawObjects {
 		var objects []Object
@@ -63,27 +63,6 @@ func NewUpdateMetadata(bytes []byte) (*UpdateMetadata, error) {
 	return &metadata, nil
 }
 
-func (m *UpdateMetadata) Checksum() (string, error) {
-	var wrapper struct {
-		UpdateMetadata
-		Objects [][]Object `json:"objects"`
-	}
-
-	wrapper.UpdateMetadata = *m
-	wrapper.Objects = m.Objects
-
-	data, err := json.Marshal(wrapper)
-	if err != nil {
-		return "", err
-	}
-
-	r := bytes.NewReader(data)
-
-	hash := sha256.New()
-	_, err = io.Copy(hash, r)
-	if err != nil {
-		return "", nil
-	}
-
-	return hex.EncodeToString(hash.Sum(nil)), nil
+func (m *UpdateMetadata) PackageUID() string {
+	return utils.DataSha256sum(m.RawBytes)
 }

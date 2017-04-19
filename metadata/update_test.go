@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,6 +39,7 @@ func TestMetadataFromValidJson(t *testing.T) {
 	assert.NotEmpty(t, m.Objects)
 	assert.NotEmpty(t, m.Objects[0])
 	assert.IsType(t, TestObject{}, m.Objects[0][0])
+	assert.Equal(t, utils.DataSha256sum([]byte(ValidJSONMetadata)), m.PackageUID())
 }
 
 func TestMetadataFromValidJsonWithActiveInactive(t *testing.T) {
@@ -60,6 +62,7 @@ func TestMetadataFromValidJsonWithActiveInactive(t *testing.T) {
 	assert.NotEmpty(t, m.Objects[1])
 	assert.IsType(t, TestObject{}, m.Objects[0][0])
 	assert.IsType(t, TestObject{}, m.Objects[1][0])
+	assert.Equal(t, utils.DataSha256sum([]byte(ValidJSONMetadataWithActiveInactive)), m.PackageUID())
 }
 
 func TestCompressedObject(t *testing.T) {

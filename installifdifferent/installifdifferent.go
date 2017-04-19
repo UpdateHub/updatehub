@@ -9,13 +9,11 @@
 package installifdifferent
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
-	"io"
 
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/utils"
 	"github.com/spf13/afero"
 )
 
@@ -64,16 +62,10 @@ type TargetGetter interface {
 }
 
 func installIfDifferentSha256Sum(fsb afero.Fs, target string, sha256sum string) (bool, error) {
-	file, err := fsb.Open(target)
+	calculatedSha256sum, err := utils.FileSha256sum(fsb, target)
 	if err != nil {
 		return false, err
 	}
-
-	hash := sha256.New()
-	_, err = io.Copy(hash, file)
-	calculatedSha256sum := hex.EncodeToString(hash.Sum(nil))
-
-	file.Close()
 
 	if calculatedSha256sum == sha256sum {
 		return false, nil

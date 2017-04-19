@@ -15,20 +15,27 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Sirupsen/logrus/hooks/test"
+	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDaemon(t *testing.T) {
-	uh, _ := newTestUpdateHub(nil)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(nil, aim)
 	d := NewDaemon(uh)
 
 	assert.IsType(t, &Daemon{}, d)
 	assert.Equal(t, uh, d.uh)
+
+	aim.AssertExpectations(t)
 }
 
 func TestDaemonRun(t *testing.T) {
-	uh, _ := newTestUpdateHub(nil)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(nil, nil)
 	d := NewDaemon(uh)
 
 	state := NewStateTest(d)
@@ -39,6 +46,8 @@ func TestDaemonRun(t *testing.T) {
 
 	assert.True(t, state.handled)
 	assert.True(t, d.stop)
+
+	aim.AssertExpectations(t)
 }
 
 func TestDaemonStop(t *testing.T) {
@@ -54,7 +63,9 @@ func TestDaemonFailedToReportStatus(t *testing.T) {
 
 	defer hook.Reset()
 
-	uh, _ := newTestUpdateHub(nil)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(nil, aim)
 	uh.logger = logger
 
 	d := NewDaemon(uh)
@@ -70,6 +81,8 @@ func TestDaemonFailedToReportStatus(t *testing.T) {
 	assert.Equal(t, 1, len(hook.Entries))
 	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
 	assert.Equal(t, "Failed to report status", hook.LastEntry().Message)
+
+	aim.AssertExpectations(t)
 }
 
 func TestDaemonExitStateStop(t *testing.T) {
@@ -77,7 +90,9 @@ func TestDaemonExitStateStop(t *testing.T) {
 
 	defer hook.Reset()
 
-	uh, _ := newTestUpdateHub(nil)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(nil, aim)
 	uh.logger = logger
 
 	d := NewDaemon(uh)
@@ -91,6 +106,8 @@ func TestDaemonExitStateStop(t *testing.T) {
 	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
 	assert.Equal(t, "fatal error: test", hook.LastEntry().Message)
 	assert.Equal(t, 1, uh.state.(*ExitState).exitCode)
+
+	aim.AssertExpectations(t)
 }
 
 type StateTest struct {

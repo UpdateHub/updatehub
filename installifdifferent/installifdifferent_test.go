@@ -105,6 +105,31 @@ type testObjectWithoutIIDSupport struct {
 	metadata.ObjectMetadata
 }
 
+func TestProceedWithGetObjectError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	err := afero.WriteFile(memFs, testObjectGetTargetReturn, []byte("dummy"), 0666)
+	assert.NoError(t, err)
+	defer memFs.Remove(testObjectGetTargetReturn)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObjectWithoutIIDSupport{} },
+	})
+
+	iif := &DefaultImpl{memFs}
+
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentSha256Sum))
+	assert.NoError(t, err)
+
+	mode.Unregister()
+
+	install, err := iif.Proceed(o)
+	assert.EqualError(t, err, "Object not found")
+	assert.False(t, install)
+}
+
 func TestProceedWithoutInstallIfDifferentSupport(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
