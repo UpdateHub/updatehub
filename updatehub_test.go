@@ -11,6 +11,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -23,14 +24,15 @@ import (
 	"github.com/go-ini/ini"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/copymock"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 	"github.com/UpdateHub/updatehub/testsmocks/updatermock"
 	"github.com/UpdateHub/updatehub/utils"
 )
@@ -126,22 +128,170 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
 	assert.NoError(t, err)
 
-	updater := testUpdater{
-		updateMetadata: updateMetadata,
-		extraPoll:      0,
-		updateBytes:    []byte("0123456789"),
-	}
+	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
+	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
-	uh.updater = client.Updater(updater)
+	uri := path.Join("/", uh.firmwareMetadata.ProductUID, packageUID, objectUID)
+
+	source := &filemock.FileMock{}
+	source.On("Close").Return(nil)
+	sourceContent := []byte("content")
+
+	um := &updatermock.UpdaterMock{}
+	um.On("FetchUpdate", uh.api.Request(), uri).Return(source, int64(len(sourceContent)), nil)
+	uh.updater = um
+
+	// setup filesystembackend
+
+	target := &filemock.FileMock{}
+	target.On("Close").Return(nil)
+
+	cpm := &copymock.CopierMock{}
+	cpm.On("Copy", target, source, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
+	uh.Copier = cpm
+
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
+	uh.store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.NoError(t, err)
 
-	data, err := afero.ReadFile(uh.store, path.Join(uh.settings.DownloadDir, updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum))
+	aim.AssertExpectations(t)
+	cpm.AssertExpectations(t)
+	target.AssertExpectations(t)
+	source.AssertExpectations(t)
+	fsm.AssertExpectations(t)
+	um.AssertExpectations(t)
+}
+
+func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
+	mode := newTestInstallMode()
+
+	defer mode.Unregister()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(&PollState{}, aim)
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
 	assert.NoError(t, err)
-	assert.Equal(t, updater.updateBytes, data)
+
+	um := &updatermock.UpdaterMock{}
+	uh.updater = um
+
+	// setup filesystembackend
+	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
+
+	cpm := &copymock.CopierMock{}
+	uh.Copier = cpm
+
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
+	uh.store = fsm
+
+	err = uh.FetchUpdate(updateMetadata, nil)
+	assert.EqualError(t, err, "create error")
 
 	aim.AssertExpectations(t)
+	cpm.AssertExpectations(t)
+	fsm.AssertExpectations(t)
+	um.AssertExpectations(t)
+}
+
+func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
+	mode := newTestInstallMode()
+
+	defer mode.Unregister()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(&PollState{}, aim)
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
+	assert.NoError(t, err)
+
+	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
+	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
+
+	uri := path.Join("/", uh.firmwareMetadata.ProductUID, packageUID, objectUID)
+
+	source := &filemock.FileMock{}
+
+	um := &updatermock.UpdaterMock{}
+	um.On("FetchUpdate", uh.api.Request(), uri).Return(source, int64(0), fmt.Errorf("updater error"))
+	uh.updater = um
+
+	// setup filesystembackend
+
+	target := &filemock.FileMock{}
+	target.On("Close").Return(nil)
+
+	cpm := &copymock.CopierMock{}
+	uh.Copier = cpm
+
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
+	uh.store = fsm
+
+	err = uh.FetchUpdate(updateMetadata, nil)
+	assert.EqualError(t, err, "updater error")
+
+	aim.AssertExpectations(t)
+	cpm.AssertExpectations(t)
+	target.AssertExpectations(t)
+	source.AssertExpectations(t)
+	fsm.AssertExpectations(t)
+	um.AssertExpectations(t)
+}
+
+func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
+	mode := newTestInstallMode()
+
+	defer mode.Unregister()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(&PollState{}, aim)
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
+	assert.NoError(t, err)
+
+	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
+	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
+
+	uri := path.Join("/", uh.firmwareMetadata.ProductUID, packageUID, objectUID)
+
+	source := &filemock.FileMock{}
+	source.On("Close").Return(nil)
+	sourceContent := []byte("content")
+
+	um := &updatermock.UpdaterMock{}
+	um.On("FetchUpdate", uh.api.Request(), uri).Return(source, int64(len(sourceContent)), nil)
+	uh.updater = um
+
+	// setup filesystembackend
+
+	target := &filemock.FileMock{}
+	target.On("Close").Return(nil)
+
+	cpm := &copymock.CopierMock{}
+	cpm.On("Copy", target, source, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, fmt.Errorf("copy error"))
+	uh.Copier = cpm
+
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
+	uh.store = fsm
+
+	err = uh.FetchUpdate(updateMetadata, nil)
+	assert.EqualError(t, err, "copy error")
+
+	aim.AssertExpectations(t)
+	cpm.AssertExpectations(t)
+	target.AssertExpectations(t)
+	source.AssertExpectations(t)
+	fsm.AssertExpectations(t)
+	um.AssertExpectations(t)
 }
 
 func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
@@ -169,60 +319,53 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	// download of file 1 setup
 	file1Content := []byte("content1") // this matches with the sha256sum in "validUpdateMetadataWithActiveInactive"
 
-	fm1 := &filemock.FileMock{}
-	fm1.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
-		arg := args.Get(0).([]uint8)
-		copy(arg, file1Content)
-	}).Return(len(file1Content), nil).Once()
-	fm1.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.EOF).Once()
+	source1 := &filemock.FileMock{}
+	source1.On("Close").Return(nil)
 
 	objectUIDFirst := updateMetadata.Objects[1][0].GetObjectMetadata().Sha256sum
 	uri1 := path.Join(expectedURIPrefix, objectUIDFirst)
-	um.On("FetchUpdate", uh.api.Request(), uri1).Return(fm1, int64(len(file1Content)), nil)
+	um.On("FetchUpdate", uh.api.Request(), uri1).Return(source1, int64(len(file1Content)), nil)
 
 	// download of file 2 setup
 	file2Content := []byte("content2butbigger") // this matches with the sha256sum in "validUpdateMetadataWithActiveInactive"
 
-	fm2 := &filemock.FileMock{}
-	fm2.On("Read", mock.AnythingOfType("[]uint8")).Run(func(args mock.Arguments) {
-		arg := args.Get(0).([]uint8)
-		copy(arg, file2Content)
-	}).Return(len(file2Content), nil).Once()
-	fm2.On("Read", mock.AnythingOfType("[]uint8")).Return(0, io.EOF).Once()
+	source2 := &filemock.FileMock{}
+	source2.On("Close").Return(nil)
 
 	objectUIDSecond := updateMetadata.Objects[1][1].GetObjectMetadata().Sha256sum
 	uri2 := path.Join(expectedURIPrefix, objectUIDSecond)
-	um.On("FetchUpdate", uh.api.Request(), uri2).Return(fm2, int64(len(file2Content)), nil)
+	um.On("FetchUpdate", uh.api.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
+
+	// setup filesystembackend
+	target1 := &filemock.FileMock{}
+	target1.On("Close").Return(nil)
+	target2 := &filemock.FileMock{}
+	target2.On("Close").Return(nil)
+
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUIDFirst)).Return(target1, nil)
+	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUIDSecond)).Return(target2, nil)
+	uh.store = fsm
 
 	// finish setup
 	uh.updater = um
 
+	cpm := &copymock.CopierMock{}
+	cpm.On("Copy", target1, source1, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
+	cpm.On("Copy", target2, source2, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
+	uh.Copier = cpm
+
 	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.NoError(t, err)
 
-	// since the "Active()" returned "0", we are expecting the "1"
-	// (inactive) files to be downloaded
-	data, err := afero.ReadFile(uh.store, path.Join(uh.settings.DownloadDir, objectUIDFirst))
-	assert.NoError(t, err)
-	assert.Equal(t, file1Content, data)
-
-	data, err = afero.ReadFile(uh.store, path.Join(uh.settings.DownloadDir, objectUIDSecond))
-	assert.NoError(t, err)
-	assert.Equal(t, file2Content, data)
-
-	// and the "0" (active) files to NOT be downloaded
-	fileExists, err := afero.Exists(uh.store, path.Join(uh.settings.DownloadDir, updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum))
-	assert.NoError(t, err)
-	assert.False(t, fileExists)
-
-	fileExists, err = afero.Exists(uh.store, path.Join(uh.settings.DownloadDir, updateMetadata.Objects[0][1].GetObjectMetadata().Sha256sum))
-	assert.NoError(t, err)
-	assert.False(t, fileExists)
-
 	aim.AssertExpectations(t)
 	um.AssertExpectations(t)
-	fm1.AssertExpectations(t)
-	fm2.AssertExpectations(t)
+	source1.AssertExpectations(t)
+	source2.AssertExpectations(t)
+	target1.AssertExpectations(t)
+	target2.AssertExpectations(t)
+	cpm.AssertExpectations(t)
+	fsm.AssertExpectations(t)
 }
 
 func TestUpdateHubFetchUpdateWithActiveInactiveError(t *testing.T) {
