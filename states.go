@@ -9,8 +9,6 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"path"
@@ -76,25 +74,14 @@ type Sha256Checker interface {
 }
 
 type Sha256CheckerImpl struct {
-	utils.Copier
 }
 
 func (s *Sha256CheckerImpl) CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) error {
-	file, err := fsBackend.Open(path.Join(downloadDir, expectedSha256sum))
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	hash := sha256.New()
-
-	cancel := make(chan bool)
-	_, err = s.Copy(hash, file, time.Minute, cancel, utils.ChunkSize, 0, -1, false)
+	calculatedSha256sum, err := utils.FileSha256sum(fsBackend, path.Join(downloadDir, expectedSha256sum))
 	if err != nil {
 		return err
 	}
 
-	calculatedSha256sum := hex.EncodeToString(hash.Sum(nil))
 	if calculatedSha256sum != expectedSha256sum {
 		return fmt.Errorf("sha256sum's don't match. Expected: %s / Calculated: %s", expectedSha256sum, calculatedSha256sum)
 	}
@@ -407,11 +394,7 @@ func (state *UpdateInstallState) ID() UpdateHubState {
 
 // Handle for UpdateInstallState setups the installation process
 func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
-	packageUID, err := state.updateMetadata.Checksum()
-	if err != nil {
-		return NewErrorState(NewTransientError(err)), false
-	}
-
+	packageUID := state.updateMetadata.PackageUID()
 	if packageUID == uh.lastInstalledPackageUID {
 		return NewWaitingForRebootState(state.updateMetadata), false
 	}
@@ -420,16 +403,15 @@ func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
 	// operations in case of an install error occurs
 	uh.lastInstalledPackageUID = packageUID
 
-	err = state.CheckSupportedHardware(state.updateMetadata)
+	err := state.CheckSupportedHardware(state.updateMetadata)
 	if err != nil {
 		return NewErrorState(NewTransientError(err)), false
 	}
 
 	return NewInstallingState(state.updateMetadata,
-		&activeinactive.DefaultImpl{},
-		&Sha256CheckerImpl{&utils.ExtendedIO{}},
+		&Sha256CheckerImpl{},
 		uh.store,
-		&installifdifferent.DefaultImpl{uh.store}), false
+		&installifdifferent.DefaultImpl{FileSystemBackend: uh.store}), false
 }
 
 // NewUpdateInstallState creates a new UpdateInstallState
@@ -449,7 +431,6 @@ type InstallingState struct {
 	CancellableState
 	ReportableState
 	Sha256Checker
-	ActiveInactiveBackend     activeinactive.Interface
 	FileSystemBackend         afero.Fs
 	InstallIfDifferentBackend installifdifferent.Interface
 
@@ -468,7 +449,7 @@ func (state *InstallingState) Cancel(ok bool) bool {
 
 // Handle for InstallingState implements the installation process itself
 func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
-	indexToInstall, err := GetIndexOfObjectToBeInstalled(state.ActiveInactiveBackend, state.updateMetadata)
+	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.activeInactiveBackend, state.updateMetadata)
 	if err != nil {
 		return NewErrorState(NewTransientError(err)), false
 	}
@@ -512,7 +493,7 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 		// 2 objects means that ActiveInactive is enabled, so we need
 		// to set the new active object
 		if len(state.updateMetadata.Objects) == 2 {
-			err := state.ActiveInactiveBackend.SetActive(indexToInstall)
+			err := uh.activeInactiveBackend.SetActive(indexToInstall)
 			if err != nil {
 				return NewErrorState(NewTransientError(err)), false
 			}
@@ -525,14 +506,12 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 // NewInstallingState creates a new InstallingState
 func NewInstallingState(
 	updateMetadata *metadata.UpdateMetadata,
-	aii activeinactive.Interface,
 	sc Sha256Checker,
 	fsb afero.Fs,
 	iid installifdifferent.Interface) *InstallingState {
 	state := &InstallingState{
 		BaseState:                 BaseState{id: UpdateHubStateInstalling},
 		updateMetadata:            updateMetadata,
-		ActiveInactiveBackend:     aii,
 		Sha256Checker:             sc,
 		FileSystemBackend:         fsb,
 		InstallIfDifferentBackend: iid,

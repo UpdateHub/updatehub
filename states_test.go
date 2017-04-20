@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"reflect"
 	"testing"
 	"time"
 
@@ -22,17 +21,14 @@ import (
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
-	"github.com/UpdateHub/updatehub/testsmocks/copymock"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 	"github.com/UpdateHub/updatehub/testsmocks/installifdifferentmock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 	"github.com/UpdateHub/updatehub/testsmocks/statesmock"
-	"github.com/UpdateHub/updatehub/utils"
 	"github.com/bouk/monkey"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 type testController struct {
@@ -155,7 +151,7 @@ func TestCheckDownloadedObjectSha256sum(t *testing.T) {
 	err = afero.WriteFile(memFs, path.Join(testPath, expectedSha256sum), []byte("test"), 0666)
 	assert.NoError(t, err)
 
-	sci := &Sha256CheckerImpl{&utils.ExtendedIO{}}
+	sci := &Sha256CheckerImpl{}
 	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
 	assert.NoError(t, err)
 }
@@ -167,33 +163,11 @@ func TestCheckDownloadedObjectSha256sumWithOpenError(t *testing.T) {
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Open", path.Join(dummyPath, dummySha256sum)).Return(&filemock.FileMock{}, fmt.Errorf("open error"))
 
-	sci := &Sha256CheckerImpl{&utils.ExtendedIO{}}
+	sci := &Sha256CheckerImpl{}
 	err := sci.CheckDownloadedObjectSha256sum(fsm, dummyPath, dummySha256sum)
 	assert.EqualError(t, err, "open error")
 
 	fsm.AssertExpectations(t)
-}
-
-func TestCheckDownloadedObjectSha256sumWithCopyError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-	testPath, err := afero.TempDir(memFs, "", "states-test")
-
-	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
-
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-
-	err = afero.WriteFile(memFs, path.Join(testPath, expectedSha256sum), []byte("test"), 0666)
-	assert.NoError(t, err)
-
-	cm := &copymock.CopierMock{}
-	cm.On("Copy", mock.AnythingOfType("*sha256.digest"), mock.AnythingOfType("*mem.File"), time.Minute, mock.AnythingOfType("<-chan bool"), utils.ChunkSize, 0, -1, false).Return(false, fmt.Errorf("copy error"))
-
-	sci := &Sha256CheckerImpl{cm}
-	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
-	assert.EqualError(t, err, "copy error")
-
-	cm.AssertExpectations(t)
 }
 
 func TestCheckDownloadedObjectSha256sumWithSumsDontMatching(t *testing.T) {
@@ -208,7 +182,7 @@ func TestCheckDownloadedObjectSha256sumWithSumsDontMatching(t *testing.T) {
 	err = afero.WriteFile(memFs, path.Join(testPath, expectedSha256sum), []byte("another"), 0666)
 	assert.NoError(t, err)
 
-	sci := &Sha256CheckerImpl{&utils.ExtendedIO{}}
+	sci := &Sha256CheckerImpl{}
 	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
 	assert.EqualError(t, err, "sha256sum's don't match. Expected: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 / Calculated: ae448ac86c4e8e4dec645729708ef41873ae79c6dff84eff73360989487f08e5")
 }
@@ -216,7 +190,9 @@ func TestCheckDownloadedObjectSha256sumWithSumsDontMatching(t *testing.T) {
 func TestStateUpdateCheck(t *testing.T) {
 	for _, tc := range checkUpdateCases {
 		t.Run(tc.name, func(t *testing.T) {
-			uh, err := newTestUpdateHub(tc.initialState)
+			aim := &activeinactivemock.ActiveInactiveMock{}
+
+			uh, err := newTestUpdateHub(tc.initialState, aim)
 			assert.NoError(t, err)
 
 			uh.Controller = tc.controller
@@ -227,6 +203,8 @@ func TestStateUpdateCheck(t *testing.T) {
 			assert.IsType(t, tc.nextState, next)
 
 			tc.subTest(t, uh, next)
+
+			aim.AssertExpectations(t)
 		})
 	}
 }
@@ -255,7 +233,9 @@ func TestStateUpdateFetch(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			uh, err := newTestUpdateHub(tc.initialState)
+			aim := &activeinactivemock.ActiveInactiveMock{}
+
+			uh, err := newTestUpdateHub(tc.initialState, aim)
 			assert.NoError(t, err)
 
 			uh.Controller = tc.controller
@@ -263,12 +243,16 @@ func TestStateUpdateFetch(t *testing.T) {
 			next, _ := uh.state.Handle(uh)
 
 			assert.IsType(t, tc.nextState, next)
+
+			aim.AssertExpectations(t)
 		})
 	}
 }
 
 func TestNewPollState(t *testing.T) {
-	uh, _ := newTestUpdateHub(nil)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(nil, aim)
 
 	uh.settings.PollingInterval = time.Second
 
@@ -276,10 +260,14 @@ func TestNewPollState(t *testing.T) {
 	assert.IsType(t, &PollState{}, state)
 	assert.Equal(t, UpdateHubState(UpdateHubStatePoll), state.ID())
 	assert.Equal(t, uh.settings.PollingInterval, state.interval)
+
+	aim.AssertExpectations(t)
 }
 
 func TestPollingRetries(t *testing.T) {
-	uh, err := newTestUpdateHub(nil)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(nil, aim)
 	assert.NoError(t, err)
 
 	var elapsed time.Duration
@@ -330,6 +318,8 @@ func TestPollingRetries(t *testing.T) {
 	next, _ = next.Handle(uh)
 	assert.IsType(t, &UpdateFetchState{}, next)
 	assert.Equal(t, 0, uh.settings.PollingRetries)
+
+	aim.AssertExpectations(t)
 }
 
 func TestPolling(t *testing.T) {
@@ -358,7 +348,9 @@ func TestPolling(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			uh, _ := newTestUpdateHub(nil)
+			aim := &activeinactivemock.ActiveInactiveMock{}
+
+			uh, _ := newTestUpdateHub(nil, aim)
 
 			var elapsed time.Duration
 
@@ -398,12 +390,16 @@ func TestPolling(t *testing.T) {
 
 			poll.Handle(uh)
 			assert.Equal(t, tc.expectedElapsedTime, elapsed)
+
+			aim.AssertExpectations(t)
 		})
 	}
 }
 
 func TestCancelPollState(t *testing.T) {
-	uh, _ := newTestUpdateHub(nil)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(nil, aim)
 
 	poll := NewPollState(uh)
 	poll.interval = 10 * time.Second
@@ -415,6 +411,8 @@ func TestCancelPollState(t *testing.T) {
 	poll.Handle(uh)
 
 	assert.Equal(t, int64(0), poll.ticksCount)
+
+	aim.AssertExpectations(t)
 }
 
 func TestNewIdleState(t *testing.T) {
@@ -466,7 +464,9 @@ func TestStateIdle(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.caseName, func(t *testing.T) {
-			uh, err := newTestUpdateHub(NewIdleState())
+			aim := &activeinactivemock.ActiveInactiveMock{}
+
+			uh, err := newTestUpdateHub(NewIdleState(), aim)
 			assert.NoError(t, err)
 
 			uh.settings = tc.settings
@@ -477,6 +477,8 @@ func TestStateIdle(t *testing.T) {
 
 			next, _ := uh.state.Handle(uh)
 			assert.IsType(t, tc.nextState, next)
+
+			aim.AssertExpectations(t)
 		})
 	}
 }
@@ -511,14 +513,13 @@ func TestStateUpdateInstall(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
 	s := NewUpdateInstallState(m, fm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, &activeinactive.DefaultImpl{})
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewInstallingState(
 		m,
-		&activeinactive.DefaultImpl{},
-		&Sha256CheckerImpl{&utils.ExtendedIO{}},
+		&Sha256CheckerImpl{},
 		memFs,
 		&installifdifferent.DefaultImpl{memFs})
 	assert.Equal(t, expectedState, nextState)
@@ -539,41 +540,16 @@ func TestStateUpdateInstallWithCheckSupportedHardwareError(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
 	s := NewUpdateInstallState(m, fm)
 
-	uh, err := newTestUpdateHub(s)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewErrorState(NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
-}
 
-func TestStateUpdateInstallWithChecksumError(t *testing.T) {
-	expectedErr := fmt.Errorf("checksum error")
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "hardware-value",
-		HardwareRevision: "hardware-revision-value",
-		Version:          "version-value",
-	}
-
-	m := &metadata.UpdateMetadata{}
-
-	guard := monkey.PatchInstanceMethod(reflect.TypeOf(m), "Checksum", func(*metadata.UpdateMetadata) (string, error) {
-		return "", expectedErr
-	})
-	defer guard.Unpatch()
-
-	s := NewUpdateInstallState(m, fm)
-
-	uh, err := newTestUpdateHub(s)
-	assert.NoError(t, err)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
+	aim.AssertExpectations(t)
 }
 
 func TestStateUpdateInstallWithUpdateMetadataAlreadyInstalled(t *testing.T) {
@@ -589,14 +565,18 @@ func TestStateUpdateInstallWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
 	s := NewUpdateInstallState(m, fm)
 
-	uh, err := newTestUpdateHub(s)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
-	uh.lastInstalledPackageUID, _ = m.Checksum()
+	uh.lastInstalledPackageUID = m.PackageUID()
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewWaitingForRebootState(m)
 	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
 }
 
 type TestObject struct {
@@ -625,9 +605,9 @@ func TestStateInstalling(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
@@ -672,9 +652,9 @@ func TestStateInstallingWithActiveInactive(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
@@ -719,9 +699,9 @@ func TestStateInstallingWithActiveError(t *testing.T) {
 
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
@@ -760,9 +740,9 @@ func TestStateInstallingWithSetActiveError(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
@@ -807,9 +787,9 @@ func TestStateInstallingWithSetupError(t *testing.T) {
 
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
@@ -850,9 +830,9 @@ func TestStateInstallingWithInstallError(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
@@ -897,9 +877,9 @@ func TestStateInstallingWithCleanupError(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
@@ -942,9 +922,9 @@ func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
@@ -988,9 +968,9 @@ func TestStateInstallingWithSha256Error(t *testing.T) {
 
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
@@ -1031,9 +1011,9 @@ func TestStateInstallingWithInstallIfDifferentError(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(false, expectedErr)
 
-	s := NewInstallingState(m, aim, scm, memFs, iidm)
+	s := NewInstallingState(m, scm, memFs, iidm)
 
-	uh, err := newTestUpdateHub(s)
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
@@ -1177,7 +1157,9 @@ func TestStateWaitingForReboot(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
 	s := NewWaitingForRebootState(m)
 
-	uh, err := newTestUpdateHub(s)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
@@ -1185,13 +1167,17 @@ func TestStateWaitingForReboot(t *testing.T) {
 	// we can't assert Equal here because NewPollState() creates a
 	// channel dynamically
 	assert.IsType(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
 }
 
 func TestStateInstalled(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
 	s := NewInstalledState(m)
 
-	uh, err := newTestUpdateHub(s)
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
@@ -1199,6 +1185,8 @@ func TestStateInstalled(t *testing.T) {
 	// we can't assert Equal here because NewPollState() creates a
 	// channel dynamically
 	assert.IsType(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
 }
 
 func TestNewExitState(t *testing.T) {

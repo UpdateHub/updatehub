@@ -11,7 +11,6 @@ package main
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"math/rand"
 	"path"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/spf13/afero"
 
+	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
@@ -38,6 +38,7 @@ type UpdateHub struct {
 	reporter                client.Reporter
 	logger                  *logrus.Logger
 	lastInstalledPackageUID string
+	activeInactiveBackend   activeinactive.Interface
 }
 
 type Controller interface {
@@ -64,55 +65,53 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 }
 
 func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
-	// For now, we installs the first object
-	// FIXME: What object I should to install?
-	obj := updateMetadata.Objects[0][0]
-
-	if obj == nil {
-		return errors.New("object not found")
-	}
-
-	packageUID, err := updateMetadata.Checksum()
+	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.activeInactiveBackend, updateMetadata)
 	if err != nil {
 		return err
 	}
 
-	objectUID := obj.GetObjectMetadata().Sha256sum
+	packageUID := updateMetadata.PackageUID()
 
-	uri := "/"
-	uri = path.Join(uri, uh.firmwareMetadata.ProductUID)
-	uri = path.Join(uri, packageUID)
-	uri = path.Join(uri, objectUID)
+	for _, obj := range updateMetadata.Objects[indexToInstall] {
+		if obj == nil {
+			return errors.New("object not found")
+		}
 
-	file, err := uh.store.Create(path.Join(uh.settings.DownloadDir, objectUID))
-	if err != nil {
-		return err
+		objectUID := obj.GetObjectMetadata().Sha256sum
+
+		uri := "/"
+		uri = path.Join(uri, uh.firmwareMetadata.ProductUID)
+		uri = path.Join(uri, packageUID)
+		uri = path.Join(uri, objectUID)
+
+		file, err := uh.store.Create(path.Join(uh.settings.DownloadDir, objectUID))
+		if err != nil {
+			return err
+		}
+
+		defer file.Close()
+
+		rd, _, err := uh.updater.FetchUpdate(uh.api.Request(), uri)
+		if err != nil {
+			return err
+		}
+
+		wd := bufio.NewWriter(file)
+
+		// FIXME: maybe use the "utils.Copier" interface here. if yes, we
+		// can mock it for the tests
+		eio := utils.ExtendedIO{}
+		eio.Copy(wd, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
+
+		wd.Flush()
 	}
-
-	defer file.Close()
-
-	rd, contentLength, err := uh.updater.FetchUpdate(uh.api.Request(), uri)
-	if err != nil {
-		return err
-	}
-
-	wd := bufio.NewWriter(file)
-
-	// FIXME: maybe use the "utils.Copier" interface here. if yes, we
-	// can mock it for the tests
-	eio := utils.ExtendedIO{}
-	eio.Copy(wd, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
-
-	wd.Flush()
-
-	fmt.Println(contentLength)
 
 	return nil
 }
 
 func (uh *UpdateHub) ReportCurrentState() error {
 	if rs, ok := uh.state.(ReportableState); ok {
-		packageUID, _ := rs.UpdateMetadata().Checksum()
+		packageUID := rs.UpdateMetadata().PackageUID()
 		err := uh.reporter.ReportState(uh.api.Request(), packageUID, StateToString(uh.state.ID()))
 		if err != nil {
 			return err
