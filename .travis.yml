@@ -16,6 +16,7 @@ addons:
     sources:
       - sourceline: 'ppa:masterminds/glide'
     packages:
+      - linux-headers-generic
       - libarchive-dev
       - glide
 
