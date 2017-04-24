@@ -9,8 +9,6 @@
 package main
 
 import (
-	"bufio"
-	"errors"
 	"math/rand"
 	"path"
 	"time"
@@ -27,6 +25,7 @@ import (
 
 type UpdateHub struct {
 	Controller
+	utils.Copier
 
 	settings                *Settings
 	store                   afero.Fs
@@ -73,10 +72,6 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 	packageUID := updateMetadata.PackageUID()
 
 	for _, obj := range updateMetadata.Objects[indexToInstall] {
-		if obj == nil {
-			return errors.New("object not found")
-		}
-
 		objectUID := obj.GetObjectMetadata().Sha256sum
 
 		uri := "/"
@@ -84,26 +79,22 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		uri = path.Join(uri, packageUID)
 		uri = path.Join(uri, objectUID)
 
-		file, err := uh.store.Create(path.Join(uh.settings.DownloadDir, objectUID))
+		wr, err := uh.store.Create(path.Join(uh.settings.DownloadDir, objectUID))
 		if err != nil {
 			return err
 		}
-
-		defer file.Close()
+		defer wr.Close()
 
 		rd, _, err := uh.updater.FetchUpdate(uh.api.Request(), uri)
 		if err != nil {
 			return err
 		}
+		defer rd.Close()
 
-		wd := bufio.NewWriter(file)
-
-		// FIXME: maybe use the "utils.Copier" interface here. if yes, we
-		// can mock it for the tests
-		eio := utils.ExtendedIO{}
-		eio.Copy(wd, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
-
-		wd.Flush()
+		_, err = uh.Copy(wr, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
