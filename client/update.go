@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -26,18 +27,18 @@ type UpdateClient struct {
 }
 
 type Updater interface {
-	CheckUpdate(api ApiRequester, data interface{}) (interface{}, time.Duration, error)
+	CheckUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error)
 	FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error)
 }
 
-func (u *UpdateClient) CheckUpdate(api ApiRequester, data interface{}) (interface{}, time.Duration, error) {
+func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
 	if api == nil {
 		return nil, 0, errors.New("invalid api requester")
 	}
 
 	rawJSON, _ := json.Marshal(data)
 
-	url := serverURL(api.Client(), UpgradesEndpoint)
+	url := serverURL(api.Client(), uri)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(rawJSON))
 	if err != nil {
@@ -77,12 +78,12 @@ func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser,
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, -1, errors.New("failed to create fetch update request")
+		return nil, -1, fmt.Errorf("failed to create fetch update request: %s", err)
 	}
 
 	res, err := api.Do(req)
 	if err != nil {
-		return nil, -1, errors.New("fetch update request failed")
+		return nil, -1, fmt.Errorf("fetch update request failed: %s", err)
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -96,14 +97,14 @@ func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser,
 func processUpgradeResponse(res *http.Response) (interface{}, error) {
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading response body: %s", err)
 	}
 
 	switch res.StatusCode {
 	case http.StatusOK:
 		data, err := metadata.NewUpdateMetadata(body)
 		if err != nil {
-			return nil, errors.New("failed to parse upgrade response")
+			return nil, fmt.Errorf("failed to parse upgrade response: %s", err)
 		}
 
 		return data, nil
@@ -112,7 +113,7 @@ func processUpgradeResponse(res *http.Response) (interface{}, error) {
 		return nil, nil
 	}
 
-	return nil, errors.New("invalid response received from the server")
+	return nil, fmt.Errorf("invalid response received from the server. Status %d", res.StatusCode)
 }
 
 func NewUpdateClient() *UpdateClient {

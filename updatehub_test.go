@@ -595,7 +595,7 @@ type testUpdater struct {
 	fetchUpdateError error
 }
 
-func (t testUpdater) CheckUpdate(api client.ApiRequester, data interface{}) (interface{}, time.Duration, error) {
+func (t testUpdater) CheckUpdate(api client.ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
 	return t.updateMetadata, t.extraPoll, t.checkUpdateError
 }
 
