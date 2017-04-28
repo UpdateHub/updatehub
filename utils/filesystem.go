@@ -8,9 +8,21 @@
 
 package utils
 
+/*
+#include <stdlib.h>
+#include <sys/mount.h>
+#include <errno.h>
+#include <string.h>
+
+static int errno_wrapper() {
+    return errno;
+}
+*/
+import "C"
 import (
 	"fmt"
 	"io/ioutil"
+	"unsafe"
 )
 
 type FileSystemHelper interface {
@@ -29,13 +41,36 @@ func (fs *FileSystem) Format(targetDevice string, fsType string, formatOptions s
 }
 
 func (fs *FileSystem) Mount(targetDevice string, mountPath string, fsType string, mountOptions string) error {
-	// FIXME: implement and test this
-	return fmt.Errorf("Mount not implemented yet")
+	cTargetDevice := C.CString(targetDevice)
+	defer C.free(unsafe.Pointer(cTargetDevice))
+
+	cMountPath := C.CString(mountPath)
+	defer C.free(unsafe.Pointer(cMountPath))
+
+	cFSType := C.CString(fsType)
+	defer C.free(unsafe.Pointer(cFSType))
+
+	cMountOptions := C.CString(mountOptions)
+	defer C.free(unsafe.Pointer(cMountOptions))
+
+	r := C.mount(cTargetDevice, cMountPath, cFSType, 0, unsafe.Pointer(cMountOptions))
+	if r == -1 {
+		return fmt.Errorf("Couldn't mount '%s': %s", targetDevice, C.GoString(C.strerror(C.errno_wrapper())))
+	}
+
+	return nil
 }
 
 func (fs *FileSystem) Umount(mountPath string) error {
-	// FIXME: implement and test this
-	return fmt.Errorf("Umount not implemented yet")
+	cMountPath := C.CString(mountPath)
+	defer C.free(unsafe.Pointer(cMountPath))
+
+	r := C.umount(cMountPath)
+	if r == -1 {
+		return fmt.Errorf("Couldn't umount '%s': %s", mountPath, C.GoString(C.strerror(C.errno_wrapper())))
+	}
+
+	return nil
 }
 
 func (fs *FileSystem) TempDir(prefix string) (string, error) {
