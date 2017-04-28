@@ -12,8 +12,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -99,17 +97,24 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			expectedUpdateMetadata, _ := metadata.NewUpdateMetadata([]byte(tc.updateMetadata))
 
-			updater := testUpdater{
-				updateMetadata: expectedUpdateMetadata,
-				extraPoll:      tc.extraPoll,
+			var data struct {
+				Retries int `json:"retries"`
+				metadata.FirmwareMetadata
 			}
 
-			uh.updater = client.Updater(updater)
+			data.FirmwareMetadata = uh.firmwareMetadata
+			data.Retries = 0
+
+			um := &updatermock.UpdaterMock{}
+			um.On("CheckUpdate", uh.api.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
+
+			uh.updater = um
 
 			updateMetadata, extraPoll := uh.CheckUpdate(0)
 
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 			assert.Equal(t, tc.extraPoll, extraPoll)
+			um.AssertExpectations(t)
 		})
 	}
 
@@ -583,25 +588,6 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 
 type testObject struct {
 	metadata.ObjectMetadata
-}
-
-type testUpdater struct {
-	// CheckUpdate
-	updateMetadata   *metadata.UpdateMetadata
-	extraPoll        time.Duration
-	checkUpdateError error
-	// FetchUpdate
-	updateBytes      []byte
-	fetchUpdateError error
-}
-
-func (t testUpdater) CheckUpdate(api client.ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
-	return t.updateMetadata, t.extraPoll, t.checkUpdateError
-}
-
-func (t testUpdater) FetchUpdate(api client.ApiRequester, uri string) (io.ReadCloser, int64, error) {
-	rd := bytes.NewReader(t.updateBytes)
-	return ioutil.NopCloser(rd), int64(len(t.updateBytes)), t.fetchUpdateError
 }
 
 type testReporter struct {
