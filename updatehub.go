@@ -55,7 +55,7 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 	data.FirmwareMetadata = uh.firmwareMetadata
 	data.Retries = retries
 
-	updateMetadata, extraPoll, err := uh.updater.CheckUpdate(uh.api.Request(), data)
+	updateMetadata, extraPoll, err := uh.updater.CheckUpdate(uh.api.Request(), client.UpgradesEndpoint, data)
 	if err != nil || updateMetadata == nil {
 		return nil, -1
 	}
