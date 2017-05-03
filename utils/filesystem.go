@@ -21,16 +21,17 @@ static int errno_wrapper() {
 import "C"
 import (
 	"fmt"
-	"io/ioutil"
 	"os/exec"
 	"strings"
 	"unsafe"
+
+	"github.com/spf13/afero"
 )
 
 type FileSystemHelper interface {
 	Format(targetDevice string, fsType string, formatOptions string) error
 	Mount(targetDevice string, mountPath string, fsType string, mountOptions string) error
-	TempDir(prefix string) (string, error)
+	TempDir(fsb afero.Fs, prefix string) (string, error)
 	Umount(mountPath string) error
 }
 
@@ -120,8 +121,6 @@ func (fs *FileSystem) Umount(mountPath string) error {
 	return nil
 }
 
-func (fs *FileSystem) TempDir(prefix string) (string, error) {
-	// FIXME: test this
-	// FIXME: use afero.Fs (receive through parameter here or on struct?)
-	return ioutil.TempDir("", prefix)
+func (fs *FileSystem) TempDir(fsb afero.Fs, prefix string) (string, error) {
+	return afero.TempDir(fsb, "", prefix)
 }

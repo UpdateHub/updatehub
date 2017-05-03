@@ -78,7 +78,7 @@ func (cp *CopyObject) Install(downloadDir string) error {
 		}
 	}
 
-	tempDirPath, err := cp.TempDir("copy-handler")
+	tempDirPath, err := cp.TempDir(cp.FileSystemBackend, "copy-handler")
 	if err != nil {
 		return err
 	}

@@ -18,6 +18,7 @@ import (
 	"unicode"
 
 	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/utils"
 	"github.com/spf13/afero"
 )
 
@@ -69,7 +70,11 @@ func NewKernelFileInfo(fsb afero.Fs, filename string) (*KernelFileInfo, error) {
 		kfi.Type = zImageKernelType
 	}
 
-	version := kfi.captureVersion(file)
+	// since this uses only "TempDir()" we don't need to assign a
+	// value for the CmdlineExecuter
+	fsh := &utils.FileSystem{}
+
+	version := kfi.captureVersion(fsh, file)
 	re, _ := regexp.Compile(`(\d+.?\.[^\s]+)`)
 	matched := re.FindStringSubmatch(version)
 	if matched != nil && len(matched) == 2 {
@@ -147,7 +152,7 @@ func isx86zImage(file io.ReadSeeker) bool {
 
 // we can ignore errors here since if it fails, just means it is
 // not the image type being tested
-func (kfi *KernelFileInfo) captureVersion(file io.ReadSeeker) string {
+func (kfi *KernelFileInfo) captureVersion(fsh utils.FileSystemHelper, file io.ReadSeeker) string {
 	if kfi.Arch == ARMLinuxArch && kfi.Type == uImageKernelType {
 		file.Seek(32, io.SeekStart)
 		version := make([]byte, 32)
@@ -171,7 +176,7 @@ func (kfi *KernelFileInfo) captureVersion(file io.ReadSeeker) string {
 		gzippedFile.Write(content)
 		gzippedFile.Close()
 
-		tempdir, _ := afero.TempDir(kfi.FileSystemBackend, "", "kernelfileinfo")
+		tempdir, _ := fsh.TempDir(kfi.FileSystemBackend, "kernelfileinfo")
 		defer os.RemoveAll(tempdir)
 
 		// Decompress the gzipped kernel file

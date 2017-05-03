@@ -99,7 +99,7 @@ func (tb *TarballObject) Install(downloadDir string) error {
 		}
 	}
 
-	tempDirPath, err := tb.TempDir("tarball-handler")
+	tempDirPath, err := tb.TempDir(tb.FileSystemBackend, "tarball-handler")
 	if err != nil {
 		return err
 	}

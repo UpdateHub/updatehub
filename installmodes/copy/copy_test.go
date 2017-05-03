@@ -103,7 +103,7 @@ func TestCopyInstallWithTempDirError(t *testing.T) {
 	cm := &copymock.CopierMock{}
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "copy-handler").Return("", fmt.Errorf("temp dir error"))
+	fsm.On("TempDir", memFs, "copy-handler").Return("", fmt.Errorf("temp dir error"))
 	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
 
 	err := cp.Install("/dummy-download-dir")
@@ -129,7 +129,7 @@ func TestCopyInstallWithMountError(t *testing.T) {
 	mountOptions := "-o rw"
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "copy-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(fmt.Errorf("mount error"))
 	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
 	cp.Target = targetDevice
@@ -165,7 +165,7 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	compressed := false
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "copy-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(nil)
 
@@ -218,7 +218,7 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	compressed := false
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "copy-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
@@ -271,7 +271,7 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	compressed := false
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "copy-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
@@ -389,7 +389,7 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			if tc.MustFormat {
 				fsm.On("Format", tc.Target, tc.FSType, tc.FormatOptions).Return(nil)
 			}
-			fsm.On("TempDir", "copy-handler").Return(tempDirPath, nil)
+			fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 			fsm.On("Mount", tc.Target, tempDirPath, tc.FSType, tc.MountOptions).Return(nil)
 			fsm.On("Umount", tempDirPath).Return(nil)
 

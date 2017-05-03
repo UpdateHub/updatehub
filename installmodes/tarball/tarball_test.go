@@ -194,7 +194,7 @@ func TestTarballInstallWithTempDirError(t *testing.T) {
 	cm := &copymock.CopierMock{}
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "tarball-handler").Return("", fmt.Errorf("temp dir error"))
+	fsm.On("TempDir", memFs, "tarball-handler").Return("", fmt.Errorf("temp dir error"))
 	tb := TarballObject{
 		FileSystemHelper:  fsm,
 		Copier:            cm,
@@ -223,7 +223,7 @@ func TestTarballInstallWithMountError(t *testing.T) {
 	mountOptions := "-o rw"
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(fmt.Errorf("mount error"))
 	tb := TarballObject{
 		FileSystemHelper:  fsm,
@@ -263,7 +263,7 @@ func TestTarballInstallWithExtractError(t *testing.T) {
 	sourcePath := path.Join(downloadDir, sha256sum)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(nil)
 
@@ -314,7 +314,7 @@ func TestTarballInstallWithUmountError(t *testing.T) {
 	sourcePath := path.Join(downloadDir, sha256sum)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
@@ -365,7 +365,7 @@ func TestTarballInstallWithUnpackANDUmountErrors(t *testing.T) {
 	sourcePath := path.Join(downloadDir, sha256sum)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
@@ -416,7 +416,7 @@ func TestTarballInstallWithSuccess(t *testing.T) {
 	sourcePath := path.Join(downloadDir, sha256sum)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", "tarball-handler").Return(tempDirPath, nil)
+	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(nil)
 
