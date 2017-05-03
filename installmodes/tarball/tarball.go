@@ -25,14 +25,17 @@ func init() {
 		Name:              "tarball",
 		CheckRequirements: func() error { return nil },
 		GetObject: func() interface{} {
+			cmdline := &utils.CmdLine{}
 			return &TarballObject{
-				FileSystemHelper:  &utils.FileSystem{},
+				FileSystemHelper: &utils.FileSystem{
+					CmdLineExecuter: cmdline,
+				},
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
 				Copier:            &utils.ExtendedIO{},
 				MtdUtils:          &utils.MtdUtilsImpl{},
 				UbifsUtils: &utils.UbifsUtilsImpl{
-					CmdLineExecuter: &utils.CmdLine{},
+					CmdLineExecuter: cmdline,
 				},
 			}
 		},

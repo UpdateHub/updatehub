@@ -27,7 +27,9 @@ func init() {
 		CheckRequirements: func() error { return nil },
 		GetObject: func() interface{} {
 			return &CopyObject{
-				FileSystemHelper:  &utils.FileSystem{},
+				FileSystemHelper: &utils.FileSystem{
+					CmdLineExecuter: &utils.CmdLine{},
+				},
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
 				Copier:            &utils.ExtendedIO{},
