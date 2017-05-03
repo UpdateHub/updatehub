@@ -33,8 +33,11 @@ func TestCopyInit(t *testing.T) {
 	}
 
 	osFs := afero.NewOsFs()
+	cmdline := &utils.CmdLine{}
 	cp2 := &CopyObject{
-		FileSystemHelper:  &utils.FileSystem{},
+		FileSystemHelper: &utils.FileSystem{
+			CmdLineExecuter: cmdline,
+		},
 		LibArchiveBackend: &libarchive.LibArchive{},
 		FileSystemBackend: osFs,
 		Copier:            &utils.ExtendedIO{},

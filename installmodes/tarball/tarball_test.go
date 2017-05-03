@@ -35,14 +35,17 @@ func TestTarballInit(t *testing.T) {
 	}
 
 	osFs := afero.NewOsFs()
+	cmdline := &utils.CmdLine{}
 	tb2 := &TarballObject{
-		FileSystemHelper:  &utils.FileSystem{},
+		FileSystemHelper: &utils.FileSystem{
+			CmdLineExecuter: cmdline,
+		},
 		LibArchiveBackend: &libarchive.LibArchive{},
 		FileSystemBackend: osFs,
 		Copier:            &utils.ExtendedIO{},
 		MtdUtils:          &utils.MtdUtilsImpl{},
 		UbifsUtils: &utils.UbifsUtilsImpl{
-			CmdLineExecuter: &utils.CmdLine{},
+			CmdLineExecuter: cmdline,
 		},
 	}
 
