@@ -8,7 +8,10 @@
 
 package filesystemmock
 
-import "github.com/stretchr/testify/mock"
+import (
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/mock"
+)
 
 type FileSystemHelperMock struct {
 	mock.Mock
@@ -29,7 +32,7 @@ func (fsm *FileSystemHelperMock) Umount(mountPath string) error {
 	return args.Error(0)
 }
 
-func (fsm *FileSystemHelperMock) TempDir(prefix string) (string, error) {
-	args := fsm.Called(prefix)
+func (fsm *FileSystemHelperMock) TempDir(fsb afero.Fs, prefix string) (string, error) {
+	args := fsm.Called(fsb, prefix)
 	return args.String(0), args.Error(1)
 }
