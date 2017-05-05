@@ -33,6 +33,7 @@ func init() {
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
 				Copier:            &utils.ExtendedIO{},
+				Permissions:       &utils.PermissionsDefaultImpl{},
 				ChunkSize:         128 * 1024,
 			}
 		},
@@ -47,17 +48,21 @@ type CopyObject struct {
 	LibArchiveBackend      libarchive.API `json:"-"`
 	FileSystemBackend      afero.Fs
 	utils.Copier           `json:"-"`
+	utils.Permissions
 	installifdifferent.TargetGetter
 	targetPath string
 
-	Target        string `json:"target"`
-	TargetType    string `json:"target-type"`
-	TargetPath    string `json:"target-path"`
-	FSType        string `json:"filesystem"`
-	FormatOptions string `json:"format-options,omitempty"`
-	MustFormat    bool   `json:"format?,omitempty"`
-	MountOptions  string `json:"mount-options,omitempty"`
-	ChunkSize     int    `json:"chunk-size,omitempty"`
+	Target        string      `json:"target"`
+	TargetType    string      `json:"target-type"`
+	TargetPath    string      `json:"target-path"`
+	TargetGID     interface{} `json:"target-gid"` // can be string or int
+	TargetUID     interface{} `json:"target-uid"` // can be string or int
+	TargetMode    string      `json:"target-mode"`
+	FSType        string      `json:"filesystem"`
+	FormatOptions string      `json:"format-options,omitempty"`
+	MustFormat    bool        `json:"format?,omitempty"`
+	MountOptions  string      `json:"mount-options,omitempty"`
+	ChunkSize     int         `json:"chunk-size,omitempty"`
 }
 
 // Setup implementation for the "copy" handler
@@ -102,6 +107,18 @@ func (cp *CopyObject) Install(downloadDir string) error {
 	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, cp.targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
+	}
+
+	if len(errorList) == 0 {
+		err = cp.Permissions.ApplyChmod(cp.FileSystemBackend, cp.targetPath, cp.TargetMode)
+		if err != nil {
+			errorList = append(errorList, err)
+		}
+
+		err = cp.Permissions.ApplyChown(cp.targetPath, cp.TargetUID, cp.TargetGID)
+		if err != nil {
+			errorList = append(errorList, err)
+		}
 	}
 
 	umountErr := cp.Umount(tempDirPath)

@@ -1026,16 +1026,6 @@ func TestCopyFileWithLibarchiveWriteError(t *testing.T) {
 	targetMock.AssertExpectations(t)
 }
 
-/*
-FIXME: cases missing
-
-uncompressed and compressed
-- keep file attributes test
-
-errors
-- when applying attributes (permission)
-*/
-
 func TestCopyToProcessStdinIntegration(t *testing.T) {
 	testCases := []struct {
 		Name                      string
