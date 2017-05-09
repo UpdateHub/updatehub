@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package main
+package updatehub
 
 import (
 	"errors"
@@ -40,7 +40,7 @@ func TestDaemonRun(t *testing.T) {
 
 	state := NewStateTest(d)
 
-	uh.state = state
+	uh.State = state
 
 	d.Run()
 
@@ -66,11 +66,11 @@ func TestDaemonFailedToReportStatus(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
-	uh.logger = logger
+	uh.Logger = logger
 
 	d := NewDaemon(uh)
 
-	uh.state = NewStateTest(d)
+	uh.State = NewStateTest(d)
 
 	defer monkey.PatchInstanceMethod(reflect.TypeOf(uh), "ReportCurrentState", func(uh *UpdateHub) error {
 		return errors.New("")
@@ -93,19 +93,19 @@ func TestDaemonExitStateStop(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
-	uh.logger = logger
+	uh.Logger = logger
 
 	d := NewDaemon(uh)
 
-	uh.state = NewErrorState(NewFatalError(errors.New("test")))
+	uh.State = NewErrorState(NewFatalError(errors.New("test")))
 
 	assert.Equal(t, 1, d.Run())
 
-	assert.IsType(t, &ExitState{}, uh.state)
+	assert.IsType(t, &ExitState{}, uh.State)
 	assert.Equal(t, 1, len(hook.Entries))
 	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
 	assert.Equal(t, "fatal error: test", hook.LastEntry().Message)
-	assert.Equal(t, 1, uh.state.(*ExitState).exitCode)
+	assert.Equal(t, 1, uh.State.(*ExitState).exitCode)
 
 	aim.AssertExpectations(t)
 }
