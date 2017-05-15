@@ -13,6 +13,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/Sirupsen/logrus"
 	"github.com/spf13/afero"
 
@@ -25,26 +26,26 @@ import (
 )
 
 func main() {
-	logger := logrus.New()
+	log.SetLevel(logrus.WarnLevel)
 
 	osFs := afero.NewOsFs()
 
 	fm, err := metadata.NewFirmwareMetadata(firmwareMetadataDirPath, osFs, &utils.CmdLine{})
 	if err != nil {
-		logger.Errorln(err)
+		log.Fatal(err)
 		os.Exit(1)
 	}
 
-	backend, err := server.NewAgentBackend(logger)
+	backend, err := server.NewAgentBackend()
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 		os.Exit(1)
 	}
 
 	go func() {
 		router := server.NewBackendRouter(backend)
 		if err := http.ListenAndServe(":8080", router.HTTPRouter); err != nil {
-			logger.Fatal(err)
+			log.Fatal(err)
 		}
 	}()
 
@@ -55,7 +56,6 @@ func main() {
 		TimeStep:            time.Minute,
 		Store:               osFs,
 		FirmwareMetadata:    *fm,
-		Logger:              logger,
 		SystemSettingsPath:  systemSettingsPath,
 		RuntimeSettingsPath: runtimeSettingsPath,
 	}
@@ -63,7 +63,7 @@ func main() {
 	uh.Controller = uh
 
 	if err = uh.LoadSettings(); err != nil {
-		logger.Errorln(err)
+		log.Fatal(err)
 		os.Exit(1)
 	}
 

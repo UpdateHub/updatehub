@@ -19,7 +19,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -43,23 +42,19 @@ const (
 )
 
 func TestNewServerBackendWithNonExistantDirectoryError(t *testing.T) {
-	logger := logrus.New()
-
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
 
 	dirPath := path.Join(testPath, "inexistant-dir")
 
-	sb, err := NewServerBackend(dirPath, logger)
+	sb, err := NewServerBackend(dirPath)
 
 	assert.EqualError(t, err, fmt.Sprintf("stat %s: no such file or directory", dirPath))
 	assert.Nil(t, sb)
 }
 
 func TestNewServerBackendWithNotADirectoryError(t *testing.T) {
-	logger := logrus.New()
-
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
@@ -69,14 +64,13 @@ func TestNewServerBackendWithNotADirectoryError(t *testing.T) {
 	err = ioutil.WriteFile(updateMetadataFilePath, []byte(ValidJSONMetadata), 0666)
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(updateMetadataFilePath, logger)
+	sb, err := NewServerBackend(updateMetadataFilePath)
 
 	assert.EqualError(t, err, fmt.Sprintf("%s: not a directory", updateMetadataFilePath))
 	assert.Nil(t, sb)
 }
 
 func TestNewServerBackend(t *testing.T) {
-	logger := logrus.New()
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
@@ -86,10 +80,8 @@ func TestNewServerBackend(t *testing.T) {
 	err = ioutil.WriteFile(updateMetadataFilePath, []byte(ValidJSONMetadata), 0666)
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(testPath, logger)
-
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
-	assert.Equal(t, logger, sb.Logger())
 
 	routes := sb.Routes()
 
@@ -109,7 +101,6 @@ func TestNewServerBackend(t *testing.T) {
 }
 
 func TestParseUpdateMetadataWithStatError(t *testing.T) {
-	logger := logrus.New()
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
@@ -119,7 +110,7 @@ func TestParseUpdateMetadataWithStatError(t *testing.T) {
 	err = ioutil.WriteFile(updateMetadataFilePath, []byte(ValidJSONMetadata), 0666)
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	os.Remove(updateMetadataFilePath)
@@ -129,7 +120,6 @@ func TestParseUpdateMetadataWithStatError(t *testing.T) {
 }
 
 func TestParseUpdateMetadataWithUnmarshalError(t *testing.T) {
-	logger := logrus.New()
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
@@ -139,7 +129,7 @@ func TestParseUpdateMetadataWithUnmarshalError(t *testing.T) {
 	err = ioutil.WriteFile(updateMetadataFilePath, []byte(InvalidJSONMetadata), 0666)
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	err = sb.ParseUpdateMetadata()
@@ -147,7 +137,6 @@ func TestParseUpdateMetadataWithUnmarshalError(t *testing.T) {
 }
 
 func TestParseUpdateMetadata(t *testing.T) {
-	logger := logrus.New()
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
@@ -157,7 +146,7 @@ func TestParseUpdateMetadata(t *testing.T) {
 	err = ioutil.WriteFile(updateMetadataFilePath, []byte(ValidJSONMetadata), 0666)
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	err = sb.ParseUpdateMetadata()
@@ -165,8 +154,6 @@ func TestParseUpdateMetadata(t *testing.T) {
 }
 
 func TestUpgradesRoute(t *testing.T) {
-	logger := logrus.New()
-
 	// setup filesystem
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
@@ -178,7 +165,7 @@ func TestUpgradesRoute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// setup server
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	router := NewBackendRouter(sb)
@@ -200,15 +187,13 @@ func TestUpgradesRoute(t *testing.T) {
 }
 
 func TestUpgradesRouteWithMetadataNotFound(t *testing.T) {
-	logger := logrus.New()
-
 	// setup filesystem
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
 
 	// setup server
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	router := NewBackendRouter(sb)
@@ -231,8 +216,6 @@ func TestGetObjectRoute(t *testing.T) {
 	packageUID := "b"
 	object := "c"
 
-	logger := logrus.New()
-
 	// setup filesystem
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
@@ -252,7 +235,7 @@ func TestGetObjectRoute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// setup server
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	router := NewBackendRouter(sb)
@@ -275,8 +258,6 @@ func TestGetObjectRoute(t *testing.T) {
 }
 
 func TestReportRoute(t *testing.T) {
-	logger := logrus.New()
-
 	// setup filesystem
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
@@ -288,7 +269,7 @@ func TestReportRoute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// setup server
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	router := NewBackendRouter(sb)
@@ -311,8 +292,6 @@ func TestReportRoute(t *testing.T) {
 }
 
 func TestReportRouteWithInvalidReportData(t *testing.T) {
-	logger := logrus.New()
-
 	// setup filesystem
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
@@ -324,7 +303,7 @@ func TestReportRouteWithInvalidReportData(t *testing.T) {
 	assert.NoError(t, err)
 
 	// setup server
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	router := NewBackendRouter(sb)

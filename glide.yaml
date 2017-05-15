@@ -11,3 +11,6 @@ import:
 - package: github.com/Sirupsen/logrus
 - package: github.com/fsnotify/fsnotify
 - package: github.com/spf13/cobra
+- package: github.com/OSSystems/pkg
+  subpackages:
+  - log

@@ -15,6 +15,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/Sirupsen/logrus/hooks/test"
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
@@ -60,13 +61,14 @@ func TestDaemonStop(t *testing.T) {
 
 func TestDaemonFailedToReportStatus(t *testing.T) {
 	logger, hook := test.NewNullLogger()
+	log.SetLogger(logger)
 
+	defer log.SetLogger(logrus.StandardLogger())
 	defer hook.Reset()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
-	uh.Logger = logger
 
 	d := NewDaemon(uh)
 
@@ -87,13 +89,14 @@ func TestDaemonFailedToReportStatus(t *testing.T) {
 
 func TestDaemonExitStateStop(t *testing.T) {
 	logger, hook := test.NewNullLogger()
+	log.SetLogger(logger)
 
+	defer log.SetLogger(logrus.StandardLogger())
 	defer hook.Reset()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
-	uh.Logger = logger
 
 	d := NewDaemon(uh)
 

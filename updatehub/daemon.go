@@ -8,7 +8,10 @@
 
 package updatehub
 
-import "github.com/Sirupsen/logrus"
+import (
+	"github.com/Sirupsen/logrus"
+	"github.com/OSSystems/pkg/log"
+)
 
 type Daemon struct {
 	uh   *UpdateHub
@@ -29,7 +32,7 @@ func (d *Daemon) Run() int {
 	for {
 		err := d.uh.ReportCurrentState()
 		if err != nil {
-			d.uh.Logger.WithFields(logrus.Fields{
+			log.WithFields(logrus.Fields{
 				"state": StateToString(d.uh.State.ID()),
 			}).Warn("Failed to report status")
 		}

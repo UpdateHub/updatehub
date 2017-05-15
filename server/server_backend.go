@@ -16,7 +16,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/julienschmidt/httprouter"
 )
@@ -26,10 +26,9 @@ const updateMetadataFilename = "updatemetadata.json"
 type ServerBackend struct {
 	path           string
 	updateMetadata []byte
-	logger         *logrus.Logger
 }
 
-func NewServerBackend(path string, logger *logrus.Logger) (*ServerBackend, error) {
+func NewServerBackend(path string) (*ServerBackend, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -40,8 +39,7 @@ func NewServerBackend(path string, logger *logrus.Logger) (*ServerBackend, error
 	}
 
 	sb := &ServerBackend{
-		path:   path,
-		logger: logger,
+		path: path,
 	}
 
 	return sb, nil
@@ -71,10 +69,6 @@ func (sb *ServerBackend) ParseUpdateMetadata() error {
 	return nil
 }
 
-func (sb *ServerBackend) Logger() *logrus.Logger {
-	return sb.logger
-}
-
 func (sb *ServerBackend) Routes() []Route {
 	return []Route{
 		{Method: "POST", Path: "/upgrades", Handle: sb.getUpdateMetadata},
@@ -93,7 +87,7 @@ func (sb *ServerBackend) getUpdateMetadata(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Content-Type", "application/json")
 
 	if _, err := w.Write(sb.updateMetadata); err != nil {
-		sb.logger.Warn(err)
+		log.Warn(err)
 	}
 }
 
@@ -112,13 +106,13 @@ func (sb *ServerBackend) reportStatus(w http.ResponseWriter, r *http.Request, p 
 
 	err := decoder.Decode(&report)
 	if err != nil {
-		sb.logger.Warn(fmt.Errorf("Invalid report data: %s", err))
+		log.Warn(fmt.Errorf("Invalid report data: %s", err))
 		w.WriteHeader(500)
 		w.Write([]byte("500 internal server error\n"))
 		return
 	}
 
-	sb.logger.Info(fmt.Sprintf("report: status = %s, package-uid = %s, error-message = %s", report.Status, report.PackageUID, report.ErrorMessage))
+	log.Info(fmt.Sprintf("report: status = %s, package-uid = %s, error-message = %s", report.Status, report.PackageUID, report.ErrorMessage))
 }
 
 func (sb *ServerBackend) getObject(w http.ResponseWriter, r *http.Request, p httprouter.Params) {

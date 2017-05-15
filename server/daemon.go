@@ -11,6 +11,7 @@ package server
 import (
 	"path"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -59,13 +60,13 @@ func (d *Daemon) Run() {
 					if event.Name == umFileName {
 						err := d.backend.ParseUpdateMetadata()
 						if err != nil {
-							d.backend.logger.Error(err)
+							log.Error(err)
 						}
 						d.metadataWritten <- true
 					}
 				}
 			case err := <-d.fswatcher.Errors:
-				d.backend.logger.Error(err)
+				log.Error(err)
 			}
 		}
 	}()
