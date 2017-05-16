@@ -9,7 +9,11 @@
 package updatehub
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
 	"math/rand"
+	"os"
 	"path"
 	"time"
 
@@ -119,10 +123,17 @@ func (uh *UpdateHub) LoadSettings() error {
 	files := []string{uh.SystemSettingsPath, uh.RuntimeSettingsPath}
 	settings := []*Settings{}
 
+	var file io.ReadCloser
+	var err error
+
 	for _, name := range files {
-		file, err := uh.Store.Open(name)
+		file, err = uh.Store.Open(name)
 		if err != nil {
-			return err
+			if os.IsNotExist(err) {
+				file = ioutil.NopCloser(bytes.NewReader(nil))
+			} else {
+				return err
+			}
 		}
 
 		s, err := LoadSettings(file)
@@ -133,7 +144,7 @@ func (uh *UpdateHub) LoadSettings() error {
 		settings = append(settings, s)
 	}
 
-	err := mergo.Merge(settings[0], settings[1])
+	err = mergo.Merge(settings[0], settings[1])
 	if err != nil {
 		return err
 	}
