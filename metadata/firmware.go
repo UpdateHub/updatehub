@@ -40,22 +40,22 @@ func NewFirmwareMetadata(basePath string, store afero.Fs, cmd utils.CmdLineExecu
 	}
 
 	hardware, err := cmd.Execute(path.Join(basePath, "hardware"))
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
 
 	hardwareRevision, err := cmd.Execute(path.Join(basePath, "hardware-revision"))
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
 
 	version, err := cmd.Execute(path.Join(basePath, "version"))
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
 
 	deviceIdentity, err := executeHooks(path.Join(basePath, "device-identity.d"), store, cmd)
-	if err != nil {
+	if err != nil || len(deviceIdentity) == 0 {
 		return nil, err
 	}
 
