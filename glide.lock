@@ -1,6 +1,14 @@
 hash: e1c6dcd6e234f43ad31024b0eee919748f98002b46e49c029123e1f911d92532
 updated: 2017-03-22T14:54:32.754895242-03:00
 imports:
+- name: github.com/fsnotify/fsnotify
+  version: 4da3e2cfbabc9f751898f250b49f2439785783a1
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/spf13/cobra
+  version: d236d298109208d194bf9c305dda03acbd1cc8d2
+- name: github.com/spf13/pflag
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/bouk/monkey
   version: 5dace501dd6dad5b369748946db553903c8e839c
 - name: github.com/davecgh/go-spew

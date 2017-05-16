@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package main
+package updatehub
 
 import (
 	"math/rand"
@@ -28,16 +28,18 @@ type UpdateHub struct {
 	utils.Copier
 
 	settings                *Settings
-	store                   afero.Fs
-	firmwareMetadata        metadata.FirmwareMetadata
-	state                   State
-	timeStep                time.Duration
-	api                     *client.ApiClient
-	updater                 client.Updater
+	Store                   afero.Fs
+	FirmwareMetadata        metadata.FirmwareMetadata
+	State                   State
+	TimeStep                time.Duration
+	API                     *client.ApiClient
+	Updater                 client.Updater
 	reporter                client.Reporter
-	logger                  *logrus.Logger
+	Logger                  *logrus.Logger
 	lastInstalledPackageUID string
 	activeInactiveBackend   activeinactive.Interface
+	SystemSettingsPath      string
+	RuntimeSettingsPath     string
 }
 
 type Controller interface {
@@ -52,10 +54,10 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 		metadata.FirmwareMetadata
 	}
 
-	data.FirmwareMetadata = uh.firmwareMetadata
+	data.FirmwareMetadata = uh.FirmwareMetadata
 	data.Retries = retries
 
-	updateMetadata, extraPoll, err := uh.updater.CheckUpdate(uh.api.Request(), client.UpgradesEndpoint, data)
+	updateMetadata, extraPoll, err := uh.Updater.CheckUpdate(uh.API.Request(), client.UpgradesEndpoint, data)
 	if err != nil || updateMetadata == nil {
 		return nil, -1
 	}
@@ -75,17 +77,17 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		objectUID := obj.GetObjectMetadata().Sha256sum
 
 		uri := "/"
-		uri = path.Join(uri, uh.firmwareMetadata.ProductUID)
+		uri = path.Join(uri, uh.FirmwareMetadata.ProductUID)
 		uri = path.Join(uri, packageUID)
 		uri = path.Join(uri, objectUID)
 
-		wr, err := uh.store.Create(path.Join(uh.settings.DownloadDir, objectUID))
+		wr, err := uh.Store.Create(path.Join(uh.settings.DownloadDir, objectUID))
 		if err != nil {
 			return err
 		}
 		defer wr.Close()
 
-		rd, _, err := uh.updater.FetchUpdate(uh.api.Request(), uri)
+		rd, _, err := uh.Updater.FetchUpdate(uh.API.Request(), uri)
 		if err != nil {
 			return err
 		}
@@ -101,9 +103,9 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 }
 
 func (uh *UpdateHub) ReportCurrentState() error {
-	if rs, ok := uh.state.(ReportableState); ok {
+	if rs, ok := uh.State.(ReportableState); ok {
 		packageUID := rs.UpdateMetadata().PackageUID()
-		err := uh.reporter.ReportState(uh.api.Request(), packageUID, StateToString(uh.state.ID()))
+		err := uh.reporter.ReportState(uh.API.Request(), packageUID, StateToString(uh.State.ID()))
 		if err != nil {
 			return err
 		}
@@ -114,11 +116,11 @@ func (uh *UpdateHub) ReportCurrentState() error {
 
 // LoadSettings loads system and runtime settings
 func (uh *UpdateHub) LoadSettings() error {
-	files := []string{systemSettingsPath, runtimeSettingsPath}
+	files := []string{uh.SystemSettingsPath, uh.RuntimeSettingsPath}
 	settings := []*Settings{}
 
 	for _, name := range files {
-		file, err := uh.store.Open(name)
+		file, err := uh.Store.Open(name)
 		if err != nil {
 			return err
 		}
@@ -148,7 +150,7 @@ func (uh *UpdateHub) StartPolling() {
 
 	poll := NewPollState(uh)
 
-	uh.state = poll
+	uh.State = poll
 
 	timeZero := (time.Time{}).UTC()
 
@@ -157,10 +159,10 @@ func (uh *UpdateHub) StartPolling() {
 		uh.settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.settings.PollingInterval))))
 	} else if uh.settings.LastPoll == timeZero && now.After(uh.settings.FirstPoll) {
 		// it never did a poll before
-		uh.state = NewUpdateCheckState()
+		uh.State = NewUpdateCheckState()
 	} else if uh.settings.LastPoll.Add(uh.settings.PollingInterval).Before(now) {
 		// pending regular interval
-		uh.state = NewUpdateCheckState()
+		uh.State = NewUpdateCheckState()
 	} else {
 		nextPoll := time.Unix(uh.settings.FirstPoll.Unix(), 0)
 		for nextPoll.Before(now) {
@@ -175,7 +177,7 @@ func (uh *UpdateHub) StartPolling() {
 				poll.interval = uh.settings.ExtraPollingInterval
 			}
 		} else {
-			poll.ticksCount = (int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.timeStep)
+			poll.ticksCount = (int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.TimeStep)
 		}
 	}
 }

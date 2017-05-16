@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package main
+package updatehub
 
 type CancellableState struct {
 	BaseState

@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package main
+package updatehub
 
 import (
 	"errors"
@@ -125,7 +125,7 @@ type ErrorState struct {
 // Handle for ErrorState calls "panic" if the error is fatal or
 // triggers a poll state otherwise
 func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
-	uh.logger.Warn(state.cause)
+	uh.Logger.Warn(state.cause)
 
 	if state.cause.IsFatal() {
 		return NewExitState(1), false
@@ -227,7 +227,7 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 
 	polling:
 		for {
-			ticker := time.NewTicker(uh.timeStep)
+			ticker := time.NewTicker(uh.TimeStep)
 
 			defer ticker.Stop()
 
@@ -235,7 +235,7 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 			case <-ticker.C:
 				ticks++
 
-				if ticks > 0 && ticks%int64(state.interval/uh.timeStep) == 0 {
+				if ticks > 0 && ticks%int64(state.interval/uh.TimeStep) == 0 {
 					nextState = NewUpdateCheckState()
 					break polling
 				}
@@ -362,7 +362,7 @@ func (state *UpdateFetchState) Handle(uh *UpdateHub) (State, bool) {
 	nextState = state
 
 	if err := uh.Controller.FetchUpdate(state.updateMetadata, state.cancel); err == nil {
-		return NewUpdateInstallState(state.updateMetadata, &uh.firmwareMetadata), false
+		return NewUpdateInstallState(state.updateMetadata, &uh.FirmwareMetadata), false
 	}
 
 	return nextState, false
@@ -410,8 +410,8 @@ func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
 
 	return NewInstallingState(state.updateMetadata,
 		&Sha256CheckerImpl{},
-		uh.store,
-		&installifdifferent.DefaultImpl{FileSystemBackend: uh.store}), false
+		uh.Store,
+		&installifdifferent.DefaultImpl{FileSystemBackend: uh.Store}), false
 }
 
 // NewUpdateInstallState creates a new UpdateInstallState

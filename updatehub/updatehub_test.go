@@ -6,12 +6,13 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package main
+package updatehub
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -102,13 +103,13 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 				metadata.FirmwareMetadata
 			}
 
-			data.FirmwareMetadata = uh.firmwareMetadata
+			data.FirmwareMetadata = uh.FirmwareMetadata
 			data.Retries = 0
 
 			um := &updatermock.UpdaterMock{}
-			um.On("CheckUpdate", uh.api.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
+			um.On("CheckUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
 
-			uh.updater = um
+			uh.Updater = um
 
 			updateMetadata, extraPoll := uh.CheckUpdate(0)
 
@@ -136,15 +137,15 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
-	uri := path.Join("/", uh.firmwareMetadata.ProductUID, packageUID, objectUID)
+	uri := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID)
 
 	source := &filemock.FileMock{}
 	source.On("Close").Return(nil)
 	sourceContent := []byte("content")
 
 	um := &updatermock.UpdaterMock{}
-	um.On("FetchUpdate", uh.api.Request(), uri).Return(source, int64(len(sourceContent)), nil)
-	uh.updater = um
+	um.On("FetchUpdate", uh.API.Request(), uri).Return(source, int64(len(sourceContent)), nil)
+	uh.Updater = um
 
 	// setup filesystembackend
 
@@ -157,7 +158,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
-	uh.store = fsm
+	uh.Store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.NoError(t, err)
@@ -183,7 +184,7 @@ func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
 	assert.NoError(t, err)
 
 	um := &updatermock.UpdaterMock{}
-	uh.updater = um
+	uh.Updater = um
 
 	// setup filesystembackend
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
@@ -193,7 +194,7 @@ func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
-	uh.store = fsm
+	uh.Store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.EqualError(t, err, "create error")
@@ -219,13 +220,13 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
-	uri := path.Join("/", uh.firmwareMetadata.ProductUID, packageUID, objectUID)
+	uri := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID)
 
 	source := &filemock.FileMock{}
 
 	um := &updatermock.UpdaterMock{}
-	um.On("FetchUpdate", uh.api.Request(), uri).Return(source, int64(0), fmt.Errorf("updater error"))
-	uh.updater = um
+	um.On("FetchUpdate", uh.API.Request(), uri).Return(source, int64(0), fmt.Errorf("updater error"))
+	uh.Updater = um
 
 	// setup filesystembackend
 
@@ -237,7 +238,7 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
-	uh.store = fsm
+	uh.Store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.EqualError(t, err, "updater error")
@@ -265,15 +266,15 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
-	uri := path.Join("/", uh.firmwareMetadata.ProductUID, packageUID, objectUID)
+	uri := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID)
 
 	source := &filemock.FileMock{}
 	source.On("Close").Return(nil)
 	sourceContent := []byte("content")
 
 	um := &updatermock.UpdaterMock{}
-	um.On("FetchUpdate", uh.api.Request(), uri).Return(source, int64(len(sourceContent)), nil)
-	uh.updater = um
+	um.On("FetchUpdate", uh.API.Request(), uri).Return(source, int64(len(sourceContent)), nil)
+	uh.Updater = um
 
 	// setup filesystembackend
 
@@ -286,7 +287,7 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
-	uh.store = fsm
+	uh.Store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.EqualError(t, err, "copy error")
@@ -308,12 +309,12 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	aim.On("Active").Return(0, nil)
 
 	uh, _ := newTestUpdateHub(&PollState{}, aim)
-	uh.firmwareMetadata.ProductUID = "148de9c5a7a44d19e56cd9ae1a554bf67847afb0c58f6e12fa29ac7ddfca9940"
+	uh.FirmwareMetadata.ProductUID = "148de9c5a7a44d19e56cd9ae1a554bf67847afb0c58f6e12fa29ac7ddfca9940"
 
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadataWithActiveInactive))
 
 	expectedURIPrefix := "/"
-	expectedURIPrefix = path.Join(expectedURIPrefix, uh.firmwareMetadata.ProductUID)
+	expectedURIPrefix = path.Join(expectedURIPrefix, uh.FirmwareMetadata.ProductUID)
 	expectedURIPrefix = path.Join(expectedURIPrefix, packageUID)
 
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
@@ -329,7 +330,7 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 
 	objectUIDFirst := updateMetadata.Objects[1][0].GetObjectMetadata().Sha256sum
 	uri1 := path.Join(expectedURIPrefix, objectUIDFirst)
-	um.On("FetchUpdate", uh.api.Request(), uri1).Return(source1, int64(len(file1Content)), nil)
+	um.On("FetchUpdate", uh.API.Request(), uri1).Return(source1, int64(len(file1Content)), nil)
 
 	// download of file 2 setup
 	file2Content := []byte("content2butbigger") // this matches with the sha256sum in "validUpdateMetadataWithActiveInactive"
@@ -339,7 +340,7 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 
 	objectUIDSecond := updateMetadata.Objects[1][1].GetObjectMetadata().Sha256sum
 	uri2 := path.Join(expectedURIPrefix, objectUIDSecond)
-	um.On("FetchUpdate", uh.api.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
+	um.On("FetchUpdate", uh.API.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
 
 	// setup filesystembackend
 	target1 := &filemock.FileMock{}
@@ -350,10 +351,10 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUIDFirst)).Return(target1, nil)
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUIDSecond)).Return(target2, nil)
-	uh.store = fsm
+	uh.Store = fsm
 
 	// finish setup
-	uh.updater = um
+	uh.Updater = um
 
 	cpm := &copymock.CopierMock{}
 	cpm.On("Copy", target1, source1, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
@@ -386,7 +387,7 @@ func TestUpdateHubFetchUpdateWithActiveInactiveError(t *testing.T) {
 	assert.NoError(t, err)
 
 	um := &updatermock.UpdaterMock{}
-	uh.updater = um
+	uh.Updater = um
 
 	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 0")
@@ -500,9 +501,9 @@ func TestStartPolling(t *testing.T) {
 			uh.settings.LastPoll = tc.lastPoll
 
 			uh.StartPolling()
-			assert.IsType(t, tc.expectedState, uh.state)
+			assert.IsType(t, tc.expectedState, uh.State)
 
-			tc.subTest(t, uh, uh.state)
+			tc.subTest(t, uh, uh.State)
 
 			aim.AssertExpectations(t)
 		})
@@ -510,6 +511,13 @@ func TestStartPolling(t *testing.T) {
 }
 
 func TestLoadUpdateHubSettings(t *testing.T) {
+	testPath, err := ioutil.TempDir("", "updatehub-test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(testPath)
+
+	runtimeSettingsTestPath := path.Join(testPath, "runtime.conf")
+	systemSettingsTestPath := path.Join(testPath, "system.conf")
+
 	testCases := []struct {
 		name            string
 		systemSettings  string
@@ -523,7 +531,7 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 			"",
 			&os.PathError{},
 			func(t *testing.T, settings *Settings, err error) {
-				assert.Equal(t, err.(*os.PathError).Path, systemSettingsPath)
+				assert.Equal(t, err.(*os.PathError).Path, systemSettingsTestPath)
 			},
 		},
 
@@ -533,7 +541,7 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 			"",
 			&os.PathError{},
 			func(t *testing.T, settings *Settings, err error) {
-				assert.Equal(t, err.(*os.PathError).Path, runtimeSettingsPath)
+				assert.Equal(t, err.(*os.PathError).Path, runtimeSettingsTestPath)
 			},
 		},
 
@@ -562,17 +570,20 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 
 			uh, _ := newTestUpdateHub(nil, aim)
 
+			uh.SystemSettingsPath = systemSettingsTestPath
+			uh.RuntimeSettingsPath = runtimeSettingsTestPath
+
 			if tc.systemSettings != "" {
-				err := uh.store.MkdirAll(filepath.Dir(systemSettingsPath), 0755)
+				err := uh.Store.MkdirAll(filepath.Dir(systemSettingsTestPath), 0755)
 				assert.NoError(t, err)
-				err = afero.WriteFile(uh.store, systemSettingsPath, []byte(tc.systemSettings), 0644)
+				err = afero.WriteFile(uh.Store, systemSettingsTestPath, []byte(tc.systemSettings), 0644)
 				assert.NoError(t, err)
 			}
 
 			if tc.runtimeSettings != "" {
-				err := uh.store.MkdirAll(filepath.Dir(runtimeSettingsPath), 0755)
+				err := uh.Store.MkdirAll(filepath.Dir(runtimeSettingsTestPath), 0755)
 				assert.NoError(t, err)
-				err = afero.WriteFile(uh.store, runtimeSettingsPath, []byte(tc.runtimeSettings), 0644)
+				err = afero.WriteFile(uh.Store, runtimeSettingsTestPath, []byte(tc.runtimeSettings), 0644)
 				assert.NoError(t, err)
 			}
 
@@ -608,10 +619,10 @@ func newTestInstallMode() installmodes.InstallMode {
 
 func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, error) {
 	uh := &UpdateHub{
-		store:    afero.NewMemMapFs(),
-		state:    state,
-		timeStep: time.Second,
-		api:      client.NewApiClient("localhost"),
+		Store:    afero.NewMemMapFs(),
+		State:    state,
+		TimeStep: time.Second,
+		API:      client.NewApiClient("localhost"),
 		activeInactiveBackend: aii,
 	}
 

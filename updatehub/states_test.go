@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package main
+package updatehub
 
 import (
 	"errors"
@@ -19,6 +19,7 @@ import (
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/installmodes/copy"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
@@ -198,7 +199,7 @@ func TestStateUpdateCheck(t *testing.T) {
 			uh.Controller = tc.controller
 			uh.settings = tc.settings
 
-			next, _ := uh.state.Handle(uh)
+			next, _ := uh.State.Handle(uh)
 
 			assert.IsType(t, tc.nextState, next)
 
@@ -240,7 +241,7 @@ func TestStateUpdateFetch(t *testing.T) {
 
 			uh.Controller = tc.controller
 
-			next, _ := uh.state.Handle(uh)
+			next, _ := uh.State.Handle(uh)
 
 			assert.IsType(t, tc.nextState, next)
 
@@ -297,9 +298,9 @@ func TestPollingRetries(t *testing.T) {
 	uh.settings.PollingInterval = time.Second
 	uh.settings.LastPoll = time.Now()
 
-	uh.state = NewPollState(uh)
+	uh.State = NewPollState(uh)
 
-	next, _ := uh.state.Handle(uh)
+	next, _ := uh.State.Handle(uh)
 	assert.IsType(t, &UpdateCheckState{}, next)
 
 	for i := 1; i < 3; i++ {
@@ -385,7 +386,7 @@ func TestPolling(t *testing.T) {
 
 			uh.StartPolling()
 
-			poll := uh.state
+			poll := uh.State
 			assert.IsType(t, &PollState{}, poll)
 
 			poll.Handle(uh)
@@ -472,10 +473,10 @@ func TestStateIdle(t *testing.T) {
 			uh.settings = tc.settings
 
 			go func() {
-				uh.state.Cancel(false)
+				uh.State.Cancel(false)
 			}()
 
-			next, _ := uh.state.Handle(uh)
+			next, _ := uh.State.Handle(uh)
 			assert.IsType(t, tc.nextState, next)
 
 			aim.AssertExpectations(t)
@@ -1097,6 +1098,9 @@ func TestGetIndexOfObjectToBeInstalledWithActiveError(t *testing.T) {
 }
 
 func TestGetIndexOfObjectToBeInstalledWithMoreThanTwoObjects(t *testing.T) {
+	// declaration just to register the copy install mode
+	_ = &copy.CopyObject{}
+
 	activeInactiveJSONMetadataWithThreeObjects := `{
 	  "product-uid": "0123456789",
 	  "objects": [
