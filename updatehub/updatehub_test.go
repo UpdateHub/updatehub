@@ -510,6 +510,24 @@ func TestStartPolling(t *testing.T) {
 	}
 }
 
+func TestLoadUpdateHubSettingsWithOpenError(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	fsbm := &filesystemmock.FileSystemBackendMock{}
+
+	uh, _ := newTestUpdateHub(nil, aim)
+	uh.Store = fsbm
+	uh.SystemSettingsPath = "/systempath"
+	uh.RuntimeSettingsPath = "/runtimepath"
+
+	fsbm.On("Open", uh.SystemSettingsPath).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
+
+	err := uh.LoadSettings()
+	assert.EqualError(t, err, "open error")
+
+	aim.AssertExpectations(t)
+	fsbm.AssertExpectations(t)
+}
+
 func TestLoadUpdateHubSettings(t *testing.T) {
 	testPath, err := ioutil.TempDir("", "updatehub-test")
 	assert.NoError(t, err)
@@ -529,9 +547,8 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 			"SystemSettingsNotFound",
 			"",
 			"",
-			&os.PathError{},
+			nil,
 			func(t *testing.T, settings *Settings, err error) {
-				assert.Equal(t, err.(*os.PathError).Path, systemSettingsTestPath)
 			},
 		},
 
@@ -539,9 +556,8 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 			"RuntimeSettingsNotFound",
 			"[Polling]\nEnabled=true",
 			"",
-			&os.PathError{},
+			nil,
 			func(t *testing.T, settings *Settings, err error) {
-				assert.Equal(t, err.(*os.PathError).Path, runtimeSettingsTestPath)
 			},
 		},
 
@@ -551,6 +567,7 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 			"test",
 			ini.ErrDelimiterNotFound{},
 			func(t *testing.T, settings *Settings, err error) {
+				assert.Equal(t, err.Error(), "key-value delimiter not found: test")
 			},
 		},
 
