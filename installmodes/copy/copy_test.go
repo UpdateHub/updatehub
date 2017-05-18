@@ -13,6 +13,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/copy"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/testsmocks/copymock"
@@ -41,7 +42,7 @@ func TestCopyInit(t *testing.T) {
 		},
 		LibArchiveBackend: &libarchive.LibArchive{},
 		FileSystemBackend: osFs,
-		Copier:            &utils.ExtendedIO{},
+		CopyBackend:       &copy.ExtendedIO{},
 		Permissions:       &utils.PermissionsDefaultImpl{},
 		ChunkSize:         128 * 1024,
 	}
@@ -75,7 +76,7 @@ func TestCopySetupWithNotSupportedTargetTypes(t *testing.T) {
 func TestCopyInstallWithFormatError(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 	lam := &libarchivemock.LibArchiveMock{}
-	cm := &copymock.CopierMock{}
+	cm := &copymock.CopyMock{}
 
 	targetDevice := "/dev/xx1"
 	fsType := "ext4"
@@ -83,7 +84,7 @@ func TestCopyInstallWithFormatError(t *testing.T) {
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("Format", targetDevice, fsType, formatOptions).Return(fmt.Errorf("format error"))
-	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
 	cp.MustFormat = true
 	cp.Target = targetDevice
 	cp.FSType = fsType
@@ -102,11 +103,11 @@ func TestCopyInstallWithFormatError(t *testing.T) {
 func TestCopyInstallWithTempDirError(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 	lam := &libarchivemock.LibArchiveMock{}
-	cm := &copymock.CopierMock{}
+	cm := &copymock.CopyMock{}
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", memFs, "copy-handler").Return("", fmt.Errorf("temp dir error"))
-	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
 
 	err := cp.Install("/dummy-download-dir")
 
@@ -121,7 +122,7 @@ func TestCopyInstallWithTempDirError(t *testing.T) {
 func TestCopyInstallWithMountError(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 	lam := &libarchivemock.LibArchiveMock{}
-	cm := &copymock.CopierMock{}
+	cm := &copymock.CopyMock{}
 
 	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
 	assert.NoError(t, err)
@@ -133,7 +134,7 @@ func TestCopyInstallWithMountError(t *testing.T) {
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(fmt.Errorf("mount error"))
-	cp := CopyObject{FileSystemHelper: fsm, Copier: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
 	cp.Target = targetDevice
 	cp.FSType = fsType
 	cp.MountOptions = mountOptions
@@ -173,12 +174,12 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 
 	downloadDir := "/dummy-download-dir"
 
-	cm := &copymock.CopierMock{}
+	cm := &copymock.CopyMock{}
 	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
-		Copier:            cm,
+		CopyBackend:       cm,
 		FileSystemBackend: memFs,
 		LibArchiveBackend: lam,
 		ChunkSize:         128 * 1024,
@@ -230,7 +231,7 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 
 	downloadDir := "/dummy-download-dir"
 
-	cm := &copymock.CopierMock{}
+	cm := &copymock.CopyMock{}
 	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
 
 	pm := &permissionsmock.PermissionsMock{}
@@ -239,7 +240,7 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
-		Copier:            cm,
+		CopyBackend:       cm,
 		Permissions:       pm,
 		FileSystemBackend: memFs,
 		LibArchiveBackend: lam,
@@ -292,12 +293,12 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 
 	downloadDir := "/dummy-download-dir"
 
-	cm := &copymock.CopierMock{}
+	cm := &copymock.CopyMock{}
 	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
-		Copier:            cm,
+		CopyBackend:       cm,
 		FileSystemBackend: memFs,
 		LibArchiveBackend: lam,
 		ChunkSize:         128 * 1024,
@@ -349,7 +350,7 @@ func TestCopyInstallWithChmodAndChownErrors(t *testing.T) {
 
 	downloadDir := "/dummy-download-dir"
 
-	cm := &copymock.CopierMock{}
+	cm := &copymock.CopyMock{}
 	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
 
 	pm := &permissionsmock.PermissionsMock{}
@@ -358,7 +359,7 @@ func TestCopyInstallWithChmodAndChownErrors(t *testing.T) {
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
-		Copier:            cm,
+		CopyBackend:       cm,
 		Permissions:       pm,
 		FileSystemBackend: memFs,
 		LibArchiveBackend: lam,
@@ -492,7 +493,7 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 
 			downloadDir := "/dummy-download-dir"
 
-			cm := &copymock.CopierMock{}
+			cm := &copymock.CopyMock{}
 			cm.On("CopyFile", memFs, lam, path.Join(downloadDir, tc.Sha256sum), path.Join(tempDirPath, tc.TargetPath), tc.ChunkSize, 0, 0, -1, true, tc.Compressed).Return(nil)
 
 			pm := &permissionsmock.PermissionsMock{}
@@ -501,7 +502,7 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 
 			cp := CopyObject{
 				FileSystemHelper:  fsm,
-				Copier:            cm,
+				CopyBackend:       cm,
 				Permissions:       pm,
 				FileSystemBackend: memFs,
 				LibArchiveBackend: lam,

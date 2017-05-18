@@ -22,13 +22,14 @@ import (
 
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/copy"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
 )
 
 type UpdateHub struct {
 	Controller
-	utils.Copier
+	CopyBackend copy.Interface `json:"-"`
 
 	settings                *Settings
 	Store                   afero.Fs
@@ -95,7 +96,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		}
 		defer rd.Close()
 
-		_, err = uh.Copy(wr, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
+		_, err = uh.CopyBackend.Copy(wr, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
 		if err != nil {
 			return err
 		}

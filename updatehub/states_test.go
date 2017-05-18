@@ -19,7 +19,7 @@ import (
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
-	"github.com/UpdateHub/updatehub/installmodes/copy"
+	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
@@ -1098,15 +1098,15 @@ func TestGetIndexOfObjectToBeInstalledWithActiveError(t *testing.T) {
 }
 
 func TestGetIndexOfObjectToBeInstalledWithMoreThanTwoObjects(t *testing.T) {
-	// declaration just to register the copy install mode
-	_ = &copy.CopyObject{}
+	// declaration just to register the imxkobs install mode
+	_ = &imxkobs.ImxKobsObject{}
 
 	activeInactiveJSONMetadataWithThreeObjects := `{
 	  "product-uid": "0123456789",
 	  "objects": [
 	    [
 	      {
-            "mode": "copy",
+            "mode": "imxkobs",
             "target": "/dev/xx1",
             "target-type": "device"
           }
@@ -1114,7 +1114,7 @@ func TestGetIndexOfObjectToBeInstalledWithMoreThanTwoObjects(t *testing.T) {
         ,
 	    [
 	      {
-            "mode": "copy",
+            "mode": "imxkobs",
             "target": "/dev/xx2",
             "target-type": "device"
           }
@@ -1122,7 +1122,7 @@ func TestGetIndexOfObjectToBeInstalledWithMoreThanTwoObjects(t *testing.T) {
         ,
 	    [
 	      {
-            "mode": "copy",
+            "mode": "imxkobs",
             "target": "/dev/xx3",
             "target-type": "device"
           }

@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package utils
+package copy
 
 import (
 	"bufio"
@@ -25,6 +25,7 @@ import (
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
+	"github.com/UpdateHub/updatehub/utils"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -72,7 +73,7 @@ func TestCopy(t *testing.T) {
 	wr := bufio.NewWriter(buff)
 
 	eio := ExtendedIO{}
-	cancelled, err := eio.Copy(wr, rd, time.Minute, nil, ChunkSize, 0, -1, false)
+	cancelled, err := eio.Copy(wr, rd, time.Minute, nil, utils.ChunkSize, 0, -1, false)
 
 	err = wr.Flush()
 	assert.NoError(t, err)
@@ -93,7 +94,7 @@ func TestCopyTimeoutHasReached(t *testing.T) {
 	cancel := make(chan bool)
 
 	eio := ExtendedIO{}
-	cancelled, err := eio.Copy(wr, rd, time.Millisecond, cancel, ChunkSize, 0, -1, false)
+	cancelled, err := eio.Copy(wr, rd, time.Millisecond, cancel, utils.ChunkSize, 0, -1, false)
 	assert.False(t, cancelled)
 	if !assert.Error(t, err) {
 		assert.Equal(t, errors.New("timeout"), err)
@@ -128,7 +129,7 @@ func TestCancelCopy(t *testing.T) {
 
 	go func() {
 		eio := ExtendedIO{}
-		cancelled, err = eio.Copy(wr, rd, time.Minute, cancel, ChunkSize, 0, -1, false)
+		cancelled, err = eio.Copy(wr, rd, time.Minute, cancel, utils.ChunkSize, 0, -1, false)
 		wait <- false
 	}()
 
@@ -171,7 +172,7 @@ func compressData(decompressedData []byte, compressor string) ([]byte, error) {
 		return []byte(nil), err
 	}
 
-	cl := CmdLine{}
+	cl := utils.CmdLine{}
 
 	_, err = cl.Execute(fmt.Sprintf("sh -c \"%s -c %s > %s\"", compressor, tempDecompressed.Name(), tempCompressed.Name()))
 	if err != nil {
@@ -603,7 +604,7 @@ func TestCopyFileNotUsingTruncate(t *testing.T) {
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE, os.FileMode(0666)).Return(targetMock, nil)
 
 	eio := ExtendedIO{}
-	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", ChunkSize,
+	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", utils.ChunkSize,
 		0, 0, -1, truncate, false)
 	assert.NoError(t, err)
 
@@ -630,7 +631,7 @@ func TestCopyFileWithOpenError(t *testing.T) {
 	fom.On("Open", "source.txt").Return((*filemock.FileMock)(nil), pathError)
 
 	eio := ExtendedIO{}
-	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", ChunkSize,
+	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", utils.ChunkSize,
 		0, 0, -1, true, false)
 	assert.EqualError(t, err, "open source.txt: no space left on device")
 
@@ -649,7 +650,7 @@ func TestCopyFileWithOpenFileError(t *testing.T) {
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return((*filemock.FileMock)(nil), pathError)
 
 	eio := ExtendedIO{}
-	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", ChunkSize,
+	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", utils.ChunkSize,
 		0, 0, -1, true, false)
 	assert.EqualError(t, err, "open target.txt: no space left on device")
 
@@ -671,7 +672,7 @@ func TestCopyFileWithReadError(t *testing.T) {
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	eio := ExtendedIO{}
-	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", ChunkSize,
+	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", utils.ChunkSize,
 		0, 0, -1, true, false)
 	assert.EqualError(t, err, "io: read/write on closed pipe")
 
@@ -704,7 +705,7 @@ func TestCopyFileWithWriteError(t *testing.T) {
 	fom.On("OpenFile", "target.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.FileMode(0666)).Return(targetMock, nil)
 
 	eio := ExtendedIO{}
-	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", ChunkSize,
+	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", utils.ChunkSize,
 		0, 0, -1, true, false)
 	assert.EqualError(t, err, "io: read/write on closed pipe")
 

@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpdateHub/updatehub/installmodes/copy"
+	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/stretchr/testify/assert"
 )
@@ -249,15 +249,15 @@ func TestCheckUpdateWithNoUpdateAvailable(t *testing.T) {
 }
 
 func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
-	// declaration just to register the copy install mode
-	_ = &copy.CopyObject{}
+	// declaration just to register the imxkobs install mode
+	_ = &imxkobs.ImxKobsObject{}
 
 	expectedBody := `{
 	  "product-uid": "0123456789",
 	  "objects": [
 	    [
 	      {
-            "mode": "copy",
+            "mode": "imxkobs",
             "sha256sum": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
           }
 	    ]
@@ -303,7 +303,7 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 	// Objects
 	assert.Equal(t, 1, len(um.Objects))
 	assert.Equal(t, 1, len(um.Objects[0]))
-	assert.Equal(t, "copy", um.Objects[0][0].GetObjectMetadata().Mode)
+	assert.Equal(t, "imxkobs", um.Objects[0][0].GetObjectMetadata().Mode)
 	assert.Equal(t, "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", um.Objects[0][0].GetObjectMetadata().Sha256sum)
 }
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/UpdateHub/updatehub/copy"
 	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
@@ -32,7 +33,7 @@ func init() {
 				},
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
-				Copier:            &utils.ExtendedIO{},
+				CopyBackend:       &copy.ExtendedIO{},
 				Permissions:       &utils.PermissionsDefaultImpl{},
 				ChunkSize:         128 * 1024,
 			}
@@ -47,7 +48,7 @@ type CopyObject struct {
 	utils.FileSystemHelper `json:"-"`
 	LibArchiveBackend      libarchive.API `json:"-"`
 	FileSystemBackend      afero.Fs
-	utils.Copier           `json:"-"`
+	CopyBackend            copy.Interface `json:"-"`
 	utils.Permissions
 	installifdifferent.TargetGetter
 	targetPath string
@@ -104,7 +105,7 @@ func (cp *CopyObject) Install(downloadDir string) error {
 	errorList := []error{}
 
 	sourcePath := path.Join(downloadDir, cp.Sha256sum)
-	err = cp.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, cp.targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
+	err = cp.CopyBackend.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, cp.targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
 	}
