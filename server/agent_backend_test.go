@@ -15,17 +15,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewAgentBackend(t *testing.T) {
-	logger := logrus.New()
-
-	ab, err := NewAgentBackend(logger)
+	ab, err := NewAgentBackend()
 
 	assert.NoError(t, err)
-	assert.Equal(t, logger, ab.Logger())
 
 	routes := ab.Routes()
 
@@ -40,9 +36,7 @@ func TestNewAgentBackend(t *testing.T) {
 }
 
 func TestIndexRoute(t *testing.T) {
-	logger := logrus.New()
-
-	ab, err := NewAgentBackend(logger)
+	ab, err := NewAgentBackend()
 	assert.NoError(t, err)
 
 	router := NewBackendRouter(ab)

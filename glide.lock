@@ -1,28 +1,28 @@
-hash: e1c6dcd6e234f43ad31024b0eee919748f98002b46e49c029123e1f911d92532
-updated: 2017-03-22T14:54:32.754895242-03:00
+hash: a4c60de8d078b37a67b1334d3ec4a434ff159d6c4a869a59ee1da2509b863944
+updated: 2017-05-18T15:25:05.678217133-03:00
 imports:
-- name: github.com/fsnotify/fsnotify
-  version: 4da3e2cfbabc9f751898f250b49f2439785783a1
-- name: github.com/inconshreveable/mousetrap
-  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
-- name: github.com/spf13/cobra
-  version: d236d298109208d194bf9c305dda03acbd1cc8d2
-- name: github.com/spf13/pflag
-  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/bouk/monkey
   version: 5dace501dd6dad5b369748946db553903c8e839c
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
+- name: github.com/fsnotify/fsnotify
+  version: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - name: github.com/go-ini/ini
   version: e3c2d47c61e5333f9aa2974695dd94396eb69c75
 - name: github.com/imdario/mergo
   version: 50d4dbd4eb0e84778abe37cefef140271d96fade
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/julienschmidt/httprouter
   version: 8a45e95fc75cb77048068a62daed98cc22fdac7c
 - name: github.com/mattn/go-shellwords
   version: 005a0944d84452842197c2108bd9168ced206f78
+- name: github.com/OSSystems/pkg
+  version: 431d375820372ee462ad7eee491b7d96bf8458f9
+  subpackages:
+  - log
 - name: github.com/pkg/errors
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/pmezard/go-difflib
@@ -31,10 +31,16 @@ imports:
   - difflib
 - name: github.com/Sirupsen/logrus
   version: 10f801ebc38b33738c9d17d50860f484a0988ff5
+  subpackages:
+  - hooks/test
 - name: github.com/spf13/afero
   version: 72b31426848c6ef12a7a8e216708cb0d1530f074
   subpackages:
   - mem
+- name: github.com/spf13/cobra
+  version: fb1f39915d092e6ecbdb38c0861170bdf4416800
+- name: github.com/spf13/pflag
+  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/stretchr/objx
   version: cbeaeb16a013161a98496fad62933b1d21786672
 - name: github.com/stretchr/testify

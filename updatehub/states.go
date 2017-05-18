@@ -14,6 +14,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/handlers"
 	"github.com/UpdateHub/updatehub/installifdifferent"
@@ -125,7 +126,7 @@ type ErrorState struct {
 // Handle for ErrorState calls "panic" if the error is fatal or
 // triggers a poll state otherwise
 func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
-	uh.Logger.Warn(state.cause)
+	log.Warn(state.cause)
 
 	if state.cause.IsFatal() {
 		return NewExitState(1), false

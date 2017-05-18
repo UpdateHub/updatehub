@@ -12,24 +12,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/julienschmidt/httprouter"
 )
 
 type AgentBackend struct {
-	logger *logrus.Logger
 }
 
-func NewAgentBackend(logger *logrus.Logger) (*AgentBackend, error) {
-	ab := &AgentBackend{
-		logger: logger,
-	}
+func NewAgentBackend() (*AgentBackend, error) {
+	ab := &AgentBackend{}
 
 	return ab, nil
-}
-
-func (ab *AgentBackend) Logger() *logrus.Logger {
-	return ab.logger
 }
 
 func (ab *AgentBackend) Routes() []Route {

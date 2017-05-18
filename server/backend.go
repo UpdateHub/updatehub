@@ -8,10 +8,7 @@
 
 package server
 
-import (
-	"github.com/Sirupsen/logrus"
-	"github.com/julienschmidt/httprouter"
-)
+import "github.com/julienschmidt/httprouter"
 
 type Route struct {
 	Method string
@@ -21,5 +18,4 @@ type Route struct {
 
 type Backend interface {
 	Routes() []Route
-	Logger() *logrus.Logger
 }

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -36,7 +37,7 @@ func NewBackendRouter(b Backend) *BackendRouter {
 
 func (br *BackendRouter) logMiddleware(p string, h func(http.ResponseWriter, *http.Request, httprouter.Params)) (string, httprouter.Handle) {
 	middleware := func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		br.backend.Logger().Info(fmt.Sprintf("%s %s", r.Method, r.URL))
+		log.Info(fmt.Sprintf("%s %s", r.Method, r.URL))
 		h(w, r, p)
 	}
 

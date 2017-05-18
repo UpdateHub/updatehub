@@ -15,17 +15,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDaemon(t *testing.T) {
-	logger := logrus.New()
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
 
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	d, err := NewDaemon(sb)
@@ -36,11 +34,10 @@ func TestNewDaemon(t *testing.T) {
 }
 
 func TestNewDaemonWithNonExistantPath(t *testing.T) {
-	logger := logrus.New()
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	os.RemoveAll(testPath)
@@ -52,12 +49,11 @@ func TestNewDaemonWithNonExistantPath(t *testing.T) {
 }
 
 func TestRunWithWriteNotification(t *testing.T) {
-	logger := logrus.New()
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
 
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	d, err := NewDaemon(sb)
@@ -76,11 +72,10 @@ func TestRunWithWriteNotification(t *testing.T) {
 }
 
 func TestRunWithRemoveNotification(t *testing.T) {
-	logger := logrus.New()
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(testPath, logger)
+	sb, err := NewServerBackend(testPath)
 	assert.NoError(t, err)
 
 	d, err := NewDaemon(sb)

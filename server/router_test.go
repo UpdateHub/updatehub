@@ -15,7 +15,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,7 +50,7 @@ func TestServerRoutes(t *testing.T) {
 		},
 	}
 
-	backend := &TestBackend{logger: logrus.New()}
+	backend := &TestBackend{}
 	router := NewBackendRouter(backend)
 	m := httptest.NewServer(router.HTTPRouter)
 
@@ -79,11 +78,6 @@ func TestServerRoutes(t *testing.T) {
 }
 
 type TestBackend struct {
-	logger *logrus.Logger
-}
-
-func (tb *TestBackend) Logger() *logrus.Logger {
-	return tb.logger
 }
 
 func (tb *TestBackend) Routes() []Route {
