@@ -15,6 +15,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/UpdateHub/updatehub/copy"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/metadata"
@@ -45,7 +46,7 @@ func getObject() interface{} {
 
 	return &UbifsObject{
 		CmdLineExecuter:   cle,
-		Copier:            &utils.ExtendedIO{},
+		CopyBackend:       &copy.ExtendedIO{},
 		LibArchiveBackend: &libarchive.LibArchive{},
 		FileSystemBackend: afero.NewOsFs(),
 		UbifsUtils: &utils.UbifsUtilsImpl{
@@ -60,7 +61,7 @@ type UbifsObject struct {
 	metadata.CompressedObject
 	utils.CmdLineExecuter
 	utils.UbifsUtils
-	utils.Copier      `json:"-"`
+	CopyBackend       copy.Interface `json:"-"`
 	LibArchiveBackend libarchive.API `json:"-"`
 	FileSystemBackend afero.Fs
 
@@ -88,7 +89,7 @@ func (ufs *UbifsObject) Install(downloadDir string) error {
 
 	if ufs.Compressed {
 		cmdline := fmt.Sprintf("ubiupdatevol -s %.0f %s -", ufs.UncompressedSize, targetDevice)
-		copyErr := ufs.Copier.CopyToProcessStdin(ufs.FileSystemBackend, ufs.LibArchiveBackend, srcPath, cmdline, ufs.Compressed)
+		copyErr := ufs.CopyBackend.CopyToProcessStdin(ufs.FileSystemBackend, ufs.LibArchiveBackend, srcPath, cmdline, ufs.Compressed)
 		err = copyErr
 	} else {
 		_, execErr := ufs.Execute(fmt.Sprintf("ubiupdatevol %s %s", targetDevice, srcPath))

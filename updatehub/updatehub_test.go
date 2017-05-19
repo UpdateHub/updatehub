@@ -152,9 +152,9 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	target := &filemock.FileMock{}
 	target.On("Close").Return(nil)
 
-	cpm := &copymock.CopierMock{}
+	cpm := &copymock.CopyMock{}
 	cpm.On("Copy", target, source, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
-	uh.Copier = cpm
+	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
@@ -189,8 +189,8 @@ func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
 	// setup filesystembackend
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
-	cpm := &copymock.CopierMock{}
-	uh.Copier = cpm
+	cpm := &copymock.CopyMock{}
+	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
@@ -233,8 +233,8 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	target := &filemock.FileMock{}
 	target.On("Close").Return(nil)
 
-	cpm := &copymock.CopierMock{}
-	uh.Copier = cpm
+	cpm := &copymock.CopyMock{}
+	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
@@ -281,9 +281,9 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	target := &filemock.FileMock{}
 	target.On("Close").Return(nil)
 
-	cpm := &copymock.CopierMock{}
+	cpm := &copymock.CopyMock{}
 	cpm.On("Copy", target, source, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, fmt.Errorf("copy error"))
-	uh.Copier = cpm
+	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
@@ -356,10 +356,10 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	// finish setup
 	uh.Updater = um
 
-	cpm := &copymock.CopierMock{}
+	cpm := &copymock.CopyMock{}
 	cpm.On("Copy", target1, source1, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
 	cpm.On("Copy", target2, source2, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
-	uh.Copier = cpm
+	uh.CopyBackend = cpm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
 	assert.NoError(t, err)

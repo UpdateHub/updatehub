@@ -14,11 +14,11 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/UpdateHub/updatehub/copy"
 	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/metadata"
-	"github.com/UpdateHub/updatehub/utils"
 )
 
 func init() {
@@ -29,7 +29,7 @@ func init() {
 			return &RawObject{
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
-				Copier:            &utils.ExtendedIO{},
+				CopyBackend:       &copy.ExtendedIO{},
 				ChunkSize:         128 * 1024,
 				Count:             -1,
 				Truncate:          true,
@@ -44,7 +44,7 @@ type RawObject struct {
 	metadata.CompressedObject
 	LibArchiveBackend libarchive.API `json:"-"`
 	FileSystemBackend afero.Fs
-	utils.Copier      `json:"-"`
+	CopyBackend       copy.Interface `json:"-"`
 	installifdifferent.TargetGetter
 
 	Target     string `json:"target"`
@@ -68,7 +68,7 @@ func (r *RawObject) Setup() error {
 // Install implementation for the "raw" handler
 func (r *RawObject) Install(downloadDir string) error {
 	srcPath := path.Join(downloadDir, r.Sha256sum)
-	return r.CopyFile(r.FileSystemBackend, r.LibArchiveBackend, srcPath, r.Target, r.ChunkSize, r.Skip, r.Seek, r.Count, r.Truncate, r.Compressed)
+	return r.CopyBackend.CopyFile(r.FileSystemBackend, r.LibArchiveBackend, srcPath, r.Target, r.ChunkSize, r.Skip, r.Seek, r.Count, r.Truncate, r.Compressed)
 }
 
 // Cleanup implementation for the "raw" handler

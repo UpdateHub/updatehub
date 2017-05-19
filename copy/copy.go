@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package utils
+package copy
 
 import (
 	"errors"
@@ -16,13 +16,12 @@ import (
 	"time"
 
 	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/utils"
 	shellwords "github.com/mattn/go-shellwords"
 	"github.com/spf13/afero"
 )
 
-const ChunkSize = 128 * 1024
-
-type Copier interface {
+type Interface interface {
 	Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool, chunkSize int, skip int, count int, compressed bool) (bool, error)
 	CopyFile(
 		fsBackend afero.Fs,
@@ -165,7 +164,7 @@ func (eio ExtendedIO) CopyToProcessStdin(
 	}
 
 	err = eio.sharedCopyLogic(fsBackend, libarchiveBackend, processStdin, sourcePath,
-		ChunkSize, 0, -1, compressed)
+		utils.ChunkSize, 0, -1, compressed)
 
 	processStdin.Close()
 

@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/afero"
 
+	"github.com/UpdateHub/updatehub/copy"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/metadata"
@@ -32,7 +33,7 @@ func init() {
 				},
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
-				Copier:            &utils.ExtendedIO{},
+				CopyBackend:       &copy.ExtendedIO{},
 				MtdUtils:          &utils.MtdUtilsImpl{},
 				UbifsUtils: &utils.UbifsUtilsImpl{
 					CmdLineExecuter: cmdline,
@@ -49,7 +50,7 @@ type TarballObject struct {
 	utils.FileSystemHelper `json:"-"`
 	LibArchiveBackend      libarchive.API `json:"-"`
 	FileSystemBackend      afero.Fs
-	utils.Copier           `json:"-"`
+	CopyBackend            copy.Interface `json:"-"`
 	utils.MtdUtils
 	utils.UbifsUtils
 

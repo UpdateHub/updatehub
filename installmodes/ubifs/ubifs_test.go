@@ -187,7 +187,7 @@ func TestUbifsInstallWithSuccessCompressed(t *testing.T) {
 
 	lam := &libarchivemock.LibArchiveMock{}
 
-	cpm := &copymock.CopierMock{}
+	cpm := &copymock.CopyMock{}
 	cpm.On("CopyToProcessStdin", fsm, lam, sourcePath, cmdline, compressed).Return(nil)
 
 	ufs := UbifsObject{
@@ -195,7 +195,7 @@ func TestUbifsInstallWithSuccessCompressed(t *testing.T) {
 		UbifsUtils:        uum,
 		LibArchiveBackend: lam,
 		FileSystemBackend: fsm,
-		Copier:            cpm,
+		CopyBackend:       cpm,
 	}
 	ufs.TargetType = "ubivolume"
 	ufs.Target = ubivolume
@@ -232,7 +232,7 @@ func TestUbifsInstallWithCopyToProcessStdinFailure(t *testing.T) {
 
 	lam := &libarchivemock.LibArchiveMock{}
 
-	cpm := &copymock.CopierMock{}
+	cpm := &copymock.CopyMock{}
 	cpm.On("CopyToProcessStdin", fsm, lam, sourcePath, cmdline, compressed).Return(fmt.Errorf("process error"))
 
 	ufs := UbifsObject{
@@ -240,7 +240,7 @@ func TestUbifsInstallWithCopyToProcessStdinFailure(t *testing.T) {
 		UbifsUtils:        uum,
 		LibArchiveBackend: lam,
 		FileSystemBackend: fsm,
-		Copier:            cpm,
+		CopyBackend:       cpm,
 	}
 	ufs.TargetType = "ubivolume"
 	ufs.Target = ubivolume
