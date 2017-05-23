@@ -1,5 +1,5 @@
 hash: a4c60de8d078b37a67b1334d3ec4a434ff159d6c4a869a59ee1da2509b863944
-updated: 2017-05-18T15:25:05.678217133-03:00
+updated: 2017-05-22T23:21:19.105896004-03:00
 imports:
 - name: github.com/bouk/monkey
   version: 5dace501dd6dad5b369748946db553903c8e839c
@@ -20,7 +20,7 @@ imports:
 - name: github.com/mattn/go-shellwords
   version: 005a0944d84452842197c2108bd9168ced206f78
 - name: github.com/OSSystems/pkg
-  version: 431d375820372ee462ad7eee491b7d96bf8458f9
+  version: c38fecdba53074c7de92e372258630a39f74fe15
   subpackages:
   - log
 - name: github.com/pkg/errors
@@ -38,7 +38,7 @@ imports:
   subpackages:
   - mem
 - name: github.com/spf13/cobra
-  version: fb1f39915d092e6ecbdb38c0861170bdf4416800
+  version: d236d298109208d194bf9c305dda03acbd1cc8d2
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/stretchr/objx
