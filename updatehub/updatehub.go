@@ -38,7 +38,7 @@ type UpdateHub struct {
 	TimeStep                time.Duration
 	API                     *client.ApiClient
 	Updater                 client.Updater
-	reporter                client.Reporter
+	Reporter                client.Reporter
 	lastInstalledPackageUID string
 	activeInactiveBackend   activeinactive.Interface
 	SystemSettingsPath      string
@@ -108,7 +108,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 func (uh *UpdateHub) ReportCurrentState() error {
 	if rs, ok := uh.State.(ReportableState); ok {
 		packageUID := rs.UpdateMetadata().PackageUID()
-		err := uh.reporter.ReportState(uh.API.Request(), packageUID, StateToString(uh.State.ID()))
+		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, StateToString(uh.State.ID()))
 		if err != nil {
 			return err
 		}

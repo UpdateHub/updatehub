@@ -58,6 +58,7 @@ func main() {
 		FirmwareMetadata:    *fm,
 		SystemSettingsPath:  systemSettingsPath,
 		RuntimeSettingsPath: runtimeSettingsPath,
+		Reporter:            client.NewReportClient(),
 	}
 
 	uh.Controller = uh

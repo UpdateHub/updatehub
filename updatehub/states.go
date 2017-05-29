@@ -36,12 +36,9 @@ const (
 	// UpdateHubStateUpdateCheck is set when the agent is running a
 	// "checkUpdate" procedure
 	UpdateHubStateUpdateCheck
-	// UpdateHubStateUpdateFetch is set when the agent is downloading
+	// UpdateHubStateDownloading is set when the agent is downloading
 	// an update
-	UpdateHubStateUpdateFetch
-	// UpdateHubStateUpdateInstall is set when the agent is installing
-	// an update
-	UpdateHubStateUpdateInstall
+	UpdateHubStateDownloading
 	// UpdateHubStateInstalling is set when the agent is starting an
 	// update installation
 	UpdateHubStateInstalling
@@ -61,8 +58,7 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubStateIdle:             "idle",
 	UpdateHubStatePoll:             "poll",
 	UpdateHubStateUpdateCheck:      "update-check",
-	UpdateHubStateUpdateFetch:      "update-fetch",
-	UpdateHubStateUpdateInstall:    "update-install",
+	UpdateHubStateDownloading:      "downloading",
 	UpdateHubStateInstalling:       "installing",
 	UpdateHubStateInstalled:        "installed",
 	UpdateHubStateWaitingForReboot: "waiting-for-reboot",
@@ -121,6 +117,14 @@ func StateToString(status UpdateHubState) string {
 type ErrorState struct {
 	BaseState
 	cause UpdateHubErrorReporter
+	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+// UpdateMetadata is the ReportableState interface implementation
+func (state *ErrorState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
 }
 
 // Handle for ErrorState calls "panic" if the error is fatal or
@@ -136,14 +140,15 @@ func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
 }
 
 // NewErrorState creates a new ErrorState from a UpdateHubErrorReporter
-func NewErrorState(err UpdateHubErrorReporter) State {
+func NewErrorState(updateMetadata *metadata.UpdateMetadata, err UpdateHubErrorReporter) State {
 	if err == nil {
 		err = NewFatalError(errors.New("generic error"))
 	}
 
 	return &ErrorState{
-		BaseState: BaseState{id: UpdateHubStateError},
-		cause:     err,
+		BaseState:      BaseState{id: UpdateHubStateError},
+		cause:          err,
+		updateMetadata: updateMetadata,
 	}
 }
 
@@ -156,6 +161,7 @@ type ReportableState interface {
 type IdleState struct {
 	BaseState
 	CancellableState
+	ReportableState
 }
 
 // ID returns the state id
@@ -292,7 +298,7 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 	uh.settings.ExtraPollingInterval = 0
 
 	if updateMetadata != nil {
-		return NewUpdateFetchState(updateMetadata), false
+		return NewDownloadingState(updateMetadata), false
 	}
 
 	if extraPoll > 0 {
@@ -329,8 +335,8 @@ func NewUpdateCheckState() *UpdateCheckState {
 	return state
 }
 
-// UpdateFetchState is the State interface implementation for the UpdateHubStateUpdateFetch
-type UpdateFetchState struct {
+// DownloadingState is the State interface implementation for the UpdateHubStateDownloading
+type DownloadingState struct {
 	BaseState
 	CancellableState
 	ReportableState
@@ -339,88 +345,42 @@ type UpdateFetchState struct {
 }
 
 // ID returns the state id
-func (state *UpdateFetchState) ID() UpdateHubState {
+func (state *DownloadingState) ID() UpdateHubState {
 	return state.id
 }
 
 // Cancel cancels a state if it is cancellable
-func (state *UpdateFetchState) Cancel(ok bool) bool {
+func (state *DownloadingState) Cancel(ok bool) bool {
 	state.CancellableState.Cancel(ok)
 	return ok
 }
 
 // UpdateMetadata is the ReportableState interface implementation
-func (state *UpdateFetchState) UpdateMetadata() *metadata.UpdateMetadata {
+func (state *DownloadingState) UpdateMetadata() *metadata.UpdateMetadata {
 	return state.updateMetadata
 }
 
-// Handle for UpdateCheckState executes a CheckUpdate procedure and
-// proceed to download the update if there is one. It goes back to the
-// polling state otherwise.
-func (state *UpdateFetchState) Handle(uh *UpdateHub) (State, bool) {
-	var nextState State
-
-	nextState = state
-
-	if err := uh.Controller.FetchUpdate(state.updateMetadata, state.cancel); err == nil {
-		return NewUpdateInstallState(state.updateMetadata, &uh.FirmwareMetadata), false
-	}
-
-	return nextState, false
-}
-
-// NewUpdateFetchState creates a new UpdateFetchState from a metadata.UpdateMetadata
-func NewUpdateFetchState(updateMetadata *metadata.UpdateMetadata) *UpdateFetchState {
-	state := &UpdateFetchState{
-		BaseState:      BaseState{id: UpdateHubStateUpdateFetch},
-		updateMetadata: updateMetadata,
-	}
-
-	return state
-}
-
-// UpdateInstallState is the State interface implementation for the UpdateHubStateUpdateInstall
-type UpdateInstallState struct {
-	BaseState
-	ReportableState
-	metadata.SupportedHardwareChecker
-
-	updateMetadata *metadata.UpdateMetadata
-}
-
-// ID returns the state id
-func (state *UpdateInstallState) ID() UpdateHubState {
-	return state.id
-}
-
-// Handle for UpdateInstallState setups the installation process
-func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
-	packageUID := state.updateMetadata.PackageUID()
-	if packageUID == uh.lastInstalledPackageUID {
-		return NewWaitingForRebootState(state.updateMetadata), false
-	}
-
-	// register the packageUID at the start so it won't redo the
-	// operations in case of an install error occurs
-	uh.lastInstalledPackageUID = packageUID
-
-	err := state.CheckSupportedHardware(state.updateMetadata)
+// Handle for DownloadingState starts the objects downloads. It goes
+// to the installing state if successfull. It goes back to the error
+// state otherwise.
+func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
+	err := uh.Controller.FetchUpdate(state.updateMetadata, state.cancel)
 	if err != nil {
-		return NewErrorState(NewTransientError(err)), false
+		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 	}
 
 	return NewInstallingState(state.updateMetadata,
 		&Sha256CheckerImpl{},
 		uh.Store,
-		&installifdifferent.DefaultImpl{FileSystemBackend: uh.Store}), false
+		&installifdifferent.DefaultImpl{FileSystemBackend: uh.Store},
+		&uh.FirmwareMetadata), false
 }
 
-// NewUpdateInstallState creates a new UpdateInstallState
-func NewUpdateInstallState(updateMetadata *metadata.UpdateMetadata, shc metadata.SupportedHardwareChecker) *UpdateInstallState {
-	state := &UpdateInstallState{
-		BaseState:                BaseState{id: UpdateHubStateUpdateInstall},
-		SupportedHardwareChecker: shc,
-		updateMetadata:           updateMetadata,
+// NewDownloadingState creates a new DownloadingState from a metadata.UpdateMetadata
+func NewDownloadingState(updateMetadata *metadata.UpdateMetadata) *DownloadingState {
+	state := &DownloadingState{
+		BaseState:      BaseState{id: UpdateHubStateDownloading},
+		updateMetadata: updateMetadata,
 	}
 
 	return state
@@ -434,6 +394,7 @@ type InstallingState struct {
 	Sha256Checker
 	FileSystemBackend         afero.Fs
 	InstallIfDifferentBackend installifdifferent.Interface
+	metadata.SupportedHardwareChecker
 
 	updateMetadata *metadata.UpdateMetadata
 }
@@ -450,9 +411,23 @@ func (state *InstallingState) Cancel(ok bool) bool {
 
 // Handle for InstallingState implements the installation process itself
 func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
+	packageUID := state.updateMetadata.PackageUID()
+	if packageUID == uh.lastInstalledPackageUID {
+		return NewWaitingForRebootState(state.updateMetadata), false
+	}
+
+	// register the packageUID at the start so it won't redo the
+	// operations in case of an install error occurs
+	uh.lastInstalledPackageUID = packageUID
+
+	err := state.CheckSupportedHardware(state.updateMetadata)
+	if err != nil {
+		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
+	}
+
 	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.activeInactiveBackend, state.updateMetadata)
 	if err != nil {
-		return NewErrorState(NewTransientError(err)), false
+		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 	}
 
 	for _, o := range state.updateMetadata.Objects[indexToInstall] {
@@ -460,12 +435,12 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 
 		err := state.CheckDownloadedObjectSha256sum(state.FileSystemBackend, uh.settings.DownloadDir, o.GetObjectMetadata().Sha256sum)
 		if err != nil {
-			return NewErrorState(NewTransientError(err)), false
+			return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 		}
 
 		err = handler.Setup()
 		if err != nil {
-			return NewErrorState(NewTransientError(err)), false
+			return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 		}
 
 		errorList := []error{}
@@ -488,7 +463,7 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 		}
 
 		if len(errorList) > 0 {
-			return NewErrorState(NewTransientError(utils.MergeErrorList(errorList))), false
+			return NewErrorState(state.updateMetadata, NewTransientError(utils.MergeErrorList(errorList))), false
 		}
 
 		// 2 objects means that ActiveInactive is enabled, so we need
@@ -496,7 +471,7 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 		if len(state.updateMetadata.Objects) == 2 {
 			err := uh.activeInactiveBackend.SetActive(indexToInstall)
 			if err != nil {
-				return NewErrorState(NewTransientError(err)), false
+				return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 			}
 		}
 	}
@@ -509,13 +484,15 @@ func NewInstallingState(
 	updateMetadata *metadata.UpdateMetadata,
 	sc Sha256Checker,
 	fsb afero.Fs,
-	iid installifdifferent.Interface) *InstallingState {
+	iid installifdifferent.Interface,
+	shc metadata.SupportedHardwareChecker) *InstallingState {
 	state := &InstallingState{
 		BaseState:                 BaseState{id: UpdateHubStateInstalling},
 		updateMetadata:            updateMetadata,
 		Sha256Checker:             sc,
 		FileSystemBackend:         fsb,
 		InstallIfDifferentBackend: iid,
+		SupportedHardwareChecker:  shc,
 	}
 
 	return state
