@@ -165,6 +165,7 @@ type ReportableState interface {
 type IdleState struct {
 	BaseState
 	CancellableState
+	ReportableState
 }
 
 // ID returns the state id
