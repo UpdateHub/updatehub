@@ -410,12 +410,12 @@ func TestUpdateHubReportState(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(state, aim)
-	uh.reporter = client.Reporter(testReporter{})
+	uh.Reporter = client.Reporter(testReporter{})
 
 	err = uh.ReportCurrentState()
 	assert.NoError(t, err)
 
-	uh.reporter = client.Reporter(testReporter{reportStateError: errors.New("error")})
+	uh.Reporter = client.Reporter(testReporter{reportStateError: errors.New("error")})
 
 	err = uh.ReportCurrentState()
 	assert.Error(t, err)

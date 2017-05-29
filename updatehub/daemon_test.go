@@ -13,9 +13,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/Sirupsen/logrus"
 	"github.com/Sirupsen/logrus/hooks/test"
-	"github.com/OSSystems/pkg/log"
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
@@ -97,6 +98,7 @@ func TestDaemonExitStateStop(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
+	uh.Reporter = client.Reporter(testReporter{})
 
 	d := NewDaemon(uh)
 
