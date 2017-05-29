@@ -228,7 +228,7 @@ func TestStateDownloading(t *testing.T) {
 			"WithError",
 			&testController{fetchUpdateError: errors.New("fetch error")},
 			NewDownloadingState(&metadata.UpdateMetadata{}),
-			&DownloadingState{},
+			&ErrorState{},
 		},
 	}
 

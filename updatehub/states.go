@@ -368,15 +368,12 @@ func (state *DownloadingState) UpdateMetadata() *metadata.UpdateMetadata {
 // proceed to download the update if there is one. It goes back to the
 // polling state otherwise.
 func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
-	var nextState State
-
-	nextState = state
-
-	if err := uh.Controller.FetchUpdate(state.updateMetadata, state.cancel); err == nil {
-		return NewUpdateInstallState(state.updateMetadata, &uh.FirmwareMetadata), false
+	err := uh.Controller.FetchUpdate(state.updateMetadata, state.cancel)
+	if err != nil {
+		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 	}
 
-	return nextState, false
+	return NewUpdateInstallState(state.updateMetadata, &uh.FirmwareMetadata), false
 }
 
 // NewDownloadingState creates a new DownloadingState from a metadata.UpdateMetadata
