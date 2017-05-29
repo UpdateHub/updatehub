@@ -16,8 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpdateHub/updatehub/activeinactive"
-	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
 	"github.com/UpdateHub/updatehub/metadata"
@@ -221,7 +219,7 @@ func TestStateDownloading(t *testing.T) {
 			"WithoutError",
 			&testController{fetchUpdateError: nil},
 			NewDownloadingState(&metadata.UpdateMetadata{}),
-			&UpdateInstallState{},
+			&InstallingState{},
 		},
 
 		{
@@ -499,87 +497,6 @@ func (state *testReportableState) UpdateMetadata() *metadata.UpdateMetadata {
 	return state.updateMetadata
 }
 
-func TestStateUpdateInstall(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	m := &metadata.UpdateMetadata{}
-	s := NewUpdateInstallState(m, fm)
-
-	uh, err := newTestUpdateHub(s, &activeinactive.DefaultImpl{})
-	assert.NoError(t, err)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewInstallingState(
-		m,
-		&Sha256CheckerImpl{},
-		memFs,
-		&installifdifferent.DefaultImpl{memFs})
-	assert.Equal(t, expectedState, nextState)
-}
-
-func TestStateUpdateInstallWithCheckSupportedHardwareError(t *testing.T) {
-	expectedErr := fmt.Errorf("this hardware doesn't match the hardware supported by the update")
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "hardware-value",
-		HardwareRevision: "hardware-revision-value",
-		Version:          "version-value",
-	}
-
-	m := &metadata.UpdateMetadata{}
-	s := NewUpdateInstallState(m, fm)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-}
-
-func TestStateUpdateInstallWithUpdateMetadataAlreadyInstalled(t *testing.T) {
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "hardware-value",
-		HardwareRevision: "hardware-revision-value",
-		Version:          "version-value",
-	}
-
-	m := &metadata.UpdateMetadata{}
-	s := NewUpdateInstallState(m, fm)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	uh.lastInstalledPackageUID = m.PackageUID()
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewWaitingForRebootState(m)
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-}
-
 type TestObject struct {
 	metadata.Object
 }
@@ -606,7 +523,16 @@ func TestStateInstalling(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -621,6 +547,100 @@ func TestStateInstalling(t *testing.T) {
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewInstalledState(m)
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
+}
+
+func TestStateInstallingWithCheckSupportedHardwareError(t *testing.T) {
+	expectedErr := fmt.Errorf("this hardware doesn't match the hardware supported by the update")
+
+	memFs := afero.NewMemMapFs()
+
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	scm := &statesmock.Sha256CheckerMock{}
+
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "hardware-value",
+		HardwareRevision: "hardware-revision-value",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
+
+	uh, err := newTestUpdateHub(s, aim)
+	assert.NoError(t, err)
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+	scm.AssertExpectations(t)
+	iidm.AssertExpectations(t)
+}
+
+func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	scm := &statesmock.Sha256CheckerMock{}
+
+	iidm := &installifdifferentmock.InstallIfDifferentMock{}
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "hardware-value",
+		HardwareRevision: "hardware-revision-value",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
+
+	uh, err := newTestUpdateHub(s, aim)
+	assert.NoError(t, err)
+
+	uh.lastInstalledPackageUID = m.PackageUID()
+
+	nextState, _ := s.Handle(uh)
+	expectedState := NewWaitingForRebootState(m)
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -653,7 +673,16 @@ func TestStateInstallingWithActiveInactive(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -700,7 +729,16 @@ func TestStateInstallingWithActiveError(t *testing.T) {
 
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -741,7 +779,16 @@ func TestStateInstallingWithSetActiveError(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -788,7 +835,16 @@ func TestStateInstallingWithSetupError(t *testing.T) {
 
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -831,7 +887,16 @@ func TestStateInstallingWithInstallError(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -878,7 +943,16 @@ func TestStateInstallingWithCleanupError(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -923,7 +997,16 @@ func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(true, nil)
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -969,7 +1052,16 @@ func TestStateInstallingWithSha256Error(t *testing.T) {
 
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -1012,7 +1104,16 @@ func TestStateInstallingWithInstallIfDifferentError(t *testing.T) {
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 	iidm.On("Proceed", om).Return(false, expectedErr)
 
-	s := NewInstallingState(m, scm, memFs, iidm)
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+
+	s := NewInstallingState(m, scm, memFs, iidm, fm)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
