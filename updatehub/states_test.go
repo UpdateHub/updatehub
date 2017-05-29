@@ -90,7 +90,7 @@ var checkUpdateCases = []struct {
 		&testController{updateAvailable: true},
 		&Settings{},
 		NewUpdateCheckState(),
-		&UpdateFetchState{},
+		&DownloadingState{},
 		func(t *testing.T, uh *UpdateHub, state State) {},
 	},
 
@@ -210,7 +210,7 @@ func TestStateUpdateCheck(t *testing.T) {
 	}
 }
 
-func TestStateUpdateFetch(t *testing.T) {
+func TestStateDownloading(t *testing.T) {
 	testCases := []struct {
 		name         string
 		controller   *testController
@@ -220,15 +220,15 @@ func TestStateUpdateFetch(t *testing.T) {
 		{
 			"WithoutError",
 			&testController{fetchUpdateError: nil},
-			NewUpdateFetchState(&metadata.UpdateMetadata{}),
+			NewDownloadingState(&metadata.UpdateMetadata{}),
 			&UpdateInstallState{},
 		},
 
 		{
 			"WithError",
 			&testController{fetchUpdateError: errors.New("fetch error")},
-			NewUpdateFetchState(&metadata.UpdateMetadata{}),
-			&UpdateFetchState{},
+			NewDownloadingState(&metadata.UpdateMetadata{}),
+			&DownloadingState{},
 		},
 	}
 
@@ -317,7 +317,7 @@ func TestPollingRetries(t *testing.T) {
 	c.extraPoll = 0
 
 	next, _ = next.Handle(uh)
-	assert.IsType(t, &UpdateFetchState{}, next)
+	assert.IsType(t, &DownloadingState{}, next)
 	assert.Equal(t, 0, uh.settings.PollingRetries)
 
 	aim.AssertExpectations(t)

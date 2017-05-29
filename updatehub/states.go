@@ -36,9 +36,9 @@ const (
 	// UpdateHubStateUpdateCheck is set when the agent is running a
 	// "checkUpdate" procedure
 	UpdateHubStateUpdateCheck
-	// UpdateHubStateUpdateFetch is set when the agent is downloading
+	// UpdateHubStateDownloading is set when the agent is downloading
 	// an update
-	UpdateHubStateUpdateFetch
+	UpdateHubStateDownloading
 	// UpdateHubStateUpdateInstall is set when the agent is installing
 	// an update
 	UpdateHubStateUpdateInstall
@@ -61,7 +61,7 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubStateIdle:             "idle",
 	UpdateHubStatePoll:             "poll",
 	UpdateHubStateUpdateCheck:      "update-check",
-	UpdateHubStateUpdateFetch:      "update-fetch",
+	UpdateHubStateDownloading:      "downloading",
 	UpdateHubStateUpdateInstall:    "update-install",
 	UpdateHubStateInstalling:       "installing",
 	UpdateHubStateInstalled:        "installed",
@@ -292,7 +292,7 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 	uh.settings.ExtraPollingInterval = 0
 
 	if updateMetadata != nil {
-		return NewUpdateFetchState(updateMetadata), false
+		return NewDownloadingState(updateMetadata), false
 	}
 
 	if extraPoll > 0 {
@@ -329,8 +329,8 @@ func NewUpdateCheckState() *UpdateCheckState {
 	return state
 }
 
-// UpdateFetchState is the State interface implementation for the UpdateHubStateUpdateFetch
-type UpdateFetchState struct {
+// DownloadingState is the State interface implementation for the UpdateHubStateDownloading
+type DownloadingState struct {
 	BaseState
 	CancellableState
 	ReportableState
@@ -339,25 +339,25 @@ type UpdateFetchState struct {
 }
 
 // ID returns the state id
-func (state *UpdateFetchState) ID() UpdateHubState {
+func (state *DownloadingState) ID() UpdateHubState {
 	return state.id
 }
 
 // Cancel cancels a state if it is cancellable
-func (state *UpdateFetchState) Cancel(ok bool) bool {
+func (state *DownloadingState) Cancel(ok bool) bool {
 	state.CancellableState.Cancel(ok)
 	return ok
 }
 
 // UpdateMetadata is the ReportableState interface implementation
-func (state *UpdateFetchState) UpdateMetadata() *metadata.UpdateMetadata {
+func (state *DownloadingState) UpdateMetadata() *metadata.UpdateMetadata {
 	return state.updateMetadata
 }
 
 // Handle for UpdateCheckState executes a CheckUpdate procedure and
 // proceed to download the update if there is one. It goes back to the
 // polling state otherwise.
-func (state *UpdateFetchState) Handle(uh *UpdateHub) (State, bool) {
+func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 	var nextState State
 
 	nextState = state
@@ -369,10 +369,10 @@ func (state *UpdateFetchState) Handle(uh *UpdateHub) (State, bool) {
 	return nextState, false
 }
 
-// NewUpdateFetchState creates a new UpdateFetchState from a metadata.UpdateMetadata
-func NewUpdateFetchState(updateMetadata *metadata.UpdateMetadata) *UpdateFetchState {
-	state := &UpdateFetchState{
-		BaseState:      BaseState{id: UpdateHubStateUpdateFetch},
+// NewDownloadingState creates a new DownloadingState from a metadata.UpdateMetadata
+func NewDownloadingState(updateMetadata *metadata.UpdateMetadata) *DownloadingState {
+	state := &DownloadingState{
+		BaseState:      BaseState{id: UpdateHubStateDownloading},
 		updateMetadata: updateMetadata,
 	}
 
