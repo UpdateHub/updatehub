@@ -1,0 +1,322 @@
+FORMAT: 1A
+
+HOST: http://localhost:8080
+
+# UpdateHub Agent local HTTP API routes
+
+These are the routes available through HTTP on the device running the
+UpdateHub Agent.
+
+
+## Group Info
+
+### info [GET /info]
+
+Get general information.
+
+Returns HTTP 200 and a json object as body. The object contains
+the fields:
+- version: the UpdateHub agent version
+- config: a dump of the agent configuration
+- firmware: a dump of the firmware metadata
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "version": "0.1.0-87-ga836b13",
+
+                "config": {
+                    "polling": {
+                        "enabled": true,
+                        "interval": 3600,
+                        "last-poll": "2017-01-01T00:00:00Z",
+                        "first-poll": "2017-02-02T00:00:00Z",
+                        "extra-interval": 300
+                    },
+                    "storage": {
+                        "read-only": false
+                    },
+                    "update": {
+                        "download-dir": "/tmp/download",
+                        "auto-download-when-available": true,
+                        "auto-install-after-downloading": true,
+                        "auto-reboot-after-install": true,
+                        "supported-install-modes": ["copy", "raw"]
+                    },
+                    "network": {
+                        "disable-https": true,
+                        "updatehub-server-address": "updatehub.io"
+                    },
+                    "firmware": {
+                        "metadata-path": "/usr/share/updatehub"
+                    }
+                },
+
+                "firmware": {
+                    "product-uid": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "device-identity": {
+                        "id1": "value1",
+                        "id2": "value2"
+                    },
+                    "device-attributes": {
+                        "attr1": "value1",
+                        "attr2": "value2",
+                    },
+                    "hardware": "board-name",
+                    "hardware-revision": "revA",
+                    "version": "1.2"
+                }
+            }
+
+
+
+
+
+
+## Group Status
+
+### status [GET /status]
+
+Get the agent current internal status.
+
+Reportable states:
+- "idle"
+- "downloading"
+- "installing"
+- "installed"
+- "waiting-for-reboot"
+- "error"
+
+Returns HTTP 200 and a json object as body. The object contents
+depends on the state returned. The common field among them is:
+- status: the current internal status
+
+For "status" == "error":
+- error: contains the error message
+
+For "status" == "downloading" or "status" == "installing":
+- progress: contains the finished percetage of the action
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "status":"downloading",
+                "progress": 25
+            }
+
+
+
+
+
+## Group Update
+
+### update [POST /update]
+
+This route fires the complete update procedure, which is the following:
+- trigger the "/update/probe" route
+- if there is an update available and the configuration file is set to
+  automatically download the update after the probe, then trigger the
+  "/update/download" route
+- if the configuration file is set to automatically install after a
+  download, then trigger the "/update/install" route
+- if the configuration file is set to automatically reboot after an
+  installation, then trigger the "/reboot" route
+
+This is the same procedure that is done in the automatic polling logic.
+
+On success, returns HTTP 202 and a empty json object as body. On
+failure, returns HTTP 400 and the error message inside a json object
+as body.
+
++ Response 202 (application/json)
+
+    + Body
+
+            {
+                "message": "request accepted, update procedure fired"
+            }
+
++ Response 400 (application/json)
+
+    + Body
+
+            {
+                "error": "message"
+            }
+
+### metadata [GET /update/metadata]
+
+Returns the update metadata if it's already downloaded. If it wasn't
+downloaded yet, returns an empty json object.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "product-uid": "",
+                "objects": [
+                    [
+                        {
+                            "mode": "copy",
+                            "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                            "target": "/dev/xx1",
+                            "target-type": "device"
+                        }
+                    ]
+                    ,
+                    [
+                        {
+                            "mode": "copy",
+                            "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                            "target": "/dev/xx2",
+                            "target-type": "device"
+                        }
+                    ]
+                ],
+                "supported-hardware": [
+	                {
+                        "hardware": "hardware1",
+                        "hardware-revision": "revA"
+                    },
+	                {
+                        "hardware": "hardware2",
+                        "hardware-revision": "revB"
+                    }
+	            ]
+            }
+
+### probe [POST /update/probe]
+
+Probe the server and download the update metadata if
+available. Returns a json object containing the "update-available"
+boolean field. It also may contain a "try-again-in" field which means
+the caller should try the request again 'n' seconds from now, where
+'n' is the value of "try-again-in".
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "update-available": false,
+                "try-again-in": 3600
+            }
+
+### download [POST /update/download]
+
+Download the update objects. On success, returns HTTP 202 and a empty
+json object as body. On failure, returns HTTP 400 and the error
+message inside a json object as body.
+
++ Response 202 (application/json)
+
+    + Body
+
+            {
+                "message": "request accepted, downloading update objects"
+            }
+
++ Response 400 (application/json)
+
+    + Body
+
+            {
+                "error": "update metadata hasn't been downloaded yet"
+            }
+
+### abort download [POST /update/download/abort]
+
+Abort an update objects download (triggered by any command). On
+success, returns HTTP 200 and a empty json object as body. On failure,
+returns HTTP 400 and the error message inside a json object as body.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                "message": "request accepted, download aborted"
+            }
+
++ Response 400 (application/json)
+
+    + Body
+
+            {
+                "error": "there is no download to be aborted"
+            }
+
+### install [POST /update/install]
+
+Install the update objects. On success, returns HTTP 202 and a empty
+json object as body. On failure, returns HTTP 400 and the error
+message inside a json object as body.
+
++ Response 202 (application/json)
+
+    + Body
+
+            {
+                "message": "request accepted, installing update"
+            }
+
++ Response 400 (application/json)
+
+    + Body
+
+            {
+                "error": "update objects have not been downloaded yet"
+            }
+
+
+
+
+
+## Group Reboot
+
+### reboot [POST /reboot]
+
+Sync the filesystem and reboot the device. It may not respond since it
+will reboot the device, but when it does, the response is the below.
+
++ Response 202 (application/json)
+
+    + Body
+
+            {
+                "message": "request accepted, rebooting the device"
+            }
+
+
+
+
+
+## Group Log
+
+### log [GET /log]
+
+Returns the agent log.
+
++ Response 200 (application/json)
+
+    + Body
+
+            {
+                {
+                    "level":"info",
+                    "message":"info 1"
+                },
+                {
+                    "level":"info",
+                    "message":"info 2"
+                },
+                {
+                    "level":"error",
+                    "message":"error n"
+                }
+            }
