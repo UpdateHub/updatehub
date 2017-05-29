@@ -547,7 +547,7 @@ func TestStateUpdateInstallWithCheckSupportedHardwareError(t *testing.T) {
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -706,7 +706,7 @@ func TestStateInstallingWithActiveError(t *testing.T) {
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -755,7 +755,7 @@ func TestStateInstallingWithSetActiveError(t *testing.T) {
 	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -798,7 +798,7 @@ func TestStateInstallingWithSetupError(t *testing.T) {
 	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -845,7 +845,7 @@ func TestStateInstallingWithInstallError(t *testing.T) {
 	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -892,7 +892,7 @@ func TestStateInstallingWithCleanupError(t *testing.T) {
 	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -937,7 +937,7 @@ func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
 	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(fmt.Errorf("(install error); (cleanup error)")))
+	expectedState := NewErrorState(m, NewTransientError(fmt.Errorf("(install error); (cleanup error)")))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -979,7 +979,7 @@ func TestStateInstallingWithSha256Error(t *testing.T) {
 	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(fmt.Errorf("sha256sum error"))
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)
@@ -1025,7 +1025,7 @@ func TestStateInstallingWithInstallIfDifferentError(t *testing.T) {
 	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(NewTransientError(expectedErr))
+	expectedState := NewErrorState(m, NewTransientError(expectedErr))
 	assert.Equal(t, expectedState, nextState)
 
 	aim.AssertExpectations(t)

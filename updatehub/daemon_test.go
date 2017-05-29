@@ -17,6 +17,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/Sirupsen/logrus/hooks/test"
 	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
@@ -102,7 +103,7 @@ func TestDaemonExitStateStop(t *testing.T) {
 
 	d := NewDaemon(uh)
 
-	uh.State = NewErrorState(NewFatalError(errors.New("test")))
+	uh.State = NewErrorState(&metadata.UpdateMetadata{}, NewFatalError(errors.New("test")))
 
 	assert.Equal(t, 1, d.Run())
 

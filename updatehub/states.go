@@ -121,6 +121,14 @@ func StateToString(status UpdateHubState) string {
 type ErrorState struct {
 	BaseState
 	cause UpdateHubErrorReporter
+	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+// UpdateMetadata is the ReportableState interface implementation
+func (state *ErrorState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
 }
 
 // Handle for ErrorState calls "panic" if the error is fatal or
@@ -136,14 +144,15 @@ func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
 }
 
 // NewErrorState creates a new ErrorState from a UpdateHubErrorReporter
-func NewErrorState(err UpdateHubErrorReporter) State {
+func NewErrorState(updateMetadata *metadata.UpdateMetadata, err UpdateHubErrorReporter) State {
 	if err == nil {
 		err = NewFatalError(errors.New("generic error"))
 	}
 
 	return &ErrorState{
-		BaseState: BaseState{id: UpdateHubStateError},
-		cause:     err,
+		BaseState:      BaseState{id: UpdateHubStateError},
+		cause:          err,
+		updateMetadata: updateMetadata,
 	}
 }
 
@@ -406,7 +415,7 @@ func (state *UpdateInstallState) Handle(uh *UpdateHub) (State, bool) {
 
 	err := state.CheckSupportedHardware(state.updateMetadata)
 	if err != nil {
-		return NewErrorState(NewTransientError(err)), false
+		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 	}
 
 	return NewInstallingState(state.updateMetadata,
@@ -452,7 +461,7 @@ func (state *InstallingState) Cancel(ok bool) bool {
 func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.activeInactiveBackend, state.updateMetadata)
 	if err != nil {
-		return NewErrorState(NewTransientError(err)), false
+		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 	}
 
 	for _, o := range state.updateMetadata.Objects[indexToInstall] {
@@ -460,12 +469,12 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 
 		err := state.CheckDownloadedObjectSha256sum(state.FileSystemBackend, uh.settings.DownloadDir, o.GetObjectMetadata().Sha256sum)
 		if err != nil {
-			return NewErrorState(NewTransientError(err)), false
+			return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 		}
 
 		err = handler.Setup()
 		if err != nil {
-			return NewErrorState(NewTransientError(err)), false
+			return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 		}
 
 		errorList := []error{}
@@ -488,7 +497,7 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 		}
 
 		if len(errorList) > 0 {
-			return NewErrorState(NewTransientError(utils.MergeErrorList(errorList))), false
+			return NewErrorState(state.updateMetadata, NewTransientError(utils.MergeErrorList(errorList))), false
 		}
 
 		// 2 objects means that ActiveInactive is enabled, so we need
@@ -496,7 +505,7 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 		if len(state.updateMetadata.Objects) == 2 {
 			err := uh.activeInactiveBackend.SetActive(indexToInstall)
 			if err != nil {
-				return NewErrorState(NewTransientError(err)), false
+				return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 			}
 		}
 	}
