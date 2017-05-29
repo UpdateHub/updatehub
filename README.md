@@ -6,7 +6,7 @@ Industrial Linux-based devices.
 Features
 --------
 
-* ** 6 install modes **
+* **6 install modes**
 
   * Copy: simple "mount", "copy", "umount" operation
   * Flash: flash-related operations using the binaries "flashcp", "nandwrite" and "flash_erase"
@@ -15,7 +15,7 @@ Features
   * Tarball: "mount", extract tarball and "umount"
   * Ubifs: ubifs-related operations using the binary "ubiupdatevol"
 
-* ** Automatic update discovery **
+* **Automatic update discovery**
 
   * Configurable through files
   * Automatic query on a specified interval
@@ -23,14 +23,14 @@ Features
   * Don't loose its timing even when the device is rebooted or turned
     off for a long time
 
-* ** Conditional installation **
+* **Conditional installation**
 
   * Install only if the target is different from the source
   * To decide what is different, can match string patterns or the
     entire target (through sha256sum)
   * Have presets for Linux kernel and U-boot to match versions
 
-* ** Active/Inactive configuration **
+* **Active/Inactive configuration**
 
   * Using the Active/Inactive configuration, the device will contain 2
     installed systems in different partitions, 1 running (active) and
@@ -41,7 +41,7 @@ Features
   * When the update installation succeeds, the device reboots into the
     new installed system (which is now the active)
 
-* ** Pluggable **
+* **Pluggable**
 
   * The agent has a HTTP API that allows other applications to
     interact. This includes: trigger downloads, trigger installations,
