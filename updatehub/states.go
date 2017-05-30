@@ -176,15 +176,15 @@ func (state *IdleState) Cancel(ok bool) bool {
 
 // Handle for IdleState
 func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
-	if !uh.settings.PollingEnabled {
+	if !uh.Settings.PollingEnabled {
 		state.Wait()
 		return state, false
 	}
 
 	now := time.Now()
 
-	if uh.settings.ExtraPollingInterval > 0 {
-		extraPollTime := uh.settings.LastPoll.Add(uh.settings.ExtraPollingInterval)
+	if uh.Settings.ExtraPollingInterval > 0 {
+		extraPollTime := uh.Settings.LastPoll.Add(uh.Settings.ExtraPollingInterval)
 
 		if extraPollTime.Before(now) {
 			return NewUpdateCheckState(), false
@@ -268,7 +268,7 @@ func NewPollState(uh *UpdateHub) *PollState {
 		CancellableState: CancellableState{cancel: make(chan bool)},
 	}
 
-	state.interval = uh.settings.PollingInterval
+	state.interval = uh.Settings.PollingInterval
 
 	return state
 }
@@ -287,15 +287,15 @@ func (state *UpdateCheckState) ID() UpdateHubState {
 // proceed to download the update if there is one. It goes back to the
 // polling state otherwise.
 func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
-	updateMetadata, extraPoll := uh.Controller.CheckUpdate(uh.settings.PollingRetries)
+	updateMetadata, extraPoll := uh.Controller.CheckUpdate(uh.Settings.PollingRetries)
 
 	// Reset polling retries in case of CheckUpdate success
 	if extraPoll != -1 {
-		uh.settings.PollingRetries = 0
+		uh.Settings.PollingRetries = 0
 	}
 
-	uh.settings.LastPoll = time.Now()
-	uh.settings.ExtraPollingInterval = 0
+	uh.Settings.LastPoll = time.Now()
+	uh.Settings.ExtraPollingInterval = 0
 
 	if updateMetadata != nil {
 		return NewDownloadingState(updateMetadata), false
@@ -303,15 +303,15 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 
 	if extraPoll > 0 {
 		now := time.Now()
-		nextPoll := time.Unix(uh.settings.FirstPoll.Unix(), 0)
+		nextPoll := time.Unix(uh.Settings.FirstPoll.Unix(), 0)
 		extraPollTime := now.Add(extraPoll)
 
 		for nextPoll.Before(now) {
-			nextPoll = nextPoll.Add(uh.settings.PollingInterval)
+			nextPoll = nextPoll.Add(uh.Settings.PollingInterval)
 		}
 
 		if extraPollTime.Before(nextPoll) {
-			uh.settings.ExtraPollingInterval = extraPoll
+			uh.Settings.ExtraPollingInterval = extraPoll
 
 			poll := NewPollState(uh)
 			poll.interval = extraPoll
@@ -321,7 +321,7 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 	}
 
 	// Increment the number of polling retries in case of CheckUpdate failure
-	uh.settings.PollingRetries++
+	uh.Settings.PollingRetries++
 
 	return NewIdleState(), false
 }
@@ -433,7 +433,7 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 	for _, o := range state.updateMetadata.Objects[indexToInstall] {
 		var handler handlers.InstallUpdateHandler = o
 
-		err := state.CheckDownloadedObjectSha256sum(state.FileSystemBackend, uh.settings.DownloadDir, o.GetObjectMetadata().Sha256sum)
+		err := state.CheckDownloadedObjectSha256sum(state.FileSystemBackend, uh.Settings.DownloadDir, o.GetObjectMetadata().Sha256sum)
 		if err != nil {
 			return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 		}
@@ -451,7 +451,7 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 		}
 
 		if install {
-			err = handler.Install(uh.settings.DownloadDir)
+			err = handler.Install(uh.Settings.DownloadDir)
 			if err != nil {
 				errorList = append(errorList, err)
 			}

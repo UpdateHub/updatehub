@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"syscall"
 
 	"github.com/spf13/afero"
@@ -65,12 +66,12 @@ func NewFirmwareMetadata(basePath string, store afero.Fs, cmd utils.CmdLineExecu
 	}
 
 	firmwareMetadata := &FirmwareMetadata{
-		ProductUID:       string(productUID),
+		ProductUID:       strings.TrimSpace(string(productUID)),
 		DeviceIdentity:   deviceIdentity,
 		DeviceAttributes: deviceAttributes,
-		Hardware:         string(hardware),
-		HardwareRevision: string(hardwareRevision),
-		Version:          string(version),
+		Hardware:         strings.TrimSpace(string(hardware)),
+		HardwareRevision: strings.TrimSpace(string(hardwareRevision)),
+		Version:          strings.TrimSpace(string(version)),
 	}
 
 	return firmwareMetadata, nil
@@ -101,7 +102,7 @@ func executeHooks(basePath string, store afero.Fs, cmd utils.CmdLineExecuter) (m
 		}
 
 		for k, v := range keyValue {
-			keyValueMap[k] = v
+			keyValueMap[k] = strings.TrimSpace(v)
 		}
 	}
 

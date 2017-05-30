@@ -33,7 +33,8 @@ the fields:
                         "interval": 3600,
                         "last-poll": "2017-01-01T00:00:00Z",
                         "first-poll": "2017-02-02T00:00:00Z",
-                        "extra-interval": 300
+                        "extra-interval": 300,
+                        "retries": 1
                     },
                     "storage": {
                         "read-only": false
@@ -41,7 +42,7 @@ the fields:
                     "update": {
                         "download-dir": "/tmp/download",
                         "auto-download-when-available": true,
-                        "auto-install-after-downloading": true,
+                        "auto-install-after-download": true,
                         "auto-reboot-after-install": true,
                         "supported-install-modes": ["copy", "raw"]
                     },

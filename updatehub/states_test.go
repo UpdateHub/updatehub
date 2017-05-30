@@ -117,7 +117,7 @@ var checkUpdateCases = []struct {
 		func(t *testing.T, uh *UpdateHub, state State) {
 			poll := state.(*PollState)
 			assert.Equal(t, 5*time.Second, poll.interval)
-			assert.Equal(t, 5*time.Second, uh.settings.ExtraPollingInterval)
+			assert.Equal(t, 5*time.Second, uh.Settings.ExtraPollingInterval)
 		},
 	},
 }
@@ -195,7 +195,7 @@ func TestStateUpdateCheck(t *testing.T) {
 			assert.NoError(t, err)
 
 			uh.Controller = tc.controller
-			uh.settings = tc.settings
+			uh.Settings = tc.settings
 
 			next, _ := uh.State.Handle(uh)
 
@@ -253,12 +253,12 @@ func TestNewPollState(t *testing.T) {
 
 	uh, _ := newTestUpdateHub(nil, aim)
 
-	uh.settings.PollingInterval = time.Second
+	uh.Settings.PollingInterval = time.Second
 
 	state := NewPollState(uh)
 	assert.IsType(t, &PollState{}, state)
 	assert.Equal(t, UpdateHubState(UpdateHubStatePoll), state.ID())
-	assert.Equal(t, uh.settings.PollingInterval, state.interval)
+	assert.Equal(t, uh.Settings.PollingInterval, state.interval)
 
 	aim.AssertExpectations(t)
 }
@@ -293,8 +293,8 @@ func TestPollingRetries(t *testing.T) {
 	}
 
 	uh.Controller = c
-	uh.settings.PollingInterval = time.Second
-	uh.settings.LastPoll = time.Now()
+	uh.Settings.PollingInterval = time.Second
+	uh.Settings.LastPoll = time.Now()
 
 	uh.State = NewPollState(uh)
 
@@ -308,7 +308,7 @@ func TestPollingRetries(t *testing.T) {
 		assert.IsType(t, &PollState{}, next)
 		next, _ = next.Handle(uh)
 		assert.IsType(t, &UpdateCheckState{}, next)
-		assert.Equal(t, i, uh.settings.PollingRetries)
+		assert.Equal(t, i, uh.Settings.PollingRetries)
 	}
 
 	c.updateAvailable = true
@@ -316,7 +316,7 @@ func TestPollingRetries(t *testing.T) {
 
 	next, _ = next.Handle(uh)
 	assert.IsType(t, &DownloadingState{}, next)
-	assert.Equal(t, 0, uh.settings.PollingRetries)
+	assert.Equal(t, 0, uh.Settings.PollingRetries)
 
 	aim.AssertExpectations(t)
 }
@@ -378,9 +378,9 @@ func TestPolling(t *testing.T) {
 				})
 			}().Unpatch()
 
-			uh.settings.PollingInterval = tc.pollingInterval
-			uh.settings.FirstPoll = tc.firstPoll
-			uh.settings.LastPoll = tc.firstPoll
+			uh.Settings.PollingInterval = tc.pollingInterval
+			uh.Settings.FirstPoll = tc.firstPoll
+			uh.Settings.LastPoll = tc.firstPoll
 
 			uh.StartPolling()
 
@@ -468,7 +468,7 @@ func TestStateIdle(t *testing.T) {
 			uh, err := newTestUpdateHub(NewIdleState(), aim)
 			assert.NoError(t, err)
 
-			uh.settings = tc.settings
+			uh.Settings = tc.settings
 
 			go func() {
 				uh.State.Cancel(false)
@@ -538,12 +538,12 @@ func TestStateInstalling(t *testing.T) {
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
-	om.On("Install", uh.settings.DownloadDir).Return(nil)
+	om.On("Install", uh.Settings.DownloadDir).Return(nil)
 	om.On("Cleanup").Return(nil)
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewInstalledState(m)
@@ -688,12 +688,12 @@ func TestStateInstallingWithActiveInactive(t *testing.T) {
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
-	om.On("Install", uh.settings.DownloadDir).Return(nil)
+	om.On("Install", uh.Settings.DownloadDir).Return(nil)
 	om.On("Cleanup").Return(nil)
 
 	// "expectedSha256sum" got from "validJSONMetadataWithActiveInactive" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewInstalledState(m)
@@ -794,12 +794,12 @@ func TestStateInstallingWithSetActiveError(t *testing.T) {
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
-	om.On("Install", uh.settings.DownloadDir).Return(nil)
+	om.On("Install", uh.Settings.DownloadDir).Return(nil)
 	om.On("Cleanup").Return(nil)
 
 	// "expectedSha256sum" got from "validJSONMetadataWithActiveInactive" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewErrorState(m, NewTransientError(expectedErr))
@@ -851,7 +851,7 @@ func TestStateInstallingWithSetupError(t *testing.T) {
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewErrorState(m, NewTransientError(expectedErr))
@@ -902,12 +902,12 @@ func TestStateInstallingWithInstallError(t *testing.T) {
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
-	om.On("Install", uh.settings.DownloadDir).Return(expectedErr)
+	om.On("Install", uh.Settings.DownloadDir).Return(expectedErr)
 	om.On("Cleanup").Return(nil)
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewErrorState(m, NewTransientError(expectedErr))
@@ -958,12 +958,12 @@ func TestStateInstallingWithCleanupError(t *testing.T) {
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
-	om.On("Install", uh.settings.DownloadDir).Return(nil)
+	om.On("Install", uh.Settings.DownloadDir).Return(nil)
 	om.On("Cleanup").Return(expectedErr)
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewErrorState(m, NewTransientError(expectedErr))
@@ -1012,12 +1012,12 @@ func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
 	assert.NoError(t, err)
 
 	om.On("Setup").Return(nil)
-	om.On("Install", uh.settings.DownloadDir).Return(fmt.Errorf("install error"))
+	om.On("Install", uh.Settings.DownloadDir).Return(fmt.Errorf("install error"))
 	om.On("Cleanup").Return(fmt.Errorf("cleanup error"))
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewErrorState(m, NewTransientError(fmt.Errorf("(install error); (cleanup error)")))
@@ -1068,7 +1068,7 @@ func TestStateInstallingWithSha256Error(t *testing.T) {
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(fmt.Errorf("sha256sum error"))
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(fmt.Errorf("sha256sum error"))
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewErrorState(m, NewTransientError(expectedErr))
@@ -1123,7 +1123,7 @@ func TestStateInstallingWithInstallIfDifferentError(t *testing.T) {
 
 	// "expectedSha256sum" got from "validJSONMetadata" content
 	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.settings.DownloadDir, expectedSha256sum).Return(nil)
+	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
 
 	nextState, _ := s.Handle(uh)
 	expectedState := NewErrorState(m, NewTransientError(expectedErr))

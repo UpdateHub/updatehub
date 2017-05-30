@@ -130,6 +130,64 @@ func TestNewFirmwareMetadataWithSuccess(t *testing.T) {
 	}
 }
 
+func TestNewFirmwareMetadataWithSuccessWithNewLineCharacters(t *testing.T) {
+	const (
+		metadataPath = "/"
+	)
+
+	productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
+	hardware := "board"
+	hardwareRevision := "revA"
+	version := "1.1"
+
+	expected := &FirmwareMetadata{
+		ProductUID: productUID,
+		DeviceIdentity: map[string]string{
+			"id1": "value1",
+			"id2": "value2",
+		},
+		DeviceAttributes: map[string]string{
+			"attr1": "value1",
+			"attr2": "value2",
+		},
+		Hardware:         hardware,
+		HardwareRevision: hardwareRevision,
+		Version:          version,
+	}
+
+	clm := &cmdlinemock.CmdLineExecuterMock{}
+
+	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID+"\n"), nil)
+	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware+"\n"), nil)
+	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(hardwareRevision+"\n"), nil)
+	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(version+"\n"), nil)
+	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte("id1=value1"+"\n"), nil)
+	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key2")).Return([]byte("id2=value2"+"\n"), nil)
+	clm.On("Execute", path.Join(metadataPath, "/device-attributes.d/attr1")).Return([]byte("attr1=value1"+"\n"), nil)
+	clm.On("Execute", path.Join(metadataPath, "/device-attributes.d/attr2")).Return([]byte("attr2=value2"+"\n"), nil)
+
+	store := afero.NewMemMapFs()
+
+	files := map[string]string{
+		"/device-identity.d/key1":    "id1=value1",
+		"/device-identity.d/key2":    "id2=value2",
+		"/device-attributes.d/attr1": "attr1=value",
+		"/device-attributes.d/attr2": "attr2=value",
+	}
+
+	for k, v := range files {
+		err := afero.WriteFile(store, k, []byte(v), 0700)
+		assert.NoError(t, err)
+	}
+
+	firmwareMetadata, err := NewFirmwareMetadata(metadataPath, store, clm)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, firmwareMetadata)
+
+	clm.AssertExpectations(t)
+}
+
 func TestNewFirmwareMetadataWithNoDeviceIdentityScriptsFound(t *testing.T) {
 	metadataPath := "/"
 	productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"

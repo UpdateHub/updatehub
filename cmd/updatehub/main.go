@@ -25,6 +25,8 @@ import (
 	"github.com/UpdateHub/updatehub/utils"
 )
 
+var gitversion = "No Version Provided"
+
 func main() {
 	log.SetLevel(logrus.WarnLevel)
 
@@ -36,7 +38,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	backend, err := server.NewAgentBackend()
+	uh := &updatehub.UpdateHub{
+		Version:             gitversion,
+		State:               updatehub.NewIdleState(),
+		API:                 client.NewApiClient("localhost:8080"),
+		Updater:             client.NewUpdateClient(),
+		TimeStep:            time.Minute,
+		Store:               osFs,
+		FirmwareMetadata:    *fm,
+		SystemSettingsPath:  systemSettingsPath,
+		RuntimeSettingsPath: runtimeSettingsPath,
+		Reporter:            client.NewReportClient(),
+	}
+
+	backend, err := server.NewAgentBackend(uh)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -48,18 +63,6 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
-
-	uh := &updatehub.UpdateHub{
-		State:               updatehub.NewIdleState(),
-		API:                 client.NewApiClient("localhost:8080"),
-		Updater:             client.NewUpdateClient(),
-		TimeStep:            time.Minute,
-		Store:               osFs,
-		FirmwareMetadata:    *fm,
-		SystemSettingsPath:  systemSettingsPath,
-		RuntimeSettingsPath: runtimeSettingsPath,
-		Reporter:            client.NewReportClient(),
-	}
 
 	uh.Controller = uh
 

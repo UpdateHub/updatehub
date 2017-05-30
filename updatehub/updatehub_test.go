@@ -157,7 +157,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
@@ -193,7 +193,7 @@ func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
 	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
 	uh.Store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
@@ -237,7 +237,7 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
@@ -286,7 +286,7 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUID)).Return(target, nil)
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
 	err = uh.FetchUpdate(updateMetadata, nil)
@@ -349,8 +349,8 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	target2.On("Close").Return(nil)
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUIDFirst)).Return(target1, nil)
-	fsm.On("Create", path.Join(uh.settings.DownloadDir, objectUIDSecond)).Return(target2, nil)
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUIDFirst)).Return(target1, nil)
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUIDSecond)).Return(target2, nil)
 	uh.Store = fsm
 
 	// finish setup
@@ -495,10 +495,10 @@ func TestStartPolling(t *testing.T) {
 
 			uh, _ := newTestUpdateHub(nil, aim)
 
-			uh.settings.PollingInterval = tc.pollingInterval
-			uh.settings.ExtraPollingInterval = tc.extraPollingInterval
-			uh.settings.FirstPoll = tc.firstPoll
-			uh.settings.LastPoll = tc.lastPoll
+			uh.Settings.PollingInterval = tc.pollingInterval
+			uh.Settings.ExtraPollingInterval = tc.extraPollingInterval
+			uh.Settings.FirstPoll = tc.firstPoll
+			uh.Settings.LastPoll = tc.lastPoll
 
 			uh.StartPolling()
 			assert.IsType(t, tc.expectedState, uh.State)
@@ -607,7 +607,7 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 			err := uh.LoadSettings()
 			assert.IsType(t, tc.expectedError, err)
 
-			tc.subTest(t, uh.settings, err)
+			tc.subTest(t, uh.Settings, err)
 
 			aim.AssertExpectations(t)
 		})
@@ -648,8 +648,8 @@ func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, er
 		return nil, err
 	}
 
-	uh.settings = settings
-	uh.settings.PollingInterval = 1
+	uh.Settings = settings
+	uh.Settings.PollingInterval = 1
 
 	return uh, err
 }
