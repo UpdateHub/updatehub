@@ -100,6 +100,7 @@ func TestInfoRoute(t *testing.T) {
 	hardwareRevision := "revA"
 	firmwareVersion := "1.1"
 	agentVersion := "0.6.90-7-ga456673"
+	buildTime := "2017-06-01 17:24 UTC"
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
@@ -122,6 +123,7 @@ func TestInfoRoute(t *testing.T) {
 		RuntimeSettingsPath: runtimeSettingsPath,
 		Store:               fs,
 		Version:             agentVersion,
+		BuildTime:           buildTime,
 	}
 
 	err = uh.LoadSettings()
@@ -140,6 +142,7 @@ func TestInfoRoute(t *testing.T) {
 	jsonMap := map[string]interface{}{}
 
 	jsonMap["version"] = uh.Version
+	jsonMap["build-time"] = uh.BuildTime
 	jsonMap["config"] = uh.Settings
 	jsonMap["firmware"] = uh.FirmwareMetadata
 

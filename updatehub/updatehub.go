@@ -32,6 +32,7 @@ type UpdateHub struct {
 	CopyBackend copy.Interface `json:"-"`
 
 	Version                 string
+	BuildTime               string
 	Settings                *Settings
 	Store                   afero.Fs
 	FirmwareMetadata        metadata.FirmwareMetadata
