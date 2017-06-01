@@ -31,7 +31,8 @@ type UpdateHub struct {
 	Controller
 	CopyBackend copy.Interface `json:"-"`
 
-	settings                *Settings
+	Version                 string
+	Settings                *Settings
 	Store                   afero.Fs
 	FirmwareMetadata        metadata.FirmwareMetadata
 	State                   State
@@ -84,7 +85,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		uri = path.Join(uri, packageUID)
 		uri = path.Join(uri, objectUID)
 
-		wr, err := uh.Store.Create(path.Join(uh.settings.DownloadDir, objectUID))
+		wr, err := uh.Store.Create(path.Join(uh.Settings.DownloadDir, objectUID))
 		if err != nil {
 			return err
 		}
@@ -148,7 +149,7 @@ func (uh *UpdateHub) LoadSettings() error {
 		return err
 	}
 
-	uh.settings = settings[0]
+	uh.Settings = settings[0]
 
 	return nil
 }
@@ -164,30 +165,30 @@ func (uh *UpdateHub) StartPolling() {
 
 	timeZero := (time.Time{}).UTC()
 
-	if uh.settings.FirstPoll == timeZero {
+	if uh.Settings.FirstPoll == timeZero {
 		// Apply an offset in first poll
-		uh.settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.settings.PollingInterval))))
-	} else if uh.settings.LastPoll == timeZero && now.After(uh.settings.FirstPoll) {
+		uh.Settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.Settings.PollingInterval))))
+	} else if uh.Settings.LastPoll == timeZero && now.After(uh.Settings.FirstPoll) {
 		// it never did a poll before
 		uh.State = NewUpdateCheckState()
-	} else if uh.settings.LastPoll.Add(uh.settings.PollingInterval).Before(now) {
+	} else if uh.Settings.LastPoll.Add(uh.Settings.PollingInterval).Before(now) {
 		// pending regular interval
 		uh.State = NewUpdateCheckState()
 	} else {
-		nextPoll := time.Unix(uh.settings.FirstPoll.Unix(), 0)
+		nextPoll := time.Unix(uh.Settings.FirstPoll.Unix(), 0)
 		for nextPoll.Before(now) {
-			nextPoll = nextPoll.Add(uh.settings.PollingInterval)
+			nextPoll = nextPoll.Add(uh.Settings.PollingInterval)
 		}
 
-		if uh.settings.ExtraPollingInterval > 0 {
-			extraPoll := uh.settings.LastPoll.Add(uh.settings.ExtraPollingInterval)
+		if uh.Settings.ExtraPollingInterval > 0 {
+			extraPoll := uh.Settings.LastPoll.Add(uh.Settings.ExtraPollingInterval)
 
 			if extraPoll.Before(nextPoll) {
 				// Set polling interval to the pending extra poll interval
-				poll.interval = uh.settings.ExtraPollingInterval
+				poll.interval = uh.Settings.ExtraPollingInterval
 			}
 		} else {
-			poll.ticksCount = (int64(uh.settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.TimeStep)
+			poll.ticksCount = (int64(uh.Settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.TimeStep)
 		}
 	}
 }

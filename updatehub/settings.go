@@ -21,11 +21,11 @@ const (
 )
 
 type Settings struct {
-	PollingSettings  `ini:"Polling"`
-	StorageSettings  `ini:"Storage"`
-	UpdateSettings   `ini:"Update"`
-	NetworkSettings  `ini:"Network"`
-	FirmwareSettings `ini:"Firmware"`
+	PollingSettings  `ini:"Polling" json:"polling"`
+	StorageSettings  `ini:"Storage" json:"storage"`
+	UpdateSettings   `ini:"Update" json:"update"`
+	NetworkSettings  `ini:"Network" json:"network"`
+	FirmwareSettings `ini:"Firmware" json:"firmware"`
 }
 
 type PersistentSettings struct {
@@ -33,37 +33,37 @@ type PersistentSettings struct {
 }
 
 type PollingSettings struct {
-	PollingInterval           time.Duration `ini:"Interval,omitempty"`
-	PollingEnabled            bool          `ini:"Enabled,omitempty"`
+	PollingInterval           time.Duration `ini:"Interval,omitempty" json:"interval,omitempty"`
+	PollingEnabled            bool          `ini:"Enabled,omitempty" json:"enabled,omitempty"`
 	PersistentPollingSettings `ini:"Polling"`
 }
 
 type PersistentPollingSettings struct {
-	LastPoll             time.Time     `ini:"LastPoll"`
-	FirstPoll            time.Time     `ini:"FirstPoll"`
-	ExtraPollingInterval time.Duration `ini:"ExtraInterval"`
-	PollingRetries       int           `ini:"Retries"`
+	LastPoll             time.Time     `ini:"LastPoll" json:"last-poll"`
+	FirstPoll            time.Time     `ini:"FirstPoll" json:"first-poll"`
+	ExtraPollingInterval time.Duration `ini:"ExtraInterval" json:"extra-interval"`
+	PollingRetries       int           `ini:"Retries" json:"retries"`
 }
 
 type StorageSettings struct {
-	ReadOnly bool `ini:"ReadOnly"`
+	ReadOnly bool `ini:"ReadOnly" json:"read-only"`
 }
 
 type UpdateSettings struct {
-	DownloadDir               string   `ini:"DownloadDir"`
-	AutoDownloadWhenAvailable bool     `ini:"AutoDownloadWhenAvailable"`
-	AutoInstallAfterDownload  bool     `ini:"AutoInstallAfterDownload"`
-	AutoRebootAfterInstall    bool     `ini:"AutoRebootAfterInstall"`
-	SupportedInstallModes     []string `ini:"SupportedInstallModes"`
+	DownloadDir               string   `ini:"DownloadDir" json:"download-dir"`
+	AutoDownloadWhenAvailable bool     `ini:"AutoDownloadWhenAvailable" json:"auto-download-when-available"`
+	AutoInstallAfterDownload  bool     `ini:"AutoInstallAfterDownload" json:"auto-install-after-download"`
+	AutoRebootAfterInstall    bool     `ini:"AutoRebootAfterInstall" json:"auto-reboot-after-install"`
+	SupportedInstallModes     []string `ini:"SupportedInstallModes" json:"supported-install-modes"`
 }
 
 type NetworkSettings struct {
-	DisableHTTPS  bool   `ini:"DisableHttps"`
-	ServerAddress string `ini:"UpdateHubServerAddress"`
+	DisableHTTPS  bool   `ini:"DisableHttps" json:"disable-https"`
+	ServerAddress string `ini:"UpdateHubServerAddress" json:"updatehub-server-address"`
 }
 
 type FirmwareSettings struct {
-	FirmwareMetadataPath string `ini:"MetadataPath"`
+	FirmwareMetadataPath string `ini:"MetadataPath" json:"metadata-path"`
 }
 
 func init() {
