@@ -25,7 +25,10 @@ import (
 	"github.com/UpdateHub/updatehub/utils"
 )
 
-var gitversion = "No Version Provided"
+var (
+	gitversion = "No version provided"
+	buildtime  = "No build time provided"
+)
 
 func main() {
 	log.SetLevel(logrus.WarnLevel)
@@ -40,6 +43,7 @@ func main() {
 
 	uh := &updatehub.UpdateHub{
 		Version:             gitversion,
+		BuildTime:           buildtime,
 		State:               updatehub.NewIdleState(),
 		API:                 client.NewApiClient("localhost:8080"),
 		Updater:             client.NewUpdateClient(),
