@@ -11,19 +11,15 @@ package updatehub
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path"
 	"testing"
 	"time"
 
 	"github.com/UpdateHub/updatehub/installmodes"
-	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
-	"github.com/UpdateHub/updatehub/testsmocks/filemock"
-	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 	"github.com/UpdateHub/updatehub/testsmocks/installifdifferentmock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
+	"github.com/UpdateHub/updatehub/testsmocks/progresstrackermock"
 	"github.com/UpdateHub/updatehub/testsmocks/statesmock"
 	"github.com/bouk/monkey"
 	"github.com/spf13/afero"
@@ -35,7 +31,9 @@ type testController struct {
 	pollingInterval         time.Duration
 	updateAvailable         bool
 	fetchUpdateError        error
+	installUpdateError      error
 	reportCurrentStateError error
+	progressList            []int
 }
 
 const (
@@ -74,6 +72,42 @@ const (
 	  ]
 	}`
 )
+
+func (c *testController) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
+	if c.updateAvailable {
+		return &metadata.UpdateMetadata{}, c.extraPoll
+	}
+
+	return nil, c.extraPoll
+}
+
+func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+	for _, p := range c.progressList {
+		// "non-blocking" write to channel
+		select {
+		case progressChan <- p:
+		default:
+		}
+	}
+
+	return c.fetchUpdateError
+}
+
+func (c *testController) InstallUpdate(updateMetadata *metadata.UpdateMetadata, progressChan chan<- int) error {
+	for _, p := range c.progressList {
+		// "non-blocking" write to channel
+		select {
+		case progressChan <- p:
+		default:
+		}
+	}
+
+	return c.installUpdateError
+}
+
+func (c *testController) ReportCurrentState() error {
+	return c.reportCurrentStateError
+}
 
 var checkUpdateCases = []struct {
 	name         string
@@ -122,70 +156,6 @@ var checkUpdateCases = []struct {
 	},
 }
 
-func (c *testController) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
-	if c.updateAvailable {
-		return &metadata.UpdateMetadata{}, c.extraPoll
-	}
-
-	return nil, c.extraPoll
-}
-
-func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool) error {
-	return c.fetchUpdateError
-}
-
-func (c *testController) ReportCurrentState() error {
-	return c.reportCurrentStateError
-}
-
-func TestCheckDownloadedObjectSha256sum(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-	testPath, err := afero.TempDir(memFs, "", "states-test")
-
-	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
-
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-
-	err = afero.WriteFile(memFs, path.Join(testPath, expectedSha256sum), []byte("test"), 0666)
-	assert.NoError(t, err)
-
-	sci := &Sha256CheckerImpl{}
-	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
-	assert.NoError(t, err)
-}
-
-func TestCheckDownloadedObjectSha256sumWithOpenError(t *testing.T) {
-	dummyPath := "/dummy"
-	dummySha256sum := "dummy_hash"
-
-	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Open", path.Join(dummyPath, dummySha256sum)).Return(&filemock.FileMock{}, fmt.Errorf("open error"))
-
-	sci := &Sha256CheckerImpl{}
-	err := sci.CheckDownloadedObjectSha256sum(fsm, dummyPath, dummySha256sum)
-	assert.EqualError(t, err, "open error")
-
-	fsm.AssertExpectations(t)
-}
-
-func TestCheckDownloadedObjectSha256sumWithSumsDontMatching(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-	testPath, err := afero.TempDir(memFs, "", "states-test")
-
-	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
-
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-
-	err = afero.WriteFile(memFs, path.Join(testPath, expectedSha256sum), []byte("another"), 0666)
-	assert.NoError(t, err)
-
-	sci := &Sha256CheckerImpl{}
-	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
-	assert.EqualError(t, err, "sha256sum's don't match. Expected: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 / Calculated: ae448ac86c4e8e4dec645729708ef41873ae79c6dff84eff73360989487f08e5")
-}
-
 func TestStateUpdateCheck(t *testing.T) {
 	for _, tc := range checkUpdateCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -208,59 +178,112 @@ func TestStateUpdateCheck(t *testing.T) {
 	}
 }
 
+func TestStateUpdateCheckToMap(t *testing.T) {
+	state := NewUpdateCheckState()
+
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "update-check"
+
+	assert.Equal(t, expectedMap, state.ToMap())
+}
+
 func TestStateDownloading(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	memFs := afero.NewMemMapFs()
+
 	testCases := []struct {
-		name         string
-		controller   *testController
-		initialState State
-		nextState    State
+		name               string
+		controller         *testController
+		expectedState      State
+		expectedProgresses []int
 	}{
 		{
 			"WithoutError",
-			&testController{fetchUpdateError: nil},
-			NewDownloadingState(&metadata.UpdateMetadata{}),
-			&InstallingState{},
+			&testController{fetchUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
+			NewInstallingState(m, &ProgressTrackerImpl{}, memFs),
+			[]int{33, 66, 99, 100},
 		},
 
 		{
 			"WithError",
-			&testController{fetchUpdateError: errors.New("fetch error")},
-			NewDownloadingState(&metadata.UpdateMetadata{}),
-			&ErrorState{},
+			&testController{fetchUpdateError: errors.New("fetch error"), installUpdateError: nil, progressList: []int{33}},
+			NewErrorState(m, NewTransientError(errors.New("fetch error"))),
+			[]int{33},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			aim := &activeinactivemock.ActiveInactiveMock{}
+			ptm := &progresstrackermock.ProgressTrackerMock{}
+			for _, p := range tc.expectedProgresses {
+				ptm.On("SetProgress", p).Once()
+			}
 
-			uh, err := newTestUpdateHub(tc.initialState, aim)
+			s := NewDownloadingState(m, ptm)
+
+			uh, err := newTestUpdateHub(s, nil)
 			assert.NoError(t, err)
+			uh.Store = memFs
 
 			uh.Controller = tc.controller
 
-			next, _ := uh.State.Handle(uh)
+			nextState, _ := s.Handle(uh)
+			assert.Equal(t, tc.expectedState, nextState)
 
-			assert.IsType(t, tc.nextState, next)
-
-			aim.AssertExpectations(t)
+			ptm.AssertExpectations(t)
 		})
 	}
+
+	om.AssertExpectations(t)
+}
+
+func TestStateDownloadingToMap(t *testing.T) {
+	ptm := &progresstrackermock.ProgressTrackerMock{}
+
+	state := NewDownloadingState(&metadata.UpdateMetadata{}, ptm)
+
+	ptm.On("GetProgress").Return(0).Once()
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "downloading"
+	expectedMap["progress"] = 0
+	assert.Equal(t, expectedMap, state.ToMap())
+
+	ptm.On("GetProgress").Return(45).Once()
+	expectedMap["progress"] = 45
+	assert.Equal(t, expectedMap, state.ToMap())
+
+	ptm.AssertExpectations(t)
 }
 
 func TestNewPollState(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
-	uh, _ := newTestUpdateHub(nil, aim)
-
-	uh.Settings.PollingInterval = time.Second
-
-	state := NewPollState(uh)
+	state := NewPollState(time.Second)
 	assert.IsType(t, &PollState{}, state)
 	assert.Equal(t, UpdateHubState(UpdateHubStatePoll), state.ID())
-	assert.Equal(t, uh.Settings.PollingInterval, state.interval)
+	assert.Equal(t, time.Second, state.interval)
 
 	aim.AssertExpectations(t)
+}
+
+func TestStatePollToMap(t *testing.T) {
+	state := NewPollState(3 * time.Second)
+
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "poll"
+
+	assert.Equal(t, expectedMap, state.ToMap())
 }
 
 func TestPollingRetries(t *testing.T) {
@@ -296,7 +319,7 @@ func TestPollingRetries(t *testing.T) {
 	uh.Settings.PollingInterval = time.Second
 	uh.Settings.LastPoll = time.Now()
 
-	uh.State = NewPollState(uh)
+	uh.State = NewPollState(uh.Settings.PollingInterval)
 
 	next, _ := uh.State.Handle(uh)
 	assert.IsType(t, &UpdateCheckState{}, next)
@@ -400,7 +423,7 @@ func TestCancelPollState(t *testing.T) {
 
 	uh, _ := newTestUpdateHub(nil, aim)
 
-	poll := NewPollState(uh)
+	poll := NewPollState(uh.Settings.PollingInterval)
 	poll.interval = 10 * time.Second
 
 	go func() {
@@ -478,8 +501,22 @@ func TestStateIdle(t *testing.T) {
 			assert.IsType(t, tc.nextState, next)
 
 			aim.AssertExpectations(t)
+
+			expectedMap := map[string]interface{}{}
+			expectedMap["status"] = "idle"
+
+			assert.Equal(t, expectedMap, uh.State.ToMap())
 		})
 	}
+}
+
+func TestStateIdleToMap(t *testing.T) {
+	state := NewIdleState()
+
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "idle"
+
+	assert.Equal(t, expectedMap, state.ToMap())
 }
 
 type testReportableState struct {
@@ -502,8 +539,6 @@ type TestObject struct {
 }
 
 func TestStateInstalling(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
 	om := &objectmock.ObjectMock{}
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
@@ -516,90 +551,52 @@ func TestStateInstalling(t *testing.T) {
 	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
 	assert.NoError(t, err)
 
-	aim := &activeinactivemock.ActiveInactiveMock{}
+	testCases := []struct {
+		name               string
+		controller         *testController
+		expectedState      State
+		expectedProgresses []int
+	}{
+		{
+			"WithoutError",
+			&testController{fetchUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
+			NewInstalledState(m),
+			[]int{33, 66, 99, 100},
+		},
 
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-	iidm.On("Proceed", om).Return(true, nil)
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
+		{
+			"WithError",
+			&testController{fetchUpdateError: nil, installUpdateError: errors.New("install error"), progressList: []int{33}},
+			NewErrorState(m, NewTransientError(errors.New("install error"))),
+			[]int{33},
+		},
 	}
 
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			memFs := afero.NewMemMapFs()
 
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
+			ptm := &progresstrackermock.ProgressTrackerMock{}
+			for _, p := range tc.expectedProgresses {
+				ptm.On("SetProgress", p).Once()
+			}
 
-	om.On("Setup").Return(nil)
-	om.On("Install", uh.Settings.DownloadDir).Return(nil)
-	om.On("Cleanup").Return(nil)
+			s := NewInstallingState(m, ptm, memFs)
 
-	// "expectedSha256sum" got from "validJSONMetadata" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
+			uh, err := newTestUpdateHub(s, nil)
+			assert.NoError(t, err)
+			uh.Store = memFs
 
-	nextState, _ := s.Handle(uh)
-	expectedState := NewInstalledState(m)
-	assert.Equal(t, expectedState, nextState)
+			uh.Controller = tc.controller
 
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
+			nextState, _ := s.Handle(uh)
+			assert.Equal(t, tc.expectedState, nextState)
 
-func TestStateInstallingWithCheckSupportedHardwareError(t *testing.T) {
-	expectedErr := fmt.Errorf("this hardware doesn't match the hardware supported by the update")
-
-	memFs := afero.NewMemMapFs()
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
-	assert.NoError(t, err)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "hardware-value",
-		HardwareRevision: "hardware-revision-value",
-		Version:          "version-value",
+			ptm.AssertExpectations(t)
+		})
 	}
 
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
 }
 
 func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
@@ -623,16 +620,9 @@ func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 
 	iidm := &installifdifferentmock.InstallIfDifferentMock{}
 
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "hardware-value",
-		HardwareRevision: "hardware-revision-value",
-		Version:          "version-value",
-	}
+	ptm := &progresstrackermock.ProgressTrackerMock{}
 
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
+	s := NewInstallingState(m, ptm, memFs)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -643,619 +633,31 @@ func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 	expectedState := NewWaitingForRebootState(m)
 	assert.Equal(t, expectedState, nextState)
 
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestStateInstallingWithActiveInactive(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
-	assert.NoError(t, err)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-	aim.On("Active").Return(1, nil)
-	aim.On("SetActive", 0).Return(nil)
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-	iidm.On("Proceed", om).Return(true, nil)
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	om.On("Setup").Return(nil)
-	om.On("Install", uh.Settings.DownloadDir).Return(nil)
-	om.On("Cleanup").Return(nil)
-
-	// "expectedSha256sum" got from "validJSONMetadataWithActiveInactive" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewInstalledState(m)
-	assert.Equal(t, expectedState, nextState)
+	uh.State = nextState
 
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
 	scm.AssertExpectations(t)
 	iidm.AssertExpectations(t)
+	ptm.AssertExpectations(t)
 }
 
-func TestStateInstallingWithActiveError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
+func TestStateInstallingToMap(t *testing.T) {
+	ptm := &progresstrackermock.ProgressTrackerMock{}
 
-	om := &objectmock.ObjectMock{}
+	state := NewInstallingState(nil, ptm, nil)
 
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
+	ptm.On("GetProgress").Return(0).Once()
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "installing"
+	expectedMap["progress"] = 0
+	assert.Equal(t, expectedMap, state.ToMap())
 
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
-	assert.NoError(t, err)
+	ptm.On("GetProgress").Return(45).Once()
+	expectedMap["progress"] = 45
+	assert.Equal(t, expectedMap, state.ToMap())
 
-	expectedErr := fmt.Errorf("active error")
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-	aim.On("Active").Return(0, expectedErr)
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestStateInstallingWithSetActiveError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
-	assert.NoError(t, err)
-
-	expectedErr := fmt.Errorf("set active error")
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-	aim.On("Active").Return(1, nil)
-	aim.On("SetActive", 0).Return(expectedErr)
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-	iidm.On("Proceed", om).Return(true, nil)
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	om.On("Setup").Return(nil)
-	om.On("Install", uh.Settings.DownloadDir).Return(nil)
-	om.On("Cleanup").Return(nil)
-
-	// "expectedSha256sum" got from "validJSONMetadataWithActiveInactive" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestStateInstallingWithSetupError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	expectedErr := fmt.Errorf("setup error")
-
-	om := &objectmock.ObjectMock{}
-	om.On("Setup").Return(expectedErr)
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
-	assert.NoError(t, err)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	// "expectedSha256sum" got from "validJSONMetadata" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestStateInstallingWithInstallError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	expectedErr := fmt.Errorf("install error")
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
-	assert.NoError(t, err)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-	iidm.On("Proceed", om).Return(true, nil)
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	om.On("Setup").Return(nil)
-	om.On("Install", uh.Settings.DownloadDir).Return(expectedErr)
-	om.On("Cleanup").Return(nil)
-
-	// "expectedSha256sum" got from "validJSONMetadata" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestStateInstallingWithCleanupError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	expectedErr := fmt.Errorf("cleanup error")
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
-	assert.NoError(t, err)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-	iidm.On("Proceed", om).Return(true, nil)
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	om.On("Setup").Return(nil)
-	om.On("Install", uh.Settings.DownloadDir).Return(nil)
-	om.On("Cleanup").Return(expectedErr)
-
-	// "expectedSha256sum" got from "validJSONMetadata" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestStateInstallingWithInstallAndCleanupErrors(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
-	assert.NoError(t, err)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-	iidm.On("Proceed", om).Return(true, nil)
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	om.On("Setup").Return(nil)
-	om.On("Install", uh.Settings.DownloadDir).Return(fmt.Errorf("install error"))
-	om.On("Cleanup").Return(fmt.Errorf("cleanup error"))
-
-	// "expectedSha256sum" got from "validJSONMetadata" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(fmt.Errorf("(install error); (cleanup error)")))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestStateInstallingWithSha256Error(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	expectedErr := fmt.Errorf("sha256sum error")
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
-	assert.NoError(t, err)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	// "expectedSha256sum" got from "validJSONMetadata" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(fmt.Errorf("sha256sum error"))
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestStateInstallingWithInstallIfDifferentError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	expectedErr := fmt.Errorf("installifdifferent error")
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
-	assert.NoError(t, err)
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	scm := &statesmock.Sha256CheckerMock{}
-
-	iidm := &installifdifferentmock.InstallIfDifferentMock{}
-	iidm.On("Proceed", om).Return(false, expectedErr)
-
-	fm := &metadata.FirmwareMetadata{
-		ProductUID:       "productuid-value",
-		DeviceIdentity:   map[string]string{"id1": "id1-value"},
-		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
-		Hardware:         "",
-		HardwareRevision: "",
-		Version:          "version-value",
-	}
-
-	s := NewInstallingState(m, scm, memFs, iidm, fm)
-
-	uh, err := newTestUpdateHub(s, aim)
-	assert.NoError(t, err)
-
-	om.On("Setup").Return(nil)
-	om.On("Cleanup").Return(nil)
-
-	// "expectedSha256sum" got from "validJSONMetadata" content
-	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
-	scm.On("CheckDownloadedObjectSha256sum", memFs, uh.Settings.DownloadDir, expectedSha256sum).Return(nil)
-
-	nextState, _ := s.Handle(uh)
-	expectedState := NewErrorState(m, NewTransientError(expectedErr))
-	assert.Equal(t, expectedState, nextState)
-
-	aim.AssertExpectations(t)
-	om.AssertExpectations(t)
-	scm.AssertExpectations(t)
-	iidm.AssertExpectations(t)
-}
-
-func TestGetIndexOfObjectToBeInstalled(t *testing.T) {
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(m.Objects))
-
-	testCases := []struct {
-		caseName  string
-		active    int
-		installTo int
-	}{
-		{
-			"ActiveZero",
-			0,
-			1,
-		},
-		{
-			"ActiveOne",
-			1,
-			0,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.caseName, func(t *testing.T) {
-			aim := &activeinactivemock.ActiveInactiveMock{}
-			aim.On("Active").Return(tc.active, nil)
-			index, err := GetIndexOfObjectToBeInstalled(aim, m)
-			assert.NoError(t, err)
-			assert.Equal(t, tc.installTo, index)
-		})
-	}
-}
-
-func TestGetIndexOfObjectToBeInstalledWithActiveError(t *testing.T) {
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(m.Objects))
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-	aim.On("Active").Return(1, fmt.Errorf("active error"))
-	index, err := GetIndexOfObjectToBeInstalled(aim, m)
-	assert.EqualError(t, err, "active error")
-	assert.Equal(t, 0, index)
-}
-
-func TestGetIndexOfObjectToBeInstalledWithMoreThanTwoObjects(t *testing.T) {
-	// declaration just to register the imxkobs install mode
-	_ = &imxkobs.ImxKobsObject{}
-
-	activeInactiveJSONMetadataWithThreeObjects := `{
-	  "product-uid": "0123456789",
-	  "objects": [
-	    [
-	      {
-            "mode": "imxkobs",
-            "target": "/dev/xx1",
-            "target-type": "device"
-          }
-	    ]
-        ,
-	    [
-	      {
-            "mode": "imxkobs",
-            "target": "/dev/xx2",
-            "target-type": "device"
-          }
-	    ]
-        ,
-	    [
-	      {
-            "mode": "imxkobs",
-            "target": "/dev/xx3",
-            "target-type": "device"
-          }
-	    ]
-	  ]
-	}`
-
-	m, err := metadata.NewUpdateMetadata([]byte(activeInactiveJSONMetadataWithThreeObjects))
-	assert.NoError(t, err)
-	assert.Equal(t, 3, len(m.Objects))
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-	index, err := GetIndexOfObjectToBeInstalled(aim, m)
-	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 3")
-	assert.Equal(t, 0, index)
-}
-
-func TestGetIndexOfObjectToBeInstalledWithNoObjects(t *testing.T) {
-	activeInactiveJSONMetadataWithThreeObjects := `{
-	  "product-uid": "0123456789",
-	  "objects": [
-	  ]
-	}`
-
-	m, err := metadata.NewUpdateMetadata([]byte(activeInactiveJSONMetadataWithThreeObjects))
-	assert.NoError(t, err)
-	assert.Equal(t, 0, len(m.Objects))
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-	index, err := GetIndexOfObjectToBeInstalled(aim, m)
-	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 0")
-	assert.Equal(t, 0, index)
+	ptm.AssertExpectations(t)
 }
 
 func TestStateWaitingForReboot(t *testing.T) {
@@ -1276,6 +678,15 @@ func TestStateWaitingForReboot(t *testing.T) {
 	aim.AssertExpectations(t)
 }
 
+func TestStateWaitingForRebootToMap(t *testing.T) {
+	state := NewWaitingForRebootState(nil)
+
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "waiting-for-reboot"
+
+	assert.Equal(t, expectedMap, state.ToMap())
+}
+
 func TestStateInstalled(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
 	s := NewInstalledState(m)
@@ -1294,11 +705,29 @@ func TestStateInstalled(t *testing.T) {
 	aim.AssertExpectations(t)
 }
 
+func TestStateInstalledToMap(t *testing.T) {
+	state := NewInstalledState(nil)
+
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "installed"
+
+	assert.Equal(t, expectedMap, state.ToMap())
+}
+
 func TestNewExitState(t *testing.T) {
 	state := NewExitState(1)
 
 	assert.IsType(t, &ExitState{}, state)
 	assert.Equal(t, 1, state.exitCode)
+}
+
+func TestNewExitStateToMap(t *testing.T) {
+	state := NewExitState(1)
+
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "exit"
+
+	assert.Equal(t, expectedMap, state.ToMap())
 }
 
 func TestExitStateHandle(t *testing.T) {
@@ -1307,4 +736,14 @@ func TestExitStateHandle(t *testing.T) {
 	assert.Panics(t, func() {
 		state.Handle(nil)
 	})
+}
+
+func TestNewErrorStateToMap(t *testing.T) {
+	state := NewErrorState(nil, NewTransientError(fmt.Errorf("error message")))
+
+	expectedMap := map[string]interface{}{}
+	expectedMap["status"] = "error"
+	expectedMap["error"] = "transient error: error message"
+
+	assert.Equal(t, expectedMap, state.ToMap())
 }

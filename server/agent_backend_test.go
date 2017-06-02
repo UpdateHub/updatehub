@@ -19,6 +19,7 @@ import (
 
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/progresstrackermock"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -59,9 +60,13 @@ func TestNewAgentBackend(t *testing.T) {
 
 	routes := ab.Routes()
 
-	assert.Equal(t, 1, len(routes))
+	assert.Equal(t, 2, len(routes))
+
 	assert.Equal(t, "GET", routes[0].Method)
 	assert.Equal(t, "/info", routes[0].Path)
+
+	assert.Equal(t, "GET", routes[1].Method)
+	assert.Equal(t, "/status", routes[1].Path)
 
 	expectedFunction := reflect.ValueOf(ab.info)
 	receivedFunction := reflect.ValueOf(routes[0].Handle)
@@ -69,7 +74,7 @@ func TestNewAgentBackend(t *testing.T) {
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 }
 
-func TestInfoRoute(t *testing.T) {
+func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExecuterMock) {
 	const (
 		metadataPath        = "/"
 		systemSettingsPath  = "/system.conf"
@@ -135,8 +140,17 @@ func TestInfoRoute(t *testing.T) {
 	router := NewBackendRouter(ab)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	// do the GET and test
-	r, err := http.Get(server.URL + "/info")
+	return uh, server.URL, clm
+}
+
+func teardown(t *testing.T) {
+}
+
+func TestInfoRoute(t *testing.T) {
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	r, err := http.Get(url + "/info")
 	assert.NoError(t, err)
 
 	jsonMap := map[string]interface{}{}
@@ -155,4 +169,33 @@ func TestInfoRoute(t *testing.T) {
 	assert.Equal(t, string(expectedJSON), string(bodyContent))
 
 	clm.AssertExpectations(t)
+}
+
+func TestStatusRoute(t *testing.T) {
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	ptm := &progresstrackermock.ProgressTrackerMock{}
+	ptm.On("GetProgress").Return(25).Once()
+
+	uh.State = updatehub.NewDownloadingState(&metadata.UpdateMetadata{}, ptm)
+
+	r, err := http.Get(url + "/status")
+	assert.NoError(t, err)
+
+	jsonMap := map[string]interface{}{}
+
+	jsonMap["status"] = "downloading"
+	jsonMap["progress"] = 25
+
+	expectedJSON, err := json.MarshalIndent(jsonMap, "", "    ")
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(expectedJSON), string(bodyContent))
+
+	clm.AssertExpectations(t)
+	ptm.AssertExpectations(t)
 }

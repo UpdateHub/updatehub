@@ -16,6 +16,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -27,11 +28,15 @@ import (
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/copymock"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/testsmocks/installifdifferentmock"
+	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
+	"github.com/UpdateHub/updatehub/testsmocks/statesmock"
 	"github.com/UpdateHub/updatehub/testsmocks/updatermock"
 	"github.com/UpdateHub/updatehub/utils"
 )
@@ -66,7 +71,239 @@ const (
   "objects": [
   ]
 }`
+
+	validUpdateMetadataWithThreeObjects = `{
+  "product-uid": "123",
+  "objects": [
+    [
+      { "mode": "test", "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      { "mode": "test", "sha256sum": "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae" },
+      { "mode": "test", "sha256sum": "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa" }
+    ]
+  ]
+}`
 )
+
+func startFetchUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata) ([]int, error) {
+	var progressList []int
+	var err error
+
+	progressChan := make(chan int, 10)
+
+	m := sync.Mutex{}
+	m.Lock()
+
+	go func() {
+		m.Lock()
+		defer m.Unlock()
+
+		err = uh.FetchUpdate(um, nil, progressChan)
+		close(progressChan)
+	}()
+
+	m.Unlock()
+	for p := range progressChan {
+		progressList = append(progressList, p)
+	}
+
+	return progressList, err
+}
+
+func startInstallUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata) ([]int, error) {
+	var progressList []int
+	var err error
+
+	progressChan := make(chan int, 10)
+
+	m := sync.Mutex{}
+	m.Lock()
+
+	go func() {
+		m.Lock()
+		defer m.Unlock()
+
+		err = uh.InstallUpdate(um, progressChan)
+		close(progressChan)
+	}()
+
+	m.Unlock()
+	for p := range progressChan {
+		progressList = append(progressList, p)
+	}
+
+	return progressList, err
+}
+
+func TestCheckDownloadedObjectSha256sum(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	testPath, err := afero.TempDir(memFs, "", "states-test")
+
+	assert.NoError(t, err)
+	defer os.RemoveAll(testPath)
+
+	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+
+	err = afero.WriteFile(memFs, path.Join(testPath, expectedSha256sum), []byte("test"), 0666)
+	assert.NoError(t, err)
+
+	sci := &Sha256CheckerImpl{}
+	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
+	assert.NoError(t, err)
+}
+
+func TestCheckDownloadedObjectSha256sumWithOpenError(t *testing.T) {
+	dummyPath := "/dummy"
+	dummySha256sum := "dummy_hash"
+
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Open", path.Join(dummyPath, dummySha256sum)).Return(&filemock.FileMock{}, fmt.Errorf("open error"))
+
+	sci := &Sha256CheckerImpl{}
+	err := sci.CheckDownloadedObjectSha256sum(fsm, dummyPath, dummySha256sum)
+	assert.EqualError(t, err, "open error")
+
+	fsm.AssertExpectations(t)
+}
+
+func TestCheckDownloadedObjectSha256sumWithSumsDontMatching(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	testPath, err := afero.TempDir(memFs, "", "states-test")
+
+	assert.NoError(t, err)
+	defer os.RemoveAll(testPath)
+
+	expectedSha256sum := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+
+	err = afero.WriteFile(memFs, path.Join(testPath, expectedSha256sum), []byte("another"), 0666)
+	assert.NoError(t, err)
+
+	sci := &Sha256CheckerImpl{}
+	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
+	assert.EqualError(t, err, "sha256sum's don't match. Expected: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 / Calculated: ae448ac86c4e8e4dec645729708ef41873ae79c6dff84eff73360989487f08e5")
+}
+
+func TestGetIndexOfObjectToBeInstalled(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(m.Objects))
+
+	testCases := []struct {
+		caseName  string
+		active    int
+		installTo int
+	}{
+		{
+			"ActiveZero",
+			0,
+			1,
+		},
+		{
+			"ActiveOne",
+			1,
+			0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.caseName, func(t *testing.T) {
+			aim := &activeinactivemock.ActiveInactiveMock{}
+			aim.On("Active").Return(tc.active, nil)
+			index, err := GetIndexOfObjectToBeInstalled(aim, m)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.installTo, index)
+		})
+	}
+}
+
+func TestGetIndexOfObjectToBeInstalledWithActiveError(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadataWithActiveInactive))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(m.Objects))
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(1, fmt.Errorf("active error"))
+	index, err := GetIndexOfObjectToBeInstalled(aim, m)
+	assert.EqualError(t, err, "active error")
+	assert.Equal(t, 0, index)
+}
+
+func TestGetIndexOfObjectToBeInstalledWithMoreThanTwoObjects(t *testing.T) {
+	// declaration just to register the imxkobs install mode
+	_ = &imxkobs.ImxKobsObject{}
+
+	activeInactiveJSONMetadataWithThreeObjects := `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	    [
+	      {
+            "mode": "imxkobs",
+            "target": "/dev/xx1",
+            "target-type": "device"
+          }
+	    ]
+        ,
+	    [
+	      {
+            "mode": "imxkobs",
+            "target": "/dev/xx2",
+            "target-type": "device"
+          }
+	    ]
+        ,
+	    [
+	      {
+            "mode": "imxkobs",
+            "target": "/dev/xx3",
+            "target-type": "device"
+          }
+	    ]
+	  ]
+	}`
+
+	m, err := metadata.NewUpdateMetadata([]byte(activeInactiveJSONMetadataWithThreeObjects))
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(m.Objects))
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	index, err := GetIndexOfObjectToBeInstalled(aim, m)
+	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 3")
+	assert.Equal(t, 0, index)
+}
+
+func TestGetIndexOfObjectToBeInstalledWithNoObjects(t *testing.T) {
+	activeInactiveJSONMetadataWithThreeObjects := `{
+	  "product-uid": "0123456789",
+	  "objects": [
+	  ]
+	}`
+
+	m, err := metadata.NewUpdateMetadata([]byte(activeInactiveJSONMetadataWithThreeObjects))
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(m.Objects))
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	index, err := GetIndexOfObjectToBeInstalled(aim, m)
+	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 0")
+	assert.Equal(t, 0, index)
+}
 
 func TestUpdateHubCheckUpdate(t *testing.T) {
 	testCases := []struct {
@@ -123,57 +360,121 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 }
 
 func TestUpdateHubFetchUpdate(t *testing.T) {
-	mode := newTestInstallMode()
+	om1 := &objectmock.ObjectMock{}
+	om2 := &objectmock.ObjectMock{}
+	om3 := &objectmock.ObjectMock{}
 
+	objs := []metadata.Object{om1, om2, om3}
+
+	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(&PollState{}, aim)
 
-	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithThreeObjects))
 	assert.NoError(t, err)
 
-	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
-	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
-
-	uri := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID)
-
-	source := &filemock.FileMock{}
-	source.On("Close").Return(nil)
-	sourceContent := []byte("content")
+	packageUID := utils.DataSha256sum([]byte(validUpdateMetadataWithThreeObjects))
 
 	um := &updatermock.UpdaterMock{}
-	um.On("FetchUpdate", uh.API.Request(), uri).Return(source, int64(len(sourceContent)), nil)
 	uh.Updater = um
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+	uh.FirmwareMetadata = *fm
+
+	// these sha256sum's are from "validUpdateMetadataWithThreeObjects" content
+
+	// obj1
+	objectUID1 := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	uri1 := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID1)
+
+	source1 := &filemock.FileMock{}
+	source1.On("Close").Return(nil).Once()
+	source1Content := []byte("content1")
+
+	um.On("FetchUpdate", uh.API.Request(), uri1).Return(source1, int64(len(source1Content)), nil).Once()
+
+	// obj2
+	objectUID2 := "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae"
+	uri2 := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID2)
+
+	source2 := &filemock.FileMock{}
+	source2.On("Close").Return(nil).Once()
+	source2Content := []byte("content2")
+
+	um.On("FetchUpdate", uh.API.Request(), uri2).Return(source2, int64(len(source2Content)), nil).Once()
+
+	// obj3
+	objectUID3 := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
+	uri3 := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID3)
+
+	source3 := &filemock.FileMock{}
+	source3.On("Close").Return(nil).Once()
+	source3Content := []byte("content3")
+
+	um.On("FetchUpdate", uh.API.Request(), uri3).Return(source3, int64(len(source3Content)), nil).Once()
 
 	// setup filesystembackend
 
-	target := &filemock.FileMock{}
-	target.On("Close").Return(nil)
-
 	cpm := &copymock.CopyMock{}
-	cpm.On("Copy", target, source, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
 	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
-	err = uh.FetchUpdate(updateMetadata, nil)
+	// file1
+	target1 := &filemock.FileMock{}
+	target1.On("Close").Return(nil).Once()
+	cpm.On("Copy", target1, source1, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID1)).Return(target1, nil).Once()
+
+	// file2
+	target2 := &filemock.FileMock{}
+	target2.On("Close").Return(nil).Once()
+	cpm.On("Copy", target2, source2, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID2)).Return(target2, nil).Once()
+
+	// file3
+	target3 := &filemock.FileMock{}
+	target3.On("Close").Return(nil).Once()
+	cpm.On("Copy", target3, source3, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
+	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID3)).Return(target3, nil).Once()
+
+	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+
 	assert.NoError(t, err)
+	assert.Equal(t, []int{33, 66, 99, 100}, progressList)
 
 	aim.AssertExpectations(t)
 	cpm.AssertExpectations(t)
-	target.AssertExpectations(t)
-	source.AssertExpectations(t)
+	target1.AssertExpectations(t)
+	target2.AssertExpectations(t)
+	target3.AssertExpectations(t)
+	source1.AssertExpectations(t)
+	source2.AssertExpectations(t)
+	source3.AssertExpectations(t)
 	fsm.AssertExpectations(t)
 	um.AssertExpectations(t)
+	om1.AssertExpectations(t)
+	om2.AssertExpectations(t)
+	om3.AssertExpectations(t)
 }
 
 func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
-	mode := newTestInstallMode()
+	om := &objectmock.ObjectMock{}
 
+	objs := []metadata.Object{om}
+
+	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
@@ -196,18 +497,24 @@ func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
 	uh.Store = fsm
 
-	err = uh.FetchUpdate(updateMetadata, nil)
+	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+
 	assert.EqualError(t, err, "create error")
+	assert.Equal(t, []int(nil), progressList)
 
 	aim.AssertExpectations(t)
 	cpm.AssertExpectations(t)
 	fsm.AssertExpectations(t)
 	um.AssertExpectations(t)
+	om.AssertExpectations(t)
 }
 
 func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
-	mode := newTestInstallMode()
+	om := &objectmock.ObjectMock{}
 
+	objs := []metadata.Object{om}
+
+	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
@@ -216,6 +523,16 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
 	assert.NoError(t, err)
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+	uh.FirmwareMetadata = *fm
 
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
@@ -240,8 +557,10 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
-	err = uh.FetchUpdate(updateMetadata, nil)
+	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+
 	assert.EqualError(t, err, "updater error")
+	assert.Equal(t, []int(nil), progressList)
 
 	aim.AssertExpectations(t)
 	cpm.AssertExpectations(t)
@@ -249,11 +568,15 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	source.AssertExpectations(t)
 	fsm.AssertExpectations(t)
 	um.AssertExpectations(t)
+	om.AssertExpectations(t)
 }
 
 func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
-	mode := newTestInstallMode()
+	om := &objectmock.ObjectMock{}
 
+	objs := []metadata.Object{om}
+
+	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
@@ -262,6 +585,16 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
 	assert.NoError(t, err)
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+	uh.FirmwareMetadata = *fm
 
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
@@ -289,8 +622,10 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
-	err = uh.FetchUpdate(updateMetadata, nil)
+	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+
 	assert.EqualError(t, err, "copy error")
+	assert.Equal(t, []int(nil), progressList)
 
 	aim.AssertExpectations(t)
 	cpm.AssertExpectations(t)
@@ -298,11 +633,18 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	source.AssertExpectations(t)
 	fsm.AssertExpectations(t)
 	um.AssertExpectations(t)
+	om.AssertExpectations(t)
 }
 
 func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
-	mode := newTestInstallMode()
+	om1 := &objectmock.ObjectMock{}
+	om2 := &objectmock.ObjectMock{}
+	om3 := &objectmock.ObjectMock{}
+	om4 := &objectmock.ObjectMock{}
 
+	objs := []metadata.Object{om1, om2, om3, om4}
+
+	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
@@ -310,6 +652,16 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 
 	uh, _ := newTestUpdateHub(&PollState{}, aim)
 	uh.FirmwareMetadata.ProductUID = "148de9c5a7a44d19e56cd9ae1a554bf67847afb0c58f6e12fa29ac7ddfca9940"
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		HardwareRevision: "",
+		Version:          "version-value",
+	}
+	uh.FirmwareMetadata = *fm
 
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadataWithActiveInactive))
 
@@ -361,8 +713,10 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	cpm.On("Copy", target2, source2, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
 	uh.CopyBackend = cpm
 
-	err = uh.FetchUpdate(updateMetadata, nil)
+	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+
 	assert.NoError(t, err)
+	assert.Equal(t, []int{50, 100}, progressList)
 
 	aim.AssertExpectations(t)
 	um.AssertExpectations(t)
@@ -372,11 +726,18 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	target2.AssertExpectations(t)
 	cpm.AssertExpectations(t)
 	fsm.AssertExpectations(t)
+	om1.AssertExpectations(t)
+	om2.AssertExpectations(t)
+	om3.AssertExpectations(t)
+	om4.AssertExpectations(t)
 }
 
 func TestUpdateHubFetchUpdateWithActiveInactiveError(t *testing.T) {
-	mode := newTestInstallMode()
+	om := &objectmock.ObjectMock{}
 
+	objs := []metadata.Object{om}
+
+	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
@@ -389,16 +750,488 @@ func TestUpdateHubFetchUpdateWithActiveInactiveError(t *testing.T) {
 	um := &updatermock.UpdaterMock{}
 	uh.Updater = um
 
-	err = uh.FetchUpdate(updateMetadata, nil)
+	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+
 	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 0")
+	assert.Equal(t, []int(nil), progressList)
 
 	aim.AssertExpectations(t)
 	um.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestUpdateHubInstallUpdate(t *testing.T) {
+	type testData struct {
+		uh   *UpdateHub
+		objs []metadata.Object
+		aim  *activeinactivemock.ActiveInactiveMock
+		iidm *installifdifferentmock.InstallIfDifferentMock
+		scm  *statesmock.Sha256CheckerMock
+		fm   *metadata.FirmwareMetadata
+	}
+
+	testCases := []struct {
+		name                 string
+		data                 *testData
+		rawUpdateMetadata    string
+		expectedError        error
+		expectedProgressList []int
+	}{
+		{
+			"WithSuccess",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om1 := &objectmock.ObjectMock{}
+				om1.On("Setup").Return(nil).Once()
+				om1.On("Install", data.uh.Settings.DownloadDir).Return(nil).Once()
+				om1.On("Cleanup").Return(nil).Once()
+
+				om2 := &objectmock.ObjectMock{}
+				om2.On("Setup").Return(nil).Once()
+				om2.On("Install", data.uh.Settings.DownloadDir).Return(nil).Once()
+				om2.On("Cleanup").Return(nil).Once()
+
+				om3 := &objectmock.ObjectMock{}
+				om3.On("Setup").Return(nil).Once()
+				om3.On("Install", data.uh.Settings.DownloadDir).Return(nil).Once()
+				om3.On("Cleanup").Return(nil).Once()
+
+				data.objs = []metadata.Object{om1, om2, om3}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.iidm.On("Proceed", om1).Return(true, nil).Once()
+				data.iidm.On("Proceed", om2).Return(true, nil).Once()
+				data.iidm.On("Proceed", om3).Return(true, nil).Once()
+
+				// these sha256sum's are from "validUpdateMetadataWithThreeObjects" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+
+				return data
+			}(),
+			validUpdateMetadataWithThreeObjects,
+			nil,
+			[]int{33, 66, 99, 100},
+		},
+		{
+			"WithCheckSupportedHardwareError",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "hardware-value",
+					HardwareRevision: "hardware-revision-value",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+				data.objs = []metadata.Object{&objectmock.ObjectMock{}}
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.scm = &statesmock.Sha256CheckerMock{}
+
+				return data
+			}(),
+			validUpdateMetadata,
+			fmt.Errorf("this hardware doesn't match the hardware supported by the update"),
+			[]int(nil),
+		},
+		{
+			"WithActiveInactive",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+				data.aim.On("Active").Return(1, nil)
+				data.aim.On("SetActive", 0).Return(nil)
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om1 := &objectmock.ObjectMock{}
+				om1.On("Setup").Return(nil).Once()
+				om1.On("Install", data.uh.Settings.DownloadDir).Return(nil).Once()
+				om1.On("Cleanup").Return(nil).Once()
+
+				om2 := &objectmock.ObjectMock{}
+				om2.On("Setup").Return(nil).Once()
+				om2.On("Install", data.uh.Settings.DownloadDir).Return(nil).Once()
+				om2.On("Cleanup").Return(nil).Once()
+
+				om3 := &objectmock.ObjectMock{}
+				om4 := &objectmock.ObjectMock{}
+				data.objs = []metadata.Object{om1, om2, om3, om4}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.iidm.On("Proceed", om1).Return(true, nil)
+				data.iidm.On("Proceed", om2).Return(true, nil)
+
+				// these sha256sum's are from "validUpdateMetadataWithActiveInactive" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(nil)
+
+				return data
+			}(),
+			validUpdateMetadataWithActiveInactive,
+			nil,
+			[]int{50, 100},
+		},
+		{
+			"WithActiveError",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+				data.aim.On("Active").Return(0, fmt.Errorf("active error"))
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om1 := &objectmock.ObjectMock{}
+				om2 := &objectmock.ObjectMock{}
+				om3 := &objectmock.ObjectMock{}
+				om4 := &objectmock.ObjectMock{}
+				data.objs = []metadata.Object{om1, om2, om3, om4}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.scm = &statesmock.Sha256CheckerMock{}
+
+				return data
+			}(),
+			validUpdateMetadataWithActiveInactive,
+			fmt.Errorf("active error"),
+			[]int(nil),
+		},
+		{
+			"WithSetActiveError",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+				data.aim.On("Active").Return(1, nil)
+				data.aim.On("SetActive", 0).Return(fmt.Errorf("set active error"))
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om1 := &objectmock.ObjectMock{}
+				om1.On("Setup").Return(nil).Once()
+				om1.On("Install", data.uh.Settings.DownloadDir).Return(nil).Once()
+				om1.On("Cleanup").Return(nil).Once()
+
+				om2 := &objectmock.ObjectMock{}
+				om3 := &objectmock.ObjectMock{}
+				om4 := &objectmock.ObjectMock{}
+				data.objs = []metadata.Object{om1, om2, om3, om4}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.iidm.On("Proceed", om1).Return(true, nil)
+
+				// these sha256sum's are from "validUpdateMetadataWithActiveInactive" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+
+				return data
+			}(),
+			validUpdateMetadataWithActiveInactive,
+			fmt.Errorf("set active error"),
+			[]int(nil),
+		},
+		{
+			"WithSetupError",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om := &objectmock.ObjectMock{}
+				om.On("Setup").Return(fmt.Errorf("setup error")).Once()
+				data.objs = []metadata.Object{om}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+
+				// these sha256sum's are from "validUpdateMetadata" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+
+				return data
+			}(),
+			validUpdateMetadata,
+			fmt.Errorf("setup error"),
+			[]int(nil),
+		},
+		{
+			"WithInstallError",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om := &objectmock.ObjectMock{}
+				om.On("Setup").Return(nil).Once()
+				om.On("Install", data.uh.Settings.DownloadDir).Return(fmt.Errorf("install error")).Once()
+				om.On("Cleanup").Return(nil).Once()
+
+				data.objs = []metadata.Object{om}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.iidm.On("Proceed", om).Return(true, nil).Once()
+
+				// these sha256sum's are from "validUpdateMetadata" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+
+				return data
+			}(),
+			validUpdateMetadata,
+			fmt.Errorf("install error"),
+			[]int(nil),
+		},
+		{
+			"WithCleanupError",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om := &objectmock.ObjectMock{}
+				om.On("Setup").Return(nil).Once()
+				om.On("Install", data.uh.Settings.DownloadDir).Return(nil).Once()
+				om.On("Cleanup").Return(fmt.Errorf("cleanup error")).Once()
+
+				data.objs = []metadata.Object{om}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.iidm.On("Proceed", om).Return(true, nil).Once()
+
+				// these sha256sum's are from "validUpdateMetadata" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+
+				return data
+			}(),
+			validUpdateMetadata,
+			fmt.Errorf("cleanup error"),
+			[]int(nil),
+		},
+		{
+			"WithInstallAndCleanupErrors",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om := &objectmock.ObjectMock{}
+				om.On("Setup").Return(nil).Once()
+				om.On("Install", data.uh.Settings.DownloadDir).Return(fmt.Errorf("install error")).Once()
+				om.On("Cleanup").Return(fmt.Errorf("cleanup error")).Once()
+
+				data.objs = []metadata.Object{om}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.iidm.On("Proceed", om).Return(true, nil).Once()
+
+				// these sha256sum's are from "validUpdateMetadata" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+
+				return data
+			}(),
+			validUpdateMetadata,
+			fmt.Errorf("(install error); (cleanup error)"),
+			[]int(nil),
+		},
+		{
+			"WithSha256Error",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+				data.objs = []metadata.Object{&objectmock.ObjectMock{}}
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+
+				// these sha256sum's are from "validUpdateMetadata" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(fmt.Errorf("sha256 error"))
+
+				return data
+			}(),
+			validUpdateMetadata,
+			fmt.Errorf("sha256 error"),
+			[]int(nil),
+		},
+		{
+			"WithInstallIfDifferentError",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					HardwareRevision: "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+
+				om := &objectmock.ObjectMock{}
+				om.On("Setup").Return(nil).Once()
+				om.On("Cleanup").Return(nil).Once()
+
+				data.objs = []metadata.Object{om}
+
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+				data.iidm.On("Proceed", om).Return(false, fmt.Errorf("installifdifferent error")).Once()
+
+				// these sha256sum's are from "validUpdateMetadata" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+
+				return data
+			}(),
+			validUpdateMetadata,
+			fmt.Errorf("installifdifferent error"),
+			[]int(nil),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mode := newTestInstallMode(tc.data.objs)
+			defer mode.Unregister()
+
+			tc.data.uh.FirmwareMetadata = *tc.data.fm
+			tc.data.uh.InstallIfDifferentBackend = tc.data.iidm
+			tc.data.uh.Sha256Checker = tc.data.scm
+
+			updateMetadata, err := metadata.NewUpdateMetadata([]byte(tc.rawUpdateMetadata))
+			assert.NoError(t, err)
+
+			progressList, err := startInstallUpdateInAnotherFunc(tc.data.uh, updateMetadata)
+
+			assert.Equal(t, tc.expectedError, err)
+			assert.Equal(t, tc.expectedProgressList, progressList)
+
+			tc.data.aim.AssertExpectations(t)
+			tc.data.iidm.AssertExpectations(t)
+			tc.data.scm.AssertExpectations(t)
+
+			for _, obj := range tc.data.objs {
+				o := obj.(*objectmock.ObjectMock)
+				o.AssertExpectations(t)
+			}
+		})
+	}
 }
 
 func TestUpdateHubReportState(t *testing.T) {
-	mode := newTestInstallMode()
+	om := &objectmock.ObjectMock{}
 
+	objs := []metadata.Object{om}
+
+	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
@@ -422,6 +1255,7 @@ func TestUpdateHubReportState(t *testing.T) {
 	assert.EqualError(t, err, "error")
 
 	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
 }
 
 func TestStartPolling(t *testing.T) {
@@ -626,17 +1460,26 @@ func (r testReporter) ReportState(api client.ApiRequester, packageUID string, st
 	return r.reportStateError
 }
 
-func newTestInstallMode() installmodes.InstallMode {
+func newTestInstallMode(objs []metadata.Object) installmodes.InstallMode {
+	i := 0
 	return installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
 		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return &testObject{} },
+		GetObject: func() interface{} {
+			if i < len(objs) {
+				i++
+				return objs[i-1]
+			}
+
+			return fmt.Errorf("not enough registered objects")
+		},
 	})
 }
 
 func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, error) {
+	fs := afero.NewMemMapFs()
 	uh := &UpdateHub{
-		Store:    afero.NewMemMapFs(),
+		Store:    fs,
 		State:    state,
 		TimeStep: time.Second,
 		API:      client.NewApiClient("localhost"),
