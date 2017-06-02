@@ -119,7 +119,7 @@ bin/glide: .GOPATH/.ok
 	$Q go get github.com/Masterminds/glide
 bin/gometalinter: .GOPATH/.ok
 	$Q go get github.com/alecthomas/gometalinter
-	$Q gometalinter --install
+	$Q ./bin/gometalinter --install
 
 .PHONY: vendor lint
 
