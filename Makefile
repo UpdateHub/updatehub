@@ -23,13 +23,13 @@ build: .GOPATH/.ok updatehub updatehub-server
 .PHONY: updatehub
 updatehub: .GOPATH/.ok vendor
 	@echo -n "building updatehub… "
-	$Q go install $(if $V,-v) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub
+	$Q go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub
 	@echo "done"
 
 .PHONY: updatehub-server vendor
 updatehub-server: .GOPATH/.ok
 	@echo -n "building updatehub-server… "
-	$Q go install $(if $V,-v) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-server
+	$Q go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-server
 	@echo "done"
 
 ##### =====> Utility targets <===== #####
