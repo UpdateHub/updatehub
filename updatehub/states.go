@@ -10,6 +10,7 @@ package updatehub
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -239,6 +240,11 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 	var nextState State
 
 	nextState = state
+
+	if state.interval <= 0 {
+		err := fmt.Errorf("Can't handle polling with invalid interval. It must be greater than zero")
+		return NewErrorState(nil, NewTransientError(err)), false
+	}
 
 	go func() {
 		ticks := state.ticksCount

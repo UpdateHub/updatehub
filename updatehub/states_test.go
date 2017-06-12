@@ -418,6 +418,22 @@ func TestPolling(t *testing.T) {
 	}
 }
 
+func TestPollingWithNoPollingInterval(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(nil, aim)
+
+	s := NewPollState(0)
+
+	nextState, _ := s.Handle(uh)
+
+	expectedState := NewErrorState(nil, NewTransientError(fmt.Errorf("Can't handle polling with invalid interval. It must be greater than zero")))
+
+	assert.Equal(t, expectedState, nextState)
+
+	aim.AssertExpectations(t)
+}
+
 func TestCancelPollState(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
