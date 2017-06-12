@@ -10,16 +10,11 @@ package updatehub
 
 import (
 	"errors"
-	"fmt"
-	"path"
+	"sync"
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/UpdateHub/updatehub/activeinactive"
-	"github.com/UpdateHub/updatehub/handlers"
-	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/metadata"
-	"github.com/UpdateHub/updatehub/utils"
 	"github.com/spf13/afero"
 )
 
@@ -66,29 +61,37 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubStateError:            "error",
 }
 
-type Sha256Checker interface {
-	CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) error
+// ProgressTracker will define which way the progress is kept
+type ProgressTracker interface {
+	SetProgress(progress int)
+	GetProgress() int
 }
 
-type Sha256CheckerImpl struct {
+// ProgressTrackerImpl is for the ProgressTracker interface implementation
+type ProgressTrackerImpl struct {
+	progress int
 }
 
-func (s *Sha256CheckerImpl) CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) error {
-	calculatedSha256sum, err := utils.FileSha256sum(fsBackend, path.Join(downloadDir, expectedSha256sum))
-	if err != nil {
-		return err
-	}
+// SetProgress is for the ProgressTracker interface implementation
+func (pti *ProgressTrackerImpl) SetProgress(progress int) {
+	pti.progress = progress
+}
 
-	if calculatedSha256sum != expectedSha256sum {
-		return fmt.Errorf("sha256sum's don't match. Expected: %s / Calculated: %s", expectedSha256sum, calculatedSha256sum)
-	}
-
-	return nil
+// GetProgress is for the ProgressTracker interface implementation
+func (pti *ProgressTrackerImpl) GetProgress() int {
+	return pti.progress
 }
 
 // BaseState is the state from which all others must do composition
 type BaseState struct {
 	id UpdateHubState
+}
+
+// ToMap is for the State interface implementation
+func (state *BaseState) ToMap() map[string]interface{} {
+	m := map[string]interface{}{}
+	m["status"] = StateToString(state.ID())
+	return m
 }
 
 // ID returns the state id
@@ -106,6 +109,7 @@ type State interface {
 	ID() UpdateHubState
 	Handle(*UpdateHub) (State, bool) // Handle implements the behavior when the State is set
 	Cancel(bool) bool
+	ToMap() map[string]interface{}
 }
 
 // StateToString converts a "UpdateHubState" to string
@@ -137,6 +141,13 @@ func (state *ErrorState) Handle(uh *UpdateHub) (State, bool) {
 	}
 
 	return NewIdleState(), false
+}
+
+// ToMap is for the State interface implementation
+func (state *ErrorState) ToMap() map[string]interface{} {
+	m := state.BaseState.ToMap()
+	m["error"] = state.cause.Error()
+	return m
 }
 
 // NewErrorState creates a new ErrorState from a UpdateHubErrorReporter
@@ -191,7 +202,7 @@ func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
 		}
 	}
 
-	return NewPollState(uh), false
+	return NewPollState(uh.Settings.PollingInterval), false
 }
 
 // NewIdleState creates a new IdleState
@@ -262,13 +273,13 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 }
 
 // NewPollState creates a new PollState
-func NewPollState(uh *UpdateHub) *PollState {
+func NewPollState(pollingInterval time.Duration) *PollState {
 	state := &PollState{
 		BaseState:        BaseState{id: UpdateHubStatePoll},
 		CancellableState: CancellableState{cancel: make(chan bool)},
 	}
 
-	state.interval = uh.Settings.PollingInterval
+	state.interval = pollingInterval
 
 	return state
 }
@@ -298,7 +309,7 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 	uh.Settings.ExtraPollingInterval = 0
 
 	if updateMetadata != nil {
-		return NewDownloadingState(updateMetadata), false
+		return NewDownloadingState(updateMetadata, &ProgressTrackerImpl{}), false
 	}
 
 	if extraPoll > 0 {
@@ -313,7 +324,7 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 		if extraPollTime.Before(nextPoll) {
 			uh.Settings.ExtraPollingInterval = extraPoll
 
-			poll := NewPollState(uh)
+			poll := NewPollState(uh.Settings.PollingInterval)
 			poll.interval = extraPoll
 
 			return poll, false
@@ -340,6 +351,7 @@ type DownloadingState struct {
 	BaseState
 	CancellableState
 	ReportableState
+	ProgressTracker
 
 	updateMetadata *metadata.UpdateMetadata
 }
@@ -364,23 +376,46 @@ func (state *DownloadingState) UpdateMetadata() *metadata.UpdateMetadata {
 // to the installing state if successfull. It goes back to the error
 // state otherwise.
 func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
-	err := uh.Controller.FetchUpdate(state.updateMetadata, state.cancel)
+	var err error
+
+	progressChan := make(chan int, 10)
+
+	m := sync.Mutex{}
+	m.Lock()
+
+	go func() {
+		m.Lock()
+		defer m.Unlock()
+
+		err = uh.Controller.FetchUpdate(state.updateMetadata, state.cancel, progressChan)
+		close(progressChan)
+	}()
+
+	m.Unlock()
+	for p := range progressChan {
+		state.ProgressTracker.SetProgress(p)
+	}
+
 	if err != nil {
 		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
 	}
 
-	return NewInstallingState(state.updateMetadata,
-		&Sha256CheckerImpl{},
-		uh.Store,
-		&installifdifferent.DefaultImpl{FileSystemBackend: uh.Store},
-		&uh.FirmwareMetadata), false
+	return NewInstallingState(state.updateMetadata, &ProgressTrackerImpl{}, uh.Store), false
+}
+
+// ToMap is for the State interface implementation
+func (state *DownloadingState) ToMap() map[string]interface{} {
+	m := state.BaseState.ToMap()
+	m["progress"] = state.ProgressTracker.GetProgress()
+	return m
 }
 
 // NewDownloadingState creates a new DownloadingState from a metadata.UpdateMetadata
-func NewDownloadingState(updateMetadata *metadata.UpdateMetadata) *DownloadingState {
+func NewDownloadingState(updateMetadata *metadata.UpdateMetadata, pti ProgressTracker) *DownloadingState {
 	state := &DownloadingState{
-		BaseState:      BaseState{id: UpdateHubStateDownloading},
-		updateMetadata: updateMetadata,
+		BaseState:       BaseState{id: UpdateHubStateDownloading},
+		updateMetadata:  updateMetadata,
+		ProgressTracker: pti,
 	}
 
 	return state
@@ -391,12 +426,9 @@ type InstallingState struct {
 	BaseState
 	CancellableState
 	ReportableState
-	Sha256Checker
-	FileSystemBackend         afero.Fs
-	InstallIfDifferentBackend installifdifferent.Interface
-	metadata.SupportedHardwareChecker
-
-	updateMetadata *metadata.UpdateMetadata
+	ProgressTracker
+	FileSystemBackend afero.Fs
+	updateMetadata    *metadata.UpdateMetadata
 }
 
 // ID returns the state id
@@ -420,79 +452,55 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 	// operations in case of an install error occurs
 	uh.lastInstalledPackageUID = packageUID
 
-	err := state.CheckSupportedHardware(state.updateMetadata)
-	if err != nil {
-		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
+	var err error
+
+	progressChan := make(chan int, 10)
+
+	m := sync.Mutex{}
+	m.Lock()
+
+	go func() {
+		m.Lock()
+		defer m.Unlock()
+
+		err = uh.Controller.InstallUpdate(state.updateMetadata, progressChan)
+		close(progressChan)
+	}()
+
+	m.Unlock()
+	for p := range progressChan {
+		state.ProgressTracker.SetProgress(p)
 	}
 
-	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.activeInactiveBackend, state.updateMetadata)
 	if err != nil {
 		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
-	}
-
-	for _, o := range state.updateMetadata.Objects[indexToInstall] {
-		var handler handlers.InstallUpdateHandler = o
-
-		err := state.CheckDownloadedObjectSha256sum(state.FileSystemBackend, uh.Settings.DownloadDir, o.GetObjectMetadata().Sha256sum)
-		if err != nil {
-			return NewErrorState(state.updateMetadata, NewTransientError(err)), false
-		}
-
-		err = handler.Setup()
-		if err != nil {
-			return NewErrorState(state.updateMetadata, NewTransientError(err)), false
-		}
-
-		errorList := []error{}
-
-		install, err := state.InstallIfDifferentBackend.Proceed(o)
-		if err != nil {
-			errorList = append(errorList, err)
-		}
-
-		if install {
-			err = handler.Install(uh.Settings.DownloadDir)
-			if err != nil {
-				errorList = append(errorList, err)
-			}
-		}
-
-		err = handler.Cleanup()
-		if err != nil {
-			errorList = append(errorList, err)
-		}
-
-		if len(errorList) > 0 {
-			return NewErrorState(state.updateMetadata, NewTransientError(utils.MergeErrorList(errorList))), false
-		}
-
-		// 2 objects means that ActiveInactive is enabled, so we need
-		// to set the new active object
-		if len(state.updateMetadata.Objects) == 2 {
-			err := uh.activeInactiveBackend.SetActive(indexToInstall)
-			if err != nil {
-				return NewErrorState(state.updateMetadata, NewTransientError(err)), false
-			}
-		}
 	}
 
 	return NewInstalledState(state.updateMetadata), false
 }
 
+// ToMap is for the State interface implementation
+func (state *InstallingState) ToMap() map[string]interface{} {
+	m := state.BaseState.ToMap()
+	m["progress"] = state.ProgressTracker.GetProgress()
+	return m
+}
+
+// UpdateMetadata is the ReportableState interface implementation
+func (state *InstallingState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
+}
+
 // NewInstallingState creates a new InstallingState
 func NewInstallingState(
 	updateMetadata *metadata.UpdateMetadata,
-	sc Sha256Checker,
-	fsb afero.Fs,
-	iid installifdifferent.Interface,
-	shc metadata.SupportedHardwareChecker) *InstallingState {
+	pti ProgressTracker,
+	fsb afero.Fs) *InstallingState {
 	state := &InstallingState{
-		BaseState:                 BaseState{id: UpdateHubStateInstalling},
-		updateMetadata:            updateMetadata,
-		Sha256Checker:             sc,
-		FileSystemBackend:         fsb,
-		InstallIfDifferentBackend: iid,
-		SupportedHardwareChecker:  shc,
+		BaseState:         BaseState{id: UpdateHubStateInstalling},
+		updateMetadata:    updateMetadata,
+		FileSystemBackend: fsb,
+		ProgressTracker:   pti,
 	}
 
 	return state
@@ -573,25 +581,4 @@ func NewExitState(exitCode int) *ExitState {
 // Handle for ExitState
 func (state *ExitState) Handle(uh *UpdateHub) (State, bool) {
 	panic("ExitState handler should not be called")
-}
-
-// GetIndexOfObjectToBeInstalled selects which object will be installed from the update metadata
-func GetIndexOfObjectToBeInstalled(aii activeinactive.Interface, um *metadata.UpdateMetadata) (int, error) {
-	if len(um.Objects) < 1 || len(um.Objects) > 2 {
-		return 0, fmt.Errorf("update metadata must have 1 or 2 objects. Found %d", len(um.Objects))
-	}
-
-	// 2 objects means that ActiveInactive is enabled
-	if len(um.Objects) == 2 {
-		activeIndex, err := aii.Active()
-		if err != nil {
-			return 0, err
-		}
-
-		inactiveIndex := (activeIndex - 1) * -1
-
-		return inactiveIndex, nil
-	}
-
-	return 0, nil
 }

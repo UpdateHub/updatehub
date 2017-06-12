@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/installifdifferent"
 	_ "github.com/UpdateHub/updatehub/installmodes/copy"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/server"
@@ -42,17 +43,19 @@ func main() {
 	}
 
 	uh := &updatehub.UpdateHub{
-		Version:             gitversion,
-		BuildTime:           buildtime,
-		State:               updatehub.NewIdleState(),
-		API:                 client.NewApiClient("localhost:8080"),
-		Updater:             client.NewUpdateClient(),
-		TimeStep:            time.Minute,
-		Store:               osFs,
-		FirmwareMetadata:    *fm,
-		SystemSettingsPath:  systemSettingsPath,
-		RuntimeSettingsPath: runtimeSettingsPath,
-		Reporter:            client.NewReportClient(),
+		Version:                   gitversion,
+		BuildTime:                 buildtime,
+		State:                     updatehub.NewIdleState(),
+		API:                       client.NewApiClient("localhost:8080"),
+		Updater:                   client.NewUpdateClient(),
+		TimeStep:                  time.Minute,
+		Store:                     osFs,
+		FirmwareMetadata:          *fm,
+		SystemSettingsPath:        systemSettingsPath,
+		RuntimeSettingsPath:       runtimeSettingsPath,
+		Reporter:                  client.NewReportClient(),
+		Sha256Checker:             &updatehub.Sha256CheckerImpl{},
+		InstallIfDifferentBackend: &installifdifferent.DefaultImpl{FileSystemBackend: osFs},
 	}
 
 	backend, err := server.NewAgentBackend(uh)

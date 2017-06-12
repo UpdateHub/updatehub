@@ -30,6 +30,7 @@ func NewAgentBackend(uh *updatehub.UpdateHub) (*AgentBackend, error) {
 func (ab *AgentBackend) Routes() []Route {
 	return []Route{
 		{Method: "GET", Path: "/info", Handle: ab.info},
+		{Method: "GET", Path: "/status", Handle: ab.status},
 	}
 }
 
@@ -40,6 +41,14 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 	out["build-time"] = ab.UpdateHub.BuildTime
 	out["config"] = ab.UpdateHub.Settings
 	out["firmware"] = ab.UpdateHub.FirmwareMetadata
+
+	outputJSON, _ := json.MarshalIndent(out, "", "    ")
+
+	fmt.Fprintf(w, string(outputJSON))
+}
+
+func (ab *AgentBackend) status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	out := ab.UpdateHub.State.ToMap()
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 

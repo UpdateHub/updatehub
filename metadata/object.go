@@ -13,7 +13,6 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/UpdateHub/updatehub/handlers"
 	"github.com/UpdateHub/updatehub/installmodes"
 )
 
@@ -67,7 +66,9 @@ type CompressedObject struct {
 }
 
 type Object interface {
-	handlers.InstallUpdateHandler
+	Setup() error
+	Install(downloadDir string) error
+	Cleanup() error
 
 	GetObjectMetadata() ObjectMetadata
 }
