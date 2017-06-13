@@ -43,6 +43,31 @@ UpdateHubServerAddress=localhost
 MetadataPath=/tmp/metadata
 `
 
+func TestLoadSettingsDefaultValues(t *testing.T) {
+	s, err := LoadSettings(bytes.NewReader([]byte("")))
+	assert.NoError(t, err)
+
+	assert.Equal(t, time.Hour, s.PollingSettings.PollingInterval)
+	assert.Equal(t, true, s.PollingSettings.PollingEnabled)
+	assert.Equal(t, (time.Time{}).UTC(), s.PollingSettings.PersistentPollingSettings.LastPoll)
+	assert.Equal(t, (time.Time{}).UTC(), s.PollingSettings.PersistentPollingSettings.FirstPoll)
+	assert.Equal(t, time.Duration(0), s.PollingSettings.PersistentPollingSettings.ExtraPollingInterval)
+	assert.Equal(t, 0, s.PollingSettings.PersistentPollingSettings.PollingRetries)
+
+	assert.Equal(t, false, s.StorageSettings.ReadOnly)
+
+	assert.Equal(t, "/tmp", s.UpdateSettings.DownloadDir)
+	assert.Equal(t, true, s.UpdateSettings.AutoDownloadWhenAvailable)
+	assert.Equal(t, true, s.UpdateSettings.AutoInstallAfterDownload)
+	assert.Equal(t, true, s.UpdateSettings.AutoRebootAfterInstall)
+	assert.Equal(t, []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"}, s.UpdateSettings.SupportedInstallModes)
+
+	assert.Equal(t, false, s.NetworkSettings.DisableHTTPS)
+	assert.Equal(t, "", s.NetworkSettings.ServerAddress)
+
+	assert.Equal(t, "", s.FirmwareSettings.FirmwareMetadataPath)
+}
+
 func TestLoadSettings(t *testing.T) {
 	testCases := []struct {
 		name             string

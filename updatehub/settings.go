@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	defaultPollingInterval = 60 * 60 // one hour (in seconds)
+	defaultPollingInterval = time.Hour
 )
 
 type Settings struct {
