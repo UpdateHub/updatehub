@@ -29,7 +29,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-const customSettings = `
+const (
+	customSettings = `
 [Polling]
 Interval=1
 Enabled=false
@@ -55,6 +56,21 @@ UpdateHubServerAddress=localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 `
+	validUpdateMetadataWithActiveInactive = `{
+  "product-uid": "123",
+  "objects": [
+    [
+      { "mode": "test", "target": "/dev/xxa1", "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+      { "mode": "test", "target": "/dev/xxa2", "sha256sum": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb" }
+    ]
+    ,
+    [
+      { "mode": "test", "target": "/dev/xxb1", "sha256sum": "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa" },
+      { "mode": "test", "target": "/dev/xxb2", "sha256sum": "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae" }
+    ]
+  ]
+}`
+)
 
 func TestNewAgentBackend(t *testing.T) {
 	uh := &updatehub.UpdateHub{}
@@ -64,7 +80,7 @@ func TestNewAgentBackend(t *testing.T) {
 
 	routes := ab.Routes()
 
-	assert.Equal(t, 3, len(routes))
+	assert.Equal(t, 4, len(routes))
 
 	assert.Equal(t, "GET", routes[0].Method)
 	assert.Equal(t, "/info", routes[0].Path)
@@ -82,6 +98,12 @@ func TestNewAgentBackend(t *testing.T) {
 	assert.Equal(t, "/update", routes[2].Path)
 	expectedFunction = reflect.ValueOf(ab.update)
 	receivedFunction = reflect.ValueOf(routes[2].Handle)
+	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
+
+	assert.Equal(t, "GET", routes[3].Method)
+	assert.Equal(t, "/update/metadata", routes[3].Path)
+	expectedFunction = reflect.ValueOf(ab.updateMetadata)
+	receivedFunction = reflect.ValueOf(routes[3].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 }
 
@@ -239,4 +261,45 @@ func TestUpdateRoute(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+}
+
+func TestUpdateMetadataRoute(t *testing.T) {
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
+	assert.NoError(t, err)
+
+	r, err := http.Get(url + "/update/metadata")
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, validUpdateMetadataWithActiveInactive, string(bodyContent))
+	assert.Equal(t, 200, r.StatusCode)
+
+	clm.AssertExpectations(t)
+}
+
+func TestUpdateMetadataRouteWithError(t *testing.T) {
+	out := map[string]interface{}{}
+
+	out["error"] = "open /tmp/download/updatemetadata.json: file does not exist"
+
+	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
+
+	_, url, clm := setup(t)
+	defer teardown(t)
+
+	r, err := http.Get(url + "/update/metadata")
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(expectedResponse), string(bodyContent))
+	assert.Equal(t, 400, r.StatusCode)
+
+	clm.AssertExpectations(t)
 }

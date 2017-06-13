@@ -144,8 +144,9 @@ body.
 
 ### metadata [GET /update/metadata]
 
-Returns the update metadata if it's already downloaded. If it wasn't
-downloaded yet, returns an empty json object.
+On success, returns HTTP 202 with the update metadata as json body. On
+failure, returns HTTP 400 and the error message inside a json object
+as body.
 
 + Response 200 (application/json)
 
@@ -182,6 +183,14 @@ downloaded yet, returns an empty json object.
                         "hardware-revision": "revB"
                     }
 	            ]
+            }
+
++ Response 400 (application/json)
+
+    + Body
+
+            {
+                "error": "update metadata hasn't been downloaded yet"
             }
 
 ### probe [POST /update/probe]
