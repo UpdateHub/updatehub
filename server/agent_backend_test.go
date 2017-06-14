@@ -13,16 +13,20 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
 	"github.com/UpdateHub/updatehub/testsmocks/progresstrackermock"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const customSettings = `
@@ -60,17 +64,24 @@ func TestNewAgentBackend(t *testing.T) {
 
 	routes := ab.Routes()
 
-	assert.Equal(t, 2, len(routes))
+	assert.Equal(t, 3, len(routes))
 
 	assert.Equal(t, "GET", routes[0].Method)
 	assert.Equal(t, "/info", routes[0].Path)
+	expectedFunction := reflect.ValueOf(ab.info)
+	receivedFunction := reflect.ValueOf(routes[0].Handle)
+	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 
 	assert.Equal(t, "GET", routes[1].Method)
 	assert.Equal(t, "/status", routes[1].Path)
+	expectedFunction = reflect.ValueOf(ab.status)
+	receivedFunction = reflect.ValueOf(routes[1].Handle)
+	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 
-	expectedFunction := reflect.ValueOf(ab.info)
-	receivedFunction := reflect.ValueOf(routes[0].Handle)
-
+	assert.Equal(t, "POST", routes[2].Method)
+	assert.Equal(t, "/update", routes[2].Path)
+	expectedFunction = reflect.ValueOf(ab.update)
+	receivedFunction = reflect.ValueOf(routes[2].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 }
 
@@ -167,6 +178,7 @@ func TestInfoRoute(t *testing.T) {
 	bodyContent, err := ioutil.ReadAll(body)
 	assert.NoError(t, err)
 	assert.Equal(t, string(expectedJSON), string(bodyContent))
+	assert.Equal(t, 200, r.StatusCode)
 
 	clm.AssertExpectations(t)
 }
@@ -195,7 +207,36 @@ func TestStatusRoute(t *testing.T) {
 	bodyContent, err := ioutil.ReadAll(body)
 	assert.NoError(t, err)
 	assert.Equal(t, string(expectedJSON), string(bodyContent))
+	assert.Equal(t, 200, r.StatusCode)
 
 	clm.AssertExpectations(t)
 	ptm.AssertExpectations(t)
+}
+
+func TestUpdateRoute(t *testing.T) {
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	cm := &controllermock.ControllerMock{}
+
+	uh.Controller = cm
+	cm.On("CheckUpdate", 0).Run(func(args mock.Arguments) {
+		// this is on purpose, the response is supposed to be
+		// asynchronous and we should get the HTTP response before the
+		// sleep expires
+		time.Sleep(100 * time.Second)
+		os.Exit(1)
+	}).Return(&metadata.UpdateMetadata{}, 10*time.Second)
+
+	r, err := http.Post(url+"/update", "application/json", nil)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(`{ "message": "request accepted, update procedure fired" }`), string(bodyContent))
+	assert.Equal(t, 202, r.StatusCode)
+
+	clm.AssertExpectations(t)
+	cm.AssertExpectations(t)
 }

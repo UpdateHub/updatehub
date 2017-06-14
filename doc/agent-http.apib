@@ -131,9 +131,8 @@ This route fires the complete update procedure, which is the following:
 
 This is the same procedure that is done in the automatic polling logic.
 
-On success, returns HTTP 202 and a empty json object as body. On
-failure, returns HTTP 400 and the error message inside a json object
-as body.
+Always returns HTTP 202 and a fixed message on a json object as
+body.
 
 + Response 202 (application/json)
 
@@ -141,14 +140,6 @@ as body.
 
             {
                 "message": "request accepted, update procedure fired"
-            }
-
-+ Response 400 (application/json)
-
-    + Body
-
-            {
-                "error": "message"
             }
 
 ### metadata [GET /update/metadata]

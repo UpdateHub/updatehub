@@ -31,6 +31,7 @@ func (ab *AgentBackend) Routes() []Route {
 	return []Route{
 		{Method: "GET", Path: "/info", Handle: ab.info},
 		{Method: "GET", Path: "/status", Handle: ab.status},
+		{Method: "POST", Path: "/update", Handle: ab.update},
 	}
 }
 
@@ -44,6 +45,8 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 
+	w.WriteHeader(200)
+
 	fmt.Fprintf(w, string(outputJSON))
 }
 
@@ -52,5 +55,17 @@ func (ab *AgentBackend) status(w http.ResponseWriter, r *http.Request, p httprou
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 
+	w.WriteHeader(200)
+
 	fmt.Fprintf(w, string(outputJSON))
+}
+
+func (ab *AgentBackend) update(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	go func() {
+		ab.UpdateHub.Controller.CheckUpdate(0)
+	}()
+
+	w.WriteHeader(202)
+
+	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
 }
