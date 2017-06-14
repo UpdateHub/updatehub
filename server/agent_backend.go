@@ -12,9 +12,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/julienschmidt/httprouter"
+	"github.com/spf13/afero"
 )
 
 type AgentBackend struct {
@@ -32,6 +34,7 @@ func (ab *AgentBackend) Routes() []Route {
 		{Method: "GET", Path: "/info", Handle: ab.info},
 		{Method: "GET", Path: "/status", Handle: ab.status},
 		{Method: "POST", Path: "/update", Handle: ab.update},
+		{Method: "GET", Path: "/update/metadata", Handle: ab.updateMetadata},
 	}
 }
 
@@ -68,4 +71,22 @@ func (ab *AgentBackend) update(w http.ResponseWriter, r *http.Request, p httprou
 	w.WriteHeader(202)
 
 	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
+}
+
+func (ab *AgentBackend) updateMetadata(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
+	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
+
+	if err != nil {
+		w.WriteHeader(400)
+
+		out := map[string]interface{}{}
+		out["error"] = err.Error()
+
+		outputJSON, _ := json.MarshalIndent(out, "", "    ")
+		fmt.Fprintf(w, string(outputJSON))
+	} else {
+		w.WriteHeader(200)
+		fmt.Fprintf(w, string(data))
+	}
 }
