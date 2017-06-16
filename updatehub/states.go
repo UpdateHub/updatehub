@@ -101,7 +101,7 @@ func (b *BaseState) ID() UpdateHubState {
 }
 
 // Cancel cancels a state if it is cancellable
-func (b *BaseState) Cancel(ok bool) bool {
+func (b *BaseState) Cancel(ok bool, nextState State) bool {
 	return ok
 }
 
@@ -109,7 +109,7 @@ func (b *BaseState) Cancel(ok bool) bool {
 type State interface {
 	ID() UpdateHubState
 	Handle(*UpdateHub) (State, bool) // Handle implements the behavior when the State is set
-	Cancel(bool) bool
+	Cancel(bool, State) bool
 	ToMap() map[string]interface{}
 }
 
@@ -182,15 +182,15 @@ func (state *IdleState) ID() UpdateHubState {
 }
 
 // Cancel cancels a state if it is cancellable
-func (state *IdleState) Cancel(ok bool) bool {
-	return state.CancellableState.Cancel(ok)
+func (state *IdleState) Cancel(ok bool, nextState State) bool {
+	return state.CancellableState.Cancel(ok, nextState)
 }
 
 // Handle for IdleState
 func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
 	if !uh.Settings.PollingEnabled {
 		state.Wait()
-		return state, false
+		return state.NextState(), false
 	}
 
 	now := time.Now()
@@ -231,8 +231,8 @@ func (state *PollState) ID() UpdateHubState {
 }
 
 // Cancel cancels a state if it is cancellable
-func (state *PollState) Cancel(ok bool) bool {
-	return state.CancellableState.Cancel(ok)
+func (state *PollState) Cancel(ok bool, nextState State) bool {
+	return state.CancellableState.Cancel(ok, nextState)
 }
 
 // Handle for PollState encapsulates the polling logic
@@ -268,12 +268,17 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 			}
 		}
 
-		state.Cancel(true)
+		state.Cancel(true, nextState)
 
 		state.ticksCount = ticks
 	}()
 
 	state.Wait()
+
+	// state cancelled
+	if state.NextState() != nil {
+		return state.NextState(), true
+	}
 
 	return nextState, false
 }
@@ -368,8 +373,8 @@ func (state *DownloadingState) ID() UpdateHubState {
 }
 
 // Cancel cancels a state if it is cancellable
-func (state *DownloadingState) Cancel(ok bool) bool {
-	state.CancellableState.Cancel(ok)
+func (state *DownloadingState) Cancel(ok bool, nextState State) bool {
+	state.CancellableState.Cancel(ok, nextState)
 	return ok
 }
 
@@ -383,6 +388,9 @@ func (state *DownloadingState) UpdateMetadata() *metadata.UpdateMetadata {
 // state otherwise.
 func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 	var err error
+	var nextState State
+
+	nextState = state
 
 	progressChan := make(chan int, 10)
 
@@ -403,10 +411,17 @@ func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 	}
 
 	if err != nil {
-		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
+		nextState = NewErrorState(state.updateMetadata, NewTransientError(err))
+	} else {
+		nextState = NewInstallingState(state.updateMetadata, &ProgressTrackerImpl{}, uh.Store)
 	}
 
-	return NewInstallingState(state.updateMetadata, &ProgressTrackerImpl{}, uh.Store), false
+	// state cancelled
+	if state.NextState() != nil {
+		return state.NextState(), true
+	}
+
+	return nextState, false
 }
 
 // ToMap is for the State interface implementation
@@ -430,7 +445,6 @@ func NewDownloadingState(updateMetadata *metadata.UpdateMetadata, pti ProgressTr
 // InstallingState is the State interface implementation for the UpdateHubStateInstalling
 type InstallingState struct {
 	BaseState
-	CancellableState
 	ReportableState
 	ProgressTracker
 	FileSystemBackend afero.Fs
@@ -440,11 +454,6 @@ type InstallingState struct {
 // ID returns the state id
 func (state *InstallingState) ID() UpdateHubState {
 	return state.id
-}
-
-// Cancel cancels a state if it is cancellable
-func (state *InstallingState) Cancel(ok bool) bool {
-	return state.CancellableState.Cancel(ok)
 }
 
 // Handle for InstallingState implements the installation process itself

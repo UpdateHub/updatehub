@@ -443,7 +443,7 @@ func TestCancelPollState(t *testing.T) {
 	poll.interval = 10 * time.Second
 
 	go func() {
-		assert.True(t, poll.Cancel(true))
+		assert.True(t, poll.Cancel(true, NewIdleState()))
 	}()
 
 	poll.Handle(uh)
@@ -510,10 +510,10 @@ func TestStateIdle(t *testing.T) {
 			uh.Settings = tc.settings
 
 			go func() {
-				uh.State.Cancel(false)
+				uh.State.Cancel(false, NewIdleState()) // write
 			}()
 
-			next, _ := uh.State.Handle(uh)
+			next, _ := uh.State.Handle(uh) // read
 			assert.IsType(t, tc.nextState, next)
 
 			aim.AssertExpectations(t)

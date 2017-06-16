@@ -13,7 +13,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path"
 	"reflect"
 	"testing"
@@ -26,7 +25,6 @@ import (
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 const (
@@ -247,14 +245,7 @@ func TestUpdateRoute(t *testing.T) {
 
 	cm := &controllermock.ControllerMock{}
 
-	uh.Controller = cm
-	cm.On("CheckUpdate", 0).Run(func(args mock.Arguments) {
-		// this is on purpose, the response is supposed to be
-		// asynchronous and we should get the HTTP response before the
-		// sleep expires
-		time.Sleep(100 * time.Second)
-		os.Exit(1)
-	}).Return(&metadata.UpdateMetadata{}, 10*time.Second)
+	uh.State = updatehub.NewPollState(time.Hour)
 
 	r, err := http.Post(url+"/update", "application/json", nil)
 	assert.NoError(t, err)

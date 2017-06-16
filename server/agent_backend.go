@@ -66,7 +66,8 @@ func (ab *AgentBackend) status(w http.ResponseWriter, r *http.Request, p httprou
 
 func (ab *AgentBackend) update(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	go func() {
-		ab.UpdateHub.Controller.CheckUpdate(0)
+		s := updatehub.NewUpdateCheckState()
+		ab.UpdateHub.State.Cancel(true, s)
 	}()
 
 	w.WriteHeader(202)
