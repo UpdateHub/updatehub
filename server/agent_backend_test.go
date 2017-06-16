@@ -80,7 +80,7 @@ func TestNewAgentBackend(t *testing.T) {
 
 	routes := ab.Routes()
 
-	assert.Equal(t, 4, len(routes))
+	assert.Equal(t, 5, len(routes))
 
 	assert.Equal(t, "GET", routes[0].Method)
 	assert.Equal(t, "/info", routes[0].Path)
@@ -104,6 +104,12 @@ func TestNewAgentBackend(t *testing.T) {
 	assert.Equal(t, "/update/metadata", routes[3].Path)
 	expectedFunction = reflect.ValueOf(ab.updateMetadata)
 	receivedFunction = reflect.ValueOf(routes[3].Handle)
+	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
+
+	assert.Equal(t, "POST", routes[4].Method)
+	assert.Equal(t, "/update/probe", routes[4].Path)
+	expectedFunction = reflect.ValueOf(ab.updateProbe)
+	receivedFunction = reflect.ValueOf(routes[4].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 }
 
@@ -284,7 +290,6 @@ func TestUpdateMetadataRoute(t *testing.T) {
 
 func TestUpdateMetadataRouteWithError(t *testing.T) {
 	out := map[string]interface{}{}
-
 	out["error"] = "open /tmp/download/updatemetadata.json: file does not exist"
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
@@ -302,4 +307,32 @@ func TestUpdateMetadataRouteWithError(t *testing.T) {
 	assert.Equal(t, 400, r.StatusCode)
 
 	clm.AssertExpectations(t)
+}
+
+func TestUpdateProbeRoute(t *testing.T) {
+	out := map[string]interface{}{}
+	out["update-available"] = false
+	out["try-again-in"] = 3600
+
+	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
+
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	cm := &controllermock.ControllerMock{}
+
+	uh.Controller = cm
+	cm.On("CheckUpdate", 0).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
+
+	r, err := http.Post(url+"/update/probe", "application/json", nil)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(expectedResponse), string(bodyContent))
+	assert.Equal(t, 200, r.StatusCode)
+
+	clm.AssertExpectations(t)
+	cm.AssertExpectations(t)
 }

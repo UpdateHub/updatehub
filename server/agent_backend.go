@@ -35,6 +35,7 @@ func (ab *AgentBackend) Routes() []Route {
 		{Method: "GET", Path: "/status", Handle: ab.status},
 		{Method: "POST", Path: "/update", Handle: ab.update},
 		{Method: "GET", Path: "/update/metadata", Handle: ab.updateMetadata},
+		{Method: "POST", Path: "/update/probe", Handle: ab.updateProbe},
 	}
 }
 
@@ -89,4 +90,25 @@ func (ab *AgentBackend) updateMetadata(w http.ResponseWriter, r *http.Request, p
 		w.WriteHeader(200)
 		fmt.Fprintf(w, string(data))
 	}
+}
+
+func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	out := map[string]interface{}{}
+
+	um, d := ab.UpdateHub.Controller.CheckUpdate(0)
+
+	if um == nil {
+		out["update-available"] = false
+	} else {
+		out["update-available"] = true
+	}
+
+	if d > 0 {
+		out["try-again-in"] = d.Seconds()
+	}
+
+	w.WriteHeader(200)
+
+	outputJSON, _ := json.MarshalIndent(out, "", "    ")
+	fmt.Fprintf(w, string(outputJSON))
 }
