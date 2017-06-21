@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"path"
 
+	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/afero"
@@ -21,10 +22,16 @@ import (
 
 type AgentBackend struct {
 	*updatehub.UpdateHub
+
+	downloadCancelChan   chan bool
+	downloadProgressChan chan int
 }
 
 func NewAgentBackend(uh *updatehub.UpdateHub) (*AgentBackend, error) {
 	ab := &AgentBackend{UpdateHub: uh}
+
+	ab.downloadCancelChan = make(chan bool)
+	ab.downloadProgressChan = make(chan int)
 
 	return ab, nil
 }
@@ -36,6 +43,7 @@ func (ab *AgentBackend) Routes() []Route {
 		{Method: "POST", Path: "/update", Handle: ab.update},
 		{Method: "GET", Path: "/update/metadata", Handle: ab.updateMetadata},
 		{Method: "POST", Path: "/update/probe", Handle: ab.updateProbe},
+		{Method: "POST", Path: "/update/download", Handle: ab.updateDownload},
 	}
 }
 
@@ -112,4 +120,39 @@ func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p ht
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 	fmt.Fprintf(w, string(outputJSON))
+}
+
+func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
+	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
+	if err != nil {
+		w.WriteHeader(400)
+
+		out := map[string]interface{}{}
+		out["error"] = err.Error()
+
+		outputJSON, _ := json.MarshalIndent(out, "", "    ")
+		fmt.Fprintf(w, string(outputJSON))
+		return
+	}
+
+	um, err := metadata.NewUpdateMetadata(data)
+	if err != nil {
+		w.WriteHeader(400)
+
+		out := map[string]interface{}{}
+		out["error"] = err.Error()
+
+		outputJSON, _ := json.MarshalIndent(out, "", "    ")
+		fmt.Fprintf(w, string(outputJSON))
+		return
+	}
+
+	go func() {
+		ab.UpdateHub.Controller.FetchUpdate(um, ab.downloadCancelChan, ab.downloadProgressChan)
+	}()
+
+	w.WriteHeader(202)
+
+	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
 }
