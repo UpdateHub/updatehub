@@ -138,8 +138,8 @@ func (state *StateTest) ID() UpdateHubState {
 	return state.id
 }
 
-func (state *StateTest) Cancel(ok bool) bool {
-	return state.CancellableState.Cancel(ok)
+func (state *StateTest) Cancel(ok bool, nextState State) bool {
+	return state.CancellableState.Cancel(ok, nextState)
 }
 
 func (state *StateTest) Handle(uh *UpdateHub) (State, bool) {

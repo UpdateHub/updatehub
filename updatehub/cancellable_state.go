@@ -8,13 +8,28 @@
 
 package updatehub
 
+import "sync"
+
 type CancellableState struct {
 	BaseState
-	cancel chan bool
+	cancel         chan bool
+	nextState      State
+	nextStateMutex sync.Mutex
 }
 
-func (cs *CancellableState) Cancel(ok bool) bool {
+func (cs *CancellableState) NextState() State {
+	cs.nextStateMutex.Lock()
+	defer cs.nextStateMutex.Unlock()
+
+	return cs.nextState
+}
+
+func (cs *CancellableState) Cancel(ok bool, nextState State) bool {
+	cs.nextStateMutex.Lock()
+	defer cs.nextStateMutex.Unlock()
+
 	cs.cancel <- ok
+	cs.nextState = nextState
 	return ok
 }
 
