@@ -418,16 +418,18 @@ func TestPolling(t *testing.T) {
 	}
 }
 
-func TestPollingWithNoPollingInterval(t *testing.T) {
+func TestPollingWithPollingIntervalSmallerThanTimeStep(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
+	uh.TimeStep = time.Hour
 
 	s := NewPollState(0)
+	s.interval = time.Minute
 
 	nextState, _ := s.Handle(uh)
 
-	expectedState := NewErrorState(nil, NewTransientError(fmt.Errorf("Can't handle polling with invalid interval. It must be greater than zero")))
+	expectedState := NewErrorState(nil, NewTransientError(fmt.Errorf("Can't handle polling with invalid interval. It must be greater than '%s'", uh.TimeStep)))
 
 	assert.Equal(t, expectedState, nextState)
 
