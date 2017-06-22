@@ -1234,27 +1234,47 @@ func TestUpdateHubReportState(t *testing.T) {
 	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
-	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
-	assert.NoError(t, err)
+	testCases := []struct {
+		name           string
+		updateMetadata *metadata.UpdateMetadata
+	}{
+		{
+			"WithSuccess",
+			func() *metadata.UpdateMetadata {
+				updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
+				assert.NoError(t, err)
+				return updateMetadata
+			}(),
+		},
+		{
+			"WithNilUpdateMetadata",
+			nil,
+		},
+	}
 
-	state := &testReportableState{}
-	state.updateMetadata = updateMetadata
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			state := &testReportableState{}
+			state.updateMetadata = tc.updateMetadata
 
-	aim := &activeinactivemock.ActiveInactiveMock{}
+			aim := &activeinactivemock.ActiveInactiveMock{}
 
-	uh, _ := newTestUpdateHub(state, aim)
-	uh.Reporter = client.Reporter(testReporter{})
+			uh, _ := newTestUpdateHub(state, aim)
+			uh.Reporter = client.Reporter(testReporter{})
 
-	err = uh.ReportCurrentState()
-	assert.NoError(t, err)
+			err := uh.ReportCurrentState()
+			assert.NoError(t, err)
 
-	uh.Reporter = client.Reporter(testReporter{reportStateError: errors.New("error")})
+			uh.Reporter = client.Reporter(testReporter{reportStateError: errors.New("error")})
 
-	err = uh.ReportCurrentState()
-	assert.Error(t, err)
-	assert.EqualError(t, err, "error")
+			err = uh.ReportCurrentState()
+			assert.Error(t, err)
+			assert.EqualError(t, err, "error")
 
-	aim.AssertExpectations(t)
+			aim.AssertExpectations(t)
+		})
+	}
+
 	om.AssertExpectations(t)
 }
 

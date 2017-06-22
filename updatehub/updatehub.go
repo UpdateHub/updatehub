@@ -253,7 +253,10 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 
 func (uh *UpdateHub) ReportCurrentState() error {
 	if rs, ok := uh.State.(ReportableState); ok {
-		packageUID := rs.UpdateMetadata().PackageUID()
+		packageUID := ""
+		if rs.UpdateMetadata() != nil {
+			packageUID = rs.UpdateMetadata().PackageUID()
+		}
 		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, StateToString(uh.State.ID()))
 		if err != nil {
 			return err
