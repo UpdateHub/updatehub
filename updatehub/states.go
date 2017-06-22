@@ -174,6 +174,13 @@ type IdleState struct {
 	BaseState
 	CancellableState
 	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+// UpdateMetadata is the ReportableState interface implementation
+func (state *IdleState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
 }
 
 // ID returns the state id
