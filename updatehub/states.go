@@ -174,6 +174,13 @@ type IdleState struct {
 	BaseState
 	CancellableState
 	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+// UpdateMetadata is the ReportableState interface implementation
+func (state *IdleState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
 }
 
 // ID returns the state id
@@ -241,8 +248,8 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 
 	nextState = state
 
-	if state.interval <= 0 {
-		err := fmt.Errorf("Can't handle polling with invalid interval. It must be greater than zero")
+	if state.interval < uh.TimeStep {
+		err := fmt.Errorf("Can't handle polling with invalid interval. It must be greater than '%s'", uh.TimeStep)
 		return NewErrorState(nil, NewTransientError(err)), false
 	}
 
@@ -259,7 +266,7 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 			case <-ticker.C:
 				ticks++
 
-				if ticks > 0 && ticks%int64(state.interval/uh.TimeStep) == 0 {
+				if ticks > 0 && ticks%int64(state.interval.Seconds()/uh.TimeStep.Seconds()) == 0 {
 					nextState = NewUpdateCheckState()
 					break polling
 				}

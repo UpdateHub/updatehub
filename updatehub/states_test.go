@@ -418,16 +418,18 @@ func TestPolling(t *testing.T) {
 	}
 }
 
-func TestPollingWithNoPollingInterval(t *testing.T) {
+func TestPollingWithPollingIntervalSmallerThanTimeStep(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
+	uh.TimeStep = time.Hour
 
 	s := NewPollState(0)
+	s.interval = time.Minute
 
 	nextState, _ := s.Handle(uh)
 
-	expectedState := NewErrorState(nil, NewTransientError(fmt.Errorf("Can't handle polling with invalid interval. It must be greater than zero")))
+	expectedState := NewErrorState(nil, NewTransientError(fmt.Errorf("Can't handle polling with invalid interval. It must be greater than '%s'", uh.TimeStep)))
 
 	assert.Equal(t, expectedState, nextState)
 
@@ -454,9 +456,26 @@ func TestCancelPollState(t *testing.T) {
 }
 
 func TestNewIdleState(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
 	state := NewIdleState()
 	assert.IsType(t, &IdleState{}, state)
 	assert.Equal(t, UpdateHubState(UpdateHubStateIdle), state.ID())
+
+	expectedUpdateMetadata, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	state.updateMetadata = expectedUpdateMetadata
+	assert.Equal(t, expectedUpdateMetadata, state.UpdateMetadata())
+
+	om.AssertExpectations(t)
 }
 
 func TestStateIdle(t *testing.T) {
