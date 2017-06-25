@@ -18,13 +18,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
+	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 	"github.com/UpdateHub/updatehub/testsmocks/progresstrackermock"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 const (
@@ -76,9 +79,12 @@ func TestNewAgentBackend(t *testing.T) {
 	ab, err := NewAgentBackend(uh)
 	assert.NoError(t, err)
 
+	assert.NotNil(t, ab.downloadCancelChan)
+	assert.NotNil(t, ab.downloadProgressChan)
+
 	routes := ab.Routes()
 
-	assert.Equal(t, 5, len(routes))
+	assert.Equal(t, 6, len(routes))
 
 	assert.Equal(t, "GET", routes[0].Method)
 	assert.Equal(t, "/info", routes[0].Path)
@@ -108,6 +114,12 @@ func TestNewAgentBackend(t *testing.T) {
 	assert.Equal(t, "/update/probe", routes[4].Path)
 	expectedFunction = reflect.ValueOf(ab.updateProbe)
 	receivedFunction = reflect.ValueOf(routes[4].Handle)
+	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
+
+	assert.Equal(t, "POST", routes[5].Method)
+	assert.Equal(t, "/update/download", routes[5].Path)
+	expectedFunction = reflect.ValueOf(ab.updateDownload)
+	receivedFunction = reflect.ValueOf(routes[5].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 }
 
@@ -323,6 +335,106 @@ func TestUpdateProbeRoute(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(expectedResponse), string(bodyContent))
 	assert.Equal(t, 200, r.StatusCode)
+
+	clm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestUpdateDownloadRoute(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
+	assert.NoError(t, err)
+
+	cm := &controllermock.ControllerMock{}
+
+	uh.Controller = cm
+
+	um, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
+	assert.NoError(t, err)
+
+	cm.On("FetchUpdate", um, mock.Anything, mock.Anything).Return(nil)
+
+	uh.State = updatehub.NewPollState(time.Hour)
+
+	r, err := http.Post(url+"/update/download", "application/json", nil)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(`{ "message": "request accepted, update procedure fired" }`), string(bodyContent))
+	assert.Equal(t, 202, r.StatusCode)
+
+	clm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestUpdateDownloadRouteWithReadError(t *testing.T) {
+	out := map[string]interface{}{}
+	out["error"] = "open /tmp/download/updatemetadata.json: file does not exist"
+
+	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
+
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	cm := &controllermock.ControllerMock{}
+
+	uh.Controller = cm
+
+	uh.State = updatehub.NewPollState(time.Hour)
+
+	r, err := http.Post(url+"/update/download", "application/json", nil)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(expectedResponse), string(bodyContent))
+	assert.Equal(t, 400, r.StatusCode)
+
+	clm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestUpdateDownloadRouteWithMarshallError(t *testing.T) {
+	out := map[string]interface{}{}
+	out["error"] = "invalid character 'i' looking for beginning of value"
+
+	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
+
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte("invalid metadata"), 0644)
+	assert.NoError(t, err)
+
+	cm := &controllermock.ControllerMock{}
+
+	uh.Controller = cm
+
+	uh.State = updatehub.NewPollState(time.Hour)
+
+	r, err := http.Post(url+"/update/download", "application/json", nil)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(expectedResponse), string(bodyContent))
+	assert.Equal(t, 400, r.StatusCode)
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
