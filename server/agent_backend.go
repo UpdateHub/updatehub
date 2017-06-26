@@ -25,6 +25,7 @@ type AgentBackend struct {
 
 	downloadCancelChan   chan bool
 	downloadProgressChan chan int
+	installProgressChan  chan int
 }
 
 func NewAgentBackend(uh *updatehub.UpdateHub) (*AgentBackend, error) {
@@ -45,6 +46,7 @@ func (ab *AgentBackend) Routes() []Route {
 		{Method: "POST", Path: "/update/probe", Handle: ab.updateProbe},
 		{Method: "POST", Path: "/update/download", Handle: ab.updateDownload},
 		{Method: "POST", Path: "/update/download/abort", Handle: ab.updateDownloadAbort},
+		{Method: "POST", Path: "/update/install", Handle: ab.updateInstall},
 	}
 }
 
@@ -169,4 +171,39 @@ func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Reque
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 	fmt.Fprintf(w, string(outputJSON))
+}
+
+func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
+	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
+	if err != nil {
+		w.WriteHeader(400)
+
+		out := map[string]interface{}{}
+		out["error"] = err.Error()
+
+		outputJSON, _ := json.MarshalIndent(out, "", "    ")
+		fmt.Fprintf(w, string(outputJSON))
+		return
+	}
+
+	um, err := metadata.NewUpdateMetadata(data)
+	if err != nil {
+		w.WriteHeader(400)
+
+		out := map[string]interface{}{}
+		out["error"] = err.Error()
+
+		outputJSON, _ := json.MarshalIndent(out, "", "    ")
+		fmt.Fprintf(w, string(outputJSON))
+		return
+	}
+
+	go func() {
+		ab.UpdateHub.Controller.InstallUpdate(um, ab.installProgressChan)
+	}()
+
+	w.WriteHeader(202)
+
+	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
 }
