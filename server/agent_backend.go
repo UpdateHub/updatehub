@@ -44,6 +44,7 @@ func (ab *AgentBackend) Routes() []Route {
 		{Method: "GET", Path: "/update/metadata", Handle: ab.updateMetadata},
 		{Method: "POST", Path: "/update/probe", Handle: ab.updateProbe},
 		{Method: "POST", Path: "/update/download", Handle: ab.updateDownload},
+		{Method: "POST", Path: "/update/download/abort", Handle: ab.updateDownloadAbort},
 	}
 }
 
@@ -155,4 +156,17 @@ func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p
 	w.WriteHeader(202)
 
 	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
+}
+
+func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	// FIXME: how to test this?
+	// ab.downloadCancelChan <- true
+
+	w.WriteHeader(400)
+
+	out := map[string]interface{}{}
+	out["error"] = "not yet implemented"
+
+	outputJSON, _ := json.MarshalIndent(out, "", "    ")
+	fmt.Fprintf(w, string(outputJSON))
 }

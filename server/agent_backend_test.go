@@ -84,7 +84,7 @@ func TestNewAgentBackend(t *testing.T) {
 
 	routes := ab.Routes()
 
-	assert.Equal(t, 6, len(routes))
+	assert.Equal(t, 7, len(routes))
 
 	assert.Equal(t, "GET", routes[0].Method)
 	assert.Equal(t, "/info", routes[0].Path)
@@ -120,6 +120,12 @@ func TestNewAgentBackend(t *testing.T) {
 	assert.Equal(t, "/update/download", routes[5].Path)
 	expectedFunction = reflect.ValueOf(ab.updateDownload)
 	receivedFunction = reflect.ValueOf(routes[5].Handle)
+	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
+
+	assert.Equal(t, "POST", routes[6].Method)
+	assert.Equal(t, "/update/download/abort", routes[6].Path)
+	expectedFunction = reflect.ValueOf(ab.updateDownloadAbort)
+	receivedFunction = reflect.ValueOf(routes[6].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 }
 
@@ -428,6 +434,34 @@ func TestUpdateDownloadRouteWithMarshallError(t *testing.T) {
 	uh.State = updatehub.NewPollState(time.Hour)
 
 	r, err := http.Post(url+"/update/download", "application/json", nil)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(expectedResponse), string(bodyContent))
+	assert.Equal(t, 400, r.StatusCode)
+
+	clm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestUpdateDownloadAbortRoute(t *testing.T) {
+	out := map[string]interface{}{}
+	out["error"] = "not yet implemented"
+
+	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
+
+	uh, url, clm := setup(t)
+	defer teardown(t)
+
+	cm := &controllermock.ControllerMock{}
+
+	uh.Controller = cm
+
+	uh.State = updatehub.NewPollState(time.Hour)
+
+	r, err := http.Post(url+"/update/download/abort", "application/json", nil)
 	assert.NoError(t, err)
 
 	body := ioutil.NopCloser(r.Body)
