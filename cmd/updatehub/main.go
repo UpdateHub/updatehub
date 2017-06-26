@@ -58,7 +58,7 @@ func main() {
 		InstallIfDifferentBackend: &installifdifferent.DefaultImpl{FileSystemBackend: osFs},
 	}
 
-	backend, err := server.NewAgentBackend(uh)
+	backend, err := server.NewAgentBackend(uh, &utils.RebooterImpl{})
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
