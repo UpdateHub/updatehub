@@ -160,7 +160,7 @@ func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p
 
 	w.WriteHeader(202)
 
-	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
+	fmt.Fprintf(w, string(`{ "message": "request accepted, downloading update objects" }`))
 }
 
 func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -208,7 +208,7 @@ func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p 
 
 	w.WriteHeader(202)
 
-	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
+	fmt.Fprintf(w, string(`{ "message": "request accepted, installing update" }`))
 }
 
 func (ab *AgentBackend) reboot(w http.ResponseWriter, r *http.Request, p httprouter.Params) {

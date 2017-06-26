@@ -405,7 +405,7 @@ func TestUpdateDownloadRoute(t *testing.T) {
 	body := ioutil.NopCloser(r.Body)
 	bodyContent, err := ioutil.ReadAll(body)
 	assert.NoError(t, err)
-	assert.Equal(t, string(`{ "message": "request accepted, update procedure fired" }`), string(bodyContent))
+	assert.Equal(t, string(`{ "message": "request accepted, downloading update objects" }`), string(bodyContent))
 	assert.Equal(t, 202, r.StatusCode)
 
 	clm.AssertExpectations(t)
@@ -537,7 +537,7 @@ func TestUpdateInstallRoute(t *testing.T) {
 	body := ioutil.NopCloser(r.Body)
 	bodyContent, err := ioutil.ReadAll(body)
 	assert.NoError(t, err)
-	assert.Equal(t, string(`{ "message": "request accepted, update procedure fired" }`), string(bodyContent))
+	assert.Equal(t, string(`{ "message": "request accepted, installing update" }`), string(bodyContent))
 	assert.Equal(t, 202, r.StatusCode)
 
 	clm.AssertExpectations(t)
