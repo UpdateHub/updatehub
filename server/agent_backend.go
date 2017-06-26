@@ -16,20 +16,22 @@ import (
 
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/updatehub"
+	"github.com/UpdateHub/updatehub/utils"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/afero"
 )
 
 type AgentBackend struct {
 	*updatehub.UpdateHub
+	utils.Rebooter
 
 	downloadCancelChan   chan bool
 	downloadProgressChan chan int
 	installProgressChan  chan int
 }
 
-func NewAgentBackend(uh *updatehub.UpdateHub) (*AgentBackend, error) {
-	ab := &AgentBackend{UpdateHub: uh}
+func NewAgentBackend(uh *updatehub.UpdateHub, r utils.Rebooter) (*AgentBackend, error) {
+	ab := &AgentBackend{UpdateHub: uh, Rebooter: r}
 
 	ab.downloadCancelChan = make(chan bool)
 	ab.downloadProgressChan = make(chan int)
@@ -47,6 +49,7 @@ func (ab *AgentBackend) Routes() []Route {
 		{Method: "POST", Path: "/update/download", Handle: ab.updateDownload},
 		{Method: "POST", Path: "/update/download/abort", Handle: ab.updateDownloadAbort},
 		{Method: "POST", Path: "/update/install", Handle: ab.updateInstall},
+		{Method: "POST", Path: "/reboot", Handle: ab.reboot},
 	}
 }
 
@@ -157,7 +160,7 @@ func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p
 
 	w.WriteHeader(202)
 
-	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
+	fmt.Fprintf(w, string(`{ "message": "request accepted, downloading update objects" }`))
 }
 
 func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -205,5 +208,23 @@ func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p 
 
 	w.WriteHeader(202)
 
-	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
+	fmt.Fprintf(w, string(`{ "message": "request accepted, installing update" }`))
+}
+
+func (ab *AgentBackend) reboot(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	err := ab.Reboot()
+	if err != nil {
+		w.WriteHeader(400)
+
+		out := map[string]interface{}{}
+		out["error"] = err.Error()
+
+		outputJSON, _ := json.MarshalIndent(out, "", "    ")
+		fmt.Fprintf(w, string(outputJSON))
+		return
+	}
+
+	w.WriteHeader(202)
+
+	fmt.Fprintf(w, string(`{ "message": "request accepted, rebooting the device" }`))
 }

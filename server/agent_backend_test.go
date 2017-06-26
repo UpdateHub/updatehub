@@ -10,6 +10,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -24,6 +25,7 @@ import (
 	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 	"github.com/UpdateHub/updatehub/testsmocks/progresstrackermock"
+	"github.com/UpdateHub/updatehub/testsmocks/rebootermock"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -76,7 +78,9 @@ MetadataPath=/tmp/metadata
 func TestNewAgentBackend(t *testing.T) {
 	uh := &updatehub.UpdateHub{}
 
-	ab, err := NewAgentBackend(uh)
+	rm := &rebootermock.RebooterMock{}
+
+	ab, err := NewAgentBackend(uh, rm)
 	assert.NoError(t, err)
 
 	assert.NotNil(t, ab.downloadCancelChan)
@@ -84,7 +88,7 @@ func TestNewAgentBackend(t *testing.T) {
 
 	routes := ab.Routes()
 
-	assert.Equal(t, 8, len(routes))
+	assert.Equal(t, 9, len(routes))
 
 	assert.Equal(t, "GET", routes[0].Method)
 	assert.Equal(t, "/info", routes[0].Path)
@@ -133,9 +137,17 @@ func TestNewAgentBackend(t *testing.T) {
 	expectedFunction = reflect.ValueOf(ab.updateInstall)
 	receivedFunction = reflect.ValueOf(routes[7].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
+
+	assert.Equal(t, "POST", routes[8].Method)
+	assert.Equal(t, "/reboot", routes[8].Path)
+	expectedFunction = reflect.ValueOf(ab.reboot)
+	receivedFunction = reflect.ValueOf(routes[8].Handle)
+	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
+
+	rm.AssertExpectations(t)
 }
 
-func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExecuterMock) {
+func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExecuterMock, *rebootermock.RebooterMock) {
 	const (
 		metadataPath        = "/"
 		systemSettingsPath  = "/system.conf"
@@ -195,20 +207,22 @@ func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExec
 	err = uh.LoadSettings()
 	assert.NoError(t, err)
 
-	ab, err := NewAgentBackend(uh)
+	rm := &rebootermock.RebooterMock{}
+
+	ab, err := NewAgentBackend(uh, rm)
 	assert.NoError(t, err)
 
 	router := NewBackendRouter(ab)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	return uh, server.URL, clm
+	return uh, server.URL, clm, rm
 }
 
 func teardown(t *testing.T) {
 }
 
 func TestInfoRoute(t *testing.T) {
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	r, err := http.Get(url + "/info")
@@ -231,10 +245,11 @@ func TestInfoRoute(t *testing.T) {
 	assert.Equal(t, 200, r.StatusCode)
 
 	clm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestStatusRoute(t *testing.T) {
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	ptm := &progresstrackermock.ProgressTrackerMock{}
@@ -261,10 +276,11 @@ func TestStatusRoute(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	ptm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateRoute(t *testing.T) {
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	cm := &controllermock.ControllerMock{}
@@ -282,10 +298,11 @@ func TestUpdateRoute(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateMetadataRoute(t *testing.T) {
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
@@ -301,6 +318,7 @@ func TestUpdateMetadataRoute(t *testing.T) {
 	assert.Equal(t, 200, r.StatusCode)
 
 	clm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateMetadataRouteWithError(t *testing.T) {
@@ -309,7 +327,7 @@ func TestUpdateMetadataRouteWithError(t *testing.T) {
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
-	_, url, clm := setup(t)
+	_, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	r, err := http.Get(url + "/update/metadata")
@@ -322,6 +340,7 @@ func TestUpdateMetadataRouteWithError(t *testing.T) {
 	assert.Equal(t, 400, r.StatusCode)
 
 	clm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateProbeRoute(t *testing.T) {
@@ -331,7 +350,7 @@ func TestUpdateProbeRoute(t *testing.T) {
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	cm := &controllermock.ControllerMock{}
@@ -350,6 +369,7 @@ func TestUpdateProbeRoute(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateDownloadRoute(t *testing.T) {
@@ -362,7 +382,7 @@ func TestUpdateDownloadRoute(t *testing.T) {
 	})
 	defer mode.Unregister()
 
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
@@ -385,12 +405,13 @@ func TestUpdateDownloadRoute(t *testing.T) {
 	body := ioutil.NopCloser(r.Body)
 	bodyContent, err := ioutil.ReadAll(body)
 	assert.NoError(t, err)
-	assert.Equal(t, string(`{ "message": "request accepted, update procedure fired" }`), string(bodyContent))
+	assert.Equal(t, string(`{ "message": "request accepted, downloading update objects" }`), string(bodyContent))
 	assert.Equal(t, 202, r.StatusCode)
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	om.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateDownloadRouteWithReadError(t *testing.T) {
@@ -399,7 +420,7 @@ func TestUpdateDownloadRouteWithReadError(t *testing.T) {
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	cm := &controllermock.ControllerMock{}
@@ -419,6 +440,7 @@ func TestUpdateDownloadRouteWithReadError(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateDownloadRouteWithMarshallError(t *testing.T) {
@@ -427,7 +449,7 @@ func TestUpdateDownloadRouteWithMarshallError(t *testing.T) {
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte("invalid metadata"), 0644)
@@ -450,6 +472,7 @@ func TestUpdateDownloadRouteWithMarshallError(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateDownloadAbortRoute(t *testing.T) {
@@ -458,7 +481,7 @@ func TestUpdateDownloadAbortRoute(t *testing.T) {
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	cm := &controllermock.ControllerMock{}
@@ -478,6 +501,7 @@ func TestUpdateDownloadAbortRoute(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateInstallRoute(t *testing.T) {
@@ -490,7 +514,7 @@ func TestUpdateInstallRoute(t *testing.T) {
 	})
 	defer mode.Unregister()
 
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
@@ -513,12 +537,13 @@ func TestUpdateInstallRoute(t *testing.T) {
 	body := ioutil.NopCloser(r.Body)
 	bodyContent, err := ioutil.ReadAll(body)
 	assert.NoError(t, err)
-	assert.Equal(t, string(`{ "message": "request accepted, update procedure fired" }`), string(bodyContent))
+	assert.Equal(t, string(`{ "message": "request accepted, installing update" }`), string(bodyContent))
 	assert.Equal(t, 202, r.StatusCode)
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	om.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateInstallRouteWithReadError(t *testing.T) {
@@ -527,7 +552,7 @@ func TestUpdateInstallRouteWithReadError(t *testing.T) {
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	cm := &controllermock.ControllerMock{}
@@ -547,6 +572,7 @@ func TestUpdateInstallRouteWithReadError(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestUpdateInstallRouteWithMarshallError(t *testing.T) {
@@ -555,7 +581,7 @@ func TestUpdateInstallRouteWithMarshallError(t *testing.T) {
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
-	uh, url, clm := setup(t)
+	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
 	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte("invalid metadata"), 0644)
@@ -578,4 +604,82 @@ func TestUpdateInstallRouteWithMarshallError(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestRebootRoute(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	uh, url, clm, rm := setup(t)
+	defer teardown(t)
+
+	cm := &controllermock.ControllerMock{}
+
+	uh.Controller = cm
+
+	rm.On("Reboot").Return(nil)
+
+	uh.State = updatehub.NewPollState(time.Hour)
+
+	r, err := http.Post(url+"/reboot", "application/json", nil)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(`{ "message": "request accepted, rebooting the device" }`), string(bodyContent))
+	assert.Equal(t, 202, r.StatusCode)
+
+	clm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	om.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestRebootRouteWithError(t *testing.T) {
+	out := map[string]interface{}{}
+	out["error"] = "permission denied"
+
+	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
+
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	uh, url, clm, rm := setup(t)
+	defer teardown(t)
+
+	cm := &controllermock.ControllerMock{}
+
+	uh.Controller = cm
+
+	rm.On("Reboot").Return(fmt.Errorf("permission denied"))
+
+	uh.State = updatehub.NewPollState(time.Hour)
+
+	r, err := http.Post(url+"/reboot", "application/json", nil)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(expectedResponse), string(bodyContent))
+	assert.Equal(t, 400, r.StatusCode)
+
+	clm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	om.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
