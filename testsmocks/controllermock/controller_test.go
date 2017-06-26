@@ -62,16 +62,3 @@ func TestInstallUpdate(t *testing.T) {
 
 	cm.AssertExpectations(t)
 }
-
-func TestReportCurrentState(t *testing.T) {
-	expectedError := fmt.Errorf("some error")
-
-	cm := &ControllerMock{}
-	cm.On("ReportCurrentState").Return(expectedError)
-
-	err := cm.ReportCurrentState()
-
-	assert.Equal(t, expectedError, err)
-
-	cm.AssertExpectations(t)
-}

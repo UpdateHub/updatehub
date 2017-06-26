@@ -16,9 +16,8 @@ import (
 	"github.com/OSSystems/pkg/log"
 	"github.com/Sirupsen/logrus"
 	"github.com/Sirupsen/logrus/hooks/test"
-	"github.com/UpdateHub/updatehub/client"
-	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
 	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
 )
@@ -97,13 +96,16 @@ func TestDaemonExitStateStop(t *testing.T) {
 	defer hook.Reset()
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
+	rm := &reportermock.ReporterMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
-	uh.Reporter = client.Reporter(testReporter{})
+	uh.Reporter = rm
+
+	rm.On("ReportState", uh.API.Request(), "", "error").Return(nil).Once()
 
 	d := NewDaemon(uh)
 
-	uh.State = NewErrorState(&metadata.UpdateMetadata{}, NewFatalError(errors.New("test")))
+	uh.State = NewErrorState(nil, NewFatalError(errors.New("test")))
 
 	assert.Equal(t, 1, d.Run())
 
@@ -114,6 +116,7 @@ func TestDaemonExitStateStop(t *testing.T) {
 	assert.Equal(t, 1, uh.State.(*ExitState).exitCode)
 
 	aim.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 type StateTest struct {

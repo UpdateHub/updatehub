@@ -10,7 +10,6 @@ package updatehub
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -36,6 +35,7 @@ import (
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 	"github.com/UpdateHub/updatehub/testsmocks/installifdifferentmock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
+	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
 	"github.com/UpdateHub/updatehub/testsmocks/statesmock"
 	"github.com/UpdateHub/updatehub/testsmocks/updatermock"
 	"github.com/UpdateHub/updatehub/utils"
@@ -1234,44 +1234,59 @@ func TestUpdateHubReportState(t *testing.T) {
 	mode := newTestInstallMode(objs)
 	defer mode.Unregister()
 
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
+	assert.NoError(t, err)
+
 	testCases := []struct {
-		name           string
-		updateMetadata *metadata.UpdateMetadata
+		name                string
+		updateMetadata      *metadata.UpdateMetadata
+		expectedUMSha256sum string
 	}{
 		{
-			"WithSuccess",
-			func() *metadata.UpdateMetadata {
-				updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
-				assert.NoError(t, err)
-				return updateMetadata
-			}(),
+			"WithValidUpdateMetadata",
+			updateMetadata,
+			utils.DataSha256sum([]byte(validUpdateMetadata)),
 		},
 		{
 			"WithNilUpdateMetadata",
 			nil,
+			"",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			state := &testReportableState{}
+			state := NewIdleState()
 			state.updateMetadata = tc.updateMetadata
 
 			aim := &activeinactivemock.ActiveInactiveMock{}
+			rm := &reportermock.ReporterMock{}
 
 			uh, _ := newTestUpdateHub(state, aim)
-			uh.Reporter = client.Reporter(testReporter{})
+			uh.Reporter = rm
+
+			// error the first report
+			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "idle").Return(fmt.Errorf("report error")).Once()
 
 			err := uh.ReportCurrentState()
-			assert.NoError(t, err)
+			assert.EqualError(t, err, "report error")
 
-			uh.Reporter = client.Reporter(testReporter{reportStateError: errors.New("error")})
+			// the subsequent reports are successful. "Once()" is
+			// important here since the same state shouldn't be
+			// reported more than one time in a row
+			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "idle").Return(nil).Once()
 
 			err = uh.ReportCurrentState()
-			assert.Error(t, err)
-			assert.EqualError(t, err, "error")
+			assert.NoError(t, err)
+
+			err = uh.ReportCurrentState()
+			assert.NoError(t, err)
+
+			err = uh.ReportCurrentState()
+			assert.NoError(t, err)
 
 			aim.AssertExpectations(t)
+			rm.AssertExpectations(t)
 		})
 	}
 
@@ -1470,14 +1485,6 @@ func TestLoadUpdateHubSettings(t *testing.T) {
 
 type testObject struct {
 	metadata.ObjectMetadata
-}
-
-type testReporter struct {
-	reportStateError error
-}
-
-func (r testReporter) ReportState(api client.ApiRequester, packageUID string, state string) error {
-	return r.reportStateError
 }
 
 func newTestInstallMode(objs []metadata.Object) installmodes.InstallMode {
