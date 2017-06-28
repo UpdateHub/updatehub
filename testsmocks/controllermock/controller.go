@@ -33,8 +33,3 @@ func (cm *ControllerMock) InstallUpdate(updateMetadata *metadata.UpdateMetadata,
 	args := cm.Called(updateMetadata, progressChan)
 	return args.Error(0)
 }
-
-func (cm *ControllerMock) ReportCurrentState() error {
-	args := cm.Called()
-	return args.Error(0)
-}

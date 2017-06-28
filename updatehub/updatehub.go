@@ -88,6 +88,7 @@ type UpdateHub struct {
 	activeInactiveBackend   activeinactive.Interface
 	SystemSettingsPath      string
 	RuntimeSettingsPath     string
+	lastReportedState       string
 
 	InstallIfDifferentBackend installifdifferent.Interface
 	Sha256Checker
@@ -97,7 +98,6 @@ type Controller interface {
 	CheckUpdate(int) (*metadata.UpdateMetadata, time.Duration)
 	FetchUpdate(*metadata.UpdateMetadata, <-chan bool, chan<- int) error
 	InstallUpdate(*metadata.UpdateMetadata, chan<- int) error
-	ReportCurrentState() error
 }
 
 func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
@@ -253,14 +253,22 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 
 func (uh *UpdateHub) ReportCurrentState() error {
 	if rs, ok := uh.State.(ReportableState); ok {
+		stateString := StateToString(uh.State.ID())
+
+		if uh.lastReportedState == stateString {
+			return nil
+		}
+
 		packageUID := ""
 		if rs.UpdateMetadata() != nil {
 			packageUID = rs.UpdateMetadata().PackageUID()
 		}
-		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, StateToString(uh.State.ID()))
+		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, stateString)
 		if err != nil {
 			return err
 		}
+
+		uh.lastReportedState = stateString
 	}
 
 	return nil
