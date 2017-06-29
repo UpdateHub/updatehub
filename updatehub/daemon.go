@@ -10,7 +10,7 @@ package updatehub
 
 import (
 	"github.com/OSSystems/pkg/log"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type Daemon struct {

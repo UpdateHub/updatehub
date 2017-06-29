@@ -1,5 +1,5 @@
-hash: a4c60de8d078b37a67b1334d3ec4a434ff159d6c4a869a59ee1da2509b863944
-updated: 2017-05-22T23:21:19.105896004-03:00
+hash: d2fec29a711e0604de610f377a97516dafc92de493f8076b9847805fd747ab8b
+updated: 2017-06-29T17:50:24.082619719-03:00
 imports:
 - name: github.com/bouk/monkey
   version: 5dace501dd6dad5b369748946db553903c8e839c
@@ -20,7 +20,7 @@ imports:
 - name: github.com/mattn/go-shellwords
   version: 005a0944d84452842197c2108bd9168ced206f78
 - name: github.com/OSSystems/pkg
-  version: c38fecdba53074c7de92e372258630a39f74fe15
+  version: 0c38fb3a1f0ffbf57cdcd47857ee8d2dc84af1ef
   subpackages:
   - log
 - name: github.com/pkg/errors
@@ -29,8 +29,8 @@ imports:
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
-- name: github.com/Sirupsen/logrus
-  version: 10f801ebc38b33738c9d17d50860f484a0988ff5
+- name: github.com/sirupsen/logrus
+  version: 3d4380f53a34dcdc95f0c1db702615992b38d9a4
   subpackages:
   - hooks/test
 - name: github.com/spf13/afero

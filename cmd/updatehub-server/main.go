@@ -14,7 +14,7 @@ import (
 	"os"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/UpdateHub/updatehub/server"
 	"github.com/spf13/cobra"
 )

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/client"

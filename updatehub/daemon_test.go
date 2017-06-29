@@ -14,8 +14,8 @@ import (
 	"testing"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/Sirupsen/logrus"
-	"github.com/Sirupsen/logrus/hooks/test"
+	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
 	"github.com/bouk/monkey"
