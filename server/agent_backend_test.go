@@ -88,7 +88,7 @@ func TestNewAgentBackend(t *testing.T) {
 
 	routes := ab.Routes()
 
-	assert.Equal(t, 9, len(routes))
+	assert.Equal(t, 10, len(routes))
 
 	assert.Equal(t, "GET", routes[0].Method)
 	assert.Equal(t, "/info", routes[0].Path)
@@ -142,6 +142,12 @@ func TestNewAgentBackend(t *testing.T) {
 	assert.Equal(t, "/reboot", routes[8].Path)
 	expectedFunction = reflect.ValueOf(ab.reboot)
 	receivedFunction = reflect.ValueOf(routes[8].Handle)
+	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
+
+	assert.Equal(t, "GET", routes[9].Method)
+	assert.Equal(t, "/log", routes[9].Path)
+	expectedFunction = reflect.ValueOf(ab.log)
+	receivedFunction = reflect.ValueOf(routes[9].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 
 	rm.AssertExpectations(t)
@@ -681,5 +687,42 @@ func TestRebootRouteWithError(t *testing.T) {
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	om.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestLogRoute(t *testing.T) {
+	_, url, clm, rm := setup(t)
+	defer teardown(t)
+
+	r, err := http.Get(url + "/log")
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+	assert.Equal(t, 200, r.StatusCode)
+
+	jsonArray := []map[string]interface{}{}
+	err = json.Unmarshal(bodyContent, &jsonArray)
+	assert.NoError(t, err)
+
+	assert.True(t, len(jsonArray) > 0)
+
+	// since we can't control which log messages will be on the
+	// buffer, we only test whether the field exists or not
+
+	_, ok := jsonArray[0]["level"]
+	assert.True(t, ok)
+
+	_, ok = jsonArray[0]["message"]
+	assert.True(t, ok)
+
+	_, ok = jsonArray[0]["time"]
+	assert.True(t, ok)
+
+	_, ok = jsonArray[0]["data"]
+	assert.True(t, ok)
+
+	clm.AssertExpectations(t)
 	rm.AssertExpectations(t)
 }

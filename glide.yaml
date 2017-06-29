@@ -8,7 +8,7 @@ import:
   subpackages:
   - mock
 - package: github.com/bouk/monkey
-- package: github.com/Sirupsen/logrus
+- package: github.com/sirupsen/logrus
 - package: github.com/fsnotify/fsnotify
 - package: github.com/spf13/cobra
 - package: github.com/OSSystems/pkg

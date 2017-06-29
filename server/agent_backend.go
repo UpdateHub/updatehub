@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"path"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/UpdateHub/updatehub/utils"
@@ -50,6 +51,7 @@ func (ab *AgentBackend) Routes() []Route {
 		{Method: "POST", Path: "/update/download/abort", Handle: ab.updateDownloadAbort},
 		{Method: "POST", Path: "/update/install", Handle: ab.updateInstall},
 		{Method: "POST", Path: "/reboot", Handle: ab.reboot},
+		{Method: "GET", Path: "/log", Handle: ab.log},
 	}
 }
 
@@ -227,4 +229,22 @@ func (ab *AgentBackend) reboot(w http.ResponseWriter, r *http.Request, p httprou
 	w.WriteHeader(202)
 
 	fmt.Fprintf(w, string(`{ "message": "request accepted, rebooting the device" }`))
+}
+
+func (ab *AgentBackend) log(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	out := []map[string]interface{}{}
+
+	for _, e := range log.AllEntries() {
+		out = append(out, map[string]interface{}{
+			"message": e.Message,
+			"level":   string(e.Level.String()),
+			"time":    string(e.Time.String()),
+			"data":    e.Data,
+		})
+	}
+
+	w.WriteHeader(200)
+
+	outputJSON, _ := json.MarshalIndent(out, "", "    ")
+	fmt.Fprintf(w, string(outputJSON))
 }

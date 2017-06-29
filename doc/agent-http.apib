@@ -317,17 +317,26 @@ Returns the agent log.
 
     + Body
 
-            {
+            [
                 {
                     "level":"info",
-                    "message":"info 1"
+                    "message":"info 1",
+                    "time": "2017-06-29 13:59:31.831111065 -0300 -03",
+                    "data": {}
                 },
                 {
                     "level":"info",
-                    "message":"info 2"
+                    "message":"info 2",
+                    "time": "2017-06-29 14:59:41.831111065 -0300 -03",
+                    "data": {
+                        "field1": "value1",
+                        "field2": "value2"
+                    }
                 },
                 {
                     "level":"error",
-                    "message":"error n"
+                    "message":"error n",
+                    "time": "2017-06-29 15:59:51.831111065 -0300 -03",
+                    "data": {}
                 }
-            }
+            ]
