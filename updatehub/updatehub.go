@@ -18,6 +18,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/imdario/mergo"
 	"github.com/spf13/afero"
 
@@ -32,7 +33,9 @@ import (
 // GetIndexOfObjectToBeInstalled selects which object will be installed from the update metadata
 func GetIndexOfObjectToBeInstalled(aii activeinactive.Interface, um *metadata.UpdateMetadata) (int, error) {
 	if len(um.Objects) < 1 || len(um.Objects) > 2 {
-		return 0, fmt.Errorf("update metadata must have 1 or 2 objects. Found %d", len(um.Objects))
+		err := fmt.Errorf("update metadata must have 1 or 2 objects. Found %d", len(um.Objects))
+		log.Error(err)
+		return 0, err
 	}
 
 	// 2 objects means that ActiveInactive is enabled
@@ -64,7 +67,9 @@ func (s *Sha256CheckerImpl) CheckDownloadedObjectSha256sum(fsBackend afero.Fs, d
 	}
 
 	if calculatedSha256sum != expectedSha256sum {
-		return fmt.Errorf("sha256sum's don't match. Expected: %s / Calculated: %s", expectedSha256sum, calculatedSha256sum)
+		err = fmt.Errorf("sha256sum's don't match. Expected: %s / Calculated: %s", expectedSha256sum, calculatedSha256sum)
+		log.Error(err)
+		return err
 	}
 
 	return nil
@@ -126,9 +131,13 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 
 	packageUID := updateMetadata.PackageUID()
 
+	log.Info("Downloading update. PackageUID:", packageUID)
+
 	progress := 0
 	for _, obj := range updateMetadata.Objects[indexToInstall] {
 		objectUID := obj.GetObjectMetadata().Sha256sum
+
+		log.Info("Downloading object: ", objectUID)
 
 		uri := "/"
 		uri = path.Join(uri, uh.FirmwareMetadata.ProductUID)
@@ -152,6 +161,8 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 			return err
 		}
 
+		log.Info("Object ", objectUID, " downloaded successfully")
+
 		step := 100 / len(updateMetadata.Objects[indexToInstall])
 		progress += step
 
@@ -161,6 +172,8 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		default:
 		}
 	}
+
+	log.Info("Update downloaded successfully")
 
 	if progress < 100 {
 		// "non-blocking" write to channel
@@ -180,6 +193,8 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		return err
 	}
 
+	log.Info("Installing update. PackageUID:", updateMetadata.PackageUID())
+
 	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.activeInactiveBackend, updateMetadata)
 	if err != nil {
 		return err
@@ -192,6 +207,9 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		if err != nil {
 			return err
 		}
+
+		log.Info("Installing object: ", obj.GetObjectMetadata().Sha256sum)
+		log.Info("Mode: ", obj.GetObjectMetadata().Mode)
 
 		err = obj.Setup()
 		if err != nil {
@@ -228,6 +246,14 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 			if err != nil {
 				return err
 			}
+
+			log.Info("ActiveInactive object activated:", indexToInstall)
+		}
+
+		if install {
+			log.Info("Object ", obj.GetObjectMetadata().Sha256sum, " installed successfully")
+		} else {
+			log.Info("Object ", obj.GetObjectMetadata().Sha256sum, " is already installed (satisfied the 'install-if-different' field)")
 		}
 
 		step := 100 / len(updateMetadata.Objects[indexToInstall])
@@ -239,6 +265,8 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		default:
 		}
 	}
+
+	log.Info("Update installed successfully")
 
 	if progress < 100 {
 		// "non-blocking" write to channel
@@ -263,6 +291,9 @@ func (uh *UpdateHub) ReportCurrentState() error {
 		if rs.UpdateMetadata() != nil {
 			packageUID = rs.UpdateMetadata().PackageUID()
 		}
+
+		log.Debug("reporting state '", stateString, "'. packageUID: ", packageUID)
+
 		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, stateString)
 		if err != nil {
 			return err
@@ -283,6 +314,8 @@ func (uh *UpdateHub) LoadSettings() error {
 	var err error
 
 	for _, name := range files {
+		log.Debug("loading settings from: ", name)
+
 		file, err = uh.Store.Open(name)
 		if err != nil {
 			if os.IsNotExist(err) {
@@ -346,5 +379,7 @@ func (uh *UpdateHub) StartPolling() {
 		} else {
 			poll.ticksCount = (int64(uh.Settings.PollingInterval) - nextPoll.Sub(now).Nanoseconds()) / int64(uh.TimeStep)
 		}
+
+		log.Info("next poll is expected at: ", nextPoll)
 	}
 }

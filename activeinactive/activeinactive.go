@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/utils"
 )
 
@@ -28,24 +29,36 @@ type DefaultImpl struct {
 
 // Active returns the current active object number
 func (i *DefaultImpl) Active() (int, error) {
+	log.Debug("Running 'updatehub-active-get'")
+
 	output, err := i.Execute("updatehub-active-get")
 	if err != nil {
-		return 0, err
+		finalErr := fmt.Errorf("failed to execute 'updatehub-active-get': %s", err)
+		log.Error(finalErr)
+		return 0, finalErr
 	}
 
 	activeIndex, err := strconv.ParseInt(string(output), 10, 0)
 	if err != nil {
-		return 0, err
+		finalErr := fmt.Errorf("failed to parse response from 'updatehub-active-get': %s", err)
+		log.Error(finalErr)
+		return 0, finalErr
 	}
+
+	log.Debug("Active partition: ", int(activeIndex))
 
 	return int(activeIndex), nil
 }
 
 // SetActive sets the current active object number to "active"
 func (i *DefaultImpl) SetActive(active int) error {
+	log.Debug("Running 'updatehub-active-set' for partition: ", active)
+
 	_, err := i.Execute(fmt.Sprintf("updatehub-active-set %d", active))
 	if err != nil {
-		return err
+		finalErr := fmt.Errorf("failed to execute 'updatehub-active-set': %s", err)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	return nil

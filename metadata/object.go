@@ -10,9 +10,10 @@ package metadata
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"reflect"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/installmodes"
 )
 
@@ -49,7 +50,9 @@ func NewObjectMetadata(bytes []byte) (Object, error) {
 		field, ok := reflect.TypeOf(obj).FieldByName("CompressedObject")
 
 		if !ok || field.Type != reflect.TypeOf(CompressedObject{}) {
-			return nil, errors.New("Compressed object does not embed CompressedObject struct")
+			finalErr := fmt.Errorf("Compressed object does not embed CompressedObject struct")
+			log.Error(finalErr)
+			return nil, finalErr
 		}
 	}
 

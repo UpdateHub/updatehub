@@ -56,6 +56,8 @@ func (ab *AgentBackend) Routes() []Route {
 }
 
 func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/info' request")
+
 	out := map[string]interface{}{}
 
 	out["version"] = ab.UpdateHub.Version
@@ -68,9 +70,13 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 	w.WriteHeader(200)
 
 	fmt.Fprintf(w, string(outputJSON))
+
+	log.Info(string(outputJSON))
 }
 
 func (ab *AgentBackend) status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/status' request")
+
 	out := ab.UpdateHub.State.ToMap()
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
@@ -78,9 +84,13 @@ func (ab *AgentBackend) status(w http.ResponseWriter, r *http.Request, p httprou
 	w.WriteHeader(200)
 
 	fmt.Fprintf(w, string(outputJSON))
+
+	log.Info(string(outputJSON))
 }
 
 func (ab *AgentBackend) update(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/update' request")
+
 	go func() {
 		s := updatehub.NewUpdateCheckState()
 		ab.UpdateHub.State.Cancel(true, s)
@@ -88,10 +98,15 @@ func (ab *AgentBackend) update(w http.ResponseWriter, r *http.Request, p httprou
 
 	w.WriteHeader(202)
 
-	fmt.Fprintf(w, string(`{ "message": "request accepted, update procedure fired" }`))
+	msg := string(`{ "message": "request accepted, update procedure fired" }`)
+	fmt.Fprintf(w, msg)
+
+	log.Info(msg)
 }
 
 func (ab *AgentBackend) updateMetadata(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/update/metadata' request")
+
 	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
 	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
 
@@ -103,13 +118,18 @@ func (ab *AgentBackend) updateMetadata(w http.ResponseWriter, r *http.Request, p
 
 		outputJSON, _ := json.MarshalIndent(out, "", "    ")
 		fmt.Fprintf(w, string(outputJSON))
+
+		log.Info(string(outputJSON))
 	} else {
 		w.WriteHeader(200)
 		fmt.Fprintf(w, string(data))
+		log.Error(string(data))
 	}
 }
 
 func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/update/probe' request")
+
 	out := map[string]interface{}{}
 
 	um, d := ab.UpdateHub.Controller.CheckUpdate(0)
@@ -128,9 +148,13 @@ func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p ht
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 	fmt.Fprintf(w, string(outputJSON))
+
+	log.Info(string(outputJSON))
 }
 
 func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/update/download' request")
+
 	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
 	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
 	if err != nil {
@@ -141,6 +165,7 @@ func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p
 
 		outputJSON, _ := json.MarshalIndent(out, "", "    ")
 		fmt.Fprintf(w, string(outputJSON))
+		log.Error(string(outputJSON))
 		return
 	}
 
@@ -153,6 +178,7 @@ func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p
 
 		outputJSON, _ := json.MarshalIndent(out, "", "    ")
 		fmt.Fprintf(w, string(outputJSON))
+		log.Error(string(outputJSON))
 		return
 	}
 
@@ -162,10 +188,15 @@ func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p
 
 	w.WriteHeader(202)
 
-	fmt.Fprintf(w, string(`{ "message": "request accepted, downloading update objects" }`))
+	msg := string(`{ "message": "request accepted, downloading update objects" }`)
+	fmt.Fprintf(w, msg)
+
+	log.Info(msg)
 }
 
 func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/update/download/abort' request")
+
 	// FIXME: how to test this?
 	// ab.downloadCancelChan <- true
 
@@ -176,9 +207,13 @@ func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Reque
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 	fmt.Fprintf(w, string(outputJSON))
+
+	log.Info(string(outputJSON))
 }
 
 func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/update/install' request")
+
 	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
 	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
 	if err != nil {
@@ -189,6 +224,7 @@ func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p 
 
 		outputJSON, _ := json.MarshalIndent(out, "", "    ")
 		fmt.Fprintf(w, string(outputJSON))
+		log.Error(string(outputJSON))
 		return
 	}
 
@@ -201,6 +237,7 @@ func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p 
 
 		outputJSON, _ := json.MarshalIndent(out, "", "    ")
 		fmt.Fprintf(w, string(outputJSON))
+		log.Error(string(outputJSON))
 		return
 	}
 
@@ -210,10 +247,15 @@ func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p 
 
 	w.WriteHeader(202)
 
-	fmt.Fprintf(w, string(`{ "message": "request accepted, installing update" }`))
+	msg := string(`{ "message": "request accepted, installing update" }`)
+	fmt.Fprintf(w, msg)
+
+	log.Info(msg)
 }
 
 func (ab *AgentBackend) reboot(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/reboot' request")
+
 	err := ab.Reboot()
 	if err != nil {
 		w.WriteHeader(400)
@@ -223,15 +265,21 @@ func (ab *AgentBackend) reboot(w http.ResponseWriter, r *http.Request, p httprou
 
 		outputJSON, _ := json.MarshalIndent(out, "", "    ")
 		fmt.Fprintf(w, string(outputJSON))
+		log.Error(string(outputJSON))
 		return
 	}
 
 	w.WriteHeader(202)
 
-	fmt.Fprintf(w, string(`{ "message": "request accepted, rebooting the device" }`))
+	msg := string(`{ "message": "request accepted, rebooting the device" }`)
+	fmt.Fprintf(w, msg)
+
+	log.Info(msg)
 }
 
 func (ab *AgentBackend) log(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log.Info("Processing '/log' request")
+
 	out := []map[string]interface{}{}
 
 	for _, e := range log.AllEntries() {
@@ -247,4 +295,6 @@ func (ab *AgentBackend) log(w http.ResponseWriter, r *http.Request, p httprouter
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 	fmt.Fprintf(w, string(outputJSON))
+
+	log.Info(string(outputJSON))
 }

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/copy"
@@ -68,8 +69,12 @@ type CopyObject struct {
 
 // Setup implementation for the "copy" handler
 func (cp *CopyObject) Setup() error {
+	log.Info("'copy' handler Setup")
+
 	if cp.TargetType != "device" {
-		return fmt.Errorf("target-type '%s' is not supported for the 'copy' handler. Its value must be 'device'", cp.TargetType)
+		finalErr := fmt.Errorf("target-type '%s' is not supported for the 'copy' handler. Its value must be 'device'", cp.TargetType)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	return nil
@@ -77,6 +82,8 @@ func (cp *CopyObject) Setup() error {
 
 // Install implementation for the "copy" handler
 func (cp *CopyObject) Install(downloadDir string) error {
+	log.Info("'copy' handler Install")
+
 	if cp.MustFormat {
 		err := cp.Format(cp.Target, cp.FSType, cp.FormatOptions)
 		if err != nil {
@@ -134,6 +141,7 @@ func (cp *CopyObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "copy" handler
 func (cp *CopyObject) Cleanup() error {
+	log.Info("'copy' handler Cleanup")
 	return nil
 }
 

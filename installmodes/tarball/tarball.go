@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/copy"
@@ -67,6 +68,8 @@ type TarballObject struct {
 
 // Setup implementation for the "tarball" handler
 func (tb *TarballObject) Setup() error {
+	log.Info("'tarball' handler Setup")
+
 	switch tb.TargetType {
 	case "device":
 		tb.targetDevice = tb.Target
@@ -85,7 +88,9 @@ func (tb *TarballObject) Setup() error {
 
 		tb.targetDevice = td
 	default:
-		return fmt.Errorf("target-type '%s' is not supported for the 'tarball' handler. Its value must be one of: 'device', 'ubivolume' or 'mtdname'", tb.TargetType)
+		finalErr := fmt.Errorf("target-type '%s' is not supported for the 'tarball' handler. Its value must be one of: 'device', 'ubivolume' or 'mtdname'", tb.TargetType)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	return nil
@@ -93,6 +98,8 @@ func (tb *TarballObject) Setup() error {
 
 // Install implementation for the "tarball" handler
 func (tb *TarballObject) Install(downloadDir string) error {
+	log.Info("'tarball' handler Install")
+
 	if tb.MustFormat {
 		err := tb.Format(tb.Target, tb.FSType, tb.FormatOptions)
 		if err != nil {
@@ -136,5 +143,6 @@ func (tb *TarballObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "tarball" handler
 func (tb *TarballObject) Cleanup() error {
+	log.Info("'tarball' handler Cleanup")
 	return nil
 }

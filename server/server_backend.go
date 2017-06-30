@@ -35,7 +35,9 @@ func NewServerBackend(path string) (*ServerBackend, error) {
 	}
 
 	if !stat.IsDir() {
-		return nil, fmt.Errorf("%s: not a directory", path)
+		finalErr := fmt.Errorf("%s: not a directory", path)
+		log.Error(finalErr)
+		return nil, finalErr
 	}
 
 	sb := &ServerBackend{
@@ -61,7 +63,9 @@ func (sb *ServerBackend) ParseUpdateMetadata() error {
 
 	err = json.Unmarshal(data, &um)
 	if err != nil {
-		return fmt.Errorf("Invalid update metadata: %s", err.Error())
+		finalErr := fmt.Errorf("Invalid update metadata: %s", err.Error())
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	sb.updateMetadata = data

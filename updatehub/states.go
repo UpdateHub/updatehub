@@ -205,6 +205,8 @@ func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
 	if uh.Settings.ExtraPollingInterval > 0 {
 		extraPollTime := uh.Settings.LastPoll.Add(uh.Settings.ExtraPollingInterval)
 
+		log.Info("ExtraPoll received: ", extraPollTime)
+
 		if extraPollTime.Before(now) {
 			return NewUpdateCheckState(), false
 		}
@@ -249,8 +251,9 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 	nextState = state
 
 	if state.interval < uh.TimeStep {
-		err := fmt.Errorf("Can't handle polling with invalid interval. It must be greater than '%s'", uh.TimeStep)
-		return NewErrorState(nil, NewTransientError(err)), false
+		finalErr := fmt.Errorf("Can't handle polling with invalid interval. It must be greater than '%s'", uh.TimeStep)
+		log.Error(finalErr)
+		return NewErrorState(nil, NewTransientError(finalErr)), false
 	}
 
 	go func() {

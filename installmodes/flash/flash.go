@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/installifdifferent"
@@ -64,6 +65,8 @@ type FlashObject struct {
 
 // Setup implementation for the "flash" handler
 func (f *FlashObject) Setup() error {
+	log.Info("'flash' handler Setup")
+
 	switch f.TargetType {
 	case "device":
 		f.targetDevice = f.Target
@@ -75,7 +78,9 @@ func (f *FlashObject) Setup() error {
 
 		f.targetDevice = td
 	default:
-		return fmt.Errorf("target-type '%s' is not supported for the 'flash' handler. Its value must be either 'device' or 'mtdname'", f.TargetType)
+		finalErr := fmt.Errorf("target-type '%s' is not supported for the 'flash' handler. Its value must be either 'device' or 'mtdname'", f.TargetType)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	return nil
@@ -83,6 +88,8 @@ func (f *FlashObject) Setup() error {
 
 // Install implementation for the "flash" handler
 func (f *FlashObject) Install(downloadDir string) error {
+	log.Info("'flash' handler Install")
+
 	isNand, err := f.MtdUtils.MtdIsNAND(f.targetDevice)
 	if err != nil {
 		return err
@@ -108,6 +115,7 @@ func (f *FlashObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "flash" handler
 func (f *FlashObject) Cleanup() error {
+	log.Info("'flash' handler Cleanup")
 	return nil
 }
 

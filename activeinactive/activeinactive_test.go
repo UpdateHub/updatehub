@@ -42,7 +42,7 @@ func TestDefaultImplActiveWithExecuteError(t *testing.T) {
 
 	active, err := di.Active()
 
-	assert.EqualError(t, err, "execute error")
+	assert.EqualError(t, err, "failed to execute 'updatehub-active-get': execute error")
 	assert.Equal(t, 0, active)
 
 	clm.AssertExpectations(t)
@@ -58,7 +58,7 @@ func TestDefaultImplActiveWithParseIntError(t *testing.T) {
 
 	active, err := di.Active()
 
-	assert.EqualError(t, err, "strconv.ParseInt: parsing \"a\": invalid syntax")
+	assert.EqualError(t, err, "failed to parse response from 'updatehub-active-get': strconv.ParseInt: parsing \"a\": invalid syntax")
 	assert.Equal(t, 0, active)
 
 	clm.AssertExpectations(t)
@@ -88,6 +88,6 @@ func TestDefaultImplSetActiveWithExecuteError(t *testing.T) {
 
 	err := di.SetActive(1)
 
-	assert.EqualError(t, err, "execute error")
+	assert.EqualError(t, err, "failed to execute 'updatehub-active-set': execute error")
 	clm.AssertExpectations(t)
 }

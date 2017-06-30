@@ -10,6 +10,7 @@ package updatehub
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -42,6 +43,47 @@ UpdateHubServerAddress=localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 `
+
+func TestToString(t *testing.T) {
+	s := &Settings{
+		PollingSettings: PollingSettings{
+			PollingInterval: defaultPollingInterval,
+			PollingEnabled:  true,
+			PersistentPollingSettings: PersistentPollingSettings{
+				LastPoll:             (time.Time{}).UTC(),
+				FirstPoll:            (time.Time{}).UTC(),
+				ExtraPollingInterval: 0,
+				PollingRetries:       0,
+			},
+		},
+
+		StorageSettings: StorageSettings{
+			ReadOnly: false,
+		},
+
+		UpdateSettings: UpdateSettings{
+			DownloadDir:               "/tmp",
+			AutoDownloadWhenAvailable: true,
+			AutoInstallAfterDownload:  true,
+			AutoRebootAfterInstall:    true,
+			SupportedInstallModes:     []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
+		},
+
+		NetworkSettings: NetworkSettings{
+			DisableHTTPS:  false,
+			ServerAddress: "",
+		},
+
+		FirmwareSettings: FirmwareSettings{
+			FirmwareMetadataPath: "",
+		},
+	}
+
+	outputJSON, _ := json.MarshalIndent(s, "", "    ")
+	expectedString := string(outputJSON)
+
+	assert.Equal(t, expectedString, s.ToString())
+}
 
 func TestLoadSettingsDefaultValues(t *testing.T) {
 	s, err := LoadSettings(bytes.NewReader([]byte("")))

@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/copy"
@@ -71,8 +72,12 @@ type UbifsObject struct {
 
 // Setup implementation for the "ubifs" handler
 func (ufs *UbifsObject) Setup() error {
+	log.Info("'ubifs' handler Setup")
+
 	if ufs.TargetType != "ubivolume" {
-		return fmt.Errorf("target-type '%s' is not supported for the 'ubifs' handler. Its value must be 'ubivolume'", ufs.TargetType)
+		finalErr := fmt.Errorf("target-type '%s' is not supported for the 'ubifs' handler. Its value must be 'ubivolume'", ufs.TargetType)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	return nil
@@ -80,6 +85,8 @@ func (ufs *UbifsObject) Setup() error {
 
 // Install implementation for the "ubifs" handler
 func (ufs *UbifsObject) Install(downloadDir string) error {
+	log.Info("'ubifs' handler Install")
+
 	targetDevice, err := ufs.GetTargetDeviceFromUbiVolumeName(ufs.FileSystemBackend, ufs.Target)
 	if err != nil {
 		return err
@@ -101,5 +108,6 @@ func (ufs *UbifsObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "ubifs" handler
 func (ufs *UbifsObject) Cleanup() error {
+	log.Info("'ubifs' handler Cleanup")
 	return nil
 }
