@@ -11,8 +11,10 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
+
+	"github.com/OSSystems/pkg/log"
 )
 
 type ReportClient struct {
@@ -23,8 +25,13 @@ type Reporter interface {
 }
 
 func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state string) error {
+	log.Info("Reporting state: ", state)
+	log.Info("PackageUID: ", packageUID)
+
 	if api == nil {
-		return errors.New("invalid api requester")
+		finalErr := fmt.Errorf("invalid api requester")
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	url := serverURL(api.Client(), StateReportEndpoint)
@@ -36,27 +43,36 @@ func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state st
 
 	body, err := json.Marshal(data)
 	if err != nil {
-		return err
+		finalErr := fmt.Errorf("failed to marshal request body: %s", err)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
-		return errors.New("failed to create report request")
+		finalErr := fmt.Errorf("failed to create report request: %s", err)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	res, err := api.Do(req)
 	if err != nil {
-		return errors.New("report request failed")
+		finalErr := fmt.Errorf("report request failed: %s", err)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	defer res.Body.Close()
 
 	switch res.StatusCode {
 	case http.StatusOK:
+		log.Info("State ", state, " reported successfully")
 		return nil
 	}
 
-	return errors.New("failed to report state")
+	finalErr := fmt.Errorf("failed to report state. HTTP code: %d", res.StatusCode)
+	log.Error(finalErr)
+	return finalErr
 }
 
 func NewReportClient() *ReportClient {

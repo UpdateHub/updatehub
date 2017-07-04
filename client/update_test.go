@@ -59,7 +59,7 @@ func TestCheckUpdateWithNewRequestError(t *testing.T) {
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
-	assert.EqualError(t, err, "failed to create check update request")
+	assert.EqualError(t, err, "failed to create check update request: parse http://localhost/resource%s: invalid URL escape \"%s\"")
 }
 
 func TestCheckUpdateWithApiDoError(t *testing.T) {
@@ -80,7 +80,7 @@ func TestCheckUpdateWithApiDoError(t *testing.T) {
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
-	assert.EqualError(t, err, "check update request failed")
+	assert.True(t, strings.HasPrefix(err.Error(), "check update request failed: Post http://invalid/resource: dial tcp: lookup invalid"))
 }
 
 func TestCheckUpdateWithExtraPollHeaderError(t *testing.T) {
@@ -113,7 +113,7 @@ func TestCheckUpdateWithExtraPollHeaderError(t *testing.T) {
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
-	assert.EqualError(t, err, "failed to parse extra poll header")
+	assert.EqualError(t, err, "failed to parse extra poll header: strconv.ParseInt: parsing \"@3\": invalid syntax")
 }
 
 func TestCheckUpdateWithResponseBodyReadError(t *testing.T) {
@@ -212,7 +212,7 @@ func TestCheckUpdateWithInvalidStatusCode(t *testing.T) {
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
-	assert.EqualError(t, err, "invalid response received from the server. Status 502")
+	assert.EqualError(t, err, "invalid response received from the server. HTTP code: 502")
 }
 
 func TestCheckUpdateWithNoUpdateAvailable(t *testing.T) {

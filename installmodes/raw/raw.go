@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/copy"
@@ -58,8 +59,12 @@ type RawObject struct {
 
 // Setup implementation for the "raw" handler
 func (r *RawObject) Setup() error {
+	log.Info("'raw' handler Setup")
+
 	if r.TargetType != "device" {
-		return fmt.Errorf("target-type '%s' is not supported for the 'raw' handler. Its value must be 'device'", r.TargetType)
+		finalErr := fmt.Errorf("target-type '%s' is not supported for the 'raw' handler. Its value must be 'device'", r.TargetType)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	return nil
@@ -67,12 +72,15 @@ func (r *RawObject) Setup() error {
 
 // Install implementation for the "raw" handler
 func (r *RawObject) Install(downloadDir string) error {
+	log.Info("'raw' handler Install")
+
 	srcPath := path.Join(downloadDir, r.Sha256sum)
 	return r.CopyBackend.CopyFile(r.FileSystemBackend, r.LibArchiveBackend, srcPath, r.Target, r.ChunkSize, r.Skip, r.Seek, r.Count, r.Truncate, r.Compressed)
 }
 
 // Cleanup implementation for the "raw" handler
 func (r *RawObject) Cleanup() error {
+	log.Info("'raw' handler Cleanup")
 	return nil
 }
 

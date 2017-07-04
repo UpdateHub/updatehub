@@ -13,6 +13,7 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
@@ -53,11 +54,14 @@ type ImxKobsObject struct {
 
 // Setup implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Setup() error {
+	log.Info("'imxkobs' handler Setup")
 	return nil
 }
 
 // Install implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Install(downloadDir string) error {
+	log.Info("'imxkobs' handler Install")
+
 	cmdline := "kobs-ng init"
 
 	if ik.Add1KPadding {
@@ -87,6 +91,7 @@ func (ik *ImxKobsObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Cleanup() error {
+	log.Info("'imxkobs' handler Cleanup")
 	return nil
 }
 

@@ -16,6 +16,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/utils"
@@ -35,6 +36,8 @@ type FirmwareMetadata struct {
 }
 
 func NewFirmwareMetadata(basePath string, store afero.Fs, cmd utils.CmdLineExecuter) (*FirmwareMetadata, error) {
+	log.Info("reading firmware metadata")
+
 	productUID, err := cmd.Execute(path.Join(basePath, "product-uid"))
 	if err != nil {
 		return nil, err
@@ -74,13 +77,19 @@ func NewFirmwareMetadata(basePath string, store afero.Fs, cmd utils.CmdLineExecu
 		Version:          strings.TrimSpace(string(version)),
 	}
 
+	log.Debug("    product-uid: ", firmwareMetadata.ProductUID)
+	log.Debug("    hardware: ", firmwareMetadata.Hardware)
+	log.Debug("    hardware-revision: ", firmwareMetadata.HardwareRevision)
+	log.Debug("    version: ", firmwareMetadata.Version)
+	log.Debug("    device-identity: ", firmwareMetadata.DeviceIdentity)
+	log.Debug("    device-attributes: ", firmwareMetadata.DeviceAttributes)
+
 	return firmwareMetadata, nil
 }
 
 func executeHooks(basePath string, store afero.Fs, cmd utils.CmdLineExecuter) (map[string]string, error) {
 	files, err := afero.ReadDir(store, basePath)
 	if err != nil && !os.IsNotExist(err) {
-		fmt.Println(err)
 		return nil, err
 	}
 
@@ -111,14 +120,18 @@ func executeHooks(basePath string, store afero.Fs, cmd utils.CmdLineExecuter) (m
 
 func (fm *FirmwareMetadata) CheckSupportedHardware(um *UpdateMetadata) error {
 	if fm.Hardware == "" && fm.HardwareRevision == "" {
+		log.Warn("firmware metadata hardware and hardware revision are empty, so skipping supported hardware match")
 		return nil
 	}
 
 	for _, h := range um.SupportedHardware {
 		if h.Hardware == fm.Hardware && h.HardwareRevision == fm.HardwareRevision {
+			log.Debug("hardware is supported by the update")
 			return nil
 		}
 	}
 
-	return fmt.Errorf("this hardware doesn't match the hardware supported by the update")
+	err := fmt.Errorf("this hardware doesn't match the hardware supported by the update")
+	log.Error(err)
+	return err
 }

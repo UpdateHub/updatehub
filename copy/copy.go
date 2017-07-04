@@ -9,12 +9,13 @@
 package copy
 
 import (
-	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"time"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/utils"
 	shellwords "github.com/mattn/go-shellwords"
@@ -48,7 +49,9 @@ type ExtendedIO struct {
 // Copy copies from rd to wr until EOF or timeout is reached on rd or it was cancelled
 func (eio ExtendedIO) Copy(wr io.Writer, rd io.Reader, timeout time.Duration, cancel <-chan bool, chunkSize int, skip int, count int, compressed bool) (bool, error) {
 	if chunkSize < 1 {
-		return false, errors.New("Copy error: chunkSize can't be less than 1")
+		finalErr := fmt.Errorf("copy error: chunkSize can't be less than 1")
+		log.Error(finalErr)
+		return false, finalErr
 	}
 
 	len := make(chan int)
@@ -81,7 +84,9 @@ Loop:
 				return true, nil
 			}
 		case <-time.After(timeout):
-			return false, errors.New("timeout")
+			finalErr := fmt.Errorf("copy error: timeout")
+			log.Error(finalErr)
+			return false, finalErr
 		case n, ok := <-len:
 			if !ok {
 				break Loop
@@ -94,7 +99,9 @@ Loop:
 			} else {
 				_, err := wr.Write(buf[0:n])
 				if err != nil {
-					return false, err
+					finalErr := fmt.Errorf("copy error: write: %s", err)
+					log.Error(finalErr)
+					return false, finalErr
 				}
 			}
 		}
@@ -124,12 +131,14 @@ func (eio ExtendedIO) CopyFile(
 
 	target, err := fsBackend.OpenFile(targetPath, flags, 0666)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	defer target.Close()
 
 	_, err = target.Seek(int64(seek*chunkSize), io.SeekStart)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -149,18 +158,24 @@ func (eio ExtendedIO) CopyToProcessStdin(
 	p := shellwords.NewParser()
 	list, err := p.Parse(processCmdline)
 	if err != nil {
-		return err
+		finalErr := fmt.Errorf("copy to process stdin error: failed to parse cmdline: %s", err)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	cmd := exec.Command(list[0], list[1:]...)
 	processStdin, err := cmd.StdinPipe()
 	if err != nil {
-		return err
+		finalErr := fmt.Errorf("copy to process stdin error: failed to get stdin pipe: %s", err)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		return err
+		finalErr := fmt.Errorf("copy to process stdin error: failed to start process: %s", err)
+		log.Error(finalErr)
+		return finalErr
 	}
 
 	err = eio.sharedCopyLogic(fsBackend, libarchiveBackend, processStdin, sourcePath,
@@ -197,7 +212,9 @@ func (eio ExtendedIO) sharedCopyLogic(
 	if compressed {
 		reader, readerErr := libarchive.NewReader(libarchiveBackend, sourcePath, chunkSize)
 		if readerErr != nil {
-			return readerErr
+			finalErr := fmt.Errorf("failed to create libarchive reader: %s", readerErr)
+			log.Error(finalErr)
+			return finalErr
 		}
 		defer reader.Free()
 
@@ -207,14 +224,18 @@ func (eio ExtendedIO) sharedCopyLogic(
 		if nextHeaderErr == io.EOF {
 			_, writeErr := target.Write([]byte(""))
 			if writeErr != nil {
-				return writeErr
+				finalErr := fmt.Errorf("failed to write empty file: %s", writeErr)
+				log.Error(finalErr)
+				return finalErr
 			}
 
 			return nil
 		}
 
 		if nextHeaderErr != nil {
-			return nextHeaderErr
+			finalErr := fmt.Errorf("failed to get next archive header: %s", nextHeaderErr)
+			log.Error(finalErr)
+			return finalErr
 		}
 
 		// for compressed files the "skip" is done inside the "Copy"
@@ -225,14 +246,17 @@ func (eio ExtendedIO) sharedCopyLogic(
 		file, fileErr := fsBackend.Open(sourcePath)
 		if fileErr != nil {
 			if pathErr, ok := fileErr.(*os.PathError); ok {
+				log.Error(pathErr)
 				return pathErr
 			}
+			log.Error(fileErr)
 			return fileErr
 		}
 		defer file.Close()
 
 		_, seekErr := file.Seek(int64(skip*chunkSize), io.SeekStart)
 		if seekErr != nil {
+			log.Error(seekErr)
 			return seekErr
 		}
 

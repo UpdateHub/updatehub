@@ -11,7 +11,6 @@ package client
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/metadata"
 )
 
@@ -32,8 +32,12 @@ type Updater interface {
 }
 
 func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
+	log.Info("Checking update at: ", uri)
+
 	if api == nil {
-		return nil, 0, errors.New("invalid api requester")
+		finalErr := fmt.Errorf("invalid api requester")
+		log.Error(finalErr)
+		return nil, 0, finalErr
 	}
 
 	rawJSON, _ := json.Marshal(data)
@@ -42,14 +46,18 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(rawJSON))
 	if err != nil {
-		return nil, 0, errors.New("failed to create check update request")
+		finalErr := fmt.Errorf("failed to create check update request: %s", err)
+		log.Error(finalErr)
+		return nil, 0, finalErr
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := api.Do(req)
 	if err != nil {
-		return nil, 0, errors.New("check update request failed")
+		finalErr := fmt.Errorf("check update request failed: %s", err)
+		log.Error(finalErr)
+		return nil, 0, finalErr
 	}
 
 	defer res.Body.Close()
@@ -61,7 +69,9 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{
 		if v, ok := res.Header["Add-Extra-Poll"]; ok {
 			extraPoll, err = strconv.ParseInt(strings.Join(v, ""), 10, 0)
 			if err != nil {
-				return nil, 0, errors.New("failed to parse extra poll header")
+				finalErr := fmt.Errorf("failed to parse extra poll header: %s", err)
+				log.Error(finalErr)
+				return nil, 0, finalErr
 			}
 		}
 	}
@@ -71,24 +81,32 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{
 
 func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error) {
 	if api == nil {
-		return nil, -1, errors.New("invalid api requester")
+		finalErr := fmt.Errorf("invalid api requester")
+		log.Error(finalErr)
+		return nil, -1, finalErr
 	}
 
 	url := serverURL(api.Client(), uri)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, -1, fmt.Errorf("failed to create fetch update request: %s", err)
+		finalErr := fmt.Errorf("failed to create fetch update request: %s", err)
+		log.Error(finalErr)
+		return nil, -1, finalErr
 	}
 
 	res, err := api.Do(req)
 	if err != nil {
-		return nil, -1, fmt.Errorf("fetch update request failed: %s", err)
+		finalErr := fmt.Errorf("fetch update request failed: %s", err)
+		log.Error(finalErr)
+		return nil, -1, finalErr
 	}
 
 	if res.StatusCode != http.StatusOK {
 		res.Body.Close()
-		return nil, -1, errors.New("failed to fetch update. maybe the file is missing?")
+		finalErr := fmt.Errorf("failed to fetch update. maybe the file is missing?")
+		log.Error(finalErr)
+		return nil, -1, finalErr
 	}
 
 	return res.Body, res.ContentLength, nil
@@ -97,14 +115,18 @@ func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser,
 func processUpgradeResponse(res *http.Response) (interface{}, error) {
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %s", err)
+		finalErr := fmt.Errorf("error reading response body: %s", err)
+		log.Error(finalErr)
+		return nil, finalErr
 	}
 
 	switch res.StatusCode {
 	case http.StatusOK:
 		data, err := metadata.NewUpdateMetadata(body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse upgrade response: %s", err)
+			finalErr := fmt.Errorf("failed to parse upgrade response: %s", err)
+			log.Error(finalErr)
+			return nil, finalErr
 		}
 
 		return data, nil
@@ -113,7 +135,9 @@ func processUpgradeResponse(res *http.Response) (interface{}, error) {
 		return nil, nil
 	}
 
-	return nil, fmt.Errorf("invalid response received from the server. Status %d", res.StatusCode)
+	finalErr := fmt.Errorf("invalid response received from the server. HTTP code: %d", res.StatusCode)
+	log.Error(finalErr)
+	return nil, finalErr
 }
 
 func NewUpdateClient() *UpdateClient {

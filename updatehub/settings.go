@@ -9,10 +9,12 @@
 package updatehub
 
 import (
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"time"
 
+	"github.com/OSSystems/pkg/log"
 	"github.com/go-ini/ini"
 )
 
@@ -70,6 +72,11 @@ func init() {
 	ini.PrettyFormat = false
 }
 
+func (s *Settings) ToString() string {
+	outputJSON, _ := json.MarshalIndent(s, "", "    ")
+	return string(outputJSON)
+}
+
 func LoadSettings(r io.Reader) (*Settings, error) {
 	cfg, err := ini.Load(ioutil.NopCloser(r))
 	if err != nil || cfg == nil {
@@ -110,6 +117,8 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 		},
 	}
 
+	log.Debug("\n", s.ToString())
+
 	err = cfg.MapTo(s)
 	if err != nil {
 		return nil, err
@@ -119,6 +128,8 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 }
 
 func SaveSettings(s *Settings, w io.Writer) error {
+	log.Debug("\n", s.ToString())
+
 	ps := &PersistentSettings{
 		PersistentPollingSettings: s.PollingSettings.PersistentPollingSettings,
 	}

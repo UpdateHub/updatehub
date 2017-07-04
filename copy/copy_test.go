@@ -707,7 +707,7 @@ func TestCopyFileWithWriteError(t *testing.T) {
 	eio := ExtendedIO{}
 	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", utils.ChunkSize,
 		0, 0, -1, true, false)
-	assert.EqualError(t, err, "io: read/write on closed pipe")
+	assert.EqualError(t, err, "copy error: write: io: read/write on closed pipe")
 
 	assert.Equal(t, sourceContent, targetContent)
 
@@ -736,7 +736,7 @@ func TestCopyFileWithZeroedChunkSize(t *testing.T) {
 	eio := ExtendedIO{}
 	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", chunkSize,
 		0, 0, -1, true, false)
-	assert.EqualError(t, err, "Copy error: chunkSize can't be less than 1")
+	assert.EqualError(t, err, "copy error: chunkSize can't be less than 1")
 
 	fom.AssertExpectations(t)
 	sourceMock.AssertExpectations(t)
@@ -763,7 +763,7 @@ func TestCopyFileWithNegativeChunkSize(t *testing.T) {
 	eio := ExtendedIO{}
 	err := eio.CopyFile(fom, &libarchivemock.LibArchiveMock{}, "source.txt", "target.txt", chunkSize,
 		0, 0, -1, true, false)
-	assert.EqualError(t, err, "Copy error: chunkSize can't be less than 1")
+	assert.EqualError(t, err, "copy error: chunkSize can't be less than 1")
 
 	fom.AssertExpectations(t)
 	sourceMock.AssertExpectations(t)
@@ -895,7 +895,7 @@ func TestCopyFileWithLibarchiveReadOpenFileNameError(t *testing.T) {
 	eio := ExtendedIO{}
 	err := eio.CopyFile(fom, libarchiveMock, sourcePath, "target.txt", chunkSize,
 		0, 0, -1, true, true)
-	assert.EqualError(t, err, fmt.Sprintf("Failed to open '%s'", sourcePath))
+	assert.EqualError(t, err, fmt.Sprintf("failed to create libarchive reader: Failed to open '%s'", sourcePath))
 
 	assert.Equal(t, []byte(""), targetContent)
 
@@ -932,7 +932,7 @@ func TestCopyFileWithLibarchiveReadNextHeaderError(t *testing.T) {
 	eio := ExtendedIO{}
 	err := eio.CopyFile(fom, libarchiveMock, sourcePath, "target.txt", chunkSize,
 		0, 0, -1, true, true)
-	assert.EqualError(t, err, "Mock emulated error")
+	assert.EqualError(t, err, "failed to get next archive header: Mock emulated error")
 
 	assert.Equal(t, []byte(""), targetContent)
 
@@ -1018,7 +1018,7 @@ func TestCopyFileWithLibarchiveWriteError(t *testing.T) {
 	eio := ExtendedIO{}
 	err := eio.CopyFile(fom, libarchiveMock, sourcePath, "target.txt", chunkSize,
 		0, 0, -1, true, true)
-	assert.EqualError(t, err, "io: read/write on closed pipe")
+	assert.EqualError(t, err, "copy error: write: io: read/write on closed pipe")
 
 	assert.Equal(t, sourceContent, targetContent)
 
@@ -1060,7 +1060,7 @@ func TestCopyToProcessStdinIntegration(t *testing.T) {
 			[]byte("some_filler_data"),
 			"non-existant-command %s",
 			[]byte("old_content"),
-			fmt.Errorf(`exec: "non-existant-command": executable file not found in $PATH`),
+			fmt.Errorf(`copy to process stdin error: failed to start process: exec: "non-existant-command": executable file not found in $PATH`),
 			[]byte("old_content"),
 			false,
 		},
@@ -1078,7 +1078,7 @@ func TestCopyToProcessStdinIntegration(t *testing.T) {
 			[]byte(""),
 			`tee "%s`,
 			[]byte("old_content"),
-			fmt.Errorf("invalid command line string"),
+			fmt.Errorf("copy to process stdin error: failed to parse cmdline: invalid command line string"),
 			[]byte("old_content"),
 			false,
 		},

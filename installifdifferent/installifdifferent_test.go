@@ -126,7 +126,7 @@ func TestProceedWithGetObjectError(t *testing.T) {
 	mode.Unregister()
 
 	install, err := iif.Proceed(o)
-	assert.EqualError(t, err, "Object not found")
+	assert.EqualError(t, err, "failed to process mode 'test': Object not found")
 	assert.False(t, install)
 }
 
@@ -218,7 +218,7 @@ func TestProceedWithSha256SumWithOpenError(t *testing.T) {
 	assert.NoError(t, err)
 
 	install, err := iif.Proceed(o)
-	assert.EqualError(t, err, fmt.Sprintf("open %s: file does not exist", testObjectGetTargetReturn))
+	assert.EqualError(t, err, fmt.Sprintf("failed to check sha256sums: open %s: file does not exist", testObjectGetTargetReturn))
 	assert.False(t, install)
 }
 
@@ -305,7 +305,7 @@ func TestProceedWithPatternWithUnknownPattern(t *testing.T) {
 	assert.NoError(t, err)
 
 	install, err := iif.Proceed(o)
-	assert.EqualError(t, err, "install-if-different pattern is unknown")
+	assert.EqualError(t, err, "failed to parse install-if-different object: install-if-different pattern is unknown")
 	assert.False(t, install)
 }
 
