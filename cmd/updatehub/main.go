@@ -16,6 +16,7 @@ import (
 	"github.com/OSSystems/pkg/log"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
+	"github.com/spf13/cobra"
 
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installifdifferent"
@@ -32,7 +33,30 @@ var (
 )
 
 func main() {
-	log.SetLevel(logrus.WarnLevel)
+	log.SetLevel(logrus.InfoLevel)
+
+	cmd := &cobra.Command{
+		Use: "updatehub",
+		Run: func(cmd *cobra.Command, args []string) {
+		},
+	}
+
+	isQuiet := cmd.PersistentFlags().Bool("quiet", false, "sets the log level to 'error'")
+	isDebug := cmd.PersistentFlags().Bool("debug", false, "sets the log level to 'debug'")
+
+	err := cmd.Execute()
+	if err != nil {
+		log.Fatal(cmd)
+		os.Exit(1)
+	}
+
+	if *isQuiet {
+		log.SetLevel(logrus.ErrorLevel)
+	}
+
+	if *isDebug {
+		log.SetLevel(logrus.DebugLevel)
+	}
 
 	log.Info("starting UpdateHub Agent")
 	log.Info("    version: ", gitversion)
