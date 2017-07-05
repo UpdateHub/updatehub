@@ -14,20 +14,18 @@ import (
 	"os"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/sirupsen/logrus"
 	"github.com/UpdateHub/updatehub/server"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 func main() {
-	logger := logrus.New()
-
 	var path string
 
-	log.SetLevel(logrus.WarnLevel)
+	log.SetLevel(logrus.InfoLevel)
 
 	cmd := &cobra.Command{
-		Use: "updatehub-server [PATH]",
+		Use: "updatehub-server path",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				log.Fatal("You must provide a path")
@@ -38,9 +36,20 @@ func main() {
 		},
 	}
 
+	isQuiet := cmd.PersistentFlags().Bool("quiet", false, "sets the log level to 'error'")
+	isDebug := cmd.PersistentFlags().Bool("debug", false, "sets the log level to 'debug'")
+
 	if err := cmd.Execute(); err != nil {
-		logger.Fatal(cmd)
+		log.Fatal(cmd)
 		os.Exit(1)
+	}
+
+	if *isQuiet {
+		log.SetLevel(logrus.ErrorLevel)
+	}
+
+	if *isDebug {
+		log.SetLevel(logrus.DebugLevel)
 	}
 
 	backend, err := server.NewServerBackend(path)
