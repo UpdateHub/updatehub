@@ -39,8 +39,19 @@ func main() {
 	isQuiet := cmd.PersistentFlags().Bool("quiet", false, "sets the log level to 'error'")
 	isDebug := cmd.PersistentFlags().Bool("debug", false, "sets the log level to 'debug'")
 
-	if err := cmd.Execute(); err != nil {
-		log.Fatal(cmd)
+	err := cmd.Execute()
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	helpCalled, err := cmd.Flags().GetBool("help")
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	if helpCalled {
 		os.Exit(1)
 	}
 
