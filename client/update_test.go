@@ -30,7 +30,6 @@ func TestCheckUpdateWithInvalidApiRequester(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -51,7 +50,6 @@ func TestCheckUpdateWithNewRequestError(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -72,7 +70,6 @@ func TestCheckUpdateWithApiDoError(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -105,7 +102,6 @@ func TestCheckUpdateWithExtraPollHeaderError(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -138,7 +134,6 @@ func TestCheckUpdateWithResponseBodyReadError(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -171,7 +166,6 @@ func TestCheckUpdateWithResponseBodyParseError(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -204,7 +198,6 @@ func TestCheckUpdateWithInvalidStatusCode(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -237,7 +230,6 @@ func TestCheckUpdateWithNoUpdateAvailable(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -284,7 +276,6 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 
@@ -298,7 +289,7 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 	assert.Equal(t, "0123456789", um.ProductUID)
 	assert.Equal(t, "1.2", um.Version)
 	assert.Equal(t, []byte(expectedBody), um.RawBytes)
-	assert.Equal(t, 0, len(um.SupportedHardware))
+	assert.Equal(t, nil, um.SupportedHardware)
 
 	// Objects
 	assert.Equal(t, 1, len(um.Objects))

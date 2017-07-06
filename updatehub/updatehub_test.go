@@ -386,7 +386,6 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 	uh.FirmwareMetadata = *fm
@@ -529,7 +528,6 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 	uh.FirmwareMetadata = *fm
@@ -591,7 +589,6 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 	uh.FirmwareMetadata = *fm
@@ -658,7 +655,6 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 		DeviceIdentity:   map[string]string{"id1": "id1-value"},
 		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 		Hardware:         "",
-		HardwareRevision: "",
 		Version:          "version-value",
 	}
 	uh.FirmwareMetadata = *fm
@@ -787,7 +783,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -839,7 +834,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "hardware-value",
-					HardwareRevision: "hardware-revision-value",
 					Version:          "version-value",
 				}
 
@@ -852,7 +846,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 				return data
 			}(),
 			validUpdateMetadata,
-			fmt.Errorf("this hardware doesn't match the hardware supported by the update"),
+			fmt.Errorf("unknown supported hardware format in the update metadata"),
 			[]int(nil),
 		},
 		{
@@ -865,7 +859,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -914,7 +907,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -948,7 +940,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -991,7 +982,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -1025,7 +1015,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -1063,7 +1052,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -1101,7 +1089,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -1139,7 +1126,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
@@ -1168,7 +1154,6 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 					DeviceIdentity:   map[string]string{"id1": "id1-value"},
 					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 					Hardware:         "",
-					HardwareRevision: "",
 					Version:          "version-value",
 				}
 
