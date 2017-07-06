@@ -35,6 +35,9 @@ const (
 	// UpdateHubStateDownloading is set when the agent is downloading
 	// an update
 	UpdateHubStateDownloading
+	// UpdateHubStateDownloaded is set when the agent finished
+	// downloading an update
+	UpdateHubStateDownloaded
 	// UpdateHubStateInstalling is set when the agent is starting an
 	// update installation
 	UpdateHubStateInstalling
@@ -55,6 +58,7 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubStatePoll:             "poll",
 	UpdateHubStateUpdateCheck:      "update-check",
 	UpdateHubStateDownloading:      "downloading",
+	UpdateHubStateDownloaded:       "downloaded",
 	UpdateHubStateInstalling:       "installing",
 	UpdateHubStateInstalled:        "installed",
 	UpdateHubStateWaitingForReboot: "waiting-for-reboot",
@@ -173,7 +177,6 @@ type ReportableState interface {
 type IdleState struct {
 	BaseState
 	CancellableState
-	ReportableState
 
 	updateMetadata *metadata.UpdateMetadata
 }
@@ -423,7 +426,7 @@ func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 	if err != nil {
 		nextState = NewErrorState(state.updateMetadata, NewTransientError(err))
 	} else {
-		nextState = NewInstallingState(state.updateMetadata, &ProgressTrackerImpl{}, uh.Store)
+		nextState = NewDownloadedState(state.updateMetadata)
 	}
 
 	// state cancelled
@@ -447,6 +450,34 @@ func NewDownloadingState(updateMetadata *metadata.UpdateMetadata, pti ProgressTr
 		BaseState:       BaseState{id: UpdateHubStateDownloading},
 		updateMetadata:  updateMetadata,
 		ProgressTracker: pti,
+	}
+
+	return state
+}
+
+// DownloadedState is the State interface implementation for the UpdateHubStateDownloaded
+type DownloadedState struct {
+	BaseState
+	ReportableState
+
+	updateMetadata *metadata.UpdateMetadata
+}
+
+// ID returns the state id
+func (state *DownloadedState) ID() UpdateHubState {
+	return state.id
+}
+
+// Handle for DownloadedState just returns a new installing state
+func (state *DownloadedState) Handle(uh *UpdateHub) (State, bool) {
+	return NewInstallingState(state.updateMetadata, &ProgressTrackerImpl{}, uh.Store), false
+}
+
+// NewDownloadedState creates a new DownloadedState
+func NewDownloadedState(updateMetadata *metadata.UpdateMetadata) *DownloadedState {
+	state := &DownloadedState{
+		BaseState:      BaseState{id: UpdateHubStateDownloaded},
+		updateMetadata: updateMetadata,
 	}
 
 	return state
