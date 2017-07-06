@@ -173,7 +173,6 @@ type ReportableState interface {
 type IdleState struct {
 	BaseState
 	CancellableState
-	ReportableState
 
 	updateMetadata *metadata.UpdateMetadata
 }
