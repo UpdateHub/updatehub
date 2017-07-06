@@ -46,7 +46,17 @@ func main() {
 
 	err := cmd.Execute()
 	if err != nil {
-		log.Fatal(cmd)
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	helpCalled, err := cmd.Flags().GetBool("help")
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	if helpCalled {
 		os.Exit(1)
 	}
 
