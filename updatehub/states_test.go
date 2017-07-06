@@ -211,7 +211,7 @@ func TestStateDownloading(t *testing.T) {
 		{
 			"WithoutError",
 			&testController{fetchUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
-			NewInstallingState(m, &ProgressTrackerImpl{}, memFs),
+			NewDownloadedState(m),
 			[]int{33, 66, 99, 100},
 		},
 
