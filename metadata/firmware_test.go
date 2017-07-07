@@ -27,14 +27,12 @@ func TestNewFirmwareMetadataWithSuccess(t *testing.T) {
 	)
 
 	testCases := []struct {
-		name                  string
-		hardwareError         error
-		hardwareRevisionError error
-		versionError          error
+		name          string
+		hardwareError error
+		versionError  error
 	}{
 		{
 			"WithNoErrorOnAllOptionalFields",
-			nil,
 			nil,
 			nil,
 		},
@@ -47,23 +45,10 @@ func TestNewFirmwareMetadataWithSuccess(t *testing.T) {
 				Err:  syscall.ENOENT,
 			},
 			nil,
-			nil,
-		},
-
-		{
-			"WithHardwareRevisionScriptNotFound",
-			nil,
-			&os.PathError{
-				Op:   "open",
-				Path: path.Join(metadataPath, "hardware-revision"),
-				Err:  syscall.ENOENT,
-			},
-			nil,
 		},
 
 		{
 			"WithVersionScriptNotFound",
-			nil,
 			nil,
 			&os.PathError{
 				Op:   "open",
@@ -77,7 +62,6 @@ func TestNewFirmwareMetadataWithSuccess(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
 			hardware := "board"
-			hardwareRevision := "revA"
 			version := "1.1"
 
 			expected := &FirmwareMetadata{
@@ -90,16 +74,14 @@ func TestNewFirmwareMetadataWithSuccess(t *testing.T) {
 					"attr1": "value1",
 					"attr2": "value2",
 				},
-				Hardware:         hardware,
-				HardwareRevision: hardwareRevision,
-				Version:          version,
+				Hardware: hardware,
+				Version:  version,
 			}
 
 			clm := &cmdlinemock.CmdLineExecuterMock{}
 
 			clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID), nil)
 			clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware), tc.hardwareError)
-			clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(hardwareRevision), tc.hardwareRevisionError)
 			clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(version), tc.versionError)
 			clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte("id1=value1"), nil)
 			clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key2")).Return([]byte("id2=value2"), nil)
@@ -137,7 +119,6 @@ func TestNewFirmwareMetadataWithSuccessWithNewLineCharacters(t *testing.T) {
 
 	productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
 	hardware := "board"
-	hardwareRevision := "revA"
 	version := "1.1"
 
 	expected := &FirmwareMetadata{
@@ -150,16 +131,14 @@ func TestNewFirmwareMetadataWithSuccessWithNewLineCharacters(t *testing.T) {
 			"attr1": "value1",
 			"attr2": "value2",
 		},
-		Hardware:         hardware,
-		HardwareRevision: hardwareRevision,
-		Version:          version,
+		Hardware: hardware,
+		Version:  version,
 	}
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
 	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID+"\n"), nil)
 	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware+"\n"), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(hardwareRevision+"\n"), nil)
 	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(version+"\n"), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte("id1=value1"+"\n"), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key2")).Return([]byte("id2=value2"+"\n"), nil)
@@ -192,14 +171,12 @@ func TestNewFirmwareMetadataWithNoDeviceIdentityScriptsFound(t *testing.T) {
 	metadataPath := "/"
 	productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
 	hardware := "board"
-	hardwareRevision := "revA"
 	version := "1.1"
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
 	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID), nil)
 	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(hardwareRevision), nil)
 	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(version), nil)
 
 	store := afero.NewMemMapFs()
@@ -216,7 +193,6 @@ func TestNewFirmwareMetadataWithNoDeviceAttributesScriptsFound(t *testing.T) {
 	metadataPath := "/"
 	productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
 	hardware := "board"
-	hardwareRevision := "revA"
 	version := "1.1"
 
 	expected := &FirmwareMetadata{
@@ -227,7 +203,6 @@ func TestNewFirmwareMetadataWithNoDeviceAttributesScriptsFound(t *testing.T) {
 		},
 		DeviceAttributes: map[string]string{},
 		Hardware:         hardware,
-		HardwareRevision: hardwareRevision,
 		Version:          version,
 	}
 
@@ -235,7 +210,6 @@ func TestNewFirmwareMetadataWithNoDeviceAttributesScriptsFound(t *testing.T) {
 
 	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID), nil)
 	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(hardwareRevision), nil)
 	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(version), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte("id1=value1"), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key2")).Return([]byte("id2=value2"), nil)
@@ -295,25 +269,6 @@ func TestNewFirmwareMetadataWithHardwareError(t *testing.T) {
 	clm.AssertExpectations(t)
 }
 
-func TestNewFirmwareMetadataWithHardwareRevisionError(t *testing.T) {
-	metadataPath := "/"
-
-	clm := &cmdlinemock.CmdLineExecuterMock{}
-
-	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte("229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte("board"), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(""), fmt.Errorf("hardware-revision error"))
-
-	store := afero.NewMemMapFs()
-
-	firmwareMetadata, err := NewFirmwareMetadata(metadataPath, store, clm)
-
-	assert.EqualError(t, err, "hardware-revision error")
-	assert.Equal(t, ((*FirmwareMetadata)(nil)), firmwareMetadata)
-
-	clm.AssertExpectations(t)
-}
-
 func TestNewFirmwareMetadataWithVersionError(t *testing.T) {
 	metadataPath := "/"
 
@@ -321,7 +276,6 @@ func TestNewFirmwareMetadataWithVersionError(t *testing.T) {
 
 	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte("229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"), nil)
 	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte("board"), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte("revA"), nil)
 	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(""), fmt.Errorf("version error"))
 
 	store := afero.NewMemMapFs()
@@ -338,14 +292,12 @@ func TestNewFirmwareMetadataWithDeviceIdentityError(t *testing.T) {
 	metadataPath := "/"
 	productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
 	hardware := "board"
-	hardwareRevision := "revA"
 	version := "1.1"
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
 	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID), nil)
 	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(hardwareRevision), nil)
 	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(version), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte(""), fmt.Errorf("device identity error"))
 
@@ -375,14 +327,12 @@ func TestNewFirmwareMetadataWithDeviceAttributesError(t *testing.T) {
 	metadataPath := "/"
 	productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
 	hardware := "board"
-	hardwareRevision := "revA"
 	version := "1.1"
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
 	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID), nil)
 	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(hardwareRevision), nil)
 	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(version), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte("id1=value1"), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key2")).Return([]byte("id2=value2"), nil)
@@ -412,29 +362,25 @@ func TestNewFirmwareMetadataWithDeviceAttributesError(t *testing.T) {
 
 func TestCheckSupportedHardware(t *testing.T) {
 	testCases := []struct {
-		name             string
-		hardware         string
-		hardwareRevision string
-		expectedErr      error
+		name        string
+		hardware    string
+		expectedErr error
 	}{
 		{
-			"WithNeitherHardwareNorHardwareRevisionOnFirmwareMetadata",
-			"",
+			"WithNoHardwareOnFirmwareMetadata",
 			"",
 			nil,
 		},
 
 		{
 			"WithMatch",
-			"hardware2",
-			"revB",
+			"hardware2-revB",
 			nil,
 		},
 
 		{
 			"WithNoMatch",
 			"hardware-value",
-			"hardware-revision-value",
 			fmt.Errorf("this hardware doesn't match the hardware supported by the update"),
 		},
 	}
@@ -446,7 +392,6 @@ func TestCheckSupportedHardware(t *testing.T) {
 				DeviceIdentity:   map[string]string{"id1": "id1-value"},
 				DeviceAttributes: map[string]string{"attr1": "attr1-value"},
 				Hardware:         tc.hardware,
-				HardwareRevision: tc.hardwareRevision,
 				Version:          "version-value",
 			}
 
@@ -464,4 +409,50 @@ func TestCheckSupportedHardware(t *testing.T) {
 			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
+}
+
+func TestCheckSupportedHardwareWithAnyString(t *testing.T) {
+	fm := &FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "hardware1-revA",
+		Version:          "version-value",
+	}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return TestObject{} },
+	})
+	defer mode.Unregister()
+
+	um, err := NewUpdateMetadata([]byte(ValidJSONMetadataWithSupportedHardwareAny))
+	assert.NoError(t, err)
+
+	err = fm.CheckSupportedHardware(um)
+	assert.NoError(t, err)
+}
+
+func TestCheckSupportedHardwareWithUnknownFormat(t *testing.T) {
+	fm := &FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "hardware1-revA",
+		Version:          "version-value",
+	}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return TestObject{} },
+	})
+	defer mode.Unregister()
+
+	um, err := NewUpdateMetadata([]byte(ValidJSONMetadataWithUnknownSupportedHardwareFormat))
+	assert.NoError(t, err)
+
+	err = fm.CheckSupportedHardware(um)
+	assert.EqualError(t, err, "unknown supported hardware format in the update metadata")
 }

@@ -12,8 +12,8 @@ const (
 	ValidJSONMetadata = `{
 	  "product-uid": "0123456789",
 	  "supported-hardware": [
-	    {"hardware": "hardware1", "hardware-revision": "revA"},
-	    {"hardware": "hardware2", "hardware-revision": "revB"}
+	    "hardware1-revA",
+	    "hardware2-revB"
 	  ],
 	  "objects": [
 	    [
@@ -57,6 +57,26 @@ const (
 	  "objects": [
 	    [
 	      { "mode": "test", "compressed": true }
+	    ]
+	  ]
+	}`
+
+	ValidJSONMetadataWithSupportedHardwareAny = `{
+	  "product-uid": "0123456789",
+	  "supported-hardware": "any",
+	  "objects": [
+	    [
+	      { "mode": "test" }
+	    ]
+	  ]
+	}`
+
+	ValidJSONMetadataWithUnknownSupportedHardwareFormat = `{
+	  "product-uid": "0123456789",
+	  "supported-hardware": { "hardware": "h1-revA" },
+	  "objects": [
+	    [
+	      { "mode": "test" }
 	    ]
 	  ]
 	}`

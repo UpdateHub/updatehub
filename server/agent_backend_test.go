@@ -181,7 +181,6 @@ func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExec
 	// setup mock
 	productUID := "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
 	hardware := "board"
-	hardwareRevision := "revA"
 	firmwareVersion := "1.1"
 	agentVersion := "0.6.90-7-ga456673"
 	buildTime := "2017-06-01 17:24 UTC"
@@ -190,7 +189,6 @@ func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExec
 
 	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID), nil)
 	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware-revision")).Return([]byte(hardwareRevision), nil)
 	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(firmwareVersion), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte("id1=value1"), nil)
 	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key2")).Return([]byte("id2=value2"), nil)

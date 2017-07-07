@@ -31,7 +31,6 @@ type FirmwareMetadata struct {
 	DeviceIdentity   map[string]string `json:"device-identity"`
 	Version          string            `json:"version"`
 	Hardware         string            `json:"hardware"`
-	HardwareRevision string            `json:"hardware-revision"`
 	DeviceAttributes map[string]string `json:"device-attributes"`
 }
 
@@ -44,11 +43,6 @@ func NewFirmwareMetadata(basePath string, store afero.Fs, cmd utils.CmdLineExecu
 	}
 
 	hardware, err := cmd.Execute(path.Join(basePath, "hardware"))
-	if err != nil && !os.IsNotExist(err) {
-		return nil, err
-	}
-
-	hardwareRevision, err := cmd.Execute(path.Join(basePath, "hardware-revision"))
 	if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
@@ -73,13 +67,11 @@ func NewFirmwareMetadata(basePath string, store afero.Fs, cmd utils.CmdLineExecu
 		DeviceIdentity:   deviceIdentity,
 		DeviceAttributes: deviceAttributes,
 		Hardware:         strings.TrimSpace(string(hardware)),
-		HardwareRevision: strings.TrimSpace(string(hardwareRevision)),
 		Version:          strings.TrimSpace(string(version)),
 	}
 
 	log.Debug("    product-uid: ", firmwareMetadata.ProductUID)
 	log.Debug("    hardware: ", firmwareMetadata.Hardware)
-	log.Debug("    hardware-revision: ", firmwareMetadata.HardwareRevision)
 	log.Debug("    version: ", firmwareMetadata.Version)
 	log.Debug("    device-identity: ", firmwareMetadata.DeviceIdentity)
 	log.Debug("    device-attributes: ", firmwareMetadata.DeviceAttributes)
@@ -119,13 +111,25 @@ func executeHooks(basePath string, store afero.Fs, cmd utils.CmdLineExecuter) (m
 }
 
 func (fm *FirmwareMetadata) CheckSupportedHardware(um *UpdateMetadata) error {
-	if fm.Hardware == "" && fm.HardwareRevision == "" {
-		log.Warn("firmware metadata hardware and hardware revision are empty, so skipping supported hardware match")
+	if fm.Hardware == "" {
+		log.Warn("firmware metadata hardware is empty, so skipping supported hardware match")
 		return nil
 	}
 
-	for _, h := range um.SupportedHardware {
-		if h.Hardware == fm.Hardware && h.HardwareRevision == fm.HardwareRevision {
+	if s, ok := um.SupportedHardware.(string); ok && s == "any" {
+		log.Debug("hardware is supported by the update")
+		return nil
+	}
+
+	hwList, ok := um.SupportedHardware.([]interface{})
+	if !ok {
+		err := fmt.Errorf("unknown supported hardware format in the update metadata")
+		log.Error(err)
+		return err
+	}
+
+	for _, hw := range hwList {
+		if hw.(string) == fm.Hardware {
 			log.Debug("hardware is supported by the update")
 			return nil
 		}
