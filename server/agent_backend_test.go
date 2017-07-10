@@ -83,7 +83,6 @@ func TestNewAgentBackend(t *testing.T) {
 	ab, err := NewAgentBackend(uh, rm)
 	assert.NoError(t, err)
 
-	assert.NotNil(t, ab.downloadCancelChan)
 	assert.NotNil(t, ab.downloadProgressChan)
 
 	routes := ab.Routes()
@@ -392,14 +391,8 @@ func TestUpdateDownloadRoute(t *testing.T) {
 	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
 	assert.NoError(t, err)
 
-	cm := &controllermock.ControllerMock{}
-
-	uh.Controller = cm
-
-	um, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
+	_, err = metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
 	assert.NoError(t, err)
-
-	cm.On("FetchUpdate", um, mock.Anything, mock.Anything).Return(nil)
 
 	uh.State = updatehub.NewPollState(time.Hour)
 
@@ -412,8 +405,11 @@ func TestUpdateDownloadRoute(t *testing.T) {
 	assert.Equal(t, string(`{ "message": "request accepted, downloading update objects" }`), string(bodyContent))
 	assert.Equal(t, 202, r.StatusCode)
 
+	ps, ok := uh.State.(*updatehub.PollState)
+	assert.True(t, ok)
+	assert.Equal(t, "downloading", updatehub.StateToString(ps.NextState().ID()))
+
 	clm.AssertExpectations(t)
-	cm.AssertExpectations(t)
 	om.AssertExpectations(t)
 	rm.AssertExpectations(t)
 }
@@ -481,7 +477,7 @@ func TestUpdateDownloadRouteWithMarshallError(t *testing.T) {
 
 func TestUpdateDownloadAbortRoute(t *testing.T) {
 	out := map[string]interface{}{}
-	out["error"] = "not yet implemented"
+	out["error"] = "there is no download to be aborted"
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 

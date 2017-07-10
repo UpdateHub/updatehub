@@ -37,9 +37,14 @@ func (d *Daemon) Run() int {
 			}).Warn("Failed to report status")
 		}
 
-		state, _ := d.uh.State.Handle(d.uh)
+		state, cancel := d.uh.State.Handle(d.uh)
 
-		d.uh.State = state
+		cs, ok := d.uh.State.(*CancellableState)
+		if cancel && ok {
+			d.uh.State = cs.NextState()
+		} else {
+			d.uh.State = state
+		}
 
 		if d.stop || state.ID() == UpdateHubStateExit {
 			if finalState, _ := state.(*ExitState); finalState != nil {

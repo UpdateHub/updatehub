@@ -8,7 +8,9 @@
 
 package updatehub
 
-import "sync"
+import (
+	"sync"
+)
 
 type CancellableState struct {
 	BaseState
@@ -29,7 +31,16 @@ func (cs *CancellableState) Cancel(ok bool, nextState State) bool {
 	defer cs.nextStateMutex.Unlock()
 
 	cs.cancel <- ok
+	/*
+		//FIXME
+				// "non-blocking" write to channel
+				select {
+				case cs.cancel <- ok:
+				default:
+				}
+	*/
 	cs.nextState = nextState
+
 	return ok
 }
 
@@ -39,4 +50,8 @@ func (cs *CancellableState) Wait() {
 
 func (cs *CancellableState) Stop() {
 	close(cs.cancel)
+}
+
+func (cs *CancellableState) Handle(uh *UpdateHub) (State, bool) {
+	return cs, true
 }

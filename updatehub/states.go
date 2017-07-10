@@ -300,7 +300,7 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 func NewPollState(pollingInterval time.Duration) *PollState {
 	state := &PollState{
 		BaseState:        BaseState{id: UpdateHubStatePoll},
-		CancellableState: CancellableState{cancel: make(chan bool)},
+		CancellableState: CancellableState{cancel: make(chan bool, 1)},
 	}
 
 	state.interval = pollingInterval
