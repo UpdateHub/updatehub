@@ -26,7 +26,6 @@ type AgentBackend struct {
 	*updatehub.UpdateHub
 	utils.Rebooter
 
-	downloadCancelChan   chan bool
 	downloadProgressChan chan int
 	installProgressChan  chan int
 }
@@ -34,7 +33,6 @@ type AgentBackend struct {
 func NewAgentBackend(uh *updatehub.UpdateHub, r utils.Rebooter) (*AgentBackend, error) {
 	ab := &AgentBackend{UpdateHub: uh, Rebooter: r}
 
-	ab.downloadCancelChan = make(chan bool)
 	ab.downloadProgressChan = make(chan int)
 
 	return ab, nil
@@ -183,7 +181,8 @@ func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p
 	}
 
 	go func() {
-		ab.UpdateHub.Controller.FetchUpdate(um, ab.downloadCancelChan, ab.downloadProgressChan)
+		// cancel the current state and set "downloading" as next
+		ab.UpdateHub.State.Cancel(true, updatehub.NewDownloadingState(um, &updatehub.ProgressTrackerImpl{}))
 	}()
 
 	w.WriteHeader(202)
@@ -197,18 +196,28 @@ func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p
 func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	log.Info("Processing '/update/download/abort' request")
 
-	// FIXME: how to test this?
-	// ab.downloadCancelChan <- true
+	_, ok := ab.UpdateHub.State.(*updatehub.DownloadingState)
+	if !ok {
+		w.WriteHeader(400)
 
-	w.WriteHeader(400)
+		out := map[string]interface{}{}
+		out["error"] = "there is no download to be aborted"
 
-	out := map[string]interface{}{}
-	out["error"] = "not yet implemented"
+		outputJSON, _ := json.MarshalIndent(out, "", "    ")
+		fmt.Fprintf(w, string(outputJSON))
+		log.Error(string(outputJSON))
+		return
+	}
 
-	outputJSON, _ := json.MarshalIndent(out, "", "    ")
-	fmt.Fprintf(w, string(outputJSON))
+	// cancel the current state and set "polling" as next
+	ab.UpdateHub.State.Cancel(true, updatehub.NewPollState(ab.UpdateHub.Settings.PollingInterval))
 
-	log.Info(string(outputJSON))
+	w.WriteHeader(200)
+
+	msg := string(`{ "message": "request accepted, download aborted" }`)
+	fmt.Fprintf(w, msg)
+
+	log.Info(msg)
 }
 
 func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
