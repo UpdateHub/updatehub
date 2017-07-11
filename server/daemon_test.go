@@ -15,15 +15,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewDaemon(t *testing.T) {
+	lam := &libarchivemock.LibArchiveMock{}
+
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
 
-	sb, err := NewServerBackend(testPath)
+	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
 	d, err := NewDaemon(sb)
@@ -31,13 +35,17 @@ func TestNewDaemon(t *testing.T) {
 
 	assert.NotNil(t, d.fswatcher)
 	assert.Equal(t, sb, d.backend)
+
+	lam.AssertExpectations(t)
 }
 
 func TestNewDaemonWithNonExistantPath(t *testing.T) {
+	lam := &libarchivemock.LibArchiveMock{}
+
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(testPath)
+	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
 	os.RemoveAll(testPath)
@@ -46,14 +54,18 @@ func TestNewDaemonWithNonExistantPath(t *testing.T) {
 	assert.EqualError(t, err, "no such file or directory")
 
 	assert.Nil(t, d)
+
+	lam.AssertExpectations(t)
 }
 
 func TestRunWithWriteNotification(t *testing.T) {
+	lam := &libarchivemock.LibArchiveMock{}
+
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
 
-	sb, err := NewServerBackend(testPath)
+	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
 	d, err := NewDaemon(sb)
@@ -62,20 +74,24 @@ func TestRunWithWriteNotification(t *testing.T) {
 	go d.Run()
 	<-d.started
 
-	updateMetadataFilePath := path.Join(testPath, "updatemetadata.json")
+	updateMetadataFilePath := path.Join(testPath, metadata.UpdateMetadataFilename)
 	err = ioutil.WriteFile(updateMetadataFilePath, []byte(ValidJSONMetadata), 0666)
 	assert.NoError(t, err)
 
 	<-d.metadataWritten
 
-	assert.Equal(t, []byte(ValidJSONMetadata), d.backend.updateMetadata)
+	assert.Equal(t, []byte(ValidJSONMetadata), d.backend.selectedPackage.updateMetadata)
+
+	lam.AssertExpectations(t)
 }
 
 func TestRunWithRemoveNotification(t *testing.T) {
+	lam := &libarchivemock.LibArchiveMock{}
+
 	testPath, err := ioutil.TempDir("", "server-test")
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(testPath)
+	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
 	d, err := NewDaemon(sb)
@@ -93,11 +109,13 @@ func TestRunWithRemoveNotification(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.RemoveAll(testPath)
 
-	updateMetadataFilePath := path.Join(testPath, "updatemetadata.json")
+	updateMetadataFilePath := path.Join(testPath, metadata.UpdateMetadataFilename)
 	err = ioutil.WriteFile(updateMetadataFilePath, []byte(ValidJSONMetadata), 0666)
 	assert.NoError(t, err)
 
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, []uint8([]byte(nil)), d.backend.updateMetadata)
+	assert.Equal(t, (*SelectedPackage)(nil), d.backend.selectedPackage)
+
+	lam.AssertExpectations(t)
 }

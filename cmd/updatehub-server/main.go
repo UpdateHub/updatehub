@@ -20,6 +20,7 @@ import (
 	_ "github.com/UpdateHub/updatehub/installmodes/raw"
 	_ "github.com/UpdateHub/updatehub/installmodes/tarball"
 	_ "github.com/UpdateHub/updatehub/installmodes/ubifs"
+	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/server"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -69,18 +70,18 @@ func main() {
 		log.SetLevel(logrus.DebugLevel)
 	}
 
-	backend, err := server.NewServerBackend(path)
+	la := &libarchive.LibArchive{}
+
+	backend, err := server.NewServerBackend(la, path)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
 
-	if err := backend.ParseUpdateMetadata(); err != nil {
-		if os.IsNotExist(err) {
-			log.Info(fmt.Errorf("updatemetadata.json not found in %s", path))
-		} else {
-			log.Warn(err)
-		}
+	err = backend.ProcessDirectory()
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
 	}
 
 	d, err := server.NewDaemon(backend)
