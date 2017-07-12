@@ -54,7 +54,7 @@ SupportedInstallModes=mode1,mode2
 
 [Network]
 DisableHttps=true
-UpdateHubServerAddress=localhost
+ServerAddress=localhost
 
 [Firmware]
 MetadataPath=/tmp/metadata
