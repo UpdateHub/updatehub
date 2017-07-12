@@ -117,8 +117,6 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 		},
 	}
 
-	log.Debug("\n", s.ToString())
-
 	err = cfg.MapTo(s)
 	if err != nil {
 		return nil, err

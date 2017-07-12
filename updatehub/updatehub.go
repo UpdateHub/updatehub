@@ -340,6 +340,8 @@ func (uh *UpdateHub) LoadSettings() error {
 
 	uh.Settings = settings[0]
 
+	log.Debug("final settings:\n", uh.Settings.ToString())
+
 	return nil
 }
 
