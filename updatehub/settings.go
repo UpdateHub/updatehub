@@ -20,6 +20,7 @@ import (
 
 const (
 	defaultPollingInterval = time.Hour
+	defaultServerAddress   = "api.updatehub.io"
 )
 
 type Settings struct {
@@ -109,15 +110,13 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 
 		NetworkSettings: NetworkSettings{
 			DisableHTTPS:  false,
-			ServerAddress: "",
+			ServerAddress: defaultServerAddress,
 		},
 
 		FirmwareSettings: FirmwareSettings{
 			FirmwareMetadataPath: "",
 		},
 	}
-
-	log.Debug("\n", s.ToString())
 
 	err = cfg.MapTo(s)
 	if err != nil {

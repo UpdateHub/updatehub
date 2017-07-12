@@ -71,7 +71,7 @@ func TestToString(t *testing.T) {
 
 		NetworkSettings: NetworkSettings{
 			DisableHTTPS:  false,
-			ServerAddress: "",
+			ServerAddress: "api.updatehub.io",
 		},
 
 		FirmwareSettings: FirmwareSettings{
@@ -105,7 +105,7 @@ func TestLoadSettingsDefaultValues(t *testing.T) {
 	assert.Equal(t, []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"}, s.UpdateSettings.SupportedInstallModes)
 
 	assert.Equal(t, false, s.NetworkSettings.DisableHTTPS)
-	assert.Equal(t, "", s.NetworkSettings.ServerAddress)
+	assert.Equal(t, "api.updatehub.io", s.NetworkSettings.ServerAddress)
 
 	assert.Equal(t, "", s.FirmwareSettings.FirmwareMetadataPath)
 }
@@ -145,7 +145,7 @@ func TestLoadSettings(t *testing.T) {
 
 				NetworkSettings: NetworkSettings{
 					DisableHTTPS:  false,
-					ServerAddress: "",
+					ServerAddress: "api.updatehub.io",
 				},
 
 				FirmwareSettings: FirmwareSettings{
