@@ -1241,7 +1241,7 @@ func TestUpdateHubReportState(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			state := NewIdleState()
+			state := NewDownloadingState(updateMetadata, &ProgressTrackerImpl{})
 			state.updateMetadata = tc.updateMetadata
 
 			aim := &activeinactivemock.ActiveInactiveMock{}
@@ -1251,7 +1251,7 @@ func TestUpdateHubReportState(t *testing.T) {
 			uh.Reporter = rm
 
 			// error the first report
-			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "idle").Return(fmt.Errorf("report error")).Once()
+			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "downloading").Return(fmt.Errorf("report error")).Once()
 
 			err := uh.ReportCurrentState()
 			assert.EqualError(t, err, "report error")
@@ -1259,7 +1259,7 @@ func TestUpdateHubReportState(t *testing.T) {
 			// the subsequent reports are successful. "Once()" is
 			// important here since the same state shouldn't be
 			// reported more than one time in a row
-			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "idle").Return(nil).Once()
+			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "downloading").Return(nil).Once()
 
 			err = uh.ReportCurrentState()
 			assert.NoError(t, err)
@@ -1276,6 +1276,24 @@ func TestUpdateHubReportState(t *testing.T) {
 	}
 
 	om.AssertExpectations(t)
+}
+
+func TestReportCurrentStateNotReportable(t *testing.T) {
+	state := NewIdleState()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	rm := &reportermock.ReporterMock{}
+
+	uh, _ := newTestUpdateHub(state, aim)
+	uh.Reporter = rm
+
+	// since "idle" is not reportable, no error and no report
+	// registered
+	err := uh.ReportCurrentState()
+	assert.NoError(t, err)
+
+	aim.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 func TestStartPolling(t *testing.T) {
