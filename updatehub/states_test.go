@@ -456,26 +456,9 @@ func TestCancelPollState(t *testing.T) {
 }
 
 func TestNewIdleState(t *testing.T) {
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
 	state := NewIdleState()
 	assert.IsType(t, &IdleState{}, state)
 	assert.Equal(t, UpdateHubState(UpdateHubStateIdle), state.ID())
-
-	expectedUpdateMetadata, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
-	assert.NoError(t, err)
-
-	state.updateMetadata = expectedUpdateMetadata
-	assert.Equal(t, expectedUpdateMetadata, state.UpdateMetadata())
-
-	om.AssertExpectations(t)
 }
 
 func TestStateIdle(t *testing.T) {
