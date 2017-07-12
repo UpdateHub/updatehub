@@ -61,7 +61,7 @@ type UpdateSettings struct {
 
 type NetworkSettings struct {
 	DisableHTTPS  bool   `ini:"DisableHttps" json:"disable-https"`
-	ServerAddress string `ini:"UpdateHubServerAddress" json:"updatehub-server-address"`
+	ServerAddress string `ini:"ServerAddress" json:"server-address"`
 }
 
 type FirmwareSettings struct {
