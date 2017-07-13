@@ -290,6 +290,7 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 	assert.Equal(t, "1.2", um.Version)
 	assert.Equal(t, []byte(expectedBody), um.RawBytes)
 	assert.Equal(t, nil, um.SupportedHardware)
+	assert.Equal(t, "application/vnd.updatehub-v1+json", thh.LastRequestHeader.Get("Api-Content-Type"))
 
 	// Objects
 	assert.Equal(t, 1, len(um.Objects))
@@ -387,11 +388,13 @@ func TestFetchUpdateWithSuccess(t *testing.T) {
 	assert.Equal(t, contentLength, int64(n))
 
 	assert.Equal(t, expectedBody, buffer)
+	assert.Equal(t, "application/vnd.updatehub-v1+json", thh.LastRequestHeader.Get("Api-Content-Type"))
 }
 
 type testHttpHandler struct {
-	Path         string
-	ResponseBody string
+	Path              string
+	ResponseBody      string
+	LastRequestHeader http.Header
 }
 
 func (thh *testHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -422,6 +425,7 @@ func (thh *testHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Path == thh.Path {
+		thh.LastRequestHeader = r.Header
 		fmt.Fprintf(w, string(thh.ResponseBody))
 	}
 }
