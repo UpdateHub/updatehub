@@ -87,7 +87,6 @@ func main() {
 		Version:                   gitversion,
 		BuildTime:                 buildtime,
 		State:                     updatehub.NewIdleState(),
-		API:                       client.NewApiClient("localhost:8080"),
 		Updater:                   client.NewUpdateClient(),
 		TimeStep:                  time.Minute,
 		Store:                     osFs,
@@ -122,6 +121,8 @@ func main() {
 		log.Fatal(err)
 		os.Exit(1)
 	}
+
+	uh.API = client.NewApiClient(uh.Settings.ServerAddress)
 
 	uh.StartPolling()
 
