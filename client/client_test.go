@@ -23,7 +23,7 @@ func TestNewApiClient(t *testing.T) {
 }
 
 func TestApiClientRequest(t *testing.T) {
-	c := NewApiClient("localhost")
+	c := NewApiClient("http://localhost")
 	assert.NotNil(t, c)
 
 	req := c.Request()
@@ -57,7 +57,7 @@ func TestApiClientRequest(t *testing.T) {
 }
 
 func TestServerURL(t *testing.T) {
-	c := NewApiClient("localhost")
+	c := NewApiClient("http://localhost")
 
 	url := serverURL(c, "/test")
 
