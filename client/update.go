@@ -51,6 +51,7 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{
 		return nil, 0, finalErr
 	}
 
+	req.Header.Set("Api-Content-Type", "application/vnd.updatehub-v1+json")
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := api.Do(req)
@@ -94,6 +95,8 @@ func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser,
 		log.Error(finalErr)
 		return nil, -1, finalErr
 	}
+
+	req.Header.Set("Api-Content-Type", "application/vnd.updatehub-v1+json")
 
 	res, err := api.Do(req)
 	if err != nil {
