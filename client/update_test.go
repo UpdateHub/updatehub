@@ -41,7 +41,7 @@ func TestCheckUpdateWithInvalidApiRequester(t *testing.T) {
 }
 
 func TestCheckUpdateWithNewRequestError(t *testing.T) {
-	ac := NewApiClient("localhost")
+	ac := NewApiClient("http://localhost")
 
 	uc := NewUpdateClient()
 
@@ -61,7 +61,7 @@ func TestCheckUpdateWithNewRequestError(t *testing.T) {
 }
 
 func TestCheckUpdateWithApiDoError(t *testing.T) {
-	ac := NewApiClient("invalid")
+	ac := NewApiClient("http://invalid")
 
 	uc := NewUpdateClient()
 
@@ -93,7 +93,7 @@ func TestCheckUpdateWithExtraPollHeaderError(t *testing.T) {
 	port, _, err := StartNewTestHttpServer(address, thh)
 	assert.NoError(t, err)
 
-	ac := NewApiClient(fmt.Sprintf("%s:%d", address, port))
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
 
 	uc := NewUpdateClient()
 
@@ -125,7 +125,7 @@ func TestCheckUpdateWithResponseBodyReadError(t *testing.T) {
 	port, _, err := StartNewTestHttpServer(address, thh)
 	assert.NoError(t, err)
 
-	ac := NewApiClient(fmt.Sprintf("%s:%d", address, port))
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
 
 	uc := NewUpdateClient()
 
@@ -157,7 +157,7 @@ func TestCheckUpdateWithResponseBodyParseError(t *testing.T) {
 	port, _, err := StartNewTestHttpServer(address, thh)
 	assert.NoError(t, err)
 
-	ac := NewApiClient(fmt.Sprintf("%s:%d", address, port))
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
 
 	uc := NewUpdateClient()
 
@@ -189,7 +189,7 @@ func TestCheckUpdateWithInvalidStatusCode(t *testing.T) {
 	port, _, err := StartNewTestHttpServer(address, thh)
 	assert.NoError(t, err)
 
-	ac := NewApiClient(fmt.Sprintf("%s:%d", address, port))
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
 
 	uc := NewUpdateClient()
 
@@ -221,7 +221,7 @@ func TestCheckUpdateWithNoUpdateAvailable(t *testing.T) {
 	port, _, err := StartNewTestHttpServer(address, thh)
 	assert.NoError(t, err)
 
-	ac := NewApiClient(fmt.Sprintf("%s:%d", address, port))
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
 
 	uc := NewUpdateClient()
 
@@ -267,7 +267,7 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 	port, _, err := StartNewTestHttpServer(address, thh)
 	assert.NoError(t, err)
 
-	ac := NewApiClient(fmt.Sprintf("%s:%d", address, port))
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
 
 	uc := NewUpdateClient()
 
@@ -310,7 +310,7 @@ func TestFetchUpdateWithInvalidApiRequester(t *testing.T) {
 }
 
 func TestFetchUpdateWithNewRequestError(t *testing.T) {
-	ac := NewApiClient("localhost")
+	ac := NewApiClient("http://localhost")
 
 	uc := NewUpdateClient()
 
@@ -323,7 +323,7 @@ func TestFetchUpdateWithNewRequestError(t *testing.T) {
 }
 
 func TestFetchUpdateWithApiDoError(t *testing.T) {
-	ac := NewApiClient("invalid")
+	ac := NewApiClient("http://invalid")
 
 	uc := NewUpdateClient()
 
@@ -348,7 +348,7 @@ func TestFetchUpdateWithHTTPError(t *testing.T) {
 	port, _, err := StartNewTestHttpServer(address, thh)
 	assert.NoError(t, err)
 
-	ac := NewApiClient(fmt.Sprintf("%s:%d", address, port))
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
 
 	uc := NewUpdateClient()
 
@@ -372,7 +372,7 @@ func TestFetchUpdateWithSuccess(t *testing.T) {
 	port, _, err := StartNewTestHttpServer(address, thh)
 	assert.NoError(t, err)
 
-	ac := NewApiClient(fmt.Sprintf("%s:%d", address, port))
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
 
 	uc := NewUpdateClient()
 

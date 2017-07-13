@@ -54,7 +54,7 @@ func TestReportState(t *testing.T) {
 	url, err := url.Parse(s.URL)
 	assert.NoError(t, err)
 
-	c := NewApiClient(url.Host)
+	c := NewApiClient("http://" + url.Host)
 	assert.NotNil(t, c)
 
 	req := c.Request()

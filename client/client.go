@@ -54,5 +54,5 @@ func (r *ApiRequest) Do(req *http.Request) (*http.Response, error) {
 }
 
 func serverURL(c *ApiClient, path string) string {
-	return fmt.Sprintf("http://%s/%s", c.server, path[1:])
+	return fmt.Sprintf("%s/%s", c.server, path[1:])
 }
