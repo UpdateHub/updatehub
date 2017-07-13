@@ -124,7 +124,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	address, err := sanitizeServerAddress(uh.Settings.ServerAddress, uh.Settings.DisableHTTPS)
+	address, err := sanitizeServerAddress(uh.Settings.ServerAddress)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
@@ -141,7 +141,7 @@ func main() {
 	os.Exit(d.Run())
 }
 
-func sanitizeServerAddress(address string, disableHTTPS bool) (string, error) {
+func sanitizeServerAddress(address string) (string, error) {
 	a := address
 	if !strings.HasPrefix(a, "http://") && !strings.HasPrefix(a, "https://") {
 		a = "https://" + a
@@ -150,12 +150,6 @@ func sanitizeServerAddress(address string, disableHTTPS bool) (string, error) {
 	serverURL, err := url.Parse(a)
 	if err != nil {
 		return "", err
-	}
-
-	if disableHTTPS {
-		serverURL.Scheme = "http"
-	} else {
-		serverURL.Scheme = "https"
 	}
 
 	return serverURL.String(), nil

@@ -61,7 +61,6 @@ type UpdateSettings struct {
 }
 
 type NetworkSettings struct {
-	DisableHTTPS  bool   `ini:"DisableHttps" json:"disable-https"`
 	ServerAddress string `ini:"ServerAddress" json:"server-address"`
 }
 
@@ -109,7 +108,6 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 		},
 
 		NetworkSettings: NetworkSettings{
-			DisableHTTPS:  false,
 			ServerAddress: defaultServerAddress,
 		},
 
