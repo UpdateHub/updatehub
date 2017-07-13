@@ -53,8 +53,7 @@ AutoRebootAfterInstall=false
 SupportedInstallModes=mode1,mode2
 
 [Network]
-DisableHttps=true
-ServerAddress=localhost
+ServerAddress=http://localhost
 
 [Firmware]
 MetadataPath=/tmp/metadata

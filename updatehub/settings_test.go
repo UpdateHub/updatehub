@@ -37,8 +37,7 @@ AutoRebootAfterInstall=false
 SupportedInstallModes=mode1,mode2
 
 [Network]
-DisableHttps=true
-ServerAddress=localhost
+ServerAddress=http://localhost
 
 [Firmware]
 MetadataPath=/tmp/metadata
@@ -70,7 +69,6 @@ func TestToString(t *testing.T) {
 		},
 
 		NetworkSettings: NetworkSettings{
-			DisableHTTPS:  false,
 			ServerAddress: "api.updatehub.io",
 		},
 
@@ -104,7 +102,6 @@ func TestLoadSettingsDefaultValues(t *testing.T) {
 	assert.Equal(t, true, s.UpdateSettings.AutoRebootAfterInstall)
 	assert.Equal(t, []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"}, s.UpdateSettings.SupportedInstallModes)
 
-	assert.Equal(t, false, s.NetworkSettings.DisableHTTPS)
 	assert.Equal(t, "api.updatehub.io", s.NetworkSettings.ServerAddress)
 
 	assert.Equal(t, "", s.FirmwareSettings.FirmwareMetadataPath)
@@ -144,7 +141,6 @@ func TestLoadSettings(t *testing.T) {
 				},
 
 				NetworkSettings: NetworkSettings{
-					DisableHTTPS:  false,
 					ServerAddress: "api.updatehub.io",
 				},
 
@@ -182,8 +178,7 @@ func TestLoadSettings(t *testing.T) {
 				},
 
 				NetworkSettings: NetworkSettings{
-					DisableHTTPS:  true,
-					ServerAddress: "localhost",
+					ServerAddress: "http://localhost",
 				},
 
 				FirmwareSettings: FirmwareSettings{
