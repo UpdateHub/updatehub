@@ -10,7 +10,9 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/OSSystems/pkg/log"
@@ -122,7 +124,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	uh.API = client.NewApiClient(uh.Settings.ServerAddress)
+	address, err := sanitizeServerAddress(uh.Settings.ServerAddress, uh.Settings.DisableHTTPS)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	uh.API = client.NewApiClient(address)
 
 	uh.StartPolling()
 
@@ -131,4 +139,24 @@ func main() {
 	log.Info("UpdateHub Agent started")
 
 	os.Exit(d.Run())
+}
+
+func sanitizeServerAddress(address string, disableHTTPS bool) (string, error) {
+	a := address
+	if !strings.HasPrefix(a, "http://") && !strings.HasPrefix(a, "https://") {
+		a = "https://" + a
+	}
+
+	serverURL, err := url.Parse(a)
+	if err != nil {
+		return "", err
+	}
+
+	if disableHTTPS {
+		serverURL.Scheme = "http"
+	} else {
+		serverURL.Scheme = "https"
+	}
+
+	return serverURL.String(), nil
 }
