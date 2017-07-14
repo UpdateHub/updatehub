@@ -394,7 +394,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 
 	// obj1
 	objectUID1 := "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	uri1 := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID1)
+	uri1 := path.Join("/products", uh.FirmwareMetadata.ProductUID, "packages", packageUID, "objects", objectUID1)
 
 	source1 := &filemock.FileMock{}
 	source1.On("Close").Return(nil).Once()
@@ -404,7 +404,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 
 	// obj2
 	objectUID2 := "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae"
-	uri2 := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID2)
+	uri2 := path.Join("/products", uh.FirmwareMetadata.ProductUID, "packages", packageUID, "objects", objectUID2)
 
 	source2 := &filemock.FileMock{}
 	source2.On("Close").Return(nil).Once()
@@ -414,7 +414,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 
 	// obj3
 	objectUID3 := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
-	uri3 := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID3)
+	uri3 := path.Join("/products", uh.FirmwareMetadata.ProductUID, "/packages", packageUID, "objects", objectUID3)
 
 	source3 := &filemock.FileMock{}
 	source3.On("Close").Return(nil).Once()
@@ -535,7 +535,7 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
-	uri := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID)
+	uri := path.Join("/products", uh.FirmwareMetadata.ProductUID, "packages", packageUID, "objects", objectUID)
 
 	source := &filemock.FileMock{}
 
@@ -596,7 +596,7 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
-	uri := path.Join("/", uh.FirmwareMetadata.ProductUID, packageUID, objectUID)
+	uri := path.Join("/products", uh.FirmwareMetadata.ProductUID, "packages", packageUID, "objects", objectUID)
 
 	source := &filemock.FileMock{}
 	source.On("Close").Return(nil)
@@ -661,9 +661,11 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadataWithActiveInactive))
 
-	expectedURIPrefix := "/"
+	expectedURIPrefix := "/products"
 	expectedURIPrefix = path.Join(expectedURIPrefix, uh.FirmwareMetadata.ProductUID)
+	expectedURIPrefix = path.Join(expectedURIPrefix, "packages")
 	expectedURIPrefix = path.Join(expectedURIPrefix, packageUID)
+	expectedURIPrefix = path.Join(expectedURIPrefix, "objects")
 
 	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
 	assert.NoError(t, err)
