@@ -32,6 +32,22 @@ func TestDefaultImplActive(t *testing.T) {
 	clm.AssertExpectations(t)
 }
 
+func TestDefaultImplActiveWithNewLine(t *testing.T) {
+	clm := &cmdlinemock.CmdLineExecuterMock{}
+	clm.On("Execute", "updatehub-active-get").Return([]byte("1\n"), nil)
+
+	di := DefaultImpl{
+		CmdLineExecuter: clm,
+	}
+
+	active, err := di.Active()
+
+	assert.NoError(t, err)
+	assert.Equal(t, 1, active)
+
+	clm.AssertExpectations(t)
+}
+
 func TestDefaultImplActiveWithExecuteError(t *testing.T) {
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 	clm.On("Execute", "updatehub-active-get").Return([]byte(""), fmt.Errorf("execute error"))
