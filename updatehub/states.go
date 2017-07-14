@@ -461,6 +461,11 @@ func (state *DownloadedState) ID() UpdateHubState {
 	return state.id
 }
 
+// UpdateMetadata is the ReportableState interface implementation
+func (state *DownloadedState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
+}
+
 // Handle for DownloadedState just returns a new installing state
 func (state *DownloadedState) Handle(uh *UpdateHub) (State, bool) {
 	return NewInstallingState(state.updateMetadata, &ProgressTrackerImpl{}, uh.Store), false

@@ -22,6 +22,7 @@ import (
 
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/copy"
 	"github.com/UpdateHub/updatehub/installifdifferent"
 	_ "github.com/UpdateHub/updatehub/installmodes/copy"
 	_ "github.com/UpdateHub/updatehub/installmodes/flash"
@@ -105,6 +106,7 @@ func main() {
 		Reporter:                  client.NewReportClient(),
 		Sha256Checker:             &updatehub.Sha256CheckerImpl{},
 		InstallIfDifferentBackend: &installifdifferent.DefaultImpl{FileSystemBackend: osFs},
+		CopyBackend:               copy.ExtendedIO{},
 	}
 
 	backend, err := server.NewAgentBackend(uh, &utils.RebooterImpl{})
