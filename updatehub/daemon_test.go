@@ -101,18 +101,18 @@ func TestDaemonExitStateStop(t *testing.T) {
 	uh, _ := newTestUpdateHub(nil, aim)
 	uh.Reporter = rm
 
-	rm.On("ReportState", uh.API.Request(), "", "error").Return(nil).Once()
+	rm.On("ReportState", uh.API.Request(), "", "error", "err_msg", uh.FirmwareMetadata).Return(nil).Once()
 
 	d := NewDaemon(uh)
 
-	uh.State = NewErrorState(nil, NewFatalError(errors.New("test")))
+	uh.State = NewErrorState(nil, NewFatalError(errors.New("err_msg")))
 
 	assert.Equal(t, 1, d.Run())
 
 	assert.IsType(t, &ExitState{}, uh.State)
 	assert.Equal(t, 1, len(hook.Entries))
 	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
-	assert.Equal(t, "fatal error: test", hook.LastEntry().Message)
+	assert.Equal(t, "fatal error: err_msg", hook.LastEntry().Message)
 	assert.Equal(t, 1, uh.State.(*ExitState).exitCode)
 
 	aim.AssertExpectations(t)
