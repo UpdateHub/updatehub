@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
+	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installifdifferent"
 	_ "github.com/UpdateHub/updatehub/installmodes/copy"
@@ -91,6 +92,7 @@ func main() {
 	}
 
 	uh := &updatehub.UpdateHub{
+		ActiveInactiveBackend:     &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}},
 		Version:                   gitversion,
 		BuildTime:                 buildtime,
 		State:                     updatehub.NewIdleState(),
