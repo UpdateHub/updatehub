@@ -11,6 +11,7 @@ package activeinactive
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/utils"
@@ -38,7 +39,7 @@ func (i *DefaultImpl) Active() (int, error) {
 		return 0, finalErr
 	}
 
-	activeIndex, err := strconv.ParseInt(string(output), 10, 0)
+	activeIndex, err := strconv.ParseInt(strings.TrimSpace(string(output)), 10, 0)
 	if err != nil {
 		finalErr := fmt.Errorf("failed to parse response from 'updatehub-active-get': %s", err)
 		log.Error(finalErr)
