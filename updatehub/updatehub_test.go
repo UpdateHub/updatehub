@@ -1513,7 +1513,7 @@ func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, er
 		State:    state,
 		TimeStep: time.Second,
 		API:      client.NewApiClient("localhost"),
-		activeInactiveBackend: aii,
+		ActiveInactiveBackend: aii,
 	}
 
 	settings, err := LoadSettings(bytes.NewReader([]byte("")))

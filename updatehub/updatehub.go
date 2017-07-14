@@ -90,7 +90,7 @@ type UpdateHub struct {
 	Updater                 client.Updater
 	Reporter                client.Reporter
 	lastInstalledPackageUID string
-	activeInactiveBackend   activeinactive.Interface
+	ActiveInactiveBackend   activeinactive.Interface
 	SystemSettingsPath      string
 	RuntimeSettingsPath     string
 	lastReportedState       string
@@ -124,7 +124,7 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 
 // it is recommended to use a buffered channel for "progressChan" to ensure no progress event is lost
 func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
-	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.activeInactiveBackend, updateMetadata)
+	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.ActiveInactiveBackend, updateMetadata)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 
 	log.Info("Installing update. PackageUID:", updateMetadata.PackageUID())
 
-	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.activeInactiveBackend, updateMetadata)
+	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.ActiveInactiveBackend, updateMetadata)
 	if err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		// 2 objects means that ActiveInactive is enabled, so we need
 		// to set the new active object
 		if len(updateMetadata.Objects) == 2 {
-			err := uh.activeInactiveBackend.SetActive(indexToInstall)
+			err := uh.ActiveInactiveBackend.SetActive(indexToInstall)
 			if err != nil {
 				return err
 			}
