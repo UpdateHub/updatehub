@@ -13,17 +13,13 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
-	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/client"
-	"github.com/UpdateHub/updatehub/copy"
-	"github.com/UpdateHub/updatehub/installifdifferent"
 	_ "github.com/UpdateHub/updatehub/installmodes/copy"
 	_ "github.com/UpdateHub/updatehub/installmodes/flash"
 	_ "github.com/UpdateHub/updatehub/installmodes/imxkobs"
@@ -92,22 +88,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	uh := &updatehub.UpdateHub{
-		ActiveInactiveBackend:     &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}},
-		Version:                   gitversion,
-		BuildTime:                 buildtime,
-		State:                     updatehub.NewIdleState(),
-		Updater:                   client.NewUpdateClient(),
-		TimeStep:                  time.Minute,
-		Store:                     osFs,
-		FirmwareMetadata:          *fm,
-		SystemSettingsPath:        systemSettingsPath,
-		RuntimeSettingsPath:       runtimeSettingsPath,
-		Reporter:                  client.NewReportClient(),
-		Sha256Checker:             &updatehub.Sha256CheckerImpl{},
-		InstallIfDifferentBackend: &installifdifferent.DefaultImpl{FileSystemBackend: osFs},
-		CopyBackend:               copy.ExtendedIO{},
-	}
+	uh := updatehub.NewUpdateHub(gitversion, buildtime, osFs, *fm, updatehub.NewIdleState(), systemSettingsPath, runtimeSettingsPath)
 
 	backend, err := server.NewAgentBackend(uh, &utils.RebooterImpl{})
 	if err != nil {

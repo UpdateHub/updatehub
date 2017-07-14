@@ -99,6 +99,27 @@ type UpdateHub struct {
 	Sha256Checker
 }
 
+func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, systemSettingsPath string, runtimeSettingsPath string) *UpdateHub {
+	uh := &UpdateHub{
+		ActiveInactiveBackend:     &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}},
+		Version:                   gitversion,
+		BuildTime:                 buildtime,
+		State:                     initialState,
+		Updater:                   client.NewUpdateClient(),
+		TimeStep:                  time.Minute,
+		Store:                     fs,
+		FirmwareMetadata:          fm,
+		SystemSettingsPath:        systemSettingsPath,
+		RuntimeSettingsPath:       runtimeSettingsPath,
+		Reporter:                  client.NewReportClient(),
+		Sha256Checker:             &Sha256CheckerImpl{},
+		InstallIfDifferentBackend: &installifdifferent.DefaultImpl{FileSystemBackend: fs},
+		CopyBackend:               copy.ExtendedIO{},
+	}
+
+	return uh
+}
+
 type Controller interface {
 	CheckUpdate(int) (*metadata.UpdateMetadata, time.Duration)
 	FetchUpdate(*metadata.UpdateMetadata, <-chan bool, chan<- int) error
