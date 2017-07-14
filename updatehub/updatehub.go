@@ -139,9 +139,11 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 
 		log.Info("Downloading object: ", objectUID)
 
-		uri := "/"
+		uri := "/products"
 		uri = path.Join(uri, uh.FirmwareMetadata.ProductUID)
+		uri = path.Join(uri, "packages")
 		uri = path.Join(uri, packageUID)
+		uri = path.Join(uri, "objects")
 		uri = path.Join(uri, objectUID)
 
 		wr, err := uh.Store.Create(path.Join(uh.Settings.DownloadDir, objectUID))
@@ -150,6 +152,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		}
 		defer wr.Close()
 
+		log.Debug("route: ", uri)
 		rd, _, err := uh.Updater.FetchUpdate(uh.API.Request(), uri)
 		if err != nil {
 			return err
