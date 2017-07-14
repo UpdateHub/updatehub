@@ -14,6 +14,12 @@ import (
 	"os"
 
 	"github.com/OSSystems/pkg/log"
+	_ "github.com/UpdateHub/updatehub/installmodes/copy"
+	_ "github.com/UpdateHub/updatehub/installmodes/flash"
+	_ "github.com/UpdateHub/updatehub/installmodes/imxkobs"
+	_ "github.com/UpdateHub/updatehub/installmodes/raw"
+	_ "github.com/UpdateHub/updatehub/installmodes/tarball"
+	_ "github.com/UpdateHub/updatehub/installmodes/ubifs"
 	"github.com/UpdateHub/updatehub/server"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
