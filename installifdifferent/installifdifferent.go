@@ -27,11 +27,12 @@ type DefaultImpl struct {
 }
 
 func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
-	log.Info("Checking install-if-different support for %s")
+	mode := o.GetObjectMetadata().Mode
+	log.Info(fmt.Sprintf("checking install-if-different support for '%s'", mode))
 
-	om, err := installmodes.GetObject(o.GetObjectMetadata().Mode)
+	om, err := installmodes.GetObject(mode)
 	if err != nil {
-		finalErr := fmt.Errorf("failed to process mode '%s': %s", o.GetObjectMetadata().Mode, err)
+		finalErr := fmt.Errorf("failed to process mode '%s': %s", mode, err)
 		log.Error(finalErr)
 		return false, finalErr
 	}
@@ -40,14 +41,15 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 
 	if !ok {
 		// "o" does NOT support install-if-different
-		log.Info("'%s' mode doesn't support install-if-different", o.GetObjectMetadata().Mode)
+		log.Info(fmt.Sprintf("'%s' mode doesn't support install-if-different", mode))
 		return true, nil
 	}
 
 	// "o" does support install-if-different
-	log.Info("'%s' mode supports install-if-different", o.GetObjectMetadata().Mode)
+	log.Info(fmt.Sprintf("'%s' mode supports install-if-different", mode))
 
 	target := tg.GetTarget()
+	log.Debug("install-if-different target: ", target)
 
 	sha256sum, ok := o.GetObjectMetadata().InstallIfDifferent.(string)
 	if ok {
@@ -58,7 +60,7 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 
 	pattern, ok := o.GetObjectMetadata().InstallIfDifferent.(map[string]interface{})
 	if ok {
-		log.Info("Checking pattern")
+		log.Info("checking pattern")
 		// is object, so is a Pattern
 		return installIfDifferentPattern(iid.FileSystemBackend, target, pattern)
 	}

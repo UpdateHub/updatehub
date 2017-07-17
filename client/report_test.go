@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -64,7 +65,20 @@ func TestReportState(t *testing.T) {
 
 	reporter := NewReportClient()
 
-	err = reporter.ReportState(c.Request(), "packageUID", "state")
+	fm := metadata.FirmwareMetadata{
+		ProductUID: "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
+		DeviceIdentity: map[string]string{
+			"id1": "value1",
+		},
+		DeviceAttributes: map[string]string{
+			"attr1": "value1",
+			"attr2": "value2",
+		},
+		Hardware: "board",
+		Version:  "2.2",
+	}
+
+	err = reporter.ReportState(c.Request(), "packageUID", "state", "err_msg", fm)
 	assert.NoError(t, err)
 
 	var body map[string]interface{}
@@ -73,9 +87,16 @@ func TestReportState(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedBody := make(map[string]interface{})
-	expectedBody["error-message"] = ""
+	expectedBody["error-message"] = "err_msg"
 	expectedBody["package-uid"] = "packageUID"
 	expectedBody["status"] = "state"
+	expectedBody["version"] = "2.2"
+	expectedBody["hardware"] = "board"
+	expectedBody["product-uid"] = "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
+	expectedBody["device-identity"] = map[string]interface{}{"id1": "value1"}
 
 	assert.Equal(t, expectedBody, body)
+
+	assert.Equal(t, "application/vnd.updatehub-v1+json", responder.headers.Get("Api-Content-Type"))
+	assert.Equal(t, "application/json", responder.headers.Get("Content-Type"))
 }

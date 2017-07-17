@@ -295,9 +295,12 @@ func (uh *UpdateHub) ReportCurrentState() error {
 			packageUID = rs.UpdateMetadata().PackageUID()
 		}
 
-		log.Debug("reporting state '", stateString, "'. packageUID: ", packageUID)
+		errorMessage := ""
+		if es, ok := uh.State.(*ErrorState); ok {
+			errorMessage = es.cause.Cause().Error()
+		}
 
-		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, stateString)
+		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, stateString, errorMessage, uh.FirmwareMetadata)
 		if err != nil {
 			return err
 		}

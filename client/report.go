@@ -12,21 +12,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 type ReportClient struct {
 }
 
 type Reporter interface {
-	ReportState(api ApiRequester, packageUID string, state string) error
+	ReportState(api ApiRequester, packageUID string, state string, errorMessage string, fm metadata.FirmwareMetadata) error
 }
 
-func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state string) error {
-	log.Info("Reporting state: ", state)
-	log.Info("PackageUID: ", packageUID)
+func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state string, errorMessage string, fm metadata.FirmwareMetadata) error {
+	log.Info("reporting state: ", state)
+	log.Info("  error message: ", errorMessage)
+	log.Info("  packageUID: ", packageUID)
 
 	if api == nil {
 		finalErr := fmt.Errorf("invalid api requester")
@@ -39,7 +42,12 @@ func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state st
 	data := make(map[string]interface{})
 	data["status"] = state
 	data["package-uid"] = packageUID
-	data["error-message"] = ""
+	data["error-message"] = errorMessage
+
+	data["product-uid"] = fm.ProductUID
+	data["device-identity"] = fm.DeviceIdentity
+	data["version"] = fm.Version
+	data["hardware"] = fm.Hardware
 
 	body, err := json.Marshal(data)
 	if err != nil {
@@ -55,6 +63,9 @@ func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state st
 		return finalErr
 	}
 
+	req.Header.Set("Api-Content-Type", "application/vnd.updatehub-v1+json")
+	req.Header.Set("Content-Type", "application/json")
+
 	res, err := api.Do(req)
 	if err != nil {
 		finalErr := fmt.Errorf("report request failed: %s", err)
@@ -66,9 +77,18 @@ func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state st
 
 	switch res.StatusCode {
 	case http.StatusOK:
-		log.Info("State ", state, " reported successfully")
+		log.Info("state '", state, "' reported successfully")
 		return nil
 	}
+
+	responseBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		finalErr := fmt.Errorf("failed to read report response body: %s", err)
+		log.Error(finalErr)
+		return finalErr
+	}
+
+	log.Info("report response body content: ", string(responseBody))
 
 	finalErr := fmt.Errorf("failed to report state. HTTP code: %d", res.StatusCode)
 	log.Error(finalErr)

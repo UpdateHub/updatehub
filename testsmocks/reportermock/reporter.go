@@ -10,6 +10,7 @@ package reportermock
 
 import (
 	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -17,7 +18,7 @@ type ReporterMock struct {
 	mock.Mock
 }
 
-func (rm *ReporterMock) ReportState(api client.ApiRequester, packageUID string, state string) error {
-	args := rm.Called(api, packageUID, state)
+func (rm *ReporterMock) ReportState(api client.ApiRequester, packageUID string, state string, errorMessage string, fm metadata.FirmwareMetadata) error {
+	args := rm.Called(api, packageUID, state, errorMessage, fm)
 	return args.Error(0)
 }
