@@ -52,7 +52,8 @@ type CopyObject struct {
 	CopyBackend            copy.Interface `json:"-"`
 	utils.Permissions
 	installifdifferent.TargetGetter
-	targetPath string
+	tempDirPath    string
+	hasUmountError bool
 
 	Target        string      `json:"target"`
 	TargetType    string      `json:"target-type"`
@@ -77,6 +78,12 @@ func (cp *CopyObject) Setup() error {
 		return finalErr
 	}
 
+	var err error
+	cp.tempDirPath, err = cp.TempDir(cp.FileSystemBackend, "copy-handler")
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -91,49 +98,37 @@ func (cp *CopyObject) Install(downloadDir string) error {
 		}
 	}
 
-	tempDirPath, err := cp.TempDir(cp.FileSystemBackend, "copy-handler")
+	err := cp.Mount(cp.Target, cp.tempDirPath, cp.FSType, cp.MountOptions)
 	if err != nil {
 		return err
 	}
-	// we can't "defer os.RemoveAll(tempDirPath)" here because it
-	// could happen an "Umount" error and then the mounted dir
-	// contents would be removed as well
-
-	err = cp.Mount(cp.Target, tempDirPath, cp.FSType, cp.MountOptions)
-	if err != nil {
-		cp.FileSystemBackend.RemoveAll(tempDirPath)
-		return err
-	}
-
-	// this line is important because "cp.targetPath" is the value
-	// used on GetTarget() which is the implementation for install-if-different
-	cp.targetPath = path.Join(tempDirPath, cp.TargetPath)
 
 	errorList := []error{}
 
+	targetPath := path.Join(cp.tempDirPath, cp.TargetPath)
+
 	sourcePath := path.Join(downloadDir, cp.Sha256sum)
-	err = cp.CopyBackend.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, cp.targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
+	err = cp.CopyBackend.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
 	}
 
 	if len(errorList) == 0 {
-		err = cp.Permissions.ApplyChmod(cp.FileSystemBackend, cp.targetPath, cp.TargetMode)
+		err = cp.Permissions.ApplyChmod(cp.FileSystemBackend, targetPath, cp.TargetMode)
 		if err != nil {
 			errorList = append(errorList, err)
 		}
 
-		err = cp.Permissions.ApplyChown(cp.targetPath, cp.TargetUID, cp.TargetGID)
+		err = cp.Permissions.ApplyChown(targetPath, cp.TargetUID, cp.TargetGID)
 		if err != nil {
 			errorList = append(errorList, err)
 		}
 	}
 
-	umountErr := cp.Umount(tempDirPath)
+	umountErr := cp.Umount(cp.tempDirPath)
 	if umountErr != nil {
+		cp.hasUmountError = true
 		errorList = append(errorList, umountErr)
-	} else {
-		cp.FileSystemBackend.RemoveAll(tempDirPath)
 	}
 
 	return utils.MergeErrorList(errorList)
@@ -142,10 +137,23 @@ func (cp *CopyObject) Install(downloadDir string) error {
 // Cleanup implementation for the "copy" handler
 func (cp *CopyObject) Cleanup() error {
 	log.Info("'copy' handler Cleanup")
+
+	// we can't just "os.RemoveAll(cp.tempDirPath)" here because it
+	// could happen an "Umount" error and then the mounted dir
+	// contents would be removed as well
+	if !cp.hasUmountError {
+		cp.FileSystemBackend.RemoveAll(cp.tempDirPath)
+		cp.tempDirPath = ""
+	}
+
 	return nil
 }
 
 // GetTarget implementation for the "copy" handler
 func (cp *CopyObject) GetTarget() string {
-	return cp.targetPath
+	if cp.tempDirPath == "" {
+		return ""
+	}
+
+	return path.Join(cp.tempDirPath, cp.TargetPath)
 }

@@ -51,10 +51,44 @@ func TestCopyInit(t *testing.T) {
 }
 
 func TestCopySetupWithSuccess(t *testing.T) {
-	cp := CopyObject{}
+	memFs := afero.NewMemMapFs()
+	lam := &libarchivemock.LibArchiveMock{}
+	cm := &copymock.CopyMock{}
+
+	fsm := &filesystemmock.FileSystemHelperMock{}
+	fsm.On("TempDir", memFs, "copy-handler").Return("/temp-dir-path", nil)
+	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+
+	cp.TargetType = "device"
+	cp.TargetPath = "/kernel"
+	err := cp.Setup()
+
+	assert.NoError(t, err)
+	fsm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
+
+	assert.Equal(t, "/temp-dir-path/kernel", cp.GetTarget())
+}
+
+func TestCopySetupWithTempDirError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+	lam := &libarchivemock.LibArchiveMock{}
+	cm := &copymock.CopyMock{}
+
+	fsm := &filesystemmock.FileSystemHelperMock{}
+	fsm.On("TempDir", memFs, "copy-handler").Return("", fmt.Errorf("temp dir error"))
+	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+
 	cp.TargetType = "device"
 	err := cp.Setup()
-	assert.NoError(t, err)
+
+	assert.EqualError(t, err, "temp dir error")
+	fsm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
+
+	assert.Equal(t, "", cp.GetTarget())
 }
 
 func TestCopySetupWithNotSupportedTargetTypes(t *testing.T) {
@@ -74,7 +108,7 @@ func TestCopySetupWithNotSupportedTargetTypes(t *testing.T) {
 }
 
 func TestCopyInstallWithFormatError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
+	fsbm := &filesystemmock.FileSystemBackendMock{}
 	lam := &libarchivemock.LibArchiveMock{}
 	cm := &copymock.CopyMock{}
 
@@ -84,7 +118,7 @@ func TestCopyInstallWithFormatError(t *testing.T) {
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("Format", targetDevice, fsType, formatOptions).Return(fmt.Errorf("format error"))
-	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: fsbm, LibArchiveBackend: lam}
 	cp.MustFormat = true
 	cp.Target = targetDevice
 	cp.FSType = fsType
@@ -94,25 +128,7 @@ func TestCopyInstallWithFormatError(t *testing.T) {
 
 	assert.EqualError(t, err, "format error")
 	fsm.AssertExpectations(t)
-	cm.AssertExpectations(t)
-	lam.AssertExpectations(t)
-
-	assert.Equal(t, "", cp.GetTarget())
-}
-
-func TestCopyInstallWithTempDirError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-	lam := &libarchivemock.LibArchiveMock{}
-	cm := &copymock.CopyMock{}
-
-	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", memFs, "copy-handler").Return("", fmt.Errorf("temp dir error"))
-	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
-
-	err := cp.Install("/dummy-download-dir")
-
-	assert.EqualError(t, err, "temp dir error")
-	fsm.AssertExpectations(t)
+	fsbm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
 
@@ -120,45 +136,40 @@ func TestCopyInstallWithTempDirError(t *testing.T) {
 }
 
 func TestCopyInstallWithMountError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
+	fsbm := &filesystemmock.FileSystemBackendMock{}
 	lam := &libarchivemock.LibArchiveMock{}
 	cm := &copymock.CopyMock{}
-
-	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
-	assert.NoError(t, err)
 
 	targetDevice := "/dev/xx1"
 	fsType := "ext4"
 	mountOptions := "-o rw"
 
+	tempDirPath := "/dummy-path"
+
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(fmt.Errorf("mount error"))
-	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: memFs, LibArchiveBackend: lam}
+	cp := CopyObject{FileSystemHelper: fsm, CopyBackend: cm, FileSystemBackend: fsbm, LibArchiveBackend: lam}
 	cp.Target = targetDevice
 	cp.FSType = fsType
 	cp.MountOptions = mountOptions
+	cp.tempDirPath = tempDirPath
+	cp.TargetPath = "/kernel"
 
-	err = cp.Install("/dummy-download-dir")
+	err := cp.Install("/dummy-download-dir")
 
 	assert.EqualError(t, err, "mount error")
 	fsm.AssertExpectations(t)
+	fsbm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
 
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.False(t, tempDirExists)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "", cp.GetTarget())
+	expectedTargetPath := path.Join(tempDirPath, cp.TargetPath)
+	assert.Equal(t, expectedTargetPath, cp.GetTarget())
 }
 
 func TestCopyInstallWithCopyFileError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
 	lam := &libarchivemock.LibArchiveMock{}
-
-	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
-	assert.NoError(t, err)
+	fsbm := &filesystemmock.FileSystemBackendMock{}
 
 	targetDevice := "/dev/xx1"
 	targetPath := "/inner-path"
@@ -167,20 +178,21 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	sha256sum := "2ab0cfa4332841d4de81ea738d641ef943ddec60a6f4638adcc0091f5345a226"
 	compressed := false
 
+	tempDirPath := "/dummy-path"
+
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(nil)
 
 	downloadDir := "/dummy-download-dir"
 
 	cm := &copymock.CopyMock{}
-	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
+	cm.On("CopyFile", fsbm, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
 		CopyBackend:       cm,
-		FileSystemBackend: memFs,
+		FileSystemBackend: fsbm,
 		LibArchiveBackend: lam,
 		ChunkSize:         128 * 1024,
 	}
@@ -190,28 +202,23 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	cp.MountOptions = mountOptions
 	cp.Sha256sum = sha256sum
 	cp.Compressed = compressed
+	cp.tempDirPath = tempDirPath
 
-	err = cp.Install(downloadDir)
+	err := cp.Install(downloadDir)
 
 	assert.EqualError(t, err, "copy file error")
 	fsm.AssertExpectations(t)
+	fsbm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
-
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.False(t, tempDirExists)
-	assert.NoError(t, err)
 
 	expectedTargetPath := path.Join(tempDirPath, targetPath)
 	assert.Equal(t, expectedTargetPath, cp.GetTarget())
 }
 
 func TestCopyInstallWithUmountError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
+	fsbm := &filesystemmock.FileSystemBackendMock{}
 	lam := &libarchivemock.LibArchiveMock{}
-
-	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
-	assert.NoError(t, err)
 
 	targetDevice := "/dev/xx1"
 	targetPath := "/inner-path"
@@ -224,25 +231,26 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	uid = "user"
 	gid = "group"
 
+	tempDirPath := "/dummy-path"
+
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
 	downloadDir := "/dummy-download-dir"
 
 	cm := &copymock.CopyMock{}
-	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
+	cm.On("CopyFile", fsbm, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
 
 	pm := &permissionsmock.PermissionsMock{}
-	pm.On("ApplyChmod", memFs, path.Join(tempDirPath, targetPath), mode).Return(nil)
+	pm.On("ApplyChmod", fsbm, path.Join(tempDirPath, targetPath), mode).Return(nil)
 	pm.On("ApplyChown", path.Join(tempDirPath, targetPath), uid, gid).Return(nil)
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
 		CopyBackend:       cm,
 		Permissions:       pm,
-		FileSystemBackend: memFs,
+		FileSystemBackend: fsbm,
 		LibArchiveBackend: lam,
 		ChunkSize:         128 * 1024,
 		TargetMode:        mode,
@@ -255,29 +263,26 @@ func TestCopyInstallWithUmountError(t *testing.T) {
 	cp.MountOptions = mountOptions
 	cp.Sha256sum = sha256sum
 	cp.Compressed = compressed
+	cp.tempDirPath = tempDirPath
 
-	err = cp.Install(downloadDir)
+	err := cp.Install(downloadDir)
 
 	assert.EqualError(t, err, "umount error")
 	fsm.AssertExpectations(t)
+	fsbm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
 	pm.AssertExpectations(t)
 
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.True(t, tempDirExists)
-	assert.NoError(t, err)
-
 	expectedTargetPath := path.Join(tempDirPath, targetPath)
 	assert.Equal(t, expectedTargetPath, cp.GetTarget())
+
+	assert.Equal(t, true, cp.hasUmountError)
 }
 
 func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
-	memFs := afero.NewMemMapFs()
+	fsbm := &filesystemmock.FileSystemBackendMock{}
 	lam := &libarchivemock.LibArchiveMock{}
-
-	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
-	assert.NoError(t, err)
 
 	targetDevice := "/dev/xx1"
 	targetPath := "/inner-path"
@@ -286,20 +291,21 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	sha256sum := "2ab0cfa4332841d4de81ea738d641ef943ddec60a6f4638adcc0091f5345a226"
 	compressed := false
 
+	tempDirPath := "/dummy-path"
+
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
 
 	downloadDir := "/dummy-download-dir"
 
 	cm := &copymock.CopyMock{}
-	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
+	cm.On("CopyFile", fsbm, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(fmt.Errorf("copy file error"))
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
 		CopyBackend:       cm,
-		FileSystemBackend: memFs,
+		FileSystemBackend: fsbm,
 		LibArchiveBackend: lam,
 		ChunkSize:         128 * 1024,
 	}
@@ -309,28 +315,23 @@ func TestCopyInstallWithCopyFileANDUmountErrors(t *testing.T) {
 	cp.MountOptions = mountOptions
 	cp.Sha256sum = sha256sum
 	cp.Compressed = compressed
+	cp.tempDirPath = tempDirPath
 
-	err = cp.Install(downloadDir)
+	err := cp.Install(downloadDir)
 
 	assert.EqualError(t, err, "(copy file error); (umount error)")
 	fsm.AssertExpectations(t)
+	fsbm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
-
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.True(t, tempDirExists)
-	assert.NoError(t, err)
 
 	expectedTargetPath := path.Join(tempDirPath, targetPath)
 	assert.Equal(t, expectedTargetPath, cp.GetTarget())
 }
 
 func TestCopyInstallWithChmodAndChownErrors(t *testing.T) {
-	memFs := afero.NewMemMapFs()
+	fsbm := &filesystemmock.FileSystemBackendMock{}
 	lam := &libarchivemock.LibArchiveMock{}
-
-	tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
-	assert.NoError(t, err)
 
 	targetDevice := "/dev/xx1"
 	targetPath := "/inner-path"
@@ -343,25 +344,26 @@ func TestCopyInstallWithChmodAndChownErrors(t *testing.T) {
 	uid = "user"
 	gid = "group"
 
+	tempDirPath := "/dummy-path"
+
 	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
 	fsm.On("Umount", tempDirPath).Return(nil)
 
 	downloadDir := "/dummy-download-dir"
 
 	cm := &copymock.CopyMock{}
-	cm.On("CopyFile", memFs, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
+	cm.On("CopyFile", fsbm, lam, path.Join(downloadDir, sha256sum), path.Join(tempDirPath, targetPath), 128*1024, 0, 0, -1, true, compressed).Return(nil)
 
 	pm := &permissionsmock.PermissionsMock{}
-	pm.On("ApplyChmod", memFs, path.Join(tempDirPath, targetPath), mode).Return(fmt.Errorf("chmod error"))
+	pm.On("ApplyChmod", fsbm, path.Join(tempDirPath, targetPath), mode).Return(fmt.Errorf("chmod error"))
 	pm.On("ApplyChown", path.Join(tempDirPath, targetPath), uid, gid).Return(fmt.Errorf("chown error"))
 
 	cp := CopyObject{
 		FileSystemHelper:  fsm,
 		CopyBackend:       cm,
 		Permissions:       pm,
-		FileSystemBackend: memFs,
+		FileSystemBackend: fsbm,
 		LibArchiveBackend: lam,
 		ChunkSize:         128 * 1024,
 		TargetMode:        mode,
@@ -374,18 +376,16 @@ func TestCopyInstallWithChmodAndChownErrors(t *testing.T) {
 	cp.MountOptions = mountOptions
 	cp.Sha256sum = sha256sum
 	cp.Compressed = compressed
+	cp.tempDirPath = tempDirPath
 
-	err = cp.Install(downloadDir)
+	err := cp.Install(downloadDir)
 
 	assert.EqualError(t, err, "(chmod error); (chown error)")
 	fsm.AssertExpectations(t)
+	fsbm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
 	pm.AssertExpectations(t)
-
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.False(t, tempDirExists)
-	assert.NoError(t, err)
 
 	expectedTargetPath := path.Join(tempDirPath, targetPath)
 	assert.Equal(t, expectedTargetPath, cp.GetTarget())
@@ -476,35 +476,32 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			memFs := afero.NewMemMapFs()
+			fsbm := &filesystemmock.FileSystemBackendMock{}
 			lam := &libarchivemock.LibArchiveMock{}
 
-			tempDirPath, err := afero.TempDir(memFs, "", "copy-handler")
-			assert.NoError(t, err)
-			defer memFs.RemoveAll(tempDirPath)
+			tempDirPath := "/dummy-path"
 
 			fsm := &filesystemmock.FileSystemHelperMock{}
 			if tc.MustFormat {
 				fsm.On("Format", tc.Target, tc.FSType, tc.FormatOptions).Return(nil)
 			}
-			fsm.On("TempDir", memFs, "copy-handler").Return(tempDirPath, nil)
 			fsm.On("Mount", tc.Target, tempDirPath, tc.FSType, tc.MountOptions).Return(nil)
 			fsm.On("Umount", tempDirPath).Return(nil)
 
 			downloadDir := "/dummy-download-dir"
 
 			cm := &copymock.CopyMock{}
-			cm.On("CopyFile", memFs, lam, path.Join(downloadDir, tc.Sha256sum), path.Join(tempDirPath, tc.TargetPath), tc.ChunkSize, 0, 0, -1, true, tc.Compressed).Return(nil)
+			cm.On("CopyFile", fsbm, lam, path.Join(downloadDir, tc.Sha256sum), path.Join(tempDirPath, tc.TargetPath), tc.ChunkSize, 0, 0, -1, true, tc.Compressed).Return(nil)
 
 			pm := &permissionsmock.PermissionsMock{}
-			pm.On("ApplyChmod", memFs, path.Join(tempDirPath, tc.TargetPath), tc.TargetMode).Return(nil)
+			pm.On("ApplyChmod", fsbm, path.Join(tempDirPath, tc.TargetPath), tc.TargetMode).Return(nil)
 			pm.On("ApplyChown", path.Join(tempDirPath, tc.TargetPath), tc.TargetUID, tc.TargetGID).Return(nil)
 
 			cp := CopyObject{
 				FileSystemHelper:  fsm,
 				CopyBackend:       cm,
 				Permissions:       pm,
-				FileSystemBackend: memFs,
+				FileSystemBackend: fsbm,
 				LibArchiveBackend: lam,
 				Target:            tc.Target,
 				TargetType:        tc.TargetType,
@@ -520,18 +517,16 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			}
 			cp.Sha256sum = tc.Sha256sum
 			cp.Compressed = tc.Compressed
+			cp.tempDirPath = tempDirPath
 
-			err = cp.Install(downloadDir)
+			err := cp.Install(downloadDir)
 
 			assert.NoError(t, err)
 			fsm.AssertExpectations(t)
+			fsbm.AssertExpectations(t)
 			cm.AssertExpectations(t)
 			lam.AssertExpectations(t)
 			pm.AssertExpectations(t)
-
-			tempDirExists, err := afero.Exists(memFs, tempDirPath)
-			assert.False(t, tempDirExists)
-			assert.NoError(t, err)
 
 			expectedTargetPath := path.Join(tempDirPath, tc.TargetPath)
 			assert.Equal(t, expectedTargetPath, cp.GetTarget())
@@ -540,6 +535,33 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 }
 
 func TestCopyCleanupNil(t *testing.T) {
-	cp := CopyObject{}
+	tempDirPath := "/dummy-path"
+
+	fsbm := &filesystemmock.FileSystemBackendMock{}
+	fsbm.On("RemoveAll", tempDirPath).Return(nil)
+
+	cp := CopyObject{FileSystemBackend: fsbm}
+	cp.tempDirPath = tempDirPath
 	assert.Nil(t, cp.Cleanup())
+
+	fsbm.AssertExpectations(t)
+}
+
+func TestCopyCleanupWithUmountError(t *testing.T) {
+	fsbm := &filesystemmock.FileSystemBackendMock{}
+
+	cp := CopyObject{}
+	cp.hasUmountError = true
+	assert.Nil(t, cp.Cleanup())
+
+	fsbm.AssertExpectations(t)
+}
+
+func TestCopyGetTarget(t *testing.T) {
+	cp := CopyObject{}
+	assert.Equal(t, "", cp.GetTarget())
+
+	cp.tempDirPath = "/prefix"
+	cp.TargetPath = "/file"
+	assert.Equal(t, "/prefix/file", cp.GetTarget())
 }
