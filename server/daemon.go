@@ -12,6 +12,7 @@ import (
 	"path"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -56,7 +57,7 @@ func (d *Daemon) Run() {
 						d.done <- true
 					}
 				case fsnotify.Write:
-					umFileName := path.Join(d.backend.path, updateMetadataFilename)
+					umFileName := path.Join(d.backend.path, metadata.UpdateMetadataFilename)
 					if event.Name == umFileName {
 						err := d.backend.ParseUpdateMetadata()
 						if err != nil {

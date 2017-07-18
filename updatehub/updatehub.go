@@ -135,12 +135,18 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 	data.FirmwareMetadata = uh.FirmwareMetadata
 	data.Retries = retries
 
+	updateMetadataPath := path.Join(uh.Settings.DownloadDir, metadata.UpdateMetadataFilename)
+
 	updateMetadata, extraPoll, err := uh.Updater.CheckUpdate(uh.API.Request(), client.UpgradesEndpoint, data)
-	if err != nil || updateMetadata == nil {
+	um := updateMetadata.(*metadata.UpdateMetadata)
+	if err != nil || um == nil {
+		uh.Store.Remove(updateMetadataPath)
 		return nil, -1
 	}
 
-	return updateMetadata.(*metadata.UpdateMetadata), extraPoll
+	afero.WriteFile(uh.Store, updateMetadataPath, um.RawBytes, 0644)
+
+	return um, extraPoll
 }
 
 // it is recommended to use a buffered channel for "progressChan" to ensure no progress event is lost

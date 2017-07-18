@@ -21,8 +21,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-const updateMetadataFilename = "updatemetadata.json"
-
 type ServerBackend struct {
 	path           string
 	updateMetadata []byte
@@ -48,7 +46,7 @@ func NewServerBackend(path string) (*ServerBackend, error) {
 }
 
 func (sb *ServerBackend) ParseUpdateMetadata() error {
-	updateMetadataFilePath := path.Join(sb.path, updateMetadataFilename)
+	updateMetadataFilePath := path.Join(sb.path, metadata.UpdateMetadataFilename)
 
 	if _, err := os.Stat(updateMetadataFilePath); err != nil {
 		return err
