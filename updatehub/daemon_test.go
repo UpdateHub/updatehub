@@ -10,13 +10,11 @@ package updatehub
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
-	"github.com/bouk/monkey"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -58,34 +56,6 @@ func TestDaemonStop(t *testing.T) {
 	d.Stop()
 
 	assert.True(t, d.stop)
-}
-
-func TestDaemonFailedToReportStatus(t *testing.T) {
-	logger, hook := test.NewNullLogger()
-	log.SetLogger(logger)
-
-	defer log.SetLogger(logrus.StandardLogger())
-	defer hook.Reset()
-
-	aim := &activeinactivemock.ActiveInactiveMock{}
-
-	uh, _ := newTestUpdateHub(nil, aim)
-
-	d := NewDaemon(uh)
-
-	uh.State = NewStateTest(d)
-
-	defer monkey.PatchInstanceMethod(reflect.TypeOf(uh), "ReportCurrentState", func(uh *UpdateHub) error {
-		return errors.New("")
-	}).Unpatch()
-
-	d.Run()
-
-	assert.Equal(t, 1, len(hook.Entries))
-	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
-	assert.Equal(t, "Failed to report status", hook.LastEntry().Message)
-
-	aim.AssertExpectations(t)
 }
 
 func TestDaemonExitStateStop(t *testing.T) {

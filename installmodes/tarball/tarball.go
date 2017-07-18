@@ -68,7 +68,7 @@ type TarballObject struct {
 
 // Setup implementation for the "tarball" handler
 func (tb *TarballObject) Setup() error {
-	log.Info("'tarball' handler Setup")
+	log.Debug("'tarball' handler Setup")
 
 	switch tb.TargetType {
 	case "device":
@@ -98,7 +98,7 @@ func (tb *TarballObject) Setup() error {
 
 // Install implementation for the "tarball" handler
 func (tb *TarballObject) Install(downloadDir string) error {
-	log.Info("'tarball' handler Install")
+	log.Debug("'tarball' handler Install")
 
 	if tb.MustFormat {
 		err := tb.Format(tb.Target, tb.FSType, tb.FormatOptions)
@@ -143,6 +143,6 @@ func (tb *TarballObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "tarball" handler
 func (tb *TarballObject) Cleanup() error {
-	log.Info("'tarball' handler Cleanup")
+	log.Debug("'tarball' handler Cleanup")
 	return nil
 }

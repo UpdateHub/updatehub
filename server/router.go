@@ -37,7 +37,7 @@ func NewBackendRouter(b Backend) *BackendRouter {
 
 func (br *BackendRouter) logMiddleware(p string, h func(http.ResponseWriter, *http.Request, httprouter.Params)) (string, httprouter.Handle) {
 	middleware := func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		log.Info(fmt.Sprintf("%s %s", r.Method, r.URL))
+		log.Info(fmt.Sprintf("processing HTTP API '%s %s' request", r.Method, r.URL))
 		h(w, r, p)
 	}
 

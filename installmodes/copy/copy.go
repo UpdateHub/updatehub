@@ -70,7 +70,7 @@ type CopyObject struct {
 
 // Setup implementation for the "copy" handler
 func (cp *CopyObject) Setup() error {
-	log.Info("'copy' handler Setup")
+	log.Debug("'copy' handler Setup")
 
 	if cp.TargetType != "device" {
 		finalErr := fmt.Errorf("target-type '%s' is not supported for the 'copy' handler. Its value must be 'device'", cp.TargetType)
@@ -89,7 +89,7 @@ func (cp *CopyObject) Setup() error {
 
 // Install implementation for the "copy" handler
 func (cp *CopyObject) Install(downloadDir string) error {
-	log.Info("'copy' handler Install")
+	log.Debug("'copy' handler Install")
 
 	if cp.MustFormat {
 		err := cp.Format(cp.Target, cp.FSType, cp.FormatOptions)
@@ -136,7 +136,7 @@ func (cp *CopyObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "copy" handler
 func (cp *CopyObject) Cleanup() error {
-	log.Info("'copy' handler Cleanup")
+	log.Debug("'copy' handler Cleanup")
 
 	// we can't just "os.RemoveAll(cp.tempDirPath)" here because it
 	// could happen an "Umount" error and then the mounted dir

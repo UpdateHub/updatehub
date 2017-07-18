@@ -158,7 +158,7 @@ func TestFormatWithErrorOnExecuteCommand(t *testing.T) {
 	fs := &FileSystem{CmdLineExecuter: clem}
 
 	err = fs.Format(devicePath, fsType, formatOptions)
-	assert.EqualError(t, err, "cmdline error")
+	assert.EqualError(t, err, "couldn't format '/dev/xxc3'. cmdline error: cmdline error")
 
 	clem.AssertExpectations(t)
 }

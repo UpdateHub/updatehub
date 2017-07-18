@@ -54,13 +54,13 @@ type ImxKobsObject struct {
 
 // Setup implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Setup() error {
-	log.Info("'imxkobs' handler Setup")
+	log.Debug("'imxkobs' handler Setup")
 	return nil
 }
 
 // Install implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Install(downloadDir string) error {
-	log.Info("'imxkobs' handler Install")
+	log.Debug("'imxkobs' handler Install")
 
 	cmdline := "kobs-ng init"
 
@@ -91,7 +91,7 @@ func (ik *ImxKobsObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "imxkobs" handler
 func (ik *ImxKobsObject) Cleanup() error {
-	log.Info("'imxkobs' handler Cleanup")
+	log.Debug("'imxkobs' handler Cleanup")
 	return nil
 }
 

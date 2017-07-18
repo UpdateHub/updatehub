@@ -65,7 +65,7 @@ type FlashObject struct {
 
 // Setup implementation for the "flash" handler
 func (f *FlashObject) Setup() error {
-	log.Info("'flash' handler Setup")
+	log.Debug("'flash' handler Setup")
 
 	switch f.TargetType {
 	case "device":
@@ -88,7 +88,7 @@ func (f *FlashObject) Setup() error {
 
 // Install implementation for the "flash" handler
 func (f *FlashObject) Install(downloadDir string) error {
-	log.Info("'flash' handler Install")
+	log.Debug("'flash' handler Install")
 
 	isNand, err := f.MtdUtils.MtdIsNAND(f.targetDevice)
 	if err != nil {
@@ -115,7 +115,7 @@ func (f *FlashObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "flash" handler
 func (f *FlashObject) Cleanup() error {
-	log.Info("'flash' handler Cleanup")
+	log.Debug("'flash' handler Cleanup")
 	return nil
 }
 

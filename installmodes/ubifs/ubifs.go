@@ -72,7 +72,7 @@ type UbifsObject struct {
 
 // Setup implementation for the "ubifs" handler
 func (ufs *UbifsObject) Setup() error {
-	log.Info("'ubifs' handler Setup")
+	log.Debug("'ubifs' handler Setup")
 
 	if ufs.TargetType != "ubivolume" {
 		finalErr := fmt.Errorf("target-type '%s' is not supported for the 'ubifs' handler. Its value must be 'ubivolume'", ufs.TargetType)
@@ -85,7 +85,7 @@ func (ufs *UbifsObject) Setup() error {
 
 // Install implementation for the "ubifs" handler
 func (ufs *UbifsObject) Install(downloadDir string) error {
-	log.Info("'ubifs' handler Install")
+	log.Debug("'ubifs' handler Install")
 
 	targetDevice, err := ufs.GetTargetDeviceFromUbiVolumeName(ufs.FileSystemBackend, ufs.Target)
 	if err != nil {
@@ -108,6 +108,6 @@ func (ufs *UbifsObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "ubifs" handler
 func (ufs *UbifsObject) Cleanup() error {
-	log.Info("'ubifs' handler Cleanup")
+	log.Debug("'ubifs' handler Cleanup")
 	return nil
 }
