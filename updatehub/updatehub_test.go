@@ -26,6 +26,8 @@ import (
 
 	"github.com/UpdateHub/updatehub/activeinactive"
 	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/copy"
+	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
 	"github.com/UpdateHub/updatehub/metadata"
@@ -132,6 +134,40 @@ func startInstallUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata)
 	}
 
 	return progressList, err
+}
+
+func TestNewUpdateHub(t *testing.T) {
+	gitversion := "2.1"
+	buildtime := "2017-06-01 17:13 UTC"
+	memFs := afero.NewMemMapFs()
+	systemSettingsPath := "/system/settings/path"
+	runtimeSettingsPath := "/runtime/settings/path"
+	initialState := NewIdleState()
+
+	fm := &metadata.FirmwareMetadata{
+		ProductUID:       "productuid-value",
+		DeviceIdentity:   map[string]string{"id1": "id1-value"},
+		DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+		Hardware:         "",
+		Version:          "version-value",
+	}
+
+	uh := NewUpdateHub(gitversion, buildtime, memFs, *fm, initialState, systemSettingsPath, runtimeSettingsPath)
+
+	assert.Equal(t, &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}}, uh.ActiveInactiveBackend)
+	assert.Equal(t, gitversion, uh.Version)
+	assert.Equal(t, buildtime, uh.BuildTime)
+	assert.Equal(t, initialState, uh.State)
+	assert.Equal(t, client.NewUpdateClient(), uh.Updater)
+	assert.Equal(t, time.Minute, uh.TimeStep)
+	assert.Equal(t, memFs, uh.Store)
+	assert.Equal(t, *fm, uh.FirmwareMetadata)
+	assert.Equal(t, systemSettingsPath, uh.SystemSettingsPath)
+	assert.Equal(t, runtimeSettingsPath, uh.RuntimeSettingsPath)
+	assert.Equal(t, client.NewReportClient(), uh.Reporter)
+	assert.Equal(t, &Sha256CheckerImpl{}, uh.Sha256Checker)
+	assert.Equal(t, &installifdifferent.DefaultImpl{FileSystemBackend: memFs}, uh.InstallIfDifferentBackend)
+	assert.Equal(t, copy.ExtendedIO{}, uh.CopyBackend)
 }
 
 func TestCheckDownloadedObjectSha256sum(t *testing.T) {
