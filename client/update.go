@@ -32,17 +32,16 @@ type Updater interface {
 }
 
 func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
-	log.Info("Checking update at: ", uri)
-
 	if api == nil {
 		finalErr := fmt.Errorf("invalid api requester")
 		log.Error(finalErr)
 		return nil, 0, finalErr
 	}
 
-	rawJSON, _ := json.Marshal(data)
-
 	url := serverURL(api.Client(), uri)
+	log.Debug("checking update at: ", url)
+
+	rawJSON, _ := json.Marshal(data)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(rawJSON))
 	if err != nil {

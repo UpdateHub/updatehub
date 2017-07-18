@@ -82,7 +82,7 @@ func (fs *FileSystem) Format(targetDevice string, fsType string, formatOptions s
 
 	_, err = fs.Execute(cmdline)
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't format '%s'. cmdline error: %s", targetDevice, err)
 	}
 
 	return nil

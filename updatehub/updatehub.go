@@ -152,13 +152,13 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 
 	packageUID := updateMetadata.PackageUID()
 
-	log.Info("Downloading update. PackageUID:", packageUID)
+	log.Info(fmt.Sprintf("downloading update. (package-uid: %s)", packageUID))
 
 	progress := 0
 	for _, obj := range updateMetadata.Objects[indexToInstall] {
 		objectUID := obj.GetObjectMetadata().Sha256sum
 
-		log.Info("Downloading object: ", objectUID)
+		log.Info("downloading object: ", objectUID)
 
 		uri := "/products"
 		uri = path.Join(uri, uh.FirmwareMetadata.ProductUID)
@@ -185,7 +185,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 			return err
 		}
 
-		log.Info("Object ", objectUID, " downloaded successfully")
+		log.Info("object ", objectUID, " downloaded successfully")
 
 		step := 100 / len(updateMetadata.Objects[indexToInstall])
 		progress += step
@@ -197,7 +197,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		}
 	}
 
-	log.Info("Update downloaded successfully")
+	log.Info("update downloaded successfully")
 
 	if progress < 100 {
 		// "non-blocking" write to channel
@@ -217,7 +217,7 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		return err
 	}
 
-	log.Info("Installing update. PackageUID:", updateMetadata.PackageUID())
+	log.Info(fmt.Sprintf("installing update. (package-uid: %s)", updateMetadata.PackageUID()))
 
 	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.ActiveInactiveBackend, updateMetadata)
 	if err != nil {
@@ -232,8 +232,7 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 			return err
 		}
 
-		log.Info("Installing object: ", obj.GetObjectMetadata().Sha256sum)
-		log.Info("Mode: ", obj.GetObjectMetadata().Mode)
+		log.Info(fmt.Sprintf("installing object: %s (mode: %s)", obj.GetObjectMetadata().Sha256sum, obj.GetObjectMetadata().Mode))
 
 		err = obj.Setup()
 		if err != nil {
@@ -275,9 +274,9 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		}
 
 		if install {
-			log.Info("Object ", obj.GetObjectMetadata().Sha256sum, " installed successfully")
+			log.Info("object ", obj.GetObjectMetadata().Sha256sum, " installed successfully")
 		} else {
-			log.Info("Object ", obj.GetObjectMetadata().Sha256sum, " is already installed (satisfied the 'install-if-different' field)")
+			log.Info("object ", obj.GetObjectMetadata().Sha256sum, " is already installed (satisfied the 'install-if-different' field)")
 		}
 
 		step := 100 / len(updateMetadata.Objects[indexToInstall])
@@ -290,7 +289,7 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		}
 	}
 
-	log.Info("Update installed successfully")
+	log.Info("update installed successfully")
 
 	if progress < 100 {
 		// "non-blocking" write to channel

@@ -27,9 +27,9 @@ type Reporter interface {
 }
 
 func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state string, errorMessage string, fm metadata.FirmwareMetadata) error {
-	log.Info("reporting state: ", state)
-	log.Info("  error message: ", errorMessage)
-	log.Info("  packageUID: ", packageUID)
+	log.Debug("reporting state: ", state)
+	log.Debug("  error message: ", errorMessage)
+	log.Debug("  packageUID: ", packageUID)
 
 	if api == nil {
 		finalErr := fmt.Errorf("invalid api requester")
@@ -88,9 +88,9 @@ func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state st
 		return finalErr
 	}
 
-	log.Info("report response body content: ", string(responseBody))
+	log.Debug("report response body content: ", string(responseBody))
 
-	finalErr := fmt.Errorf("failed to report state. HTTP code: %d", res.StatusCode)
+	finalErr := fmt.Errorf("failed to report state '%s'. HTTP code: %d", state, res.StatusCode)
 	log.Error(finalErr)
 	return finalErr
 }

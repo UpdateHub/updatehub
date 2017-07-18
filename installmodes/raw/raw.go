@@ -59,7 +59,7 @@ type RawObject struct {
 
 // Setup implementation for the "raw" handler
 func (r *RawObject) Setup() error {
-	log.Info("'raw' handler Setup")
+	log.Debug("'raw' handler Setup")
 
 	if r.TargetType != "device" {
 		finalErr := fmt.Errorf("target-type '%s' is not supported for the 'raw' handler. Its value must be 'device'", r.TargetType)
@@ -72,7 +72,7 @@ func (r *RawObject) Setup() error {
 
 // Install implementation for the "raw" handler
 func (r *RawObject) Install(downloadDir string) error {
-	log.Info("'raw' handler Install")
+	log.Debug("'raw' handler Install")
 
 	srcPath := path.Join(downloadDir, r.Sha256sum)
 	return r.CopyBackend.CopyFile(r.FileSystemBackend, r.LibArchiveBackend, srcPath, r.Target, r.ChunkSize, r.Skip, r.Seek, r.Count, r.Truncate, r.Compressed)
@@ -80,7 +80,7 @@ func (r *RawObject) Install(downloadDir string) error {
 
 // Cleanup implementation for the "raw" handler
 func (r *RawObject) Cleanup() error {
-	log.Info("'raw' handler Cleanup")
+	log.Debug("'raw' handler Cleanup")
 	return nil
 }
 
