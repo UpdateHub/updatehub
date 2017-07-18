@@ -105,7 +105,7 @@ type testObjectWithoutIIDSupport struct {
 	metadata.ObjectMetadata
 }
 
-func TestProceedWithGetObjectError(t *testing.T) {
+func TestProceedWithoutInstallIfDifferentOnObject(t *testing.T) {
 	memFs := afero.NewMemMapFs()
 
 	err := afero.WriteFile(memFs, testObjectGetTargetReturn, []byte("dummy"), 0666)
@@ -115,19 +115,18 @@ func TestProceedWithGetObjectError(t *testing.T) {
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
 		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return &testObjectWithoutIIDSupport{} },
+		GetObject:         func() interface{} { return &testObject{} },
 	})
+	defer mode.Unregister()
 
 	iif := &DefaultImpl{memFs}
 
-	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentSha256Sum))
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithoutInstallIfDifferent))
 	assert.NoError(t, err)
 
-	mode.Unregister()
-
 	install, err := iif.Proceed(o)
-	assert.EqualError(t, err, "failed to process mode 'test': Object not found")
-	assert.False(t, install)
+	assert.NoError(t, err)
+	assert.True(t, install)
 }
 
 func TestProceedWithoutInstallIfDifferentSupport(t *testing.T) {
@@ -146,7 +145,7 @@ func TestProceedWithoutInstallIfDifferentSupport(t *testing.T) {
 
 	iif := &DefaultImpl{memFs}
 
-	o, err := metadata.NewObjectMetadata([]byte(ObjectWithoutInstallIfDifferent))
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentSha256Sum))
 	assert.NoError(t, err)
 
 	install, err := iif.Proceed(o)

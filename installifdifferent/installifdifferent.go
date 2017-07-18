@@ -12,7 +12,6 @@ import (
 	"fmt"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
 	"github.com/spf13/afero"
@@ -27,18 +26,14 @@ type DefaultImpl struct {
 }
 
 func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
+	if o.GetObjectMetadata().InstallIfDifferent == nil {
+		return true, nil
+	}
+
 	mode := o.GetObjectMetadata().Mode
 	log.Info(fmt.Sprintf("checking install-if-different support for '%s'", mode))
 
-	om, err := installmodes.GetObject(mode)
-	if err != nil {
-		finalErr := fmt.Errorf("failed to process mode '%s': %s", mode, err)
-		log.Error(finalErr)
-		return false, finalErr
-	}
-
-	tg, ok := om.(TargetGetter)
-
+	tg, ok := o.(TargetGetter)
 	if !ok {
 		// "o" does NOT support install-if-different
 		log.Info(fmt.Sprintf("'%s' mode doesn't support install-if-different", mode))
