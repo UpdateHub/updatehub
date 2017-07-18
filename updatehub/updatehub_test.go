@@ -342,6 +342,15 @@ func TestGetIndexOfObjectToBeInstalledWithNoObjects(t *testing.T) {
 }
 
 func TestUpdateHubCheckUpdate(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
 	testCases := []struct {
 		name           string
 		updateMetadata string
@@ -351,7 +360,7 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 		{
 			"InvalidUpdateMetadata",
 			"",
-			0,
+			-1,
 			nil,
 		},
 
@@ -366,10 +375,14 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(&PollState{}, aim)
+	updateMetadataPath := path.Join(uh.Settings.DownloadDir, metadata.UpdateMetadataFilename)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			expectedUpdateMetadata, _ := metadata.NewUpdateMetadata([]byte(tc.updateMetadata))
+
+			err := afero.WriteFile(uh.Store, updateMetadataPath, []byte("dummyfile"), 0644)
+			assert.NoError(t, err)
 
 			var data struct {
 				Retries int `json:"retries"`
@@ -389,10 +402,21 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 			assert.Equal(t, tc.extraPoll, extraPoll)
 			um.AssertExpectations(t)
+
+			if tc.updateMetadata == "" {
+				fileExists, err := afero.Exists(uh.Store, updateMetadataPath)
+				assert.NoError(t, err)
+				assert.False(t, fileExists)
+			} else {
+				data, err := afero.ReadFile(uh.Store, updateMetadataPath)
+				assert.NoError(t, err)
+				assert.Equal(t, tc.updateMetadata, string(data))
+			}
 		})
 	}
 
 	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
 }
 
 func TestUpdateHubFetchUpdate(t *testing.T) {

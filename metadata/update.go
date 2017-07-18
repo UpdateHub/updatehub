@@ -14,6 +14,8 @@ import (
 	"github.com/UpdateHub/updatehub/utils"
 )
 
+const UpdateMetadataFilename = "updatemetadata.json"
+
 type UpdateMetadata struct {
 	ProductUID        string      `json:"product-uid"`
 	Version           string      `json:"version"`

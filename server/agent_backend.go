@@ -97,7 +97,7 @@ func (ab *AgentBackend) update(w http.ResponseWriter, r *http.Request, p httprou
 }
 
 func (ab *AgentBackend) updateMetadata(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
+	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, metadata.UpdateMetadataFilename)
 	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
 
 	if err != nil {
@@ -141,7 +141,7 @@ func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p ht
 }
 
 func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
+	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, metadata.UpdateMetadataFilename)
 	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
 	if err != nil {
 		w.WriteHeader(400)
@@ -207,7 +207,7 @@ func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Reque
 }
 
 func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, updateMetadataFilename)
+	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, metadata.UpdateMetadataFilename)
 	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
 	if err != nil {
 		w.WriteHeader(400)
