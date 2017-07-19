@@ -37,10 +37,10 @@ type ArchiveEntry struct {
 // API is the libarchive API provided by this package
 type API interface {
 	NewRead() Archive
-	ReadSupportFilterAll(a Archive)
-	ReadSupportFormatRaw(a Archive)
-	ReadSupportFormatAll(a Archive)
-	ReadSupportFormatEmpty(a Archive)
+	ReadSupportFilterAll(a Archive) error
+	ReadSupportFormatRaw(a Archive) error
+	ReadSupportFormatAll(a Archive) error
+	ReadSupportFormatEmpty(a Archive) error
 	ReadOpenFileName(a Archive, filename string, blockSize int) error
 	ReadFree(a Archive)
 	ReadNextHeader(a Archive, e *ArchiveEntry) error
@@ -68,23 +68,47 @@ func (la LibArchive) NewRead() Archive {
 }
 
 // ReadSupportFilterAll is a wrapper for "C.archive_read_support_filter_all()"
-func (la LibArchive) ReadSupportFilterAll(a Archive) {
-	C.archive_read_support_filter_all(a.archive)
+func (la LibArchive) ReadSupportFilterAll(a Archive) error {
+	r := C.archive_read_support_filter_all(a.archive)
+
+	if r != C.ARCHIVE_OK {
+		return fmt.Errorf(C.GoString(C.archive_error_string(a.archive)))
+	}
+
+	return nil
 }
 
 // ReadSupportFormatRaw is a wrapper for "C.archive_read_support_format_raw()"
-func (la LibArchive) ReadSupportFormatRaw(a Archive) {
-	C.archive_read_support_format_raw(a.archive)
+func (la LibArchive) ReadSupportFormatRaw(a Archive) error {
+	r := C.archive_read_support_format_raw(a.archive)
+
+	if r != C.ARCHIVE_OK {
+		return fmt.Errorf(C.GoString(C.archive_error_string(a.archive)))
+	}
+
+	return nil
 }
 
 // ReadSupportFormatAll is a wrapper for "C.archive_read_support_format_all()"
-func (la LibArchive) ReadSupportFormatAll(a Archive) {
-	C.archive_read_support_format_all(a.archive)
+func (la LibArchive) ReadSupportFormatAll(a Archive) error {
+	r := C.archive_read_support_format_all(a.archive)
+
+	if r != C.ARCHIVE_OK {
+		return fmt.Errorf(C.GoString(C.archive_error_string(a.archive)))
+	}
+
+	return nil
 }
 
 // ReadSupportFormatEmpty is a wrapper for "C.archive_read_support_format_empty()"
-func (la LibArchive) ReadSupportFormatEmpty(a Archive) {
-	C.archive_read_support_format_empty(a.archive)
+func (la LibArchive) ReadSupportFormatEmpty(a Archive) error {
+	r := C.archive_read_support_format_empty(a.archive)
+
+	if r != C.ARCHIVE_OK {
+		return fmt.Errorf(C.GoString(C.archive_error_string(a.archive)))
+	}
+
+	return nil
 }
 
 // ReadOpenFileName is a wrapper for "C.archive_read_open_filename()"
@@ -227,11 +251,25 @@ type Reader struct {
 func NewReader(api API, filePath string, chunkSize int) (*Reader, error) {
 	a := api.NewRead()
 
-	api.ReadSupportFilterAll(a)
-	api.ReadSupportFormatRaw(a)
-	api.ReadSupportFormatEmpty(a)
+	err := api.ReadSupportFilterAll(a)
+	if err != nil {
+		api.ReadFree(a)
+		return nil, err
+	}
 
-	err := api.ReadOpenFileName(a, filePath, chunkSize)
+	err = api.ReadSupportFormatRaw(a)
+	if err != nil {
+		api.ReadFree(a)
+		return nil, err
+	}
+
+	err = api.ReadSupportFormatEmpty(a)
+	if err != nil {
+		api.ReadFree(a)
+		return nil, err
+	}
+
+	err = api.ReadOpenFileName(a, filePath, chunkSize)
 	if err != nil {
 		api.ReadFree(a)
 		return nil, err
@@ -272,11 +310,21 @@ func extractTarball(api API, filename string, enableRaw bool) error {
 	source := api.NewRead()
 	defer api.ReadFree(source)
 
-	api.ReadSupportFilterAll(source)
-	api.ReadSupportFormatAll(source)
+	err := api.ReadSupportFilterAll(source)
+	if err != nil {
+		return err
+	}
+
+	err = api.ReadSupportFormatAll(source)
+	if err != nil {
+		return err
+	}
 
 	if enableRaw {
-		api.ReadSupportFormatRaw(source)
+		err = api.ReadSupportFormatRaw(source)
+		if err != nil {
+			return err
+		}
 	}
 
 	flags := C.ARCHIVE_EXTRACT_TIME
@@ -290,7 +338,7 @@ func extractTarball(api API, filename string, enableRaw bool) error {
 	api.WriteDiskSetOptions(target, flags)
 	api.WriteDiskSetStandardLookup(target)
 
-	err := api.ReadOpenFileName(source, filename, 10240)
+	err = api.ReadOpenFileName(source, filename, 10240)
 	if err != nil {
 		return err
 	}

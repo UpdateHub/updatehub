@@ -23,20 +23,24 @@ func (lam *LibArchiveMock) NewRead() libarchive.Archive {
 	return args.Get(0).(libarchive.Archive)
 }
 
-func (lam *LibArchiveMock) ReadSupportFilterAll(a libarchive.Archive) {
-	lam.Called(a)
+func (lam *LibArchiveMock) ReadSupportFilterAll(a libarchive.Archive) error {
+	args := lam.Called(a)
+	return args.Error(0)
 }
 
-func (lam *LibArchiveMock) ReadSupportFormatRaw(a libarchive.Archive) {
-	lam.Called(a)
+func (lam *LibArchiveMock) ReadSupportFormatRaw(a libarchive.Archive) error {
+	args := lam.Called(a)
+	return args.Error(0)
 }
 
-func (lam *LibArchiveMock) ReadSupportFormatAll(a libarchive.Archive) {
-	lam.Called(a)
+func (lam *LibArchiveMock) ReadSupportFormatAll(a libarchive.Archive) error {
+	args := lam.Called(a)
+	return args.Error(0)
 }
 
-func (lam *LibArchiveMock) ReadSupportFormatEmpty(a libarchive.Archive) {
-	lam.Called(a)
+func (lam *LibArchiveMock) ReadSupportFormatEmpty(a libarchive.Archive) error {
+	args := lam.Called(a)
+	return args.Error(0)
 }
 
 func (lam *LibArchiveMock) ReadOpenFileName(a libarchive.Archive, filename string, blockSize int) error {

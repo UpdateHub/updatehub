@@ -33,9 +33,11 @@ func TestReadSupportFilterAll(t *testing.T) {
 	a := libarchive.Archive{}
 
 	lam := &LibArchiveMock{}
-	lam.On("ReadSupportFilterAll", a)
+	lam.On("ReadSupportFilterAll", a).Return(fmt.Errorf("some error"))
 
-	lam.ReadSupportFilterAll(a)
+	err := lam.ReadSupportFilterAll(a)
+
+	assert.EqualError(t, err, "some error")
 
 	lam.AssertExpectations(t)
 }
@@ -44,9 +46,11 @@ func TestReadSupportFormatRaw(t *testing.T) {
 	a := libarchive.Archive{}
 
 	lam := &LibArchiveMock{}
-	lam.On("ReadSupportFormatRaw", a)
+	lam.On("ReadSupportFormatRaw", a).Return(fmt.Errorf("some error"))
 
-	lam.ReadSupportFormatRaw(a)
+	err := lam.ReadSupportFormatRaw(a)
+
+	assert.EqualError(t, err, "some error")
 
 	lam.AssertExpectations(t)
 }
@@ -55,9 +59,11 @@ func TestReadSupportFormatAll(t *testing.T) {
 	a := libarchive.Archive{}
 
 	lam := &LibArchiveMock{}
-	lam.On("ReadSupportFormatAll", a)
+	lam.On("ReadSupportFormatAll", a).Return(fmt.Errorf("some error"))
 
-	lam.ReadSupportFormatAll(a)
+	err := lam.ReadSupportFormatAll(a)
+
+	assert.EqualError(t, err, "some error")
 
 	lam.AssertExpectations(t)
 }
@@ -66,9 +72,11 @@ func TestReadSupportFormatEmpty(t *testing.T) {
 	a := libarchive.Archive{}
 
 	lam := &LibArchiveMock{}
-	lam.On("ReadSupportFormatEmpty", a)
+	lam.On("ReadSupportFormatEmpty", a).Return(fmt.Errorf("some error"))
 
-	lam.ReadSupportFormatEmpty(a)
+	err := lam.ReadSupportFormatEmpty(a)
+
+	assert.EqualError(t, err, "some error")
 
 	lam.AssertExpectations(t)
 }
