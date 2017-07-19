@@ -29,7 +29,6 @@ import (
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 const (
@@ -81,8 +80,6 @@ func TestNewAgentBackend(t *testing.T) {
 
 	ab, err := NewAgentBackend(uh, rm)
 	assert.NoError(t, err)
-
-	assert.NotNil(t, ab.downloadProgressChan)
 
 	routes := ab.Routes()
 
@@ -519,14 +516,8 @@ func TestUpdateInstallRoute(t *testing.T) {
 	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
 	assert.NoError(t, err)
 
-	cm := &controllermock.ControllerMock{}
-
-	uh.Controller = cm
-
-	um, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
+	_, err = metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
 	assert.NoError(t, err)
-
-	cm.On("InstallUpdate", um, mock.Anything).Return(nil)
 
 	uh.State = updatehub.NewPollState(time.Hour)
 
@@ -539,8 +530,11 @@ func TestUpdateInstallRoute(t *testing.T) {
 	assert.Equal(t, string(`{ "message": "request accepted, installing update" }`), string(bodyContent))
 	assert.Equal(t, 202, r.StatusCode)
 
+	ps, ok := uh.State.(*updatehub.PollState)
+	assert.True(t, ok)
+	assert.Equal(t, "installing", updatehub.StateToString(ps.NextState().ID()))
+
 	clm.AssertExpectations(t)
-	cm.AssertExpectations(t)
 	om.AssertExpectations(t)
 	rm.AssertExpectations(t)
 }
