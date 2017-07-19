@@ -607,6 +607,11 @@ func (state *InstalledState) Handle(uh *UpdateHub) (State, bool) {
 	return NewIdleState(), false
 }
 
+// UpdateMetadata is the ReportableState interface implementation
+func (state *InstalledState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
+}
+
 // NewInstalledState creates a new InstalledState
 func NewInstalledState(updateMetadata *metadata.UpdateMetadata) *InstalledState {
 	state := &InstalledState{

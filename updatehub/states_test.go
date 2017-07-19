@@ -752,6 +752,8 @@ func TestStateInstalled(t *testing.T) {
 	// channel dynamically
 	assert.IsType(t, expectedState, nextState)
 
+	assert.Equal(t, m, s.UpdateMetadata())
+
 	aim.AssertExpectations(t)
 }
 
