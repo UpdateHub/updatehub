@@ -25,15 +25,10 @@ import (
 type AgentBackend struct {
 	*updatehub.UpdateHub
 	utils.Rebooter
-
-	downloadProgressChan chan int
-	installProgressChan  chan int
 }
 
 func NewAgentBackend(uh *updatehub.UpdateHub, r utils.Rebooter) (*AgentBackend, error) {
 	ab := &AgentBackend{UpdateHub: uh, Rebooter: r}
-
-	ab.downloadProgressChan = make(chan int)
 
 	return ab, nil
 }
@@ -235,7 +230,8 @@ func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p 
 	}
 
 	go func() {
-		ab.UpdateHub.Controller.InstallUpdate(um, ab.installProgressChan)
+		// cancel the current state and set "installing" as next
+		ab.UpdateHub.State.Cancel(true, updatehub.NewInstallingState(um, &updatehub.ProgressTrackerImpl{}, ab.UpdateHub.Store))
 	}()
 
 	w.WriteHeader(202)
