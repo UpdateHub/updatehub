@@ -355,20 +355,17 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 		name           string
 		updateMetadata string
 		extraPoll      time.Duration
-		err            error
 	}{
 		{
 			"InvalidUpdateMetadata",
 			"",
 			-1,
-			nil,
 		},
 
 		{
 			"ValidUpdateMetadata",
 			validUpdateMetadata,
 			13,
-			nil,
 		},
 	}
 
@@ -414,6 +411,51 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 			}
 		})
 	}
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+}
+
+func TestUpdateHubCheckUpdateWithNilUpdateMetadata(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(&PollState{}, aim)
+	updateMetadataPath := path.Join(uh.Settings.DownloadDir, metadata.UpdateMetadataFilename)
+
+	err := afero.WriteFile(uh.Store, updateMetadataPath, []byte("dummyfile"), 0644)
+	assert.NoError(t, err)
+
+	var data struct {
+		Retries int `json:"retries"`
+		metadata.FirmwareMetadata
+	}
+
+	data.FirmwareMetadata = uh.FirmwareMetadata
+	data.Retries = 0
+
+	um := &updatermock.UpdaterMock{}
+	um.On("CheckUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(nil, time.Duration(3000), nil)
+
+	uh.Updater = um
+
+	updateMetadata, extraPoll := uh.CheckUpdate(0)
+
+	assert.Equal(t, (*metadata.UpdateMetadata)(nil), updateMetadata)
+	assert.Equal(t, time.Duration(3000), extraPoll)
+	um.AssertExpectations(t)
+
+	fileExists, err := afero.Exists(uh.Store, updateMetadataPath)
+	assert.NoError(t, err)
+	assert.False(t, fileExists)
 
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)

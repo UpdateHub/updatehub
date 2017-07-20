@@ -138,12 +138,17 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 	updateMetadataPath := path.Join(uh.Settings.DownloadDir, metadata.UpdateMetadataFilename)
 
 	updateMetadata, extraPoll, err := uh.Updater.CheckUpdate(uh.API.Request(), client.UpgradesEndpoint, data)
-	um := updateMetadata.(*metadata.UpdateMetadata)
-	if err != nil || um == nil {
+	if err != nil {
 		uh.Store.Remove(updateMetadataPath)
 		return nil, -1
 	}
 
+	if updateMetadata == nil || updateMetadata.(*metadata.UpdateMetadata) == nil {
+		uh.Store.Remove(updateMetadataPath)
+		return nil, extraPoll
+	}
+
+	um := updateMetadata.(*metadata.UpdateMetadata)
 	afero.WriteFile(uh.Store, updateMetadataPath, um.RawBytes, 0644)
 
 	return um, extraPoll

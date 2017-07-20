@@ -579,6 +579,11 @@ func (state *WaitingForRebootState) Handle(uh *UpdateHub) (State, bool) {
 	return NewIdleState(), false
 }
 
+// UpdateMetadata is the ReportableState interface implementation
+func (state *WaitingForRebootState) UpdateMetadata() *metadata.UpdateMetadata {
+	return state.updateMetadata
+}
+
 // NewWaitingForRebootState creates a new WaitingForRebootState
 func NewWaitingForRebootState(updateMetadata *metadata.UpdateMetadata) *WaitingForRebootState {
 	state := &WaitingForRebootState{
