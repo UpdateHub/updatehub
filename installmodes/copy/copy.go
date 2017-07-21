@@ -52,8 +52,7 @@ type CopyObject struct {
 	CopyBackend            copy.Interface `json:"-"`
 	utils.Permissions
 	installifdifferent.TargetGetter
-	tempDirPath    string
-	hasUmountError bool
+	tempDirPath string
 
 	Target        string      `json:"target"`
 	TargetType    string      `json:"target-type"`
@@ -84,6 +83,18 @@ func (cp *CopyObject) Setup() error {
 		return err
 	}
 
+	if cp.MustFormat {
+		err = cp.Format(cp.Target, cp.FSType, cp.FormatOptions)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = cp.Mount(cp.Target, cp.tempDirPath, cp.FSType, cp.MountOptions)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -91,24 +102,12 @@ func (cp *CopyObject) Setup() error {
 func (cp *CopyObject) Install(downloadDir string) error {
 	log.Debug("'copy' handler Install")
 
-	if cp.MustFormat {
-		err := cp.Format(cp.Target, cp.FSType, cp.FormatOptions)
-		if err != nil {
-			return err
-		}
-	}
-
-	err := cp.Mount(cp.Target, cp.tempDirPath, cp.FSType, cp.MountOptions)
-	if err != nil {
-		return err
-	}
-
 	errorList := []error{}
 
 	targetPath := path.Join(cp.tempDirPath, cp.TargetPath)
 
 	sourcePath := path.Join(downloadDir, cp.Sha256sum)
-	err = cp.CopyBackend.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
+	err := cp.CopyBackend.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
 	}
@@ -125,12 +124,6 @@ func (cp *CopyObject) Install(downloadDir string) error {
 		}
 	}
 
-	umountErr := cp.Umount(cp.tempDirPath)
-	if umountErr != nil {
-		cp.hasUmountError = true
-		errorList = append(errorList, umountErr)
-	}
-
 	return utils.MergeErrorList(errorList)
 }
 
@@ -138,20 +131,23 @@ func (cp *CopyObject) Install(downloadDir string) error {
 func (cp *CopyObject) Cleanup() error {
 	log.Debug("'copy' handler Cleanup")
 
-	// we can't just "os.RemoveAll(cp.tempDirPath)" here because it
-	// could happen an "Umount" error and then the mounted dir
-	// contents would be removed as well
-	if !cp.hasUmountError {
-		cp.FileSystemBackend.RemoveAll(cp.tempDirPath)
-		cp.tempDirPath = ""
+	err := cp.Umount(cp.tempDirPath)
+	if err != nil {
+		return err
 	}
+
+	// make sure there is NO umount error when calling
+	// "os.RemoveAll(cp.tempDirPath)" here. because in this case the
+	// mounted dir contents would be removed too
+	cp.FileSystemBackend.RemoveAll(cp.tempDirPath)
+	cp.tempDirPath = ""
 
 	return nil
 }
 
 // GetTarget implementation for the "copy" handler
 func (cp *CopyObject) GetTarget() string {
-	if cp.tempDirPath == "" {
+	if cp.tempDirPath == "" || cp.TargetPath == "" {
 		return ""
 	}
 
