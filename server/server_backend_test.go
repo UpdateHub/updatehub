@@ -96,7 +96,7 @@ func TestNewServerBackend(t *testing.T) {
 	assert.Equal(t, reflect.ValueOf(sb.reportStatus).Pointer(), reflect.ValueOf(routes[1].Handle).Pointer())
 
 	assert.Equal(t, "GET", routes[2].Method)
-	assert.Equal(t, "/:product/:package/:object", routes[2].Path)
+	assert.Equal(t, "/products/:product/packages/:package/objects/:object", routes[2].Path)
 	assert.Equal(t, reflect.ValueOf(sb.getObject).Pointer(), reflect.ValueOf(routes[2].Handle).Pointer())
 }
 
@@ -245,7 +245,7 @@ func TestGetObjectRoute(t *testing.T) {
 	assert.NoError(t, err)
 
 	// do the request
-	finalURL := fmt.Sprintf("%s/%s/%s/%s", server.URL, productUID, packageUID, object)
+	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
 	r, err := http.Get(finalURL)
 	assert.NoError(t, err)
 

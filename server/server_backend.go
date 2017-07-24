@@ -75,7 +75,7 @@ func (sb *ServerBackend) Routes() []Route {
 	return []Route{
 		{Method: "POST", Path: "/upgrades", Handle: sb.getUpdateMetadata},
 		{Method: "POST", Path: "/report", Handle: sb.reportStatus},
-		{Method: "GET", Path: "/:product/:package/:object", Handle: sb.getObject},
+		{Method: "GET", Path: "/products/:product/packages/:package/objects/:object", Handle: sb.getObject},
 	}
 }
 
