@@ -23,6 +23,40 @@ const (
 	defaultServerAddress   = "api.updatehub.io"
 )
 
+var DefaultSettings = Settings{
+	PollingSettings: PollingSettings{
+		PollingInterval: defaultPollingInterval,
+		PollingEnabled:  true,
+		PersistentPollingSettings: PersistentPollingSettings{
+			LastPoll:             (time.Time{}).UTC(),
+			FirstPoll:            (time.Time{}).UTC(),
+			ExtraPollingInterval: 0,
+			PollingRetries:       0,
+		},
+	},
+
+	StorageSettings: StorageSettings{
+		ReadOnly:            false,
+		RuntimeSettingsPath: "/var/lib/updatehub.conf",
+	},
+
+	UpdateSettings: UpdateSettings{
+		DownloadDir:               "/tmp",
+		AutoDownloadWhenAvailable: true,
+		AutoInstallAfterDownload:  true,
+		AutoRebootAfterInstall:    true,
+		SupportedInstallModes:     []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
+	},
+
+	NetworkSettings: NetworkSettings{
+		ServerAddress: defaultServerAddress,
+	},
+
+	FirmwareSettings: FirmwareSettings{
+		FirmwareMetadataPath: "/usr/share/updatehub",
+	},
+}
+
 type Settings struct {
 	PollingSettings  `ini:"Polling" json:"polling"`
 	StorageSettings  `ini:"Storage" json:"storage"`
@@ -49,7 +83,8 @@ type PersistentPollingSettings struct {
 }
 
 type StorageSettings struct {
-	ReadOnly bool `ini:"ReadOnly" json:"read-only"`
+	ReadOnly            bool   `ini:"ReadOnly" json:"read-only"`
+	RuntimeSettingsPath string `ini:"RuntimeSettingsPath" json:"runtime-settings-path"`
 }
 
 type UpdateSettings struct {
@@ -83,45 +118,14 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 		return nil, err
 	}
 
-	s := &Settings{
-		PollingSettings: PollingSettings{
-			PollingInterval: defaultPollingInterval,
-			PollingEnabled:  true,
-			PersistentPollingSettings: PersistentPollingSettings{
-				LastPoll:             (time.Time{}).UTC(),
-				FirstPoll:            (time.Time{}).UTC(),
-				ExtraPollingInterval: 0,
-				PollingRetries:       0,
-			},
-		},
+	s := DefaultSettings
 
-		StorageSettings: StorageSettings{
-			ReadOnly: false,
-		},
-
-		UpdateSettings: UpdateSettings{
-			DownloadDir:               "/tmp",
-			AutoDownloadWhenAvailable: true,
-			AutoInstallAfterDownload:  true,
-			AutoRebootAfterInstall:    true,
-			SupportedInstallModes:     []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
-		},
-
-		NetworkSettings: NetworkSettings{
-			ServerAddress: defaultServerAddress,
-		},
-
-		FirmwareSettings: FirmwareSettings{
-			FirmwareMetadataPath: "",
-		},
-	}
-
-	err = cfg.MapTo(s)
+	err = cfg.MapTo(&s)
 	if err != nil {
 		return nil, err
 	}
 
-	return s, nil
+	return &s, nil
 }
 
 func SaveSettings(s *Settings, w io.Writer) error {

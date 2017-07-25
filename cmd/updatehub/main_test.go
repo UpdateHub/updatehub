@@ -9,8 +9,19 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"path"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/filemock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/updatehub"
+	"github.com/go-ini/ini"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,4 +63,96 @@ func TestSanitizeServerAddressWithError(t *testing.T) {
 
 	assert.EqualError(t, err, "parse https://{: invalid character \"{\" in host name")
 	assert.Equal(t, "", address)
+}
+
+func TestLoadSettings(t *testing.T) {
+	fs := afero.NewOsFs()
+
+	testPath, err := afero.TempDir(fs, "", "updatehub-test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(testPath)
+
+	runtimeSettingsTestPath := path.Join(testPath, "runtime.conf")
+	systemSettingsTestPath := path.Join(testPath, "system.conf")
+
+	testCases := []struct {
+		name             string
+		systemSettings   string
+		runtimeSettings  string
+		expectedError    interface{}
+		expectedSettings updatehub.Settings
+	}{
+
+		{
+			"InvalidSettingsFile",
+			"test",
+			"test",
+			ini.ErrDelimiterNotFound{"test"},
+			updatehub.Settings{},
+		},
+
+		{
+			"ValidSettingsFile",
+			"[Storage]\nReadOnly=true",
+			"[Polling]\nExtraInterval=3",
+			nil,
+			func() updatehub.Settings {
+				s := updatehub.DefaultSettings
+
+				s.ReadOnly = true
+				s.ExtraPollingInterval = 3
+				s.LastPoll = time.Time{}
+				s.FirstPoll = time.Time{}
+
+				return s
+			}(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			aim := &activeinactivemock.ActiveInactiveMock{}
+
+			if tc.systemSettings != "" {
+				err := fs.MkdirAll(filepath.Dir(systemSettingsTestPath), 0755)
+				assert.NoError(t, err)
+				err = afero.WriteFile(fs, systemSettingsTestPath, []byte(tc.systemSettings), 0644)
+				assert.NoError(t, err)
+			}
+
+			if tc.runtimeSettings != "" {
+				err := fs.MkdirAll(filepath.Dir(runtimeSettingsTestPath), 0755)
+				assert.NoError(t, err)
+				err = afero.WriteFile(fs, runtimeSettingsTestPath, []byte(tc.runtimeSettings), 0644)
+				assert.NoError(t, err)
+			}
+
+			settings := &updatehub.Settings{}
+
+			err := loadSettings(fs, settings, systemSettingsTestPath)
+			assert.Equal(t, tc.expectedError, err)
+
+			err = loadSettings(fs, settings, runtimeSettingsTestPath)
+			assert.Equal(t, tc.expectedError, err)
+
+			assert.Equal(t, tc.expectedSettings, *settings)
+
+			aim.AssertExpectations(t)
+		})
+	}
+}
+
+func TestLoadSettingsWithOpenError(t *testing.T) {
+	fsbm := &filesystemmock.FileSystemBackendMock{}
+
+	settings := &updatehub.Settings{}
+
+	settingsPath := "/path"
+
+	fsbm.On("Open", settingsPath).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
+
+	err := loadSettings(fsbm, settings, settingsPath)
+	assert.EqualError(t, err, "open error")
+
+	fsbm.AssertExpectations(t)
 }

@@ -9,17 +9,12 @@
 package updatehub
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"math/rand"
-	"os"
 	"path"
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/imdario/mergo"
 	"github.com/spf13/afero"
 
 	"github.com/UpdateHub/updatehub/activeinactive"
@@ -91,15 +86,13 @@ type UpdateHub struct {
 	Reporter                client.Reporter
 	lastInstalledPackageUID string
 	ActiveInactiveBackend   activeinactive.Interface
-	SystemSettingsPath      string
-	RuntimeSettingsPath     string
 	lastReportedState       string
 
 	InstallIfDifferentBackend installifdifferent.Interface
 	Sha256Checker
 }
 
-func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, systemSettingsPath string, runtimeSettingsPath string) *UpdateHub {
+func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, settings *Settings) *UpdateHub {
 	uh := &UpdateHub{
 		ActiveInactiveBackend:     &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}},
 		Version:                   gitversion,
@@ -109,8 +102,7 @@ func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.
 		TimeStep:                  time.Minute,
 		Store:                     fs,
 		FirmwareMetadata:          fm,
-		SystemSettingsPath:        systemSettingsPath,
-		RuntimeSettingsPath:       runtimeSettingsPath,
+		Settings:                  settings,
 		Reporter:                  client.NewReportClient(),
 		Sha256Checker:             &Sha256CheckerImpl{},
 		InstallIfDifferentBackend: &installifdifferent.DefaultImpl{FileSystemBackend: fs},
@@ -338,46 +330,6 @@ func (uh *UpdateHub) ReportCurrentState() error {
 
 		uh.lastReportedState = stateString
 	}
-
-	return nil
-}
-
-// LoadSettings loads system and runtime settings
-func (uh *UpdateHub) LoadSettings() error {
-	files := []string{uh.SystemSettingsPath, uh.RuntimeSettingsPath}
-	settings := []*Settings{}
-
-	var file io.ReadCloser
-	var err error
-
-	for _, name := range files {
-		log.Debug("loading settings from: ", name)
-
-		file, err = uh.Store.Open(name)
-		if err != nil {
-			if os.IsNotExist(err) {
-				file = ioutil.NopCloser(bytes.NewReader(nil))
-			} else {
-				return err
-			}
-		}
-
-		s, err := LoadSettings(file)
-		if err != nil {
-			return err
-		}
-
-		settings = append(settings, s)
-	}
-
-	err = mergo.Merge(settings[0], settings[1])
-	if err != nil {
-		return err
-	}
-
-	uh.Settings = settings[0]
-
-	log.Debug("final settings:\n", uh.Settings.ToString())
 
 	return nil
 }

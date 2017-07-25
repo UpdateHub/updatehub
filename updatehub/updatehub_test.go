@@ -11,16 +11,13 @@ package updatehub
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/bouk/monkey"
-	"github.com/go-ini/ini"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
@@ -140,8 +137,6 @@ func TestNewUpdateHub(t *testing.T) {
 	gitversion := "2.1"
 	buildtime := "2017-06-01 17:13 UTC"
 	memFs := afero.NewMemMapFs()
-	systemSettingsPath := "/system/settings/path"
-	runtimeSettingsPath := "/runtime/settings/path"
 	initialState := NewIdleState()
 
 	fm := &metadata.FirmwareMetadata{
@@ -152,7 +147,9 @@ func TestNewUpdateHub(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	uh := NewUpdateHub(gitversion, buildtime, memFs, *fm, initialState, systemSettingsPath, runtimeSettingsPath)
+	settings := &Settings{}
+
+	uh := NewUpdateHub(gitversion, buildtime, memFs, *fm, initialState, settings)
 
 	assert.Equal(t, &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}}, uh.ActiveInactiveBackend)
 	assert.Equal(t, gitversion, uh.Version)
@@ -162,8 +159,7 @@ func TestNewUpdateHub(t *testing.T) {
 	assert.Equal(t, time.Minute, uh.TimeStep)
 	assert.Equal(t, memFs, uh.Store)
 	assert.Equal(t, *fm, uh.FirmwareMetadata)
-	assert.Equal(t, systemSettingsPath, uh.SystemSettingsPath)
-	assert.Equal(t, runtimeSettingsPath, uh.RuntimeSettingsPath)
+	assert.Equal(t, settings, uh.Settings)
 	assert.Equal(t, client.NewReportClient(), uh.Reporter)
 	assert.Equal(t, &Sha256CheckerImpl{}, uh.Sha256Checker)
 	assert.Equal(t, &installifdifferent.DefaultImpl{FileSystemBackend: memFs}, uh.InstallIfDifferentBackend)
@@ -1480,110 +1476,6 @@ func TestStartPolling(t *testing.T) {
 			assert.IsType(t, tc.expectedState, uh.State)
 
 			tc.subTest(t, uh, uh.State)
-
-			aim.AssertExpectations(t)
-		})
-	}
-}
-
-func TestLoadUpdateHubSettingsWithOpenError(t *testing.T) {
-	aim := &activeinactivemock.ActiveInactiveMock{}
-	fsbm := &filesystemmock.FileSystemBackendMock{}
-
-	uh, _ := newTestUpdateHub(nil, aim)
-	uh.Store = fsbm
-	uh.SystemSettingsPath = "/systempath"
-	uh.RuntimeSettingsPath = "/runtimepath"
-
-	fsbm.On("Open", uh.SystemSettingsPath).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
-
-	err := uh.LoadSettings()
-	assert.EqualError(t, err, "open error")
-
-	aim.AssertExpectations(t)
-	fsbm.AssertExpectations(t)
-}
-
-func TestLoadUpdateHubSettings(t *testing.T) {
-	testPath, err := ioutil.TempDir("", "updatehub-test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
-
-	runtimeSettingsTestPath := path.Join(testPath, "runtime.conf")
-	systemSettingsTestPath := path.Join(testPath, "system.conf")
-
-	testCases := []struct {
-		name            string
-		systemSettings  string
-		runtimeSettings string
-		expectedError   interface{}
-		subTest         func(t *testing.T, settings *Settings, err error)
-	}{
-		{
-			"SystemSettingsNotFound",
-			"",
-			"",
-			nil,
-			func(t *testing.T, settings *Settings, err error) {
-			},
-		},
-
-		{
-			"RuntimeSettingsNotFound",
-			"[Polling]\nEnabled=true",
-			"",
-			nil,
-			func(t *testing.T, settings *Settings, err error) {
-			},
-		},
-
-		{
-			"InvalidSettingsFile",
-			"test",
-			"test",
-			ini.ErrDelimiterNotFound{},
-			func(t *testing.T, settings *Settings, err error) {
-				assert.Equal(t, err.Error(), "key-value delimiter not found: test")
-			},
-		},
-
-		{
-			"ValidSettingsFile",
-			"[Polling]\nEnabled=true",
-			"[Polling]\nExtraInterval=1",
-			nil,
-			func(t *testing.T, settings *Settings, err error) {
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			aim := &activeinactivemock.ActiveInactiveMock{}
-
-			uh, _ := newTestUpdateHub(nil, aim)
-
-			uh.SystemSettingsPath = systemSettingsTestPath
-			uh.RuntimeSettingsPath = runtimeSettingsTestPath
-
-			if tc.systemSettings != "" {
-				err := uh.Store.MkdirAll(filepath.Dir(systemSettingsTestPath), 0755)
-				assert.NoError(t, err)
-				err = afero.WriteFile(uh.Store, systemSettingsTestPath, []byte(tc.systemSettings), 0644)
-				assert.NoError(t, err)
-			}
-
-			if tc.runtimeSettings != "" {
-				err := uh.Store.MkdirAll(filepath.Dir(runtimeSettingsTestPath), 0755)
-				assert.NoError(t, err)
-				err = afero.WriteFile(uh.Store, runtimeSettingsTestPath, []byte(tc.runtimeSettings), 0644)
-				assert.NoError(t, err)
-			}
-
-			err := uh.LoadSettings()
-			assert.IsType(t, tc.expectedError, err)
-
-			tc.subTest(t, uh.Settings, err)
 
 			aim.AssertExpectations(t)
 		})
