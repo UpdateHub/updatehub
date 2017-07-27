@@ -150,19 +150,18 @@ func TestNewAgentBackend(t *testing.T) {
 
 func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExecuterMock, *rebootermock.RebooterMock) {
 	const (
-		metadataPath        = "/"
-		systemSettingsPath  = "/system.conf"
-		runtimeSettingsPath = "/runtime.conf"
+		metadataPath       = "/tmp/metadata"
+		systemSettingsPath = "/system.conf"
 	)
 
 	// setup mem map filesystem
 	fs := afero.NewMemMapFs()
 
 	files := map[string]string{
-		"/device-identity.d/key1":    "id1=value1",
-		"/device-identity.d/key2":    "id2=value2",
-		"/device-attributes.d/attr1": "attr1=value",
-		"/device-attributes.d/attr2": "attr2=value",
+		"/tmp/metadata/device-identity.d/key1":    "id1=value1",
+		"/tmp/metadata/device-identity.d/key2":    "id2=value2",
+		"/tmp/metadata/device-attributes.d/attr1": "attr1=value",
+		"/tmp/metadata/device-attributes.d/attr2": "attr2=value",
 	}
 
 	for k, v := range files {
@@ -191,20 +190,24 @@ func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExec
 	clm.On("Execute", path.Join(metadataPath, "/device-attributes.d/attr2")).Return([]byte("attr2=value2"), nil)
 
 	// create objects
+	file, err := fs.Open(systemSettingsPath)
+	assert.NoError(t, err)
+	defer file.Close()
+
+	settings, err := updatehub.LoadSettings(file)
+	assert.NoError(t, err)
+
 	fm, err := metadata.NewFirmwareMetadata(metadataPath, fs, clm)
 	assert.NoError(t, err)
+	assert.NotNil(t, fm)
 
 	uh := &updatehub.UpdateHub{
-		FirmwareMetadata:    *fm,
-		SystemSettingsPath:  systemSettingsPath,
-		RuntimeSettingsPath: runtimeSettingsPath,
-		Store:               fs,
-		Version:             agentVersion,
-		BuildTime:           buildTime,
+		FirmwareMetadata: *fm,
+		Settings:         settings,
+		Store:            fs,
+		Version:          agentVersion,
+		BuildTime:        buildTime,
 	}
-
-	err = uh.LoadSettings()
-	assert.NoError(t, err)
 
 	rm := &rebootermock.RebooterMock{}
 

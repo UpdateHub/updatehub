@@ -104,7 +104,7 @@ func TestLoadSettingsDefaultValues(t *testing.T) {
 
 	assert.Equal(t, "api.updatehub.io", s.NetworkSettings.ServerAddress)
 
-	assert.Equal(t, "", s.FirmwareSettings.FirmwareMetadataPath)
+	assert.Equal(t, "/usr/share/updatehub", s.FirmwareSettings.FirmwareMetadataPath)
 }
 
 func TestLoadSettings(t *testing.T) {
@@ -129,7 +129,8 @@ func TestLoadSettings(t *testing.T) {
 				},
 
 				StorageSettings: StorageSettings{
-					ReadOnly: false,
+					ReadOnly:            false,
+					RuntimeSettingsPath: "/var/lib/updatehub.conf",
 				},
 
 				UpdateSettings: UpdateSettings{
@@ -145,7 +146,7 @@ func TestLoadSettings(t *testing.T) {
 				},
 
 				FirmwareSettings: FirmwareSettings{
-					FirmwareMetadataPath: "",
+					FirmwareMetadataPath: "/usr/share/updatehub",
 				},
 			},
 		},
@@ -166,7 +167,8 @@ func TestLoadSettings(t *testing.T) {
 				},
 
 				StorageSettings: StorageSettings{
-					ReadOnly: true,
+					ReadOnly:            true,
+					RuntimeSettingsPath: "/var/lib/updatehub.conf",
 				},
 
 				UpdateSettings: UpdateSettings{

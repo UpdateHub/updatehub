@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -73,22 +74,37 @@ func main() {
 		log.SetLevel(logrus.DebugLevel)
 	}
 
-	log.Info("starting UpdateHub Agent")
-	log.Info("    version: ", gitversion)
-	log.Info("    buildtime: ", buildtime)
-	log.Info("    system settings path: ", systemSettingsPath)
-	log.Info("    runtime settings path: ", runtimeSettingsPath)
-	log.Info("    firmware metadata path: ", firmwareMetadataDirPath)
-
 	osFs := afero.NewOsFs()
+	settings := &updatehub.Settings{}
 
-	fm, err := metadata.NewFirmwareMetadata(firmwareMetadataDirPath, osFs, &utils.CmdLine{})
+	err = loadSettings(osFs, settings, systemSettingsPath)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
 
-	uh := updatehub.NewUpdateHub(gitversion, buildtime, osFs, *fm, updatehub.NewIdleState(), systemSettingsPath, runtimeSettingsPath)
+	err = loadSettings(osFs, settings, settings.RuntimeSettingsPath)
+	if err != nil && !os.IsNotExist(err) {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	log.Info("starting UpdateHub Agent")
+	log.Info("    version: ", gitversion)
+	log.Info("    buildtime: ", buildtime)
+	log.Info("    system settings path: ", systemSettingsPath)
+	log.Info("    runtime settings path: ", settings.RuntimeSettingsPath)
+	log.Info("    firmware metadata path: ", settings.FirmwareMetadataPath)
+
+	log.Debug("settings:\n", settings.ToString())
+
+	fm, err := metadata.NewFirmwareMetadata(settings.FirmwareMetadataPath, osFs, &utils.CmdLine{})
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	uh := updatehub.NewUpdateHub(gitversion, buildtime, osFs, *fm, updatehub.NewIdleState(), settings)
 
 	backend, err := server.NewAgentBackend(uh, &utils.RebooterImpl{})
 	if err != nil {
@@ -109,11 +125,6 @@ func main() {
 
 	uh.Controller = uh
 
-	if err = uh.LoadSettings(); err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-
 	address, err := sanitizeServerAddress(uh.Settings.ServerAddress)
 	if err != nil {
 		log.Fatal(err)
@@ -129,6 +140,26 @@ func main() {
 	log.Info("UpdateHub Agent started")
 
 	os.Exit(d.Run())
+}
+
+func loadSettings(fs afero.Fs, structToSaveOn *updatehub.Settings, pathToLoadFrom string) error {
+	file, err := fs.Open(pathToLoadFrom)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	s, err := updatehub.LoadSettings(file)
+	if err != nil {
+		return err
+	}
+
+	err = mergo.Merge(structToSaveOn, s)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func sanitizeServerAddress(address string) (string, error) {
