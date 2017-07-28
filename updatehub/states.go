@@ -326,6 +326,11 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 	uh.Settings.ExtraPollingInterval = 0
 
 	if updateMetadata != nil {
+		packageUID := updateMetadata.PackageUID()
+		if packageUID == uh.lastInstalledPackageUID {
+			return NewWaitingForRebootState(updateMetadata), false
+		}
+
 		return NewDownloadingState(updateMetadata, &ProgressTrackerImpl{}), false
 	}
 
