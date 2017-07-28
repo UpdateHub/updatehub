@@ -833,6 +833,7 @@ func TestCopyFileWithSuccessUsingLibarchive(t *testing.T) {
 	libarchiveMock.On("ReadSupportFilterAll", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatRaw", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatEmpty", a).Return(nil)
+	libarchiveMock.On("ReadSupportFormatAll", a).Return(nil)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(nil)
 	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("*libarchive.ArchiveEntry")).Return(nil)
 	libarchiveMock.On("ReadData", a, mock.AnythingOfType("[]uint8"), chunkSize).Run(func(args mock.Arguments) {
@@ -881,6 +882,7 @@ func TestCopyFileWithLibarchiveReadOpenFileNameError(t *testing.T) {
 	libarchiveMock.On("ReadSupportFilterAll", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatRaw", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatEmpty", a).Return(nil)
+	libarchiveMock.On("ReadSupportFormatAll", a).Return(nil)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(fmt.Errorf("Failed to open '%s'", sourcePath))
 	libarchiveMock.On("ReadFree", a)
 
@@ -917,6 +919,7 @@ func TestCopyFileWithLibarchiveReadNextHeaderError(t *testing.T) {
 	libarchiveMock.On("ReadSupportFilterAll", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatRaw", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatEmpty", a).Return(nil)
+	libarchiveMock.On("ReadSupportFormatAll", a).Return(nil)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(nil)
 	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("*libarchive.ArchiveEntry")).Return(fmt.Errorf("Mock emulated error"))
 	libarchiveMock.On("ReadFree", a)
@@ -954,6 +957,7 @@ func TestCopyFileWithLibarchiveReadDataError(t *testing.T) {
 	libarchiveMock.On("ReadSupportFilterAll", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatRaw", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatEmpty", a).Return(nil)
+	libarchiveMock.On("ReadSupportFormatAll", a).Return(nil)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(nil)
 	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("*libarchive.ArchiveEntry")).Return(nil)
 	libarchiveMock.On("ReadData", a, mock.AnythingOfType("[]uint8"), chunkSize).Return(-30, fmt.Errorf("Mock emulated error")).Once()
@@ -993,6 +997,7 @@ func TestCopyFileWithLibarchiveWriteError(t *testing.T) {
 	libarchiveMock.On("ReadSupportFilterAll", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatRaw", a).Return(nil)
 	libarchiveMock.On("ReadSupportFormatEmpty", a).Return(nil)
+	libarchiveMock.On("ReadSupportFormatAll", a).Return(nil)
 	libarchiveMock.On("ReadOpenFileName", a, sourcePath, chunkSize).Return(nil)
 	libarchiveMock.On("ReadNextHeader", a, mock.AnythingOfType("*libarchive.ArchiveEntry")).Return(nil)
 	libarchiveMock.On("ReadData", a, mock.AnythingOfType("[]uint8"), chunkSize).Run(func(args mock.Arguments) {

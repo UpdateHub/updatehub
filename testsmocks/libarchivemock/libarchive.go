@@ -62,6 +62,11 @@ func (lam *LibArchiveMock) ReadData(a libarchive.Archive, buffer []byte, length 
 	return args.Int(0), args.Error(1)
 }
 
+func (lam *LibArchiveMock) ReadDataSkip(a libarchive.Archive) error {
+	args := lam.Called(a)
+	return args.Error(0)
+}
+
 func (lam *LibArchiveMock) WriteDiskNew() libarchive.Archive {
 	args := lam.Called()
 	return args.Get(0).(libarchive.Archive)
@@ -97,6 +102,11 @@ func (lam *LibArchiveMock) EntrySize(e libarchive.ArchiveEntry) int64 {
 func (lam *LibArchiveMock) EntrySizeIsSet(e libarchive.ArchiveEntry) bool {
 	args := lam.Called(e)
 	return args.Bool(0)
+}
+
+func (lam *LibArchiveMock) EntryPathname(e libarchive.ArchiveEntry) string {
+	args := lam.Called(e)
+	return args.String(0)
 }
 
 func (lam *LibArchiveMock) Unpack(tarballPath string, targetPath string, enableRaw bool) error {

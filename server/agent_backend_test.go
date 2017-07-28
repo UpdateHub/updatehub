@@ -307,7 +307,7 @@ func TestUpdateMetadataRoute(t *testing.T) {
 	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
-	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
+	err := afero.WriteFile(uh.Store, path.Join("/tmp/download/", metadata.UpdateMetadataFilename), []byte(validUpdateMetadataWithActiveInactive), 0644)
 	assert.NoError(t, err)
 
 	r, err := http.Get(url + "/update/metadata")
@@ -325,7 +325,7 @@ func TestUpdateMetadataRoute(t *testing.T) {
 
 func TestUpdateMetadataRouteWithError(t *testing.T) {
 	out := map[string]interface{}{}
-	out["error"] = "open /tmp/download/updatemetadata.json: file does not exist"
+	out["error"] = fmt.Sprintf("open %s: file does not exist", path.Join("/tmp/download/", metadata.UpdateMetadataFilename))
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
@@ -387,7 +387,7 @@ func TestUpdateDownloadRoute(t *testing.T) {
 	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
-	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
+	err := afero.WriteFile(uh.Store, path.Join("/tmp/download/", metadata.UpdateMetadataFilename), []byte(validUpdateMetadataWithActiveInactive), 0644)
 	assert.NoError(t, err)
 
 	_, err = metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
@@ -415,7 +415,7 @@ func TestUpdateDownloadRoute(t *testing.T) {
 
 func TestUpdateDownloadRouteWithReadError(t *testing.T) {
 	out := map[string]interface{}{}
-	out["error"] = "open /tmp/download/updatemetadata.json: file does not exist"
+	out["error"] = fmt.Sprintf("open %s: file does not exist", path.Join("/tmp/download/", metadata.UpdateMetadataFilename))
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
@@ -451,7 +451,7 @@ func TestUpdateDownloadRouteWithMarshallError(t *testing.T) {
 	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
-	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte("invalid metadata"), 0644)
+	err := afero.WriteFile(uh.Store, path.Join("/tmp/download/", metadata.UpdateMetadataFilename), []byte("invalid metadata"), 0644)
 	assert.NoError(t, err)
 
 	cm := &controllermock.ControllerMock{}
@@ -516,7 +516,7 @@ func TestUpdateInstallRoute(t *testing.T) {
 	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
-	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte(validUpdateMetadataWithActiveInactive), 0644)
+	err := afero.WriteFile(uh.Store, path.Join("/tmp/download/", metadata.UpdateMetadataFilename), []byte(validUpdateMetadataWithActiveInactive), 0644)
 	assert.NoError(t, err)
 
 	_, err = metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
@@ -544,7 +544,7 @@ func TestUpdateInstallRoute(t *testing.T) {
 
 func TestUpdateInstallRouteWithReadError(t *testing.T) {
 	out := map[string]interface{}{}
-	out["error"] = "open /tmp/download/updatemetadata.json: file does not exist"
+	out["error"] = fmt.Sprintf("open %s: file does not exist", path.Join("/tmp/download/", metadata.UpdateMetadataFilename))
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
@@ -580,7 +580,7 @@ func TestUpdateInstallRouteWithMarshallError(t *testing.T) {
 	uh, url, clm, rm := setup(t)
 	defer teardown(t)
 
-	err := afero.WriteFile(uh.Store, "/tmp/download/updatemetadata.json", []byte("invalid metadata"), 0644)
+	err := afero.WriteFile(uh.Store, path.Join("/tmp/download/", metadata.UpdateMetadataFilename), []byte("invalid metadata"), 0644)
 	assert.NoError(t, err)
 
 	cm := &controllermock.ControllerMock{}

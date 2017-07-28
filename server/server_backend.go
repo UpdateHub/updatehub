@@ -9,24 +9,34 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/utils"
 	"github.com/julienschmidt/httprouter"
 )
 
-type ServerBackend struct {
-	path           string
+type SelectedPackage struct {
 	updateMetadata []byte
+	uhupkgPath     string
 }
 
-func NewServerBackend(path string) (*ServerBackend, error) {
+type ServerBackend struct {
+	path            string
+	selectedPackage *SelectedPackage
+	LibArchive      libarchive.API
+}
+
+func NewServerBackend(la libarchive.API, path string) (*ServerBackend, error) {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -39,22 +49,24 @@ func NewServerBackend(path string) (*ServerBackend, error) {
 	}
 
 	sb := &ServerBackend{
-		path: path,
+		path:            path,
+		selectedPackage: nil,
+		LibArchive:      la,
 	}
 
 	return sb, nil
 }
 
-func (sb *ServerBackend) ParseUpdateMetadata() error {
+func (sb *ServerBackend) parseUpdateMetadata() ([]byte, error) {
 	updateMetadataFilePath := path.Join(sb.path, metadata.UpdateMetadataFilename)
 
 	if _, err := os.Stat(updateMetadataFilePath); err != nil {
-		return err
+		return nil, err
 	}
 
 	data, err := ioutil.ReadFile(updateMetadataFilePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	um := &metadata.UpdateMetadata{}
@@ -63,10 +75,74 @@ func (sb *ServerBackend) ParseUpdateMetadata() error {
 	if err != nil {
 		finalErr := fmt.Errorf("Invalid update metadata: %s", err.Error())
 		log.Error(finalErr)
+		return nil, finalErr
+	}
+
+	return data, nil
+}
+
+func (sb *ServerBackend) parseUhuPkg(pkgpath string) ([]byte, error) {
+	reader, err := libarchive.NewReader(sb.LibArchive, pkgpath, 10240)
+	if err != nil {
+		return nil, err
+	}
+
+	buff := bytes.NewBuffer(nil)
+	err = reader.ExtractFile("metadata", buff)
+	if err != nil {
+		return nil, err
+	}
+
+	return buff.Bytes(), nil
+}
+
+func (sb *ServerBackend) ProcessDirectory() error {
+	var err error
+	var packagesFound []string
+
+	files, _ := ioutil.ReadDir(sb.path)
+	for _, f := range files {
+		if f.Name() == metadata.UpdateMetadataFilename {
+			packagesFound = append(packagesFound, metadata.UpdateMetadataFilename)
+		}
+
+		if strings.HasSuffix(f.Name(), ".uhupkg") {
+			packagesFound = append(packagesFound, f.Name())
+		}
+	}
+
+	if len(packagesFound) > 1 {
+		finalErr := fmt.Errorf("the path provided must not have more than 1 package. Found: %d", len(packagesFound))
+		log.Error(finalErr)
 		return finalErr
 	}
 
-	sb.updateMetadata = data
+	pkgpath := path.Join(sb.path, packagesFound[0])
+
+	var updateMetadata []byte
+	var uhupkgPath string
+
+	log.Info("selected package: ", pkgpath)
+	if packagesFound[0] == metadata.UpdateMetadataFilename {
+		updateMetadata, err = sb.parseUpdateMetadata()
+	} else {
+		uhupkgPath = pkgpath
+		updateMetadata, err = sb.parseUhuPkg(pkgpath)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	p := &SelectedPackage{
+		updateMetadata: updateMetadata,
+		uhupkgPath:     uhupkgPath,
+	}
+
+	sb.selectedPackage = p
+
+	log.Info("selected package-uid: ", utils.DataSha256sum(updateMetadata))
+	log.Debug("update metadata loaded: \n", string(updateMetadata))
 
 	return nil
 }
@@ -80,7 +156,7 @@ func (sb *ServerBackend) Routes() []Route {
 }
 
 func (sb *ServerBackend) getUpdateMetadata(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	if sb.updateMetadata == nil {
+	if sb.selectedPackage == nil || sb.selectedPackage.updateMetadata == nil {
 		w.WriteHeader(404)
 		w.Write([]byte("404 page not found\n"))
 		return
@@ -88,7 +164,7 @@ func (sb *ServerBackend) getUpdateMetadata(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if _, err := w.Write(sb.updateMetadata); err != nil {
+	if _, err := w.Write(sb.selectedPackage.updateMetadata); err != nil {
 		log.Warn(err)
 	}
 }
@@ -118,6 +194,28 @@ func (sb *ServerBackend) reportStatus(w http.ResponseWriter, r *http.Request, p 
 }
 
 func (sb *ServerBackend) getObject(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	fileName := path.Join(sb.path, p.ByName("product"), p.ByName("package"), p.ByName("object"))
-	http.ServeFile(w, r, fileName)
+	if sb.selectedPackage == nil {
+		log.Error("no package selected yet")
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "500 internal server error\n")
+		return
+	}
+
+	if sb.selectedPackage.uhupkgPath != "" {
+		fileName := p.ByName("object")
+
+		// package was already parsed, we can safely ignore the error here
+		reader, _ := libarchive.NewReader(sb.LibArchive, sb.selectedPackage.uhupkgPath, 10240)
+
+		err := reader.ExtractFile(fileName, w)
+		if err != nil {
+			log.Error(err)
+			w.WriteHeader(500)
+			fmt.Fprintf(w, "500 internal server error\n")
+			return
+		}
+	} else {
+		fileName := path.Join(sb.path, p.ByName("product"), p.ByName("package"), p.ByName("object"))
+		http.ServeFile(w, r, fileName)
+	}
 }

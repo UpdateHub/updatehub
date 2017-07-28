@@ -59,7 +59,7 @@ func (d *Daemon) Run() {
 				case fsnotify.Write:
 					umFileName := path.Join(d.backend.path, metadata.UpdateMetadataFilename)
 					if event.Name == umFileName {
-						err := d.backend.ParseUpdateMetadata()
+						err := d.backend.ProcessDirectory()
 						if err != nil {
 							log.Error(err)
 						}

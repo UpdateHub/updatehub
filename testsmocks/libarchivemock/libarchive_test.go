@@ -138,6 +138,20 @@ func TestReadData(t *testing.T) {
 	lam.AssertExpectations(t)
 }
 
+func TestReadDataSkip(t *testing.T) {
+	a := libarchive.Archive{}
+	expectedError := fmt.Errorf("some error")
+
+	lam := &LibArchiveMock{}
+	lam.On("ReadDataSkip", a).Return(expectedError)
+
+	err := lam.ReadDataSkip(a)
+
+	assert.Equal(t, expectedError, err)
+
+	lam.AssertExpectations(t)
+}
+
 func TestWriteDiskNew(t *testing.T) {
 	expectedArchive := libarchive.Archive{}
 
@@ -236,6 +250,19 @@ func TestEntrySizeIsSet(t *testing.T) {
 	b := lam.EntrySizeIsSet(e)
 
 	assert.Equal(t, false, b)
+
+	lam.AssertExpectations(t)
+}
+
+func TestEntryPathname(t *testing.T) {
+	e := libarchive.ArchiveEntry{}
+
+	lam := &LibArchiveMock{}
+	lam.On("EntryPathname", e).Return("file")
+
+	n := lam.EntryPathname(e)
+
+	assert.Equal(t, "file", n)
 
 	lam.AssertExpectations(t)
 }

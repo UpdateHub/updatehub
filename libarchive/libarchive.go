@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"unsafe"
+
+	"github.com/OSSystems/pkg/log"
 )
 
 // Archive is a wrapper for "C.struct_archive"
@@ -45,6 +48,7 @@ type API interface {
 	ReadFree(a Archive)
 	ReadNextHeader(a Archive, e *ArchiveEntry) error
 	ReadData(a Archive, buffer []byte, length int) (int, error)
+	ReadDataSkip(a Archive) error
 	WriteDiskNew() Archive
 	WriteDiskSetOptions(a Archive, flags int)
 	WriteDiskSetStandardLookup(a Archive)
@@ -53,6 +57,7 @@ type API interface {
 	WriteFinishEntry(a Archive) error
 	EntrySize(e ArchiveEntry) int64
 	EntrySizeIsSet(e ArchiveEntry) bool
+	EntryPathname(e ArchiveEntry) string
 	Unpack(tarballPath string, targetPath string, enableRaw bool) error
 }
 
@@ -155,6 +160,21 @@ func (la LibArchive) ReadData(a Archive, buffer []byte, length int) (int, error)
 	return int(r), nil
 }
 
+// ReadDataSkip is a wrapper for "C.archive_read_data_skip()"
+func (la LibArchive) ReadDataSkip(a Archive) error {
+	r := C.archive_read_data_skip(a.archive)
+
+	if r == C.ARCHIVE_EOF {
+		return io.EOF
+	}
+
+	if r != C.ARCHIVE_OK {
+		return fmt.Errorf(C.GoString(C.archive_error_string(a.archive)))
+	}
+
+	return nil
+}
+
 // WriteDiskNew is a wrapper for "C.archive_write_disk_new()"
 func (la LibArchive) WriteDiskNew() Archive {
 	a := Archive{}
@@ -216,6 +236,11 @@ func (la LibArchive) EntrySizeIsSet(e ArchiveEntry) bool {
 	return true
 }
 
+// EntryPathname is a wrapper for ""
+func (la LibArchive) EntryPathname(e ArchiveEntry) string {
+	return C.GoString(C.archive_entry_pathname(e.entry))
+}
+
 // Unpack contains the algorithm to extract files from a tarball and
 // put them on a directory
 func (la LibArchive) Unpack(tarballPath string, targetPath string, enableRaw bool) error {
@@ -240,9 +265,10 @@ func (la LibArchive) Unpack(tarballPath string, targetPath string, enableRaw boo
 
 // Reader is an abstraction that implements the io.Reader interface
 type Reader struct {
-	API               // the implementation being used
-	Archive   Archive // the Archive being used
-	ChunkSize int     // the chunk size being used
+	API                 // the implementation being used
+	Archive     Archive // the Archive being used
+	ChunkSize   int     // the chunk size being used
+	ArchivePath string  // the path of the Archive being used
 }
 
 // NewReader is a factory method used to create a new Reader. Must
@@ -269,13 +295,19 @@ func NewReader(api API, filePath string, chunkSize int) (*Reader, error) {
 		return nil, err
 	}
 
+	err = api.ReadSupportFormatAll(a)
+	if err != nil {
+		api.ReadFree(a)
+		return nil, err
+	}
+
 	err = api.ReadOpenFileName(a, filePath, chunkSize)
 	if err != nil {
 		api.ReadFree(a)
 		return nil, err
 	}
 
-	r := &Reader{api, a, chunkSize}
+	r := &Reader{api, a, chunkSize, filePath}
 
 	return r, nil
 }
@@ -304,6 +336,54 @@ func (r Reader) ReadNextHeader() error {
 // Free frees the Archive
 func (r Reader) Free() {
 	r.API.ReadFree(r.Archive)
+}
+
+// ExtractFile extracts a single file from the associated Archive to
+// the 'target' interface
+func (r Reader) ExtractFile(filename string, target io.Writer) error {
+	for {
+		e := ArchiveEntry{}
+		err := r.API.ReadNextHeader(r.Archive, &e)
+
+		if err != nil {
+			break
+		}
+
+		p := r.API.EntryPathname(e)
+
+		if p == filename {
+			var buff *C.void
+			cBuffer := unsafe.Pointer(buff)
+			var size C.size_t
+			var offset C.__LA_INT64_T
+
+			for {
+				r := C.archive_read_data_block(r.Archive.archive, &cBuffer, &size, &offset)
+				if r == C.ARCHIVE_EOF {
+					break
+				}
+
+				slice := &reflect.SliceHeader{Data: uintptr(cBuffer), Len: int(size), Cap: int(size)}
+				goBuffer := *(*[]byte)(unsafe.Pointer(slice))
+
+				_, err = target.Write(goBuffer)
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}
+
+		r.API.ReadDataSkip(r.Archive)
+		if err != nil {
+			break
+		}
+	}
+
+	finalErr := fmt.Errorf("file '%s' not found in: '%s'", filename, r.ArchivePath)
+	log.Error(finalErr)
+	return finalErr
 }
 
 func extractTarball(api API, filename string, enableRaw bool) error {
