@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/OSSystems/pkg/log"
@@ -104,6 +105,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	osFs.MkdirAll(settings.DownloadDir, 0755)
+
 	uh := updatehub.NewUpdateHub(gitversion, buildtime, osFs, *fm, updatehub.NewIdleState(), settings)
 
 	backend, err := server.NewAgentBackend(uh, &utils.RebooterImpl{})
@@ -143,6 +146,8 @@ func main() {
 }
 
 func loadSettings(fs afero.Fs, structToSaveOn *updatehub.Settings, pathToLoadFrom string) error {
+	fs.MkdirAll(filepath.Dir(pathToLoadFrom), 0755)
+
 	file, err := fs.Open(pathToLoadFrom)
 	if err != nil {
 		return err
