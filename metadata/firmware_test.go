@@ -21,6 +21,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewFirmwareMetadataWithInexistantPath(t *testing.T) {
+	metadataPath := "/tmp/inexistant/subdir"
+
+	clm := &cmdlinemock.CmdLineExecuterMock{}
+	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(""), fmt.Errorf("not found"))
+
+	fs := afero.NewMemMapFs()
+
+	firmwareMetadata, err := NewFirmwareMetadata(metadataPath, fs, clm)
+
+	assert.EqualError(t, err, "not found")
+	assert.Equal(t, ((*FirmwareMetadata)(nil)), firmwareMetadata)
+
+	dirExists, err := afero.Exists(fs, metadataPath)
+	assert.True(t, dirExists)
+	assert.NoError(t, err)
+
+	clm.AssertExpectations(t)
+}
+
 func TestNewFirmwareMetadataWithSuccess(t *testing.T) {
 	const (
 		metadataPath = "/"

@@ -37,6 +37,8 @@ type FirmwareMetadata struct {
 func NewFirmwareMetadata(basePath string, store afero.Fs, cmd utils.CmdLineExecuter) (*FirmwareMetadata, error) {
 	log.Info("reading firmware metadata")
 
+	store.MkdirAll(basePath, 0755)
+
 	productUID, err := cmd.Execute(path.Join(basePath, "product-uid"))
 	if err != nil {
 		return nil, err

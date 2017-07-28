@@ -137,6 +137,14 @@ func TestLoadSettings(t *testing.T) {
 
 			assert.Equal(t, tc.expectedSettings, *settings)
 
+			dirExists, err := afero.Exists(fs, filepath.Dir(systemSettingsTestPath))
+			assert.True(t, dirExists)
+			assert.NoError(t, err)
+
+			dirExists, err = afero.Exists(fs, filepath.Dir(runtimeSettingsTestPath))
+			assert.True(t, dirExists)
+			assert.NoError(t, err)
+
 			aim.AssertExpectations(t)
 		})
 	}
@@ -147,8 +155,9 @@ func TestLoadSettingsWithOpenError(t *testing.T) {
 
 	settings := &updatehub.Settings{}
 
-	settingsPath := "/path"
+	settingsPath := "/path/subdir"
 
+	fsbm.On("MkdirAll", "/path", os.FileMode(0755)).Return(nil)
 	fsbm.On("Open", settingsPath).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 
 	err := loadSettings(fsbm, settings, settingsPath)

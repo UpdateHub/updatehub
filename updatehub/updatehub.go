@@ -160,6 +160,13 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 	progress := 0
 	for _, obj := range updateMetadata.Objects[indexToInstall] {
 		objectUID := obj.GetObjectMetadata().Sha256sum
+		objectPath := path.Join(uh.Settings.DownloadDir, objectUID)
+
+		sha256sum, err := utils.FileSha256sum(uh.Store, objectPath)
+		if err == nil && sha256sum == objectUID {
+			log.Warn(fmt.Sprintf("objectUID '%s' already downloaded", objectUID))
+			continue
+		}
 
 		log.Info("downloading object: ", objectUID)
 
@@ -170,7 +177,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		uri = path.Join(uri, "objects")
 		uri = path.Join(uri, objectUID)
 
-		wr, err := uh.Store.Create(path.Join(uh.Settings.DownloadDir, objectUID))
+		wr, err := uh.Store.Create(objectPath)
 		if err != nil {
 			return err
 		}
