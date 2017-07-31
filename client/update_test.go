@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckUpdateWithInvalidApiRequester(t *testing.T) {
+func TestProbeUpdateWithInvalidApiRequester(t *testing.T) {
 	uc := NewUpdateClient()
 
 	fm := &metadata.FirmwareMetadata{
@@ -33,14 +33,14 @@ func TestCheckUpdateWithInvalidApiRequester(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(nil, UpgradesEndpoint, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(nil, UpgradesEndpoint, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "invalid api requester")
 }
 
-func TestCheckUpdateWithNewRequestError(t *testing.T) {
+func TestProbeUpdateWithNewRequestError(t *testing.T) {
 	ac := NewApiClient("http://localhost")
 
 	uc := NewUpdateClient()
@@ -53,14 +53,14 @@ func TestCheckUpdateWithNewRequestError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), "/resource%s", fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), "/resource%s", fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
-	assert.EqualError(t, err, "failed to create check update request: parse http://localhost/resource%s: invalid URL escape \"%s\"")
+	assert.EqualError(t, err, "failed to create probe update request: parse http://localhost/resource%s: invalid URL escape \"%s\"")
 }
 
-func TestCheckUpdateWithApiDoError(t *testing.T) {
+func TestProbeUpdateWithApiDoError(t *testing.T) {
 	ac := NewApiClient("http://invalid")
 
 	uc := NewUpdateClient()
@@ -73,14 +73,14 @@ func TestCheckUpdateWithApiDoError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), "/resource", fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), "/resource", fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
-	assert.True(t, strings.HasPrefix(err.Error(), "check update request failed: Post http://invalid/resource: dial tcp: lookup invalid"))
+	assert.True(t, strings.HasPrefix(err.Error(), "probe update request failed: Post http://invalid/resource: dial tcp: lookup invalid"))
 }
 
-func TestCheckUpdateWithExtraPollHeaderError(t *testing.T) {
+func TestProbeUpdateWithExtraPollHeaderError(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/extra-poll-error"
@@ -105,14 +105,14 @@ func TestCheckUpdateWithExtraPollHeaderError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "failed to parse extra poll header: strconv.ParseInt: parsing \"@3\": invalid syntax")
 }
 
-func TestCheckUpdateWithResponseBodyReadError(t *testing.T) {
+func TestProbeUpdateWithResponseBodyReadError(t *testing.T) {
 	expectedBody := []byte("partial body")
 	address := "localhost"
 	path := "/response-body-error"
@@ -137,14 +137,14 @@ func TestCheckUpdateWithResponseBodyReadError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "error reading response body: unexpected EOF")
 }
 
-func TestCheckUpdateWithResponseBodyParseError(t *testing.T) {
+func TestProbeUpdateWithResponseBodyParseError(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/resource"
@@ -169,14 +169,14 @@ func TestCheckUpdateWithResponseBodyParseError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "failed to parse upgrade response: invalid character 'e' looking for beginning of value")
 }
 
-func TestCheckUpdateWithInvalidStatusCode(t *testing.T) {
+func TestProbeUpdateWithInvalidStatusCode(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/error-bad-gateway"
@@ -201,14 +201,14 @@ func TestCheckUpdateWithInvalidStatusCode(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "invalid response received from the server. HTTP code: 502")
 }
 
-func TestCheckUpdateWithNoUpdateAvailable(t *testing.T) {
+func TestProbeUpdateWithNoUpdateAvailable(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/not-found"
@@ -233,14 +233,14 @@ func TestCheckUpdateWithNoUpdateAvailable(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(3), extraPoll)
 	assert.NoError(t, err)
 }
 
-func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
+func TestProbeUpdateWithUpdateAvailable(t *testing.T) {
 	// declaration just to register the imxkobs install mode
 	_ = &imxkobs.ImxKobsObject{}
 
@@ -279,7 +279,7 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.NoError(t, err)
@@ -299,43 +299,43 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 	assert.Equal(t, "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", um.Objects[0][0].GetObjectMetadata().Sha256sum)
 }
 
-func TestFetchUpdateWithInvalidApiRequester(t *testing.T) {
+func TestDownloadUpdateWithInvalidApiRequester(t *testing.T) {
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(nil, "/resource")
+	body, contentLength, err := uc.DownloadUpdate(nil, "/resource")
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
 	assert.EqualError(t, err, "invalid api requester")
 }
 
-func TestFetchUpdateWithNewRequestError(t *testing.T) {
+func TestDownloadUpdateWithNewRequestError(t *testing.T) {
 	ac := NewApiClient("http://localhost")
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(ac.Request(), "/resource%s")
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), "/resource%s")
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
-	assert.True(t, strings.Contains(err.Error(), "failed to create fetch update request"))
+	assert.True(t, strings.Contains(err.Error(), "failed to create download update request"))
 	assert.True(t, strings.Contains(err.Error(), "invalid URL escape"))
 }
 
-func TestFetchUpdateWithApiDoError(t *testing.T) {
+func TestDownloadUpdateWithApiDoError(t *testing.T) {
 	ac := NewApiClient("http://invalid")
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(ac.Request(), "/resource")
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), "/resource")
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
-	assert.True(t, strings.Contains(err.Error(), "fetch update request failed"))
+	assert.True(t, strings.Contains(err.Error(), "download update request failed"))
 	assert.True(t, strings.Contains(err.Error(), "no such host"))
 }
 
-func TestFetchUpdateWithHTTPError(t *testing.T) {
+func TestDownloadUpdateWithHTTPError(t *testing.T) {
 	expectedBody := []byte("Not found")
 	address := "localhost"
 	path := "/not-found"
@@ -352,14 +352,14 @@ func TestFetchUpdateWithHTTPError(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(ac.Request(), path)
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path)
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
-	assert.EqualError(t, err, "failed to fetch update. maybe the file is missing?")
+	assert.EqualError(t, err, "failed to download update. maybe the file is missing?")
 }
 
-func TestFetchUpdateWithSuccess(t *testing.T) {
+func TestDownloadUpdateWithSuccess(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/resource"
@@ -376,7 +376,7 @@ func TestFetchUpdateWithSuccess(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(ac.Request(), path)
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path)
 	defer body.Close()
 
 	assert.Equal(t, int64(len(expectedBody)), contentLength)

@@ -17,14 +17,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckUpdate(t *testing.T) {
+func TestProbeUpdate(t *testing.T) {
 	expectedMetadata := &metadata.UpdateMetadata{}
 	expectedDuration := 10 * time.Second
 
 	cm := &ControllerMock{}
-	cm.On("CheckUpdate", 0).Return(expectedMetadata, expectedDuration)
+	cm.On("ProbeUpdate", 0).Return(expectedMetadata, expectedDuration)
 
-	m, d := cm.CheckUpdate(0)
+	m, d := cm.ProbeUpdate(0)
 
 	assert.Equal(t, expectedMetadata, m)
 	assert.Equal(t, expectedDuration, d)
@@ -32,16 +32,16 @@ func TestCheckUpdate(t *testing.T) {
 	cm.AssertExpectations(t)
 }
 
-func TestFetchUpdate(t *testing.T) {
+func TestDownloadUpdate(t *testing.T) {
 	expectedError := fmt.Errorf("some error")
 	metadata := &metadata.UpdateMetadata{}
 	cancelChannel := make(<-chan bool)
 	progressChannel := make(chan<- int)
 
 	cm := &ControllerMock{}
-	cm.On("FetchUpdate", metadata, cancelChannel, progressChannel).Return(expectedError)
+	cm.On("DownloadUpdate", metadata, cancelChannel, progressChannel).Return(expectedError)
 
-	err := cm.FetchUpdate(metadata, cancelChannel, progressChannel)
+	err := cm.DownloadUpdate(metadata, cancelChannel, progressChannel)
 
 	assert.Equal(t, expectedError, err)
 

@@ -113,12 +113,12 @@ func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.
 }
 
 type Controller interface {
-	CheckUpdate(int) (*metadata.UpdateMetadata, time.Duration)
-	FetchUpdate(*metadata.UpdateMetadata, <-chan bool, chan<- int) error
+	ProbeUpdate(int) (*metadata.UpdateMetadata, time.Duration)
+	DownloadUpdate(*metadata.UpdateMetadata, <-chan bool, chan<- int) error
 	InstallUpdate(*metadata.UpdateMetadata, chan<- int) error
 }
 
-func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
+func (uh *UpdateHub) ProbeUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
 	var data struct {
 		Retries int `json:"retries"`
 		metadata.FirmwareMetadata
@@ -129,7 +129,7 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 
 	updateMetadataPath := path.Join(uh.Settings.DownloadDir, metadata.UpdateMetadataFilename)
 
-	updateMetadata, extraPoll, err := uh.Updater.CheckUpdate(uh.API.Request(), client.UpgradesEndpoint, data)
+	updateMetadata, extraPoll, err := uh.Updater.ProbeUpdate(uh.API.Request(), client.UpgradesEndpoint, data)
 	if err != nil {
 		uh.Store.Remove(updateMetadataPath)
 		return nil, -1
@@ -147,7 +147,7 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 }
 
 // it is recommended to use a buffered channel for "progressChan" to ensure no progress event is lost
-func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+func (uh *UpdateHub) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
 	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.ActiveInactiveBackend, updateMetadata)
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		defer wr.Close()
 
 		log.Debug("route: ", uri)
-		rd, _, err := uh.Updater.FetchUpdate(uh.API.Request(), uri)
+		rd, _, err := uh.Updater.DownloadUpdate(uh.API.Request(), uri)
 		if err != nil {
 			return err
 		}
@@ -357,10 +357,10 @@ func (uh *UpdateHub) StartPolling() {
 		uh.Settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.Settings.PollingInterval))))
 	} else if uh.Settings.LastPoll == timeZero && now.After(uh.Settings.FirstPoll) {
 		// it never did a poll before
-		uh.State = NewUpdateCheckState()
+		uh.State = NewUpdateProbeState()
 	} else if uh.Settings.LastPoll.Add(uh.Settings.PollingInterval).Before(now) {
 		// pending regular interval
-		uh.State = NewUpdateCheckState()
+		uh.State = NewUpdateProbeState()
 	} else {
 		nextPoll := time.Unix(uh.Settings.FirstPoll.Unix(), 0)
 		for nextPoll.Before(now) {

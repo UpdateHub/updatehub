@@ -31,7 +31,7 @@ type testController struct {
 	extraPoll               time.Duration
 	pollingInterval         time.Duration
 	updateAvailable         bool
-	fetchUpdateError        error
+	downloadUpdateError        error
 	installUpdateError      error
 	reportCurrentStateError error
 	progressList            []int
@@ -74,7 +74,7 @@ const (
 	}`
 )
 
-func (c *testController) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
+func (c *testController) ProbeUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
 	if c.updateAvailable {
 		return &metadata.UpdateMetadata{}, c.extraPoll
 	}
@@ -82,7 +82,7 @@ func (c *testController) CheckUpdate(retries int) (*metadata.UpdateMetadata, tim
 	return nil, c.extraPoll
 }
 
-func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+func (c *testController) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
 	for _, p := range c.progressList {
 		// "non-blocking" write to channel
 		select {
@@ -91,7 +91,7 @@ func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, ca
 		}
 	}
 
-	return c.fetchUpdateError
+	return c.downloadUpdateError
 }
 
 func (c *testController) InstallUpdate(updateMetadata *metadata.UpdateMetadata, progressChan chan<- int) error {
@@ -110,7 +110,7 @@ func (c *testController) ReportCurrentState() error {
 	return c.reportCurrentStateError
 }
 
-var checkUpdateCases = []struct {
+var probeUpdateCases = []struct {
 	name         string
 	controller   *testController
 	settings     *Settings
@@ -122,7 +122,7 @@ var checkUpdateCases = []struct {
 		"UpdateAvailable",
 		&testController{updateAvailable: true},
 		&Settings{},
-		NewUpdateCheckState(),
+		NewUpdateProbeState(),
 		&DownloadingState{},
 		func(t *testing.T, uh *UpdateHub, state State) {},
 	},
@@ -131,7 +131,7 @@ var checkUpdateCases = []struct {
 		"UpdateNotAvailable",
 		&testController{updateAvailable: false},
 		&Settings{},
-		NewUpdateCheckState(),
+		NewUpdateProbeState(),
 		&IdleState{},
 		func(t *testing.T, uh *UpdateHub, state State) {},
 	},
@@ -147,7 +147,7 @@ var checkUpdateCases = []struct {
 				PollingInterval: 15 * time.Second,
 			},
 		},
-		NewUpdateCheckState(),
+		NewUpdateProbeState(),
 		&PollState{},
 		func(t *testing.T, uh *UpdateHub, state State) {
 			poll := state.(*PollState)
@@ -157,8 +157,8 @@ var checkUpdateCases = []struct {
 	},
 }
 
-func TestStateUpdateCheck(t *testing.T) {
-	for _, tc := range checkUpdateCases {
+func TestStateUpdateProbe(t *testing.T) {
+	for _, tc := range probeUpdateCases {
 		t.Run(tc.name, func(t *testing.T) {
 			aim := &activeinactivemock.ActiveInactiveMock{}
 
@@ -179,7 +179,7 @@ func TestStateUpdateCheck(t *testing.T) {
 	}
 }
 
-func TestStateUpdateCheckWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
+func TestStateUpdateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
@@ -192,7 +192,7 @@ func TestStateUpdateCheckWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 	cm := &controllermock.ControllerMock{}
 
-	uh, err := newTestUpdateHub(NewUpdateCheckState(), aim)
+	uh, err := newTestUpdateHub(NewUpdateProbeState(), aim)
 	assert.NoError(t, err)
 
 	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
@@ -200,7 +200,7 @@ func TestStateUpdateCheckWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 
 	uh.lastInstalledPackageUID = m.PackageUID()
 
-	cm.On("CheckUpdate", 0).Return(m, time.Duration(0))
+	cm.On("ProbeUpdate", 0).Return(m, time.Duration(0))
 
 	uh.Controller = cm
 	uh.Settings = &Settings{}
@@ -214,11 +214,11 @@ func TestStateUpdateCheckWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	om.AssertExpectations(t)
 }
 
-func TestStateUpdateCheckToMap(t *testing.T) {
-	state := NewUpdateCheckState()
+func TestStateUpdateProbeToMap(t *testing.T) {
+	state := NewUpdateProbeState()
 
 	expectedMap := map[string]interface{}{}
-	expectedMap["status"] = "update-check"
+	expectedMap["status"] = "update-probe"
 
 	assert.Equal(t, expectedMap, state.ToMap())
 }
@@ -246,15 +246,15 @@ func TestStateDownloading(t *testing.T) {
 	}{
 		{
 			"WithoutError",
-			&testController{fetchUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
+			&testController{downloadUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
 			NewDownloadedState(m),
 			[]int{33, 66, 99, 100},
 		},
 
 		{
 			"WithError",
-			&testController{fetchUpdateError: errors.New("fetch error"), installUpdateError: nil, progressList: []int{33}},
-			NewErrorState(m, NewTransientError(errors.New("fetch error"))),
+			&testController{downloadUpdateError: errors.New("download error"), installUpdateError: nil, progressList: []int{33}},
+			NewErrorState(m, NewTransientError(errors.New("download error"))),
 			[]int{33},
 		},
 	}
@@ -390,7 +390,7 @@ func TestPollingRetries(t *testing.T) {
 	uh.State = NewPollState(uh.Settings.PollingInterval)
 
 	next, _ := uh.State.Handle(uh)
-	assert.IsType(t, &UpdateCheckState{}, next)
+	assert.IsType(t, &UpdateProbeState{}, next)
 
 	for i := 1; i < 3; i++ {
 		state, _ := next.Handle(uh)
@@ -398,7 +398,7 @@ func TestPollingRetries(t *testing.T) {
 		next, _ = state.Handle(uh)
 		assert.IsType(t, &PollState{}, next)
 		next, _ = next.Handle(uh)
-		assert.IsType(t, &UpdateCheckState{}, next)
+		assert.IsType(t, &UpdateProbeState{}, next)
 		assert.Equal(t, i, uh.Settings.PollingRetries)
 	}
 
@@ -566,7 +566,7 @@ func TestStateIdle(t *testing.T) {
 					PollingEnabled: true,
 				},
 			},
-			&UpdateCheckState{},
+			&UpdateProbeState{},
 		},
 	}
 
@@ -645,14 +645,14 @@ func TestStateInstalling(t *testing.T) {
 	}{
 		{
 			"WithoutError",
-			&testController{fetchUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
+			&testController{downloadUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
 			NewInstalledState(m),
 			[]int{33, 66, 99, 100},
 		},
 
 		{
 			"WithError",
-			&testController{fetchUpdateError: nil, installUpdateError: errors.New("install error"), progressList: []int{33}},
+			&testController{downloadUpdateError: nil, installUpdateError: errors.New("install error"), progressList: []int{33}},
 			NewErrorState(m, NewTransientError(errors.New("install error"))),
 			[]int{33},
 		},

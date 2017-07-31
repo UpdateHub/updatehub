@@ -29,7 +29,7 @@ func TestActive(t *testing.T) {
 	aim.AssertExpectations(t)
 }
 
-func TestFetchUpdate(t *testing.T) {
+func TestDownloadUpdate(t *testing.T) {
 	expectedError := fmt.Errorf("some error")
 
 	aim := &ActiveInactiveMock{}

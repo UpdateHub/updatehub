@@ -83,7 +83,7 @@ const (
 }`
 )
 
-func startFetchUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata) ([]int, error) {
+func startDownloadUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata) ([]int, error) {
 	var progressList []int
 	var err error
 
@@ -96,7 +96,7 @@ func startFetchUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata) (
 		m.Lock()
 		defer m.Unlock()
 
-		err = uh.FetchUpdate(um, nil, progressChan)
+		err = uh.DownloadUpdate(um, nil, progressChan)
 		close(progressChan)
 	}()
 
@@ -337,7 +337,7 @@ func TestGetIndexOfObjectToBeInstalledWithNoObjects(t *testing.T) {
 	assert.Equal(t, 0, index)
 }
 
-func TestUpdateHubCheckUpdate(t *testing.T) {
+func TestUpdateHubProbeUpdate(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
@@ -386,11 +386,11 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 			data.Retries = 0
 
 			um := &updatermock.UpdaterMock{}
-			um.On("CheckUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
+			um.On("ProbeUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
 
 			uh.Updater = um
 
-			updateMetadata, extraPoll := uh.CheckUpdate(0)
+			updateMetadata, extraPoll := uh.ProbeUpdate(0)
 
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 			assert.Equal(t, tc.extraPoll, extraPoll)
@@ -412,7 +412,7 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 	om.AssertExpectations(t)
 }
 
-func TestUpdateHubCheckUpdateWithNilUpdateMetadata(t *testing.T) {
+func TestUpdateHubProbeUpdateWithNilUpdateMetadata(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
@@ -439,11 +439,11 @@ func TestUpdateHubCheckUpdateWithNilUpdateMetadata(t *testing.T) {
 	data.Retries = 0
 
 	um := &updatermock.UpdaterMock{}
-	um.On("CheckUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(nil, time.Duration(3000), nil)
+	um.On("ProbeUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(nil, time.Duration(3000), nil)
 
 	uh.Updater = um
 
-	updateMetadata, extraPoll := uh.CheckUpdate(0)
+	updateMetadata, extraPoll := uh.ProbeUpdate(0)
 
 	assert.Equal(t, (*metadata.UpdateMetadata)(nil), updateMetadata)
 	assert.Equal(t, time.Duration(3000), extraPoll)
@@ -457,7 +457,7 @@ func TestUpdateHubCheckUpdateWithNilUpdateMetadata(t *testing.T) {
 	om.AssertExpectations(t)
 }
 
-func TestUpdateHubFetchUpdate(t *testing.T) {
+func TestUpdateHubDownloadUpdate(t *testing.T) {
 	om1 := &objectmock.ObjectMock{}
 	om2 := &objectmock.ObjectMock{}
 	om3 := &objectmock.ObjectMock{}
@@ -498,7 +498,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	source1.On("Close").Return(nil).Once()
 	source1Content := []byte("content1")
 
-	um.On("FetchUpdate", uh.API.Request(), uri1).Return(source1, int64(len(source1Content)), nil).Once()
+	um.On("DownloadUpdate", uh.API.Request(), uri1).Return(source1, int64(len(source1Content)), nil).Once()
 
 	// obj2
 	objectUID2 := "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae"
@@ -508,7 +508,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	source2.On("Close").Return(nil).Once()
 	source2Content := []byte("content2")
 
-	um.On("FetchUpdate", uh.API.Request(), uri2).Return(source2, int64(len(source2Content)), nil).Once()
+	um.On("DownloadUpdate", uh.API.Request(), uri2).Return(source2, int64(len(source2Content)), nil).Once()
 
 	// obj3
 	objectUID3 := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
@@ -518,7 +518,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	source3.On("Close").Return(nil).Once()
 	source3Content := []byte("content3")
 
-	um.On("FetchUpdate", uh.API.Request(), uri3).Return(source3, int64(len(source3Content)), nil).Once()
+	um.On("DownloadUpdate", uh.API.Request(), uri3).Return(source3, int64(len(source3Content)), nil).Once()
 
 	// setup filesystembackend
 
@@ -549,7 +549,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	fsm.On("Open", path.Join(uh.Settings.DownloadDir, objectUID3)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID3)).Return(target3, nil).Once()
 
-	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int{33, 66, 99, 100}, progressList)
@@ -569,7 +569,7 @@ func TestUpdateHubFetchUpdate(t *testing.T) {
 	om3.AssertExpectations(t)
 }
 
-func TestUpdateHubFetchUpdateWithObjectsAlreadyDownloaded(t *testing.T) {
+func TestUpdateHubDownloadUpdateWithObjectsAlreadyDownloaded(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
 	om1 := &objectmock.ObjectMock{}
@@ -617,7 +617,7 @@ func TestUpdateHubFetchUpdateWithObjectsAlreadyDownloaded(t *testing.T) {
 	err = afero.WriteFile(fs, path.Join(downloadDir, objectUID), []byte("content1"), 0644)
 	assert.NoError(t, err)
 
-	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int{100}, progressList)
@@ -630,7 +630,7 @@ func TestUpdateHubFetchUpdateWithObjectsAlreadyDownloaded(t *testing.T) {
 	om3.AssertExpectations(t)
 }
 
-func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
+func TestUpdateHubDownloadUpdateWithTargetFileError(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	objs := []metadata.Object{om}
@@ -659,7 +659,7 @@ func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
 	uh.Store = fsm
 
-	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
 
 	assert.EqualError(t, err, "create error")
 	assert.Equal(t, []int(nil), progressList)
@@ -671,7 +671,7 @@ func TestUpdateHubFetchUpdateWithTargetFileError(t *testing.T) {
 	om.AssertExpectations(t)
 }
 
-func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
+func TestUpdateHubDownloadUpdateWithUpdaterError(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	objs := []metadata.Object{om}
@@ -703,7 +703,7 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	source := &filemock.FileMock{}
 
 	um := &updatermock.UpdaterMock{}
-	um.On("FetchUpdate", uh.API.Request(), uri).Return(source, int64(0), fmt.Errorf("updater error"))
+	um.On("DownloadUpdate", uh.API.Request(), uri).Return(source, int64(0), fmt.Errorf("updater error"))
 	uh.Updater = um
 
 	// setup filesystembackend
@@ -719,7 +719,7 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
-	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
 
 	assert.EqualError(t, err, "updater error")
 	assert.Equal(t, []int(nil), progressList)
@@ -733,7 +733,7 @@ func TestUpdateHubFetchUpdateWithUpdaterError(t *testing.T) {
 	om.AssertExpectations(t)
 }
 
-func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
+func TestUpdateHubDownloadUpdateWithCopyError(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	objs := []metadata.Object{om}
@@ -767,7 +767,7 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	sourceContent := []byte("content")
 
 	um := &updatermock.UpdaterMock{}
-	um.On("FetchUpdate", uh.API.Request(), uri).Return(source, int64(len(sourceContent)), nil)
+	um.On("DownloadUpdate", uh.API.Request(), uri).Return(source, int64(len(sourceContent)), nil)
 	uh.Updater = um
 
 	// setup filesystembackend
@@ -784,7 +784,7 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
-	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
 
 	assert.EqualError(t, err, "copy error")
 	assert.Equal(t, []int(nil), progressList)
@@ -798,7 +798,7 @@ func TestUpdateHubFetchUpdateWithCopyError(t *testing.T) {
 	om.AssertExpectations(t)
 }
 
-func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
+func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	om1 := &objectmock.ObjectMock{}
 	om2 := &objectmock.ObjectMock{}
 	om3 := &objectmock.ObjectMock{}
@@ -845,7 +845,7 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 
 	objectUIDFirst := updateMetadata.Objects[1][0].GetObjectMetadata().Sha256sum
 	uri1 := path.Join(expectedURIPrefix, objectUIDFirst)
-	um.On("FetchUpdate", uh.API.Request(), uri1).Return(source1, int64(len(file1Content)), nil)
+	um.On("DownloadUpdate", uh.API.Request(), uri1).Return(source1, int64(len(file1Content)), nil)
 
 	// download of file 2 setup
 	file2Content := []byte("content2butbigger") // this matches with the sha256sum in "validUpdateMetadataWithActiveInactive"
@@ -855,7 +855,7 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 
 	objectUIDSecond := updateMetadata.Objects[1][1].GetObjectMetadata().Sha256sum
 	uri2 := path.Join(expectedURIPrefix, objectUIDSecond)
-	um.On("FetchUpdate", uh.API.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
+	um.On("DownloadUpdate", uh.API.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
 
 	// setup filesystembackend
 	target1 := &filemock.FileMock{}
@@ -878,7 +878,7 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	cpm.On("Copy", target2, source2, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
 	uh.CopyBackend = cpm
 
-	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int{50, 100}, progressList)
@@ -897,7 +897,7 @@ func TestUpdateHubFetchUpdateWithActiveInactive(t *testing.T) {
 	om4.AssertExpectations(t)
 }
 
-func TestUpdateHubFetchUpdateWithActiveInactiveError(t *testing.T) {
+func TestUpdateHubDownloadUpdateWithActiveInactiveError(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	objs := []metadata.Object{om}
@@ -915,7 +915,7 @@ func TestUpdateHubFetchUpdateWithActiveInactiveError(t *testing.T) {
 	um := &updatermock.UpdaterMock{}
 	uh.Updater = um
 
-	progressList, err := startFetchUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
 
 	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 0")
 	assert.Equal(t, []int(nil), progressList)
@@ -1493,7 +1493,7 @@ func TestStartPolling(t *testing.T) {
 			0,
 			now.Add(-1 * time.Second),
 			(time.Time{}).UTC(),
-			&UpdateCheckState{},
+			&UpdateProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {},
 		},
 
@@ -1503,7 +1503,7 @@ func TestStartPolling(t *testing.T) {
 			0,
 			now.Add(-4 * time.Second),
 			now.Add(-2 * time.Second),
-			&UpdateCheckState{},
+			&UpdateProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {},
 		},
 

@@ -27,11 +27,11 @@ type UpdateClient struct {
 }
 
 type Updater interface {
-	CheckUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error)
-	FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error)
+	ProbeUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error)
+	DownloadUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error)
 }
 
-func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
+func (u *UpdateClient) ProbeUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
 	if api == nil {
 		finalErr := fmt.Errorf("invalid api requester")
 		log.Error(finalErr)
@@ -39,13 +39,13 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{
 	}
 
 	url := serverURL(api.Client(), uri)
-	log.Debug("checking update at: ", url)
+	log.Debug("probing update at: ", url)
 
 	rawJSON, _ := json.Marshal(data)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(rawJSON))
 	if err != nil {
-		finalErr := fmt.Errorf("failed to create check update request: %s", err)
+		finalErr := fmt.Errorf("failed to create probe update request: %s", err)
 		log.Error(finalErr)
 		return nil, 0, finalErr
 	}
@@ -55,7 +55,7 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{
 
 	res, err := api.Do(req)
 	if err != nil {
-		finalErr := fmt.Errorf("check update request failed: %s", err)
+		finalErr := fmt.Errorf("probe update request failed: %s", err)
 		log.Error(finalErr)
 		return nil, 0, finalErr
 	}
@@ -79,7 +79,7 @@ func (u *UpdateClient) CheckUpdate(api ApiRequester, uri string, data interface{
 	return r, time.Duration(extraPoll), err
 }
 
-func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error) {
+func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error) {
 	if api == nil {
 		finalErr := fmt.Errorf("invalid api requester")
 		log.Error(finalErr)
@@ -90,7 +90,7 @@ func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser,
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		finalErr := fmt.Errorf("failed to create fetch update request: %s", err)
+		finalErr := fmt.Errorf("failed to create download update request: %s", err)
 		log.Error(finalErr)
 		return nil, -1, finalErr
 	}
@@ -99,14 +99,14 @@ func (u *UpdateClient) FetchUpdate(api ApiRequester, uri string) (io.ReadCloser,
 
 	res, err := api.Do(req)
 	if err != nil {
-		finalErr := fmt.Errorf("fetch update request failed: %s", err)
+		finalErr := fmt.Errorf("download update request failed: %s", err)
 		log.Error(finalErr)
 		return nil, -1, finalErr
 	}
 
 	if res.StatusCode != http.StatusOK {
 		res.Body.Close()
-		finalErr := fmt.Errorf("failed to fetch update. maybe the file is missing?")
+		finalErr := fmt.Errorf("failed to download update. maybe the file is missing?")
 		log.Error(finalErr)
 		return nil, -1, finalErr
 	}

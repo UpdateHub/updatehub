@@ -29,9 +29,9 @@ const (
 	UpdateHubStateIdle
 	// UpdateHubStatePoll is set when the agent is in the "polling" mode
 	UpdateHubStatePoll
-	// UpdateHubStateUpdateCheck is set when the agent is running a
-	// "checkUpdate" procedure
-	UpdateHubStateUpdateCheck
+	// UpdateHubStateUpdateProbe is set when the agent is running a
+	// "probeUpdate" procedure
+	UpdateHubStateUpdateProbe
 	// UpdateHubStateDownloading is set when the agent is downloading
 	// an update
 	UpdateHubStateDownloading
@@ -56,7 +56,7 @@ const (
 var statusNames = map[UpdateHubState]string{
 	UpdateHubStateIdle:             "idle",
 	UpdateHubStatePoll:             "poll",
-	UpdateHubStateUpdateCheck:      "update-check",
+	UpdateHubStateUpdateProbe:      "update-probe",
 	UpdateHubStateDownloading:      "downloading",
 	UpdateHubStateDownloaded:       "downloaded",
 	UpdateHubStateInstalling:       "installing",
@@ -204,7 +204,7 @@ func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
 		log.Info("ExtraPoll received: ", extraPollTime)
 
 		if extraPollTime.Before(now) {
-			return NewUpdateCheckState(), false
+			return NewUpdateProbeState(), false
 		}
 	}
 
@@ -266,7 +266,7 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 				ticks++
 
 				if ticks > 0 && ticks%int64(state.interval.Seconds()/uh.TimeStep.Seconds()) == 0 {
-					nextState = NewUpdateCheckState()
+					nextState = NewUpdateProbeState()
 					break polling
 				}
 			case <-state.cancel:
@@ -301,23 +301,23 @@ func NewPollState(pollingInterval time.Duration) *PollState {
 	return state
 }
 
-// UpdateCheckState is the State interface implementation for the UpdateHubStateUpdateCheck
-type UpdateCheckState struct {
+// UpdateProbeState is the State interface implementation for the UpdateHubStateUpdateProbe
+type UpdateProbeState struct {
 	BaseState
 }
 
 // ID returns the state id
-func (state *UpdateCheckState) ID() UpdateHubState {
+func (state *UpdateProbeState) ID() UpdateHubState {
 	return state.id
 }
 
-// Handle for UpdateCheckState executes a CheckUpdate procedure and
+// Handle for UpdateProbeState executes a ProbeUpdate procedure and
 // proceed to download the update if there is one. It goes back to the
 // polling state otherwise.
-func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
-	updateMetadata, extraPoll := uh.Controller.CheckUpdate(uh.Settings.PollingRetries)
+func (state *UpdateProbeState) Handle(uh *UpdateHub) (State, bool) {
+	updateMetadata, extraPoll := uh.Controller.ProbeUpdate(uh.Settings.PollingRetries)
 
-	// Reset polling retries in case of CheckUpdate success
+	// Reset polling retries in case of ProbeUpdate success
 	if extraPoll != -1 {
 		uh.Settings.PollingRetries = 0
 	}
@@ -353,16 +353,16 @@ func (state *UpdateCheckState) Handle(uh *UpdateHub) (State, bool) {
 		}
 	}
 
-	// Increment the number of polling retries in case of CheckUpdate failure
+	// Increment the number of polling retries in case of ProbeUpdate failure
 	uh.Settings.PollingRetries++
 
 	return NewIdleState(), false
 }
 
-// NewUpdateCheckState creates a new UpdateCheckState
-func NewUpdateCheckState() *UpdateCheckState {
-	state := &UpdateCheckState{
-		BaseState: BaseState{id: UpdateHubStateUpdateCheck},
+// NewUpdateProbeState creates a new UpdateProbeState
+func NewUpdateProbeState() *UpdateProbeState {
+	state := &UpdateProbeState{
+		BaseState: BaseState{id: UpdateHubStateUpdateProbe},
 	}
 
 	return state
@@ -412,7 +412,7 @@ func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 		m.Lock()
 		defer m.Unlock()
 
-		err = uh.Controller.FetchUpdate(state.updateMetadata, state.cancel, progressChan)
+		err = uh.Controller.DownloadUpdate(state.updateMetadata, state.cancel, progressChan)
 		close(progressChan)
 	}()
 

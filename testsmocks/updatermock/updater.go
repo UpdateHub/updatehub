@@ -20,12 +20,12 @@ type UpdaterMock struct {
 	mock.Mock
 }
 
-func (um *UpdaterMock) CheckUpdate(api client.ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
+func (um *UpdaterMock) ProbeUpdate(api client.ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
 	args := um.Called(api, uri, data)
 	return args.Get(0), args.Get(1).(time.Duration), args.Error(2)
 }
 
-func (um *UpdaterMock) FetchUpdate(api client.ApiRequester, uri string) (io.ReadCloser, int64, error) {
+func (um *UpdaterMock) DownloadUpdate(api client.ApiRequester, uri string) (io.ReadCloser, int64, error) {
 	args := um.Called(api, uri)
 	return args.Get(0).(io.ReadCloser), args.Get(1).(int64), args.Error(2)
 }

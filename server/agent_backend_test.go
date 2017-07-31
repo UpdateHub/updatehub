@@ -358,7 +358,7 @@ func TestUpdateProbeRoute(t *testing.T) {
 	cm := &controllermock.ControllerMock{}
 
 	uh.Controller = cm
-	cm.On("CheckUpdate", 0).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
+	cm.On("ProbeUpdate", 0).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
 
 	r, err := http.Post(url+"/update/probe", "application/json", nil)
 	assert.NoError(t, err)

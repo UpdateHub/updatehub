@@ -32,7 +32,7 @@ const (
 }`
 )
 
-func TestCheckUpdate(t *testing.T) {
+func TestProbeUpdate(t *testing.T) {
 	_ = &copy.CopyObject{} // just to register the copy object
 
 	expectedError := fmt.Errorf("some error")
@@ -42,9 +42,9 @@ func TestCheckUpdate(t *testing.T) {
 	assert.NoError(t, err)
 
 	um := &UpdaterMock{}
-	um.On("CheckUpdate", api.Request(), "uri", "data").Return(expectedUpdateMetadata, time.Duration(5), expectedError)
+	um.On("ProbeUpdate", api.Request(), "uri", "data").Return(expectedUpdateMetadata, time.Duration(5), expectedError)
 
-	updateMetadata, extraPoll, err := um.CheckUpdate(api.Request(), "uri", "data")
+	updateMetadata, extraPoll, err := um.ProbeUpdate(api.Request(), "uri", "data")
 
 	assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 	assert.Equal(t, time.Duration(5), extraPoll)
@@ -53,16 +53,16 @@ func TestCheckUpdate(t *testing.T) {
 	um.AssertExpectations(t)
 }
 
-func TestFetchUpdate(t *testing.T) {
+func TestDownloadUpdate(t *testing.T) {
 	expectedError := fmt.Errorf("some error")
 	api := client.NewApiClient("localhost")
 
 	expectedBody := ioutil.NopCloser(bytes.NewBuffer([]byte("{\"content\": true}")))
 
 	um := &UpdaterMock{}
-	um.On("FetchUpdate", api.Request(), "uri").Return(expectedBody, int64(19), expectedError)
+	um.On("DownloadUpdate", api.Request(), "uri").Return(expectedBody, int64(19), expectedError)
 
-	bodyRD, contentLength, err := um.FetchUpdate(api.Request(), "uri")
+	bodyRD, contentLength, err := um.DownloadUpdate(api.Request(), "uri")
 
 	assert.Equal(t, expectedBody, bodyRD)
 	assert.Equal(t, int64(19), contentLength)
