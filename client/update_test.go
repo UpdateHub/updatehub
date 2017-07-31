@@ -299,43 +299,43 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 	assert.Equal(t, "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", um.Objects[0][0].GetObjectMetadata().Sha256sum)
 }
 
-func TestFetchUpdateWithInvalidApiRequester(t *testing.T) {
+func TestDownloadUpdateWithInvalidApiRequester(t *testing.T) {
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(nil, "/resource")
+	body, contentLength, err := uc.DownloadUpdate(nil, "/resource")
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
 	assert.EqualError(t, err, "invalid api requester")
 }
 
-func TestFetchUpdateWithNewRequestError(t *testing.T) {
+func TestDownloadUpdateWithNewRequestError(t *testing.T) {
 	ac := NewApiClient("http://localhost")
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(ac.Request(), "/resource%s")
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), "/resource%s")
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
-	assert.True(t, strings.Contains(err.Error(), "failed to create fetch update request"))
+	assert.True(t, strings.Contains(err.Error(), "failed to create download update request"))
 	assert.True(t, strings.Contains(err.Error(), "invalid URL escape"))
 }
 
-func TestFetchUpdateWithApiDoError(t *testing.T) {
+func TestDownloadUpdateWithApiDoError(t *testing.T) {
 	ac := NewApiClient("http://invalid")
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(ac.Request(), "/resource")
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), "/resource")
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
-	assert.True(t, strings.Contains(err.Error(), "fetch update request failed"))
+	assert.True(t, strings.Contains(err.Error(), "download update request failed"))
 	assert.True(t, strings.Contains(err.Error(), "no such host"))
 }
 
-func TestFetchUpdateWithHTTPError(t *testing.T) {
+func TestDownloadUpdateWithHTTPError(t *testing.T) {
 	expectedBody := []byte("Not found")
 	address := "localhost"
 	path := "/not-found"
@@ -352,14 +352,14 @@ func TestFetchUpdateWithHTTPError(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(ac.Request(), path)
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path)
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
-	assert.EqualError(t, err, "failed to fetch update. maybe the file is missing?")
+	assert.EqualError(t, err, "failed to download update. maybe the file is missing?")
 }
 
-func TestFetchUpdateWithSuccess(t *testing.T) {
+func TestDownloadUpdateWithSuccess(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/resource"
@@ -376,7 +376,7 @@ func TestFetchUpdateWithSuccess(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.FetchUpdate(ac.Request(), path)
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path)
 	defer body.Close()
 
 	assert.Equal(t, int64(len(expectedBody)), contentLength)

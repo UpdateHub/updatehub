@@ -412,7 +412,7 @@ func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 		m.Lock()
 		defer m.Unlock()
 
-		err = uh.Controller.FetchUpdate(state.updateMetadata, state.cancel, progressChan)
+		err = uh.Controller.DownloadUpdate(state.updateMetadata, state.cancel, progressChan)
 		close(progressChan)
 	}()
 

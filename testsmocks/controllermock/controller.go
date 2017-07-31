@@ -24,7 +24,7 @@ func (cm *ControllerMock) CheckUpdate(retries int) (*metadata.UpdateMetadata, ti
 	return args.Get(0).(*metadata.UpdateMetadata), args.Get(1).(time.Duration)
 }
 
-func (cm *ControllerMock) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+func (cm *ControllerMock) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
 	args := cm.Called(updateMetadata, cancel, progressChan)
 	return args.Error(0)
 }

@@ -114,7 +114,7 @@ func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.
 
 type Controller interface {
 	CheckUpdate(int) (*metadata.UpdateMetadata, time.Duration)
-	FetchUpdate(*metadata.UpdateMetadata, <-chan bool, chan<- int) error
+	DownloadUpdate(*metadata.UpdateMetadata, <-chan bool, chan<- int) error
 	InstallUpdate(*metadata.UpdateMetadata, chan<- int) error
 }
 
@@ -147,7 +147,7 @@ func (uh *UpdateHub) CheckUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 }
 
 // it is recommended to use a buffered channel for "progressChan" to ensure no progress event is lost
-func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+func (uh *UpdateHub) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
 	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.ActiveInactiveBackend, updateMetadata)
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func (uh *UpdateHub) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel
 		defer wr.Close()
 
 		log.Debug("route: ", uri)
-		rd, _, err := uh.Updater.FetchUpdate(uh.API.Request(), uri)
+		rd, _, err := uh.Updater.DownloadUpdate(uh.API.Request(), uri)
 		if err != nil {
 			return err
 		}

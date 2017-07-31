@@ -31,7 +31,7 @@ type testController struct {
 	extraPoll               time.Duration
 	pollingInterval         time.Duration
 	updateAvailable         bool
-	fetchUpdateError        error
+	downloadUpdateError        error
 	installUpdateError      error
 	reportCurrentStateError error
 	progressList            []int
@@ -82,7 +82,7 @@ func (c *testController) CheckUpdate(retries int) (*metadata.UpdateMetadata, tim
 	return nil, c.extraPoll
 }
 
-func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+func (c *testController) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
 	for _, p := range c.progressList {
 		// "non-blocking" write to channel
 		select {
@@ -91,7 +91,7 @@ func (c *testController) FetchUpdate(updateMetadata *metadata.UpdateMetadata, ca
 		}
 	}
 
-	return c.fetchUpdateError
+	return c.downloadUpdateError
 }
 
 func (c *testController) InstallUpdate(updateMetadata *metadata.UpdateMetadata, progressChan chan<- int) error {
@@ -246,15 +246,15 @@ func TestStateDownloading(t *testing.T) {
 	}{
 		{
 			"WithoutError",
-			&testController{fetchUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
+			&testController{downloadUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
 			NewDownloadedState(m),
 			[]int{33, 66, 99, 100},
 		},
 
 		{
 			"WithError",
-			&testController{fetchUpdateError: errors.New("fetch error"), installUpdateError: nil, progressList: []int{33}},
-			NewErrorState(m, NewTransientError(errors.New("fetch error"))),
+			&testController{downloadUpdateError: errors.New("download error"), installUpdateError: nil, progressList: []int{33}},
+			NewErrorState(m, NewTransientError(errors.New("download error"))),
 			[]int{33},
 		},
 	}
@@ -645,14 +645,14 @@ func TestStateInstalling(t *testing.T) {
 	}{
 		{
 			"WithoutError",
-			&testController{fetchUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
+			&testController{downloadUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
 			NewInstalledState(m),
 			[]int{33, 66, 99, 100},
 		},
 
 		{
 			"WithError",
-			&testController{fetchUpdateError: nil, installUpdateError: errors.New("install error"), progressList: []int{33}},
+			&testController{downloadUpdateError: nil, installUpdateError: errors.New("install error"), progressList: []int{33}},
 			NewErrorState(m, NewTransientError(errors.New("install error"))),
 			[]int{33},
 		},

@@ -53,16 +53,16 @@ func TestCheckUpdate(t *testing.T) {
 	um.AssertExpectations(t)
 }
 
-func TestFetchUpdate(t *testing.T) {
+func TestDownloadUpdate(t *testing.T) {
 	expectedError := fmt.Errorf("some error")
 	api := client.NewApiClient("localhost")
 
 	expectedBody := ioutil.NopCloser(bytes.NewBuffer([]byte("{\"content\": true}")))
 
 	um := &UpdaterMock{}
-	um.On("FetchUpdate", api.Request(), "uri").Return(expectedBody, int64(19), expectedError)
+	um.On("DownloadUpdate", api.Request(), "uri").Return(expectedBody, int64(19), expectedError)
 
-	bodyRD, contentLength, err := um.FetchUpdate(api.Request(), "uri")
+	bodyRD, contentLength, err := um.DownloadUpdate(api.Request(), "uri")
 
 	assert.Equal(t, expectedBody, bodyRD)
 	assert.Equal(t, int64(19), contentLength)
