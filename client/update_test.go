@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckUpdateWithInvalidApiRequester(t *testing.T) {
+func TestProbeUpdateWithInvalidApiRequester(t *testing.T) {
 	uc := NewUpdateClient()
 
 	fm := &metadata.FirmwareMetadata{
@@ -33,14 +33,14 @@ func TestCheckUpdateWithInvalidApiRequester(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(nil, UpgradesEndpoint, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(nil, UpgradesEndpoint, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "invalid api requester")
 }
 
-func TestCheckUpdateWithNewRequestError(t *testing.T) {
+func TestProbeUpdateWithNewRequestError(t *testing.T) {
 	ac := NewApiClient("http://localhost")
 
 	uc := NewUpdateClient()
@@ -53,14 +53,14 @@ func TestCheckUpdateWithNewRequestError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), "/resource%s", fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), "/resource%s", fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
-	assert.EqualError(t, err, "failed to create check update request: parse http://localhost/resource%s: invalid URL escape \"%s\"")
+	assert.EqualError(t, err, "failed to create probe update request: parse http://localhost/resource%s: invalid URL escape \"%s\"")
 }
 
-func TestCheckUpdateWithApiDoError(t *testing.T) {
+func TestProbeUpdateWithApiDoError(t *testing.T) {
 	ac := NewApiClient("http://invalid")
 
 	uc := NewUpdateClient()
@@ -73,14 +73,14 @@ func TestCheckUpdateWithApiDoError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), "/resource", fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), "/resource", fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
-	assert.True(t, strings.HasPrefix(err.Error(), "check update request failed: Post http://invalid/resource: dial tcp: lookup invalid"))
+	assert.True(t, strings.HasPrefix(err.Error(), "probe update request failed: Post http://invalid/resource: dial tcp: lookup invalid"))
 }
 
-func TestCheckUpdateWithExtraPollHeaderError(t *testing.T) {
+func TestProbeUpdateWithExtraPollHeaderError(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/extra-poll-error"
@@ -105,14 +105,14 @@ func TestCheckUpdateWithExtraPollHeaderError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "failed to parse extra poll header: strconv.ParseInt: parsing \"@3\": invalid syntax")
 }
 
-func TestCheckUpdateWithResponseBodyReadError(t *testing.T) {
+func TestProbeUpdateWithResponseBodyReadError(t *testing.T) {
 	expectedBody := []byte("partial body")
 	address := "localhost"
 	path := "/response-body-error"
@@ -137,14 +137,14 @@ func TestCheckUpdateWithResponseBodyReadError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "error reading response body: unexpected EOF")
 }
 
-func TestCheckUpdateWithResponseBodyParseError(t *testing.T) {
+func TestProbeUpdateWithResponseBodyParseError(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/resource"
@@ -169,14 +169,14 @@ func TestCheckUpdateWithResponseBodyParseError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "failed to parse upgrade response: invalid character 'e' looking for beginning of value")
 }
 
-func TestCheckUpdateWithInvalidStatusCode(t *testing.T) {
+func TestProbeUpdateWithInvalidStatusCode(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/error-bad-gateway"
@@ -201,14 +201,14 @@ func TestCheckUpdateWithInvalidStatusCode(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "invalid response received from the server. HTTP code: 502")
 }
 
-func TestCheckUpdateWithNoUpdateAvailable(t *testing.T) {
+func TestProbeUpdateWithNoUpdateAvailable(t *testing.T) {
 	expectedBody := []byte("expected body")
 	address := "localhost"
 	path := "/not-found"
@@ -233,14 +233,14 @@ func TestCheckUpdateWithNoUpdateAvailable(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
 	assert.Equal(t, time.Duration(3), extraPoll)
 	assert.NoError(t, err)
 }
 
-func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
+func TestProbeUpdateWithUpdateAvailable(t *testing.T) {
 	// declaration just to register the imxkobs install mode
 	_ = &imxkobs.ImxKobsObject{}
 
@@ -279,7 +279,7 @@ func TestCheckUpdateWithUpdateAvailable(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.CheckUpdate(ac.Request(), path, fm)
+	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.NoError(t, err)

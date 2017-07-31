@@ -32,7 +32,7 @@ const (
 }`
 )
 
-func TestCheckUpdate(t *testing.T) {
+func TestProbeUpdate(t *testing.T) {
 	_ = &copy.CopyObject{} // just to register the copy object
 
 	expectedError := fmt.Errorf("some error")
@@ -42,9 +42,9 @@ func TestCheckUpdate(t *testing.T) {
 	assert.NoError(t, err)
 
 	um := &UpdaterMock{}
-	um.On("CheckUpdate", api.Request(), "uri", "data").Return(expectedUpdateMetadata, time.Duration(5), expectedError)
+	um.On("ProbeUpdate", api.Request(), "uri", "data").Return(expectedUpdateMetadata, time.Duration(5), expectedError)
 
-	updateMetadata, extraPoll, err := um.CheckUpdate(api.Request(), "uri", "data")
+	updateMetadata, extraPoll, err := um.ProbeUpdate(api.Request(), "uri", "data")
 
 	assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 	assert.Equal(t, time.Duration(5), extraPoll)

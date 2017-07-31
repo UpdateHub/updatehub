@@ -79,7 +79,7 @@ func (ab *AgentBackend) status(w http.ResponseWriter, r *http.Request, p httprou
 
 func (ab *AgentBackend) update(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	go func() {
-		s := updatehub.NewUpdateCheckState()
+		s := updatehub.NewUpdateProbeState()
 		ab.UpdateHub.State.Cancel(true, s)
 	}()
 
@@ -115,7 +115,7 @@ func (ab *AgentBackend) updateMetadata(w http.ResponseWriter, r *http.Request, p
 func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	out := map[string]interface{}{}
 
-	um, d := ab.UpdateHub.Controller.CheckUpdate(0)
+	um, d := ab.UpdateHub.Controller.ProbeUpdate(0)
 
 	if um == nil {
 		out["update-available"] = false

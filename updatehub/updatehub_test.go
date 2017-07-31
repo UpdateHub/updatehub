@@ -337,7 +337,7 @@ func TestGetIndexOfObjectToBeInstalledWithNoObjects(t *testing.T) {
 	assert.Equal(t, 0, index)
 }
 
-func TestUpdateHubCheckUpdate(t *testing.T) {
+func TestUpdateHubProbeUpdate(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
@@ -386,11 +386,11 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 			data.Retries = 0
 
 			um := &updatermock.UpdaterMock{}
-			um.On("CheckUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
+			um.On("ProbeUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
 
 			uh.Updater = um
 
-			updateMetadata, extraPoll := uh.CheckUpdate(0)
+			updateMetadata, extraPoll := uh.ProbeUpdate(0)
 
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 			assert.Equal(t, tc.extraPoll, extraPoll)
@@ -412,7 +412,7 @@ func TestUpdateHubCheckUpdate(t *testing.T) {
 	om.AssertExpectations(t)
 }
 
-func TestUpdateHubCheckUpdateWithNilUpdateMetadata(t *testing.T) {
+func TestUpdateHubProbeUpdateWithNilUpdateMetadata(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
@@ -439,11 +439,11 @@ func TestUpdateHubCheckUpdateWithNilUpdateMetadata(t *testing.T) {
 	data.Retries = 0
 
 	um := &updatermock.UpdaterMock{}
-	um.On("CheckUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(nil, time.Duration(3000), nil)
+	um.On("ProbeUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(nil, time.Duration(3000), nil)
 
 	uh.Updater = um
 
-	updateMetadata, extraPoll := uh.CheckUpdate(0)
+	updateMetadata, extraPoll := uh.ProbeUpdate(0)
 
 	assert.Equal(t, (*metadata.UpdateMetadata)(nil), updateMetadata)
 	assert.Equal(t, time.Duration(3000), extraPoll)
@@ -1493,7 +1493,7 @@ func TestStartPolling(t *testing.T) {
 			0,
 			now.Add(-1 * time.Second),
 			(time.Time{}).UTC(),
-			&UpdateCheckState{},
+			&UpdateProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {},
 		},
 
@@ -1503,7 +1503,7 @@ func TestStartPolling(t *testing.T) {
 			0,
 			now.Add(-4 * time.Second),
 			now.Add(-2 * time.Second),
-			&UpdateCheckState{},
+			&UpdateProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {},
 		},
 

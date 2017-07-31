@@ -17,14 +17,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckUpdate(t *testing.T) {
+func TestProbeUpdate(t *testing.T) {
 	expectedMetadata := &metadata.UpdateMetadata{}
 	expectedDuration := 10 * time.Second
 
 	cm := &ControllerMock{}
-	cm.On("CheckUpdate", 0).Return(expectedMetadata, expectedDuration)
+	cm.On("ProbeUpdate", 0).Return(expectedMetadata, expectedDuration)
 
-	m, d := cm.CheckUpdate(0)
+	m, d := cm.ProbeUpdate(0)
 
 	assert.Equal(t, expectedMetadata, m)
 	assert.Equal(t, expectedDuration, d)
