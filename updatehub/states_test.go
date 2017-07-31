@@ -17,6 +17,7 @@ import (
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
 	"github.com/UpdateHub/updatehub/testsmocks/installifdifferentmock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 	"github.com/UpdateHub/updatehub/testsmocks/progresstrackermock"
@@ -176,6 +177,41 @@ func TestStateUpdateCheck(t *testing.T) {
 			aim.AssertExpectations(t)
 		})
 	}
+}
+
+func TestStateUpdateCheckWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &controllermock.ControllerMock{}
+
+	uh, err := newTestUpdateHub(NewUpdateCheckState(), aim)
+	assert.NoError(t, err)
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	uh.lastInstalledPackageUID = m.PackageUID()
+
+	cm.On("CheckUpdate", 0).Return(m, time.Duration(0))
+
+	uh.Controller = cm
+	uh.Settings = &Settings{}
+
+	next, _ := uh.State.Handle(uh)
+
+	assert.IsType(t, &WaitingForRebootState{}, next)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	om.AssertExpectations(t)
 }
 
 func TestStateUpdateCheckToMap(t *testing.T) {
