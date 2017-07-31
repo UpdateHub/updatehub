@@ -247,9 +247,9 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 	nextState = state
 
 	if state.interval < uh.TimeStep {
-		finalErr := fmt.Errorf("Can't handle polling with invalid interval. It must be greater than '%s'", uh.TimeStep)
-		log.Error(finalErr)
-		return NewErrorState(nil, NewTransientError(finalErr)), false
+		finalErr := fmt.Errorf("polling interval (%s) must be greater than '%s', using %s instead", state.interval, uh.TimeStep, uh.TimeStep)
+		log.Warn(finalErr)
+		state.interval = uh.TimeStep
 	}
 
 	go func() {
