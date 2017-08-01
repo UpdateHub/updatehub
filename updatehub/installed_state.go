@@ -25,7 +25,7 @@ func (state *InstalledState) ID() UpdateHubState {
 
 // Handle for InstalledState implements the installation process itself
 func (state *InstalledState) Handle(uh *UpdateHub) (State, bool) {
-	return NewIdleState(), false
+	return NewRebootState(), false
 }
 
 // UpdateMetadata is the ReportableState interface implementation

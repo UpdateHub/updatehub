@@ -90,6 +90,7 @@ type UpdateHub struct {
 
 	InstallIfDifferentBackend installifdifferent.Interface
 	Sha256Checker
+	utils.Rebooter
 }
 
 func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, settings *Settings) *UpdateHub {
@@ -107,6 +108,7 @@ func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.
 		Sha256Checker:             &Sha256CheckerImpl{},
 		InstallIfDifferentBackend: &installifdifferent.DefaultImpl{FileSystemBackend: fs},
 		CopyBackend:               copy.ExtendedIO{},
+		Rebooter:                  &utils.RebooterImpl{},
 	}
 
 	return uh

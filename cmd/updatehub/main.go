@@ -109,7 +109,7 @@ func main() {
 
 	uh := updatehub.NewUpdateHub(gitversion, buildtime, osFs, *fm, updatehub.NewIdleState(), settings)
 
-	backend, err := server.NewAgentBackend(uh, &utils.RebooterImpl{})
+	backend, err := server.NewAgentBackend(uh)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)

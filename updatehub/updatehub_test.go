@@ -164,6 +164,7 @@ func TestNewUpdateHub(t *testing.T) {
 	assert.Equal(t, &Sha256CheckerImpl{}, uh.Sha256Checker)
 	assert.Equal(t, &installifdifferent.DefaultImpl{FileSystemBackend: memFs}, uh.InstallIfDifferentBackend)
 	assert.Equal(t, copy.ExtendedIO{}, uh.CopyBackend)
+	assert.Equal(t, &utils.RebooterImpl{}, uh.Rebooter)
 }
 
 func TestCheckDownloadedObjectSha256sum(t *testing.T) {
