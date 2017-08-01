@@ -40,7 +40,7 @@ func TestDaemonRun(t *testing.T) {
 
 	state := NewStateTest(d)
 
-	uh.State = state
+	uh.SetState(state)
 
 	d.Run()
 
@@ -75,15 +75,15 @@ func TestDaemonExitStateStop(t *testing.T) {
 
 	d := NewDaemon(uh)
 
-	uh.State = NewErrorState(nil, NewFatalError(errors.New("err_msg")))
+	uh.SetState(NewErrorState(nil, NewFatalError(errors.New("err_msg"))))
 
 	assert.Equal(t, 1, d.Run())
 
-	assert.IsType(t, &ExitState{}, uh.State)
+	assert.IsType(t, &ExitState{}, uh.GetState())
 	assert.Equal(t, 1, len(hook.Entries))
 	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
 	assert.Equal(t, "fatal error: err_msg", hook.LastEntry().Message)
-	assert.Equal(t, 1, uh.State.(*ExitState).exitCode)
+	assert.Equal(t, 1, uh.GetState().(*ExitState).exitCode)
 
 	aim.AssertExpectations(t)
 	rm.AssertExpectations(t)

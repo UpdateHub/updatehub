@@ -31,9 +31,7 @@ ReadOnly=true
 
 [Update]
 DownloadDir=/tmp/download
-AutoDownloadWhenAvailable=false
-AutoInstallAfterDownload=false
-AutoRebootAfterInstall=false
+ManualMode=true
 SupportedInstallModes=mode1,mode2
 
 [Network]
@@ -61,11 +59,9 @@ func TestToString(t *testing.T) {
 		},
 
 		UpdateSettings: UpdateSettings{
-			DownloadDir:               "/tmp",
-			AutoDownloadWhenAvailable: true,
-			AutoInstallAfterDownload:  true,
-			AutoRebootAfterInstall:    true,
-			SupportedInstallModes:     []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
+			DownloadDir:           "/tmp",
+			ManualMode:            true,
+			SupportedInstallModes: []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
 		},
 
 		NetworkSettings: NetworkSettings{
@@ -97,9 +93,7 @@ func TestLoadSettingsDefaultValues(t *testing.T) {
 	assert.Equal(t, false, s.StorageSettings.ReadOnly)
 
 	assert.Equal(t, "/tmp", s.UpdateSettings.DownloadDir)
-	assert.Equal(t, true, s.UpdateSettings.AutoDownloadWhenAvailable)
-	assert.Equal(t, true, s.UpdateSettings.AutoInstallAfterDownload)
-	assert.Equal(t, true, s.UpdateSettings.AutoRebootAfterInstall)
+	assert.Equal(t, false, s.UpdateSettings.ManualMode)
 	assert.Equal(t, []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"}, s.UpdateSettings.SupportedInstallModes)
 
 	assert.Equal(t, "api.updatehub.io", s.NetworkSettings.ServerAddress)
@@ -134,11 +128,9 @@ func TestLoadSettings(t *testing.T) {
 				},
 
 				UpdateSettings: UpdateSettings{
-					DownloadDir:               "/tmp",
-					AutoDownloadWhenAvailable: true,
-					AutoInstallAfterDownload:  true,
-					AutoRebootAfterInstall:    true,
-					SupportedInstallModes:     []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
+					DownloadDir:           "/tmp",
+					ManualMode:            false,
+					SupportedInstallModes: []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
 				},
 
 				NetworkSettings: NetworkSettings{
@@ -172,11 +164,9 @@ func TestLoadSettings(t *testing.T) {
 				},
 
 				UpdateSettings: UpdateSettings{
-					DownloadDir:               "/tmp/download",
-					AutoDownloadWhenAvailable: false,
-					AutoInstallAfterDownload:  false,
-					AutoRebootAfterInstall:    false,
-					SupportedInstallModes:     []string{"mode1", "mode2"},
+					DownloadDir:           "/tmp/download",
+					ManualMode:            true,
+					SupportedInstallModes: []string{"mode1", "mode2"},
 				},
 
 				NetworkSettings: NetworkSettings{

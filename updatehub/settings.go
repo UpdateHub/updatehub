@@ -41,11 +41,9 @@ var DefaultSettings = Settings{
 	},
 
 	UpdateSettings: UpdateSettings{
-		DownloadDir:               "/tmp",
-		AutoDownloadWhenAvailable: true,
-		AutoInstallAfterDownload:  true,
-		AutoRebootAfterInstall:    true,
-		SupportedInstallModes:     []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
+		DownloadDir:           "/tmp",
+		SupportedInstallModes: []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
+		ManualMode:            false,
 	},
 
 	NetworkSettings: NetworkSettings{
@@ -88,11 +86,9 @@ type StorageSettings struct {
 }
 
 type UpdateSettings struct {
-	DownloadDir               string   `ini:"DownloadDir" json:"download-dir"`
-	AutoDownloadWhenAvailable bool     `ini:"AutoDownloadWhenAvailable" json:"auto-download-when-available"`
-	AutoInstallAfterDownload  bool     `ini:"AutoInstallAfterDownload" json:"auto-install-after-download"`
-	AutoRebootAfterInstall    bool     `ini:"AutoRebootAfterInstall" json:"auto-reboot-after-install"`
-	SupportedInstallModes     []string `ini:"SupportedInstallModes" json:"supported-install-modes"`
+	DownloadDir           string   `ini:"DownloadDir" json:"download-dir"`
+	SupportedInstallModes []string `ini:"SupportedInstallModes" json:"supported-install-modes"`
+	ManualMode            bool     `ini:"ManualMode" json:"manual-mode"`
 }
 
 type NetworkSettings struct {

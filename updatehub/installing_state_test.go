@@ -118,7 +118,7 @@ func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 	expectedState := NewWaitingForRebootState(m)
 	assert.Equal(t, expectedState, nextState)
 
-	uh.State = nextState
+	uh.SetState(nextState)
 
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)

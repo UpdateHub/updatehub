@@ -154,7 +154,7 @@ func TestNewUpdateHub(t *testing.T) {
 	assert.Equal(t, &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}}, uh.ActiveInactiveBackend)
 	assert.Equal(t, gitversion, uh.Version)
 	assert.Equal(t, buildtime, uh.BuildTime)
-	assert.Equal(t, initialState, uh.State)
+	assert.Equal(t, initialState, uh.GetState())
 	assert.Equal(t, client.NewUpdateClient(), uh.Updater)
 	assert.Equal(t, time.Minute, uh.TimeStep)
 	assert.Equal(t, memFs, uh.Store)
@@ -1549,9 +1549,9 @@ func TestStartPolling(t *testing.T) {
 			uh.Settings.LastPoll = tc.lastPoll
 
 			uh.StartPolling()
-			assert.IsType(t, tc.expectedState, uh.State)
+			assert.IsType(t, tc.expectedState, uh.GetState())
 
-			tc.subTest(t, uh, uh.State)
+			tc.subTest(t, uh, uh.GetState())
 
 			aim.AssertExpectations(t)
 		})
@@ -1582,7 +1582,7 @@ func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, er
 	fs := afero.NewMemMapFs()
 	uh := &UpdateHub{
 		Store:    fs,
-		State:    state,
+		state:    state,
 		TimeStep: time.Second,
 		API:      client.NewApiClient("localhost"),
 		ActiveInactiveBackend: aii,

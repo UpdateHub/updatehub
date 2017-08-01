@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/imdario/mergo"
@@ -138,11 +139,16 @@ func main() {
 
 	uh.StartPolling()
 
-	d := updatehub.NewDaemon(uh)
-
 	log.Info("UpdateHub Agent started")
 
-	os.Exit(d.Run())
+	if !uh.Settings.ManualMode {
+		d := updatehub.NewDaemon(uh)
+		os.Exit(d.Run())
+	} else {
+		for {
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 func loadSettings(fs afero.Fs, structToSaveOn *updatehub.Settings, pathToLoadFrom string) error {

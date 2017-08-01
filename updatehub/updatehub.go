@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math/rand"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/OSSystems/pkg/log"
@@ -79,7 +80,6 @@ type UpdateHub struct {
 	Settings                *Settings
 	Store                   afero.Fs
 	FirmwareMetadata        metadata.FirmwareMetadata
-	State                   State
 	TimeStep                time.Duration
 	API                     *client.ApiClient
 	Updater                 client.Updater
@@ -91,6 +91,8 @@ type UpdateHub struct {
 	InstallIfDifferentBackend installifdifferent.Interface
 	Sha256Checker
 	utils.Rebooter
+	state      State
+	stateMutex sync.Mutex
 }
 
 func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, settings *Settings) *UpdateHub {
@@ -98,7 +100,7 @@ func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.
 		ActiveInactiveBackend:     &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}},
 		Version:                   gitversion,
 		BuildTime:                 buildtime,
-		State:                     initialState,
+		state:                     initialState,
 		Updater:                   client.NewUpdateClient(),
 		TimeStep:                  time.Minute,
 		Store:                     fs,
@@ -112,6 +114,39 @@ func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.
 	}
 
 	return uh
+}
+
+func (uh *UpdateHub) Cancel(nextState State) {
+	uh.state.Cancel(true, nextState)
+}
+
+func (uh *UpdateHub) GetState() State {
+	return uh.state
+}
+
+func (uh *UpdateHub) SetState(state State) {
+	uh.stateMutex.Lock()
+	defer uh.stateMutex.Unlock()
+
+	uh.state = state
+}
+
+func (uh *UpdateHub) ProcessCurrentState() State {
+	uh.stateMutex.Lock()
+	defer uh.stateMutex.Unlock()
+
+	uh.ReportCurrentState()
+
+	state, cancel := uh.state.Handle(uh)
+
+	cs, ok := uh.state.(*CancellableState)
+	if cancel && ok {
+		uh.state = cs.NextState()
+	} else {
+		uh.state = state
+	}
+
+	return uh.state
 }
 
 type Controller interface {
@@ -315,8 +350,8 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 }
 
 func (uh *UpdateHub) ReportCurrentState() error {
-	if rs, ok := uh.State.(ReportableState); ok {
-		stateString := StateToString(uh.State.ID())
+	if rs, ok := uh.state.(ReportableState); ok {
+		stateString := StateToString(uh.state.ID())
 
 		if uh.lastReportedState == stateString {
 			return nil
@@ -328,7 +363,7 @@ func (uh *UpdateHub) ReportCurrentState() error {
 		}
 
 		errorMessage := ""
-		if es, ok := uh.State.(*ErrorState); ok {
+		if es, ok := uh.state.(*ErrorState); ok {
 			errorMessage = es.cause.Cause().Error()
 		}
 
@@ -345,12 +380,15 @@ func (uh *UpdateHub) ReportCurrentState() error {
 
 // StartPolling starts the polling process
 func (uh *UpdateHub) StartPolling() {
+	uh.stateMutex.Lock()
+	defer uh.stateMutex.Unlock()
+
 	now := time.Now()
 	now = time.Unix(now.Unix(), 0)
 
 	poll := NewPollState(uh.Settings.PollingInterval)
 
-	uh.State = poll
+	uh.state = poll
 
 	timeZero := (time.Time{}).UTC()
 
@@ -359,10 +397,10 @@ func (uh *UpdateHub) StartPolling() {
 		uh.Settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.Settings.PollingInterval))))
 	} else if uh.Settings.LastPoll == timeZero && now.After(uh.Settings.FirstPoll) {
 		// it never did a poll before
-		uh.State = NewUpdateProbeState()
+		uh.state = NewUpdateProbeState()
 	} else if uh.Settings.LastPoll.Add(uh.Settings.PollingInterval).Before(now) {
 		// pending regular interval
-		uh.State = NewUpdateProbeState()
+		uh.state = NewUpdateProbeState()
 	} else {
 		nextPoll := time.Unix(uh.Settings.FirstPoll.Unix(), 0)
 		for nextPoll.Before(now) {

@@ -8,7 +8,9 @@
 
 package updatehub
 
-import "time"
+import (
+	"time"
+)
 
 // UpdateProbeState is the State interface implementation for the UpdateHubStateUpdateProbe
 type UpdateProbeState struct {

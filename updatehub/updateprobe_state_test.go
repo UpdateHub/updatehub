@@ -78,7 +78,7 @@ func TestStateUpdateProbe(t *testing.T) {
 			uh.Controller = tc.controller
 			uh.Settings = tc.settings
 
-			next, _ := uh.State.Handle(uh)
+			next, _ := uh.GetState().Handle(uh)
 
 			assert.IsType(t, tc.nextState, next)
 
@@ -115,7 +115,7 @@ func TestStateUpdateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	uh.Controller = cm
 	uh.Settings = &Settings{}
 
-	next, _ := uh.State.Handle(uh)
+	next, _ := uh.GetState().Handle(uh)
 
 	assert.IsType(t, &WaitingForRebootState{}, next)
 
