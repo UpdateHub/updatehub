@@ -30,15 +30,11 @@ func (cs *CancellableState) Cancel(ok bool, nextState State) bool {
 	cs.nextStateMutex.Lock()
 	defer cs.nextStateMutex.Unlock()
 
-	cs.cancel <- ok
-	/*
-		//FIXME
-				// "non-blocking" write to channel
-				select {
-				case cs.cancel <- ok:
-				default:
-				}
-	*/
+	select {
+	case cs.cancel <- ok:
+	default:
+	}
+
 	cs.nextState = nextState
 
 	return ok

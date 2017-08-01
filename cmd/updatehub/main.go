@@ -96,6 +96,8 @@ func main() {
 	log.Info("    system settings path: ", systemSettingsPath)
 	log.Info("    runtime settings path: ", settings.RuntimeSettingsPath)
 	log.Info("    firmware metadata path: ", settings.FirmwareMetadataPath)
+	log.Info("    state change callback path: ", stateChangeCallbackPath)
+	log.Info("    error callback path: ", errorCallbackPath)
 
 	log.Debug("settings:\n", settings.ToString())
 
@@ -107,7 +109,7 @@ func main() {
 
 	osFs.MkdirAll(settings.DownloadDir, 0755)
 
-	uh := updatehub.NewUpdateHub(gitversion, buildtime, osFs, *fm, updatehub.NewIdleState(), settings)
+	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, osFs, *fm, updatehub.NewIdleState(), settings)
 
 	backend, err := server.NewAgentBackend(uh)
 	if err != nil {
@@ -138,10 +140,9 @@ func main() {
 
 	uh.StartPolling()
 
-	d := updatehub.NewDaemon(uh)
-
 	log.Info("UpdateHub Agent started")
 
+	d := updatehub.NewDaemon(uh)
 	os.Exit(d.Run())
 }
 

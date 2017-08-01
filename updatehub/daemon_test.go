@@ -14,9 +14,11 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,13 +36,23 @@ func TestNewDaemon(t *testing.T) {
 
 func TestDaemonRun(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	fs := afero.NewMemMapFs()
+
+	afero.WriteFile(fs, "/usr/share/updatehub/state-change-callback", []byte("a"), 0755)
+
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter dummy").Return([]byte(""), nil)
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback leave dummy").Return([]byte(""), nil)
 
 	uh, _ := newTestUpdateHub(nil, nil)
+	uh.CmdLineExecuter = cm
+
 	d := NewDaemon(uh)
 
 	state := NewStateTest(d)
 
-	uh.State = state
+	uh.SetState(state)
+	uh.Store = fs
 
 	d.Run()
 
@@ -48,6 +60,7 @@ func TestDaemonRun(t *testing.T) {
 	assert.True(t, d.stop)
 
 	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
 }
 
 func TestDaemonStop(t *testing.T) {
@@ -75,15 +88,15 @@ func TestDaemonExitStateStop(t *testing.T) {
 
 	d := NewDaemon(uh)
 
-	uh.State = NewErrorState(nil, NewFatalError(errors.New("err_msg")))
+	uh.SetState(NewErrorState(nil, NewFatalError(errors.New("err_msg"))))
 
 	assert.Equal(t, 1, d.Run())
 
-	assert.IsType(t, &ExitState{}, uh.State)
+	assert.IsType(t, &ExitState{}, uh.GetState())
 	assert.Equal(t, 1, len(hook.Entries))
 	assert.Equal(t, logrus.WarnLevel, hook.LastEntry().Level)
 	assert.Equal(t, "fatal error: err_msg", hook.LastEntry().Message)
-	assert.Equal(t, 1, uh.State.(*ExitState).exitCode)
+	assert.Equal(t, 1, uh.GetState().(*ExitState).exitCode)
 
 	aim.AssertExpectations(t)
 	rm.AssertExpectations(t)

@@ -25,19 +25,10 @@ func (d *Daemon) Stop() {
 
 func (d *Daemon) Run() int {
 	for {
-		d.uh.ReportCurrentState()
+		nextState := d.uh.ProcessCurrentState()
 
-		state, cancel := d.uh.State.Handle(d.uh)
-
-		cs, ok := d.uh.State.(*CancellableState)
-		if cancel && ok {
-			d.uh.State = cs.NextState()
-		} else {
-			d.uh.State = state
-		}
-
-		if d.stop || state.ID() == UpdateHubStateExit {
-			if finalState, _ := state.(*ExitState); finalState != nil {
+		if d.stop || nextState.ID() == UpdateHubStateExit {
+			if finalState, _ := nextState.(*ExitState); finalState != nil {
 				return finalState.exitCode
 			}
 

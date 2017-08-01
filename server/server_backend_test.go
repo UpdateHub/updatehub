@@ -275,10 +275,11 @@ func TestProcessDirectoryWithExactlyOneUhuPkg(t *testing.T) {
 
 	tarballPath, err := generateUhupkg(memFs, true)
 	assert.NoError(t, err)
+	defer memFs.Remove(tarballPath)
 
 	testPath, err := afero.TempDir(memFs, "", "server-test")
 	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
+	defer memFs.RemoveAll(testPath)
 
 	pkgpath := path.Join(testPath, "name.uhupkg")
 
@@ -423,10 +424,11 @@ func TestGetObjectRouteWithUhupkg(t *testing.T) {
 	// setup filesystem
 	tarballPath, err := generateUhupkg(memFs, true)
 	assert.NoError(t, err)
+	defer memFs.Remove(tarballPath)
 
 	testPath, err := afero.TempDir(memFs, "", "server-test")
 	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
+	defer memFs.RemoveAll(testPath)
 
 	pkgpath := path.Join(testPath, "name.uhupkg")
 
@@ -503,10 +505,11 @@ func TestGetObjectRouteWithUhupkgExtractError(t *testing.T) {
 	// setup filesystem
 	tarballPath, err := generateUhupkg(memFs, false) // with error
 	assert.NoError(t, err)
+	defer memFs.Remove(tarballPath)
 
 	testPath, err := afero.TempDir(memFs, "", "server-test")
 	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
+	defer memFs.RemoveAll(testPath)
 
 	pkgpath := path.Join(testPath, "name.uhupkg")
 
@@ -634,7 +637,6 @@ func generateUhupkg(fsBackend afero.Fs, valid bool) (string, error) {
 		}
 
 		f, err := zw.Create(file.Name)
-
 		if err != nil {
 			return "", err
 		}

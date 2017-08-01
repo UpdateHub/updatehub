@@ -70,9 +70,9 @@ func TestPollingRetries(t *testing.T) {
 	uh.Settings.PollingInterval = time.Second
 	uh.Settings.LastPoll = time.Now()
 
-	uh.State = NewPollState(uh.Settings.PollingInterval)
+	uh.SetState(NewPollState(uh.Settings.PollingInterval))
 
-	next, _ := uh.State.Handle(uh)
+	next, _ := uh.GetState().Handle(uh)
 	assert.IsType(t, &UpdateProbeState{}, next)
 
 	for i := 1; i < 3; i++ {
@@ -158,7 +158,7 @@ func TestPolling(t *testing.T) {
 
 			uh.StartPolling()
 
-			poll := uh.State
+			poll := uh.GetState()
 			assert.IsType(t, &PollState{}, poll)
 
 			poll.Handle(uh)

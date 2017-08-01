@@ -73,10 +73,10 @@ func TestStateIdle(t *testing.T) {
 			uh.Settings = tc.settings
 
 			go func() {
-				uh.State.Cancel(false, NewIdleState()) // write
+				uh.Cancel(NewIdleState()) // write
 			}()
 
-			next, _ := uh.State.Handle(uh) // read
+			next, _ := uh.GetState().Handle(uh) // read
 			assert.IsType(t, tc.nextState, next)
 
 			aim.AssertExpectations(t)
@@ -84,7 +84,7 @@ func TestStateIdle(t *testing.T) {
 			expectedMap := map[string]interface{}{}
 			expectedMap["status"] = "idle"
 
-			assert.Equal(t, expectedMap, uh.State.ToMap())
+			assert.Equal(t, expectedMap, uh.GetState().ToMap())
 		})
 	}
 }
