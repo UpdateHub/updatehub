@@ -44,6 +44,8 @@ const (
 	UpdateHubStateExit
 	// UpdateHubStateError is set when an error occured on the agent
 	UpdateHubStateError
+	// UpdateHubStateReboot is set when an error occured on the agent
+	UpdateHubStateReboot
 )
 
 var statusNames = map[UpdateHubState]string{
@@ -57,6 +59,7 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubStateWaitingForReboot: "waiting-for-reboot",
 	UpdateHubStateExit:             "exit",
 	UpdateHubStateError:            "error",
+	UpdateHubStateReboot:           "reboot",
 }
 
 // ProgressTracker will define which way the progress is kept

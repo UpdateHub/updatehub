@@ -26,11 +26,9 @@ func TestStateInstalled(t *testing.T) {
 	assert.NoError(t, err)
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewIdleState()
-	// we can't assert Equal here because NewPollState() creates a
-	// channel dynamically
-	assert.IsType(t, expectedState, nextState)
+	expectedState := NewRebootState()
 
+	assert.Equal(t, expectedState, nextState)
 	assert.Equal(t, m, s.UpdateMetadata())
 
 	aim.AssertExpectations(t)

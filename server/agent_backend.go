@@ -17,18 +17,16 @@ import (
 	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/updatehub"
-	"github.com/UpdateHub/updatehub/utils"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/afero"
 )
 
 type AgentBackend struct {
 	*updatehub.UpdateHub
-	utils.Rebooter
 }
 
-func NewAgentBackend(uh *updatehub.UpdateHub, r utils.Rebooter) (*AgentBackend, error) {
-	ab := &AgentBackend{UpdateHub: uh, Rebooter: r}
+func NewAgentBackend(uh *updatehub.UpdateHub) (*AgentBackend, error) {
+	ab := &AgentBackend{UpdateHub: uh}
 
 	return ab, nil
 }
@@ -243,18 +241,10 @@ func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p 
 }
 
 func (ab *AgentBackend) reboot(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	err := ab.Reboot()
-	if err != nil {
-		w.WriteHeader(400)
-
-		out := map[string]interface{}{}
-		out["error"] = err.Error()
-
-		outputJSON, _ := json.MarshalIndent(out, "", "    ")
-		fmt.Fprintf(w, string(outputJSON))
-		log.Error(string(outputJSON))
-		return
-	}
+	go func() {
+		// cancel the current state and set "reboot" as next
+		ab.UpdateHub.State.Cancel(true, updatehub.NewRebootState())
+	}()
 
 	w.WriteHeader(202)
 

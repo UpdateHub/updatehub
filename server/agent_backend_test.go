@@ -76,9 +76,7 @@ MetadataPath=/tmp/metadata
 func TestNewAgentBackend(t *testing.T) {
 	uh := &updatehub.UpdateHub{}
 
-	rm := &rebootermock.RebooterMock{}
-
-	ab, err := NewAgentBackend(uh, rm)
+	ab, err := NewAgentBackend(uh)
 	assert.NoError(t, err)
 
 	routes := ab.Routes()
@@ -144,8 +142,6 @@ func TestNewAgentBackend(t *testing.T) {
 	expectedFunction = reflect.ValueOf(ab.log)
 	receivedFunction = reflect.ValueOf(routes[9].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
-
-	rm.AssertExpectations(t)
 }
 
 func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExecuterMock, *rebootermock.RebooterMock) {
@@ -201,17 +197,18 @@ func setup(t *testing.T) (*updatehub.UpdateHub, string, *cmdlinemock.CmdLineExec
 	assert.NoError(t, err)
 	assert.NotNil(t, fm)
 
+	rm := &rebootermock.RebooterMock{}
+
 	uh := &updatehub.UpdateHub{
 		FirmwareMetadata: *fm,
 		Settings:         settings,
 		Store:            fs,
 		Version:          agentVersion,
 		BuildTime:        buildTime,
+		Rebooter:         rm,
 	}
 
-	rm := &rebootermock.RebooterMock{}
-
-	ab, err := NewAgentBackend(uh, rm)
+	ab, err := NewAgentBackend(uh)
 	assert.NoError(t, err)
 
 	router := NewBackendRouter(ab)
@@ -613,14 +610,12 @@ func TestRebootRoute(t *testing.T) {
 	})
 	defer mode.Unregister()
 
-	uh, url, clm, rm := setup(t)
+	uh, url, clm, _ := setup(t)
 	defer teardown(t)
 
 	cm := &controllermock.ControllerMock{}
 
 	uh.Controller = cm
-
-	rm.On("Reboot").Return(nil)
 
 	uh.State = updatehub.NewPollState(time.Hour)
 
@@ -633,51 +628,13 @@ func TestRebootRoute(t *testing.T) {
 	assert.Equal(t, string(`{ "message": "request accepted, rebooting the device" }`), string(bodyContent))
 	assert.Equal(t, 202, r.StatusCode)
 
-	clm.AssertExpectations(t)
-	cm.AssertExpectations(t)
-	om.AssertExpectations(t)
-	rm.AssertExpectations(t)
-}
-
-func TestRebootRouteWithError(t *testing.T) {
-	out := map[string]interface{}{}
-	out["error"] = "permission denied"
-
-	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
-
-	om := &objectmock.ObjectMock{}
-
-	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
-		Name:              "test",
-		CheckRequirements: func() error { return nil },
-		GetObject:         func() interface{} { return om },
-	})
-	defer mode.Unregister()
-
-	uh, url, clm, rm := setup(t)
-	defer teardown(t)
-
-	cm := &controllermock.ControllerMock{}
-
-	uh.Controller = cm
-
-	rm.On("Reboot").Return(fmt.Errorf("permission denied"))
-
-	uh.State = updatehub.NewPollState(time.Hour)
-
-	r, err := http.Post(url+"/reboot", "application/json", nil)
-	assert.NoError(t, err)
-
-	body := ioutil.NopCloser(r.Body)
-	bodyContent, err := ioutil.ReadAll(body)
-	assert.NoError(t, err)
-	assert.Equal(t, string(expectedResponse), string(bodyContent))
-	assert.Equal(t, 400, r.StatusCode)
+	ps, ok := uh.State.(*updatehub.PollState)
+	assert.True(t, ok)
+	assert.Equal(t, "reboot", updatehub.StateToString(ps.NextState().ID()))
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	om.AssertExpectations(t)
-	rm.AssertExpectations(t)
 }
 
 func TestLogRoute(t *testing.T) {
