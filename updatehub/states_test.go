@@ -31,7 +31,7 @@ type testController struct {
 	extraPoll               time.Duration
 	pollingInterval         time.Duration
 	updateAvailable         bool
-	downloadUpdateError        error
+	downloadUpdateError     error
 	installUpdateError      error
 	reportCurrentStateError error
 	progressList            []int
@@ -486,20 +486,21 @@ func TestPolling(t *testing.T) {
 	}
 }
 
-func TestPollingWithPollingIntervalSmallerThanTimeStep(t *testing.T) {
+func TestPollingWithIntervalSmallerThanTimeStep(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, _ := newTestUpdateHub(nil, aim)
-	uh.TimeStep = time.Hour
+	uh.TimeStep = time.Second
 
 	s := NewPollState(0)
-	s.interval = time.Minute
+	s.interval = time.Second / 10
 
 	nextState, _ := s.Handle(uh)
 
-	expectedState := NewErrorState(nil, NewTransientError(fmt.Errorf("Can't handle polling with invalid interval. It must be greater than '%s'", uh.TimeStep)))
+	expectedState := NewUpdateProbeState()
 
 	assert.Equal(t, expectedState, nextState)
+	assert.Equal(t, uh.TimeStep, s.interval)
 
 	aim.AssertExpectations(t)
 }
