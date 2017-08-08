@@ -8,8 +8,6 @@
 
 package utils
 
-import "syscall"
-
 type Rebooter interface {
 	Reboot() error
 }
@@ -18,5 +16,9 @@ type RebooterImpl struct {
 }
 
 func (r *RebooterImpl) Reboot() error {
-	return syscall.Reboot(syscall.LINUX_REBOOT_CMD_RESTART)
+	c := &CmdLine{}
+
+	_, err := c.Execute("/sbin/reboot")
+
+	return err
 }
