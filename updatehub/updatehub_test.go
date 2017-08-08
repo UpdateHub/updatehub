@@ -1114,7 +1114,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 				}
 
 				data.aim = &activeinactivemock.ActiveInactiveMock{}
-				data.aim.On("Active").Return(1, nil)
+				data.aim.On("Active").Return(1, nil).Once()
 				data.aim.On("SetActive", 0).Return(fmt.Errorf("set active error"))
 
 				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
@@ -1125,22 +1125,28 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 				om1.On("Cleanup").Return(nil).Once()
 
 				om2 := &objectmock.ObjectMock{}
+				om2.On("Setup").Return(nil).Once()
+				om2.On("Install", data.uh.Settings.DownloadDir).Return(nil).Once()
+				om2.On("Cleanup").Return(nil).Once()
+
 				om3 := &objectmock.ObjectMock{}
 				om4 := &objectmock.ObjectMock{}
 				data.objs = []metadata.Object{om1, om2, om3, om4}
 
 				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
-				data.iidm.On("Proceed", om1).Return(true, nil)
+				data.iidm.On("Proceed", om1).Return(true, nil).Once()
+				data.iidm.On("Proceed", om2).Return(true, nil).Once()
 
 				// these sha256sum's are from "validUpdateMetadataWithActiveInactive" content
 				data.scm = &statesmock.Sha256CheckerMock{}
 				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(nil)
 
 				return data
 			}(),
 			validUpdateMetadataWithActiveInactive,
 			fmt.Errorf("set active error"),
-			[]int(nil),
+			[]int{50, 100},
 		},
 		{
 			"WithSetupError",

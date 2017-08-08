@@ -274,17 +274,6 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 			return utils.MergeErrorList(errorList)
 		}
 
-		// 2 objects means that ActiveInactive is enabled, so we need
-		// to set the new active object
-		if len(updateMetadata.Objects) == 2 {
-			err := uh.ActiveInactiveBackend.SetActive(indexToInstall)
-			if err != nil {
-				return err
-			}
-
-			log.Info("ActiveInactive object activated:", indexToInstall)
-		}
-
 		if install {
 			log.Info("object ", obj.GetObjectMetadata().Sha256sum, " installed successfully")
 		} else {
@@ -299,6 +288,17 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		case progressChan <- progress:
 		default:
 		}
+	}
+
+	// 2 objects means that ActiveInactive is enabled, so we need
+	// to set the new active object
+	if len(updateMetadata.Objects) == 2 {
+		err := uh.ActiveInactiveBackend.SetActive(indexToInstall)
+		if err != nil {
+			return err
+		}
+
+		log.Info("ActiveInactive activated: ", indexToInstall)
 	}
 
 	log.Info("update installed successfully")
