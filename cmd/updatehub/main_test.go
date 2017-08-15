@@ -99,10 +99,10 @@ func TestLoadSettings(t *testing.T) {
 			func() updatehub.Settings {
 				s := updatehub.DefaultSettings
 
-				s.ReadOnly = true
+				s.ReadOnly = false
 				s.ExtraPollingInterval = 3
-				s.LastPoll = time.Time{}
-				s.FirstPoll = time.Time{}
+				s.LastPoll = (time.Time{}).UTC()
+				s.FirstPoll = (time.Time{}).UTC()
 
 				return s
 			}(),
