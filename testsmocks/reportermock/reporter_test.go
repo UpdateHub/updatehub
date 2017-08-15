@@ -30,12 +30,12 @@ func TestReportState(t *testing.T) {
 		Version:  "2.2",
 	}
 
-	rm.On("ReportState", ar, "sha256sum1", "idle", "", fm).Return(nil).Once()
-	err := rm.ReportState(ar, "sha256sum1", "idle", "", fm)
+	rm.On("ReportState", ar, "sha256sum1", "installed", "idle", "", fm).Return(nil).Once()
+	err := rm.ReportState(ar, "sha256sum1", "installed", "idle", "", fm)
 	assert.NoError(t, err)
 
-	rm.On("ReportState", ar, "sha256sum2", "downloading", "", fm).Return(fmt.Errorf("report error")).Once()
-	err = rm.ReportState(ar, "sha256sum2", "downloading", "", fm)
+	rm.On("ReportState", ar, "sha256sum2", "poll", "downloading", "", fm).Return(fmt.Errorf("report error")).Once()
+	err = rm.ReportState(ar, "sha256sum2", "poll", "downloading", "", fm)
 	assert.EqualError(t, err, "report error")
 
 	rm.AssertExpectations(t)
