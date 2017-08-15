@@ -49,6 +49,7 @@ const (
 )
 
 var statusNames = map[UpdateHubState]string{
+	UpdateHubDummyState:            "dummy",
 	UpdateHubStateIdle:             "idle",
 	UpdateHubStatePoll:             "poll",
 	UpdateHubStateUpdateProbe:      "update-probe",

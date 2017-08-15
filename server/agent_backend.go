@@ -12,13 +12,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/julienschmidt/httprouter"
-	"github.com/spf13/afero"
 )
 
 type AgentBackend struct {
@@ -34,15 +31,9 @@ func NewAgentBackend(uh *updatehub.UpdateHub) (*AgentBackend, error) {
 func (ab *AgentBackend) Routes() []Route {
 	return []Route{
 		{Method: "GET", Path: "/info", Handle: ab.info},
-		{Method: "GET", Path: "/status", Handle: ab.status},
-		{Method: "POST", Path: "/update", Handle: ab.update},
-		{Method: "GET", Path: "/update/metadata", Handle: ab.updateMetadata},
-		{Method: "POST", Path: "/update/probe", Handle: ab.updateProbe},
-		{Method: "POST", Path: "/update/download", Handle: ab.updateDownload},
-		{Method: "POST", Path: "/update/download/abort", Handle: ab.updateDownloadAbort},
-		{Method: "POST", Path: "/update/install", Handle: ab.updateInstall},
-		{Method: "POST", Path: "/reboot", Handle: ab.reboot},
 		{Method: "GET", Path: "/log", Handle: ab.log},
+		{Method: "POST", Path: "/update/probe", Handle: ab.updateProbe},
+		{Method: "POST", Path: "/update/download/abort", Handle: ab.updateDownloadAbort},
 	}
 }
 
@@ -61,53 +52,6 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 	fmt.Fprintf(w, string(outputJSON))
 
 	log.Debug(string(outputJSON))
-}
-
-func (ab *AgentBackend) status(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	out := ab.UpdateHub.State.ToMap()
-
-	outputJSON, _ := json.MarshalIndent(out, "", "    ")
-
-	w.WriteHeader(200)
-
-	fmt.Fprintf(w, string(outputJSON))
-
-	log.Debug(string(outputJSON))
-}
-
-func (ab *AgentBackend) update(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	go func() {
-		s := updatehub.NewUpdateProbeState()
-		ab.UpdateHub.State.Cancel(true, s)
-	}()
-
-	w.WriteHeader(202)
-
-	msg := string(`{ "message": "request accepted, update procedure fired" }`)
-	fmt.Fprintf(w, msg)
-
-	log.Debug(msg)
-}
-
-func (ab *AgentBackend) updateMetadata(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, metadata.UpdateMetadataFilename)
-	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
-
-	if err != nil {
-		w.WriteHeader(400)
-
-		out := map[string]interface{}{}
-		out["error"] = err.Error()
-
-		outputJSON, _ := json.MarshalIndent(out, "", "    ")
-		fmt.Fprintf(w, string(outputJSON))
-
-		log.Debug(string(outputJSON))
-	} else {
-		w.WriteHeader(200)
-		fmt.Fprintf(w, string(data))
-		log.Error(string(data))
-	}
 }
 
 func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -133,49 +77,8 @@ func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p ht
 	log.Debug(string(outputJSON))
 }
 
-func (ab *AgentBackend) updateDownload(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, metadata.UpdateMetadataFilename)
-	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
-	if err != nil {
-		w.WriteHeader(400)
-
-		out := map[string]interface{}{}
-		out["error"] = err.Error()
-
-		outputJSON, _ := json.MarshalIndent(out, "", "    ")
-		fmt.Fprintf(w, string(outputJSON))
-		log.Error(string(outputJSON))
-		return
-	}
-
-	um, err := metadata.NewUpdateMetadata(data)
-	if err != nil {
-		w.WriteHeader(400)
-
-		out := map[string]interface{}{}
-		out["error"] = err.Error()
-
-		outputJSON, _ := json.MarshalIndent(out, "", "    ")
-		fmt.Fprintf(w, string(outputJSON))
-		log.Error(string(outputJSON))
-		return
-	}
-
-	go func() {
-		// cancel the current state and set "downloading" as next
-		ab.UpdateHub.State.Cancel(true, updatehub.NewDownloadingState(um, &updatehub.ProgressTrackerImpl{}))
-	}()
-
-	w.WriteHeader(202)
-
-	msg := string(`{ "message": "request accepted, downloading update objects" }`)
-	fmt.Fprintf(w, msg)
-
-	log.Debug(msg)
-}
-
 func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	_, ok := ab.UpdateHub.State.(*updatehub.DownloadingState)
+	_, ok := ab.UpdateHub.GetState().(*updatehub.DownloadingState)
 	if !ok {
 		w.WriteHeader(400)
 
@@ -185,70 +88,16 @@ func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Reque
 		outputJSON, _ := json.MarshalIndent(out, "", "    ")
 		fmt.Fprintf(w, string(outputJSON))
 		log.Error(string(outputJSON))
+
+		ab.UpdateHub.SetState(updatehub.NewErrorState(nil, updatehub.NewTransientError(fmt.Errorf("there is no download to be aborted"))))
 		return
 	}
 
-	// cancel the current state and set "polling" as next
-	ab.UpdateHub.State.Cancel(true, updatehub.NewPollState(ab.UpdateHub.Settings.PollingInterval))
+	ab.UpdateHub.Cancel(updatehub.NewIdleState())
 
 	w.WriteHeader(200)
 
 	msg := string(`{ "message": "request accepted, download aborted" }`)
-	fmt.Fprintf(w, msg)
-
-	log.Debug(msg)
-}
-
-func (ab *AgentBackend) updateInstall(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	updateMetadataPath := path.Join(ab.UpdateHub.Settings.UpdateSettings.DownloadDir, metadata.UpdateMetadataFilename)
-	data, err := afero.ReadFile(ab.UpdateHub.Store, updateMetadataPath)
-	if err != nil {
-		w.WriteHeader(400)
-
-		out := map[string]interface{}{}
-		out["error"] = err.Error()
-
-		outputJSON, _ := json.MarshalIndent(out, "", "    ")
-		fmt.Fprintf(w, string(outputJSON))
-		log.Error(string(outputJSON))
-		return
-	}
-
-	um, err := metadata.NewUpdateMetadata(data)
-	if err != nil {
-		w.WriteHeader(400)
-
-		out := map[string]interface{}{}
-		out["error"] = err.Error()
-
-		outputJSON, _ := json.MarshalIndent(out, "", "    ")
-		fmt.Fprintf(w, string(outputJSON))
-		log.Error(string(outputJSON))
-		return
-	}
-
-	go func() {
-		// cancel the current state and set "installing" as next
-		ab.UpdateHub.State.Cancel(true, updatehub.NewInstallingState(um, &updatehub.ProgressTrackerImpl{}, ab.UpdateHub.Store))
-	}()
-
-	w.WriteHeader(202)
-
-	msg := string(`{ "message": "request accepted, installing update" }`)
-	fmt.Fprintf(w, msg)
-
-	log.Debug(msg)
-}
-
-func (ab *AgentBackend) reboot(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	go func() {
-		// cancel the current state and set "reboot" as next
-		ab.UpdateHub.State.Cancel(true, updatehub.NewRebootState())
-	}()
-
-	w.WriteHeader(202)
-
-	msg := string(`{ "message": "request accepted, rebooting the device" }`)
 	fmt.Fprintf(w, msg)
 
 	log.Debug(msg)

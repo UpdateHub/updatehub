@@ -29,6 +29,7 @@ import (
 	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 	"github.com/UpdateHub/updatehub/testsmocks/copymock"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
@@ -133,11 +134,151 @@ func startInstallUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata)
 	return progressList, err
 }
 
+func TestProcessCurrentState(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	fs := afero.NewMemMapFs()
+
+	afero.WriteFile(fs, "/usr/share/updatehub/state-change-callback", []byte("a"), 0755)
+
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter idle").Return([]byte(""), nil).Once()
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback leave idle").Return([]byte(""), nil).Once()
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.CmdLineExecuter = cm
+	uh.Store = fs
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &PollState{}, nextState)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestProcessCurrentStateWithNonExistantCallback(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	fs := afero.NewMemMapFs()
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.CmdLineExecuter = cm
+	uh.Store = fs
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &PollState{}, nextState)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestProcessCurrentStateWithEnterError(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	fs := afero.NewMemMapFs()
+
+	afero.WriteFile(fs, "/usr/share/updatehub/state-change-callback", []byte("a"), 0755)
+
+	expectedError := fmt.Errorf("some error")
+
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter idle").Return([]byte(""), expectedError).Once()
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.CmdLineExecuter = cm
+	uh.Store = fs
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &ErrorState{}, nextState)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestProcessCurrentStateWithLeaveError(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	fs := afero.NewMemMapFs()
+
+	afero.WriteFile(fs, "/usr/share/updatehub/state-change-callback", []byte("a"), 0755)
+
+	expectedError := fmt.Errorf("some error")
+
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter idle").Return([]byte(""), nil).Once()
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback leave idle").Return([]byte(""), expectedError).Once()
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.CmdLineExecuter = cm
+	uh.Store = fs
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &PollState{}, nextState)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestProcessCurrentStateIsError(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	rm := &reportermock.ReporterMock{}
+	fs := afero.NewMemMapFs()
+
+	afero.WriteFile(fs, "/usr/share/updatehub/error-callback", []byte("a"), 0755)
+
+	expectedError := fmt.Errorf("some error")
+
+	cm.On("Execute", "/usr/share/updatehub/error-callback 'transient error: some error'").Return([]byte(""), nil).Once()
+
+	uh, _ := newTestUpdateHub(NewErrorState(nil, NewTransientError(expectedError)), aim)
+	uh.CmdLineExecuter = cm
+	uh.Reporter = rm
+	uh.Store = fs
+
+	rm.On("ReportState", uh.API.Request(), "", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &IdleState{}, nextState)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestProcessCurrentStateIsErrorWithNonExistantCallback(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	rm := &reportermock.ReporterMock{}
+	fs := afero.NewMemMapFs()
+
+	expectedError := fmt.Errorf("some error")
+
+	uh, _ := newTestUpdateHub(NewErrorState(nil, NewTransientError(expectedError)), aim)
+	uh.CmdLineExecuter = cm
+	uh.Reporter = rm
+	uh.Store = fs
+
+	rm.On("ReportState", uh.API.Request(), "", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &IdleState{}, nextState)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
 func TestNewUpdateHub(t *testing.T) {
 	gitversion := "2.1"
 	buildtime := "2017-06-01 17:13 UTC"
 	memFs := afero.NewMemMapFs()
 	initialState := NewIdleState()
+	stateChangeCallbackPath := "/usr/share/updatehub/state-change-callback"
+	errorCallbackPath := "/usr/share/updatehub/error-callback"
 
 	fm := &metadata.FirmwareMetadata{
 		ProductUID:       "productuid-value",
@@ -149,12 +290,12 @@ func TestNewUpdateHub(t *testing.T) {
 
 	settings := &Settings{}
 
-	uh := NewUpdateHub(gitversion, buildtime, memFs, *fm, initialState, settings)
+	uh := NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, memFs, *fm, initialState, settings)
 
 	assert.Equal(t, &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}}, uh.ActiveInactiveBackend)
 	assert.Equal(t, gitversion, uh.Version)
 	assert.Equal(t, buildtime, uh.BuildTime)
-	assert.Equal(t, initialState, uh.State)
+	assert.Equal(t, initialState, uh.GetState())
 	assert.Equal(t, client.NewUpdateClient(), uh.Updater)
 	assert.Equal(t, time.Minute, uh.TimeStep)
 	assert.Equal(t, memFs, uh.Store)
@@ -164,7 +305,8 @@ func TestNewUpdateHub(t *testing.T) {
 	assert.Equal(t, &Sha256CheckerImpl{}, uh.Sha256Checker)
 	assert.Equal(t, &installifdifferent.DefaultImpl{FileSystemBackend: memFs}, uh.InstallIfDifferentBackend)
 	assert.Equal(t, copy.ExtendedIO{}, uh.CopyBackend)
-	assert.Equal(t, &utils.RebooterImpl{}, uh.Rebooter)
+	assert.Equal(t, stateChangeCallbackPath, uh.StateChangeCallbackPath)
+	assert.Equal(t, errorCallbackPath, uh.ErrorCallbackPath)
 }
 
 func TestCheckDownloadedObjectSha256sum(t *testing.T) {
@@ -253,6 +395,7 @@ func TestGetIndexOfObjectToBeInstalled(t *testing.T) {
 			index, err := GetIndexOfObjectToBeInstalled(aim, m)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.installTo, index)
+			aim.AssertExpectations(t)
 		})
 	}
 }
@@ -276,6 +419,8 @@ func TestGetIndexOfObjectToBeInstalledWithActiveError(t *testing.T) {
 	index, err := GetIndexOfObjectToBeInstalled(aim, m)
 	assert.EqualError(t, err, "active error")
 	assert.Equal(t, 0, index)
+
+	aim.AssertExpectations(t)
 }
 
 func TestGetIndexOfObjectToBeInstalledWithMoreThanTwoObjects(t *testing.T) {
@@ -1549,9 +1694,9 @@ func TestStartPolling(t *testing.T) {
 			uh.Settings.LastPoll = tc.lastPoll
 
 			uh.StartPolling()
-			assert.IsType(t, tc.expectedState, uh.State)
+			assert.IsType(t, tc.expectedState, uh.GetState())
 
-			tc.subTest(t, uh, uh.State)
+			tc.subTest(t, uh, uh.GetState())
 
 			aim.AssertExpectations(t)
 		})
@@ -1582,10 +1727,13 @@ func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, er
 	fs := afero.NewMemMapFs()
 	uh := &UpdateHub{
 		Store:    fs,
-		State:    state,
+		state:    state,
 		TimeStep: time.Second,
 		API:      client.NewApiClient("localhost"),
-		ActiveInactiveBackend: aii,
+		ActiveInactiveBackend:   aii,
+		CmdLineExecuter:         &utils.CmdLine{},
+		StateChangeCallbackPath: "/usr/share/updatehub/state-change-callback",
+		ErrorCallbackPath:       "/usr/share/updatehub/error-callback",
 	}
 
 	settings, err := LoadSettings(bytes.NewReader([]byte("")))

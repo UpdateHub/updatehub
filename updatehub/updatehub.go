@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math/rand"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/OSSystems/pkg/log"
@@ -74,31 +75,34 @@ type UpdateHub struct {
 	Controller
 	CopyBackend copy.Interface `json:"-"`
 
-	Version                 string
-	BuildTime               string
-	Settings                *Settings
-	Store                   afero.Fs
-	FirmwareMetadata        metadata.FirmwareMetadata
-	State                   State
-	TimeStep                time.Duration
-	API                     *client.ApiClient
-	Updater                 client.Updater
-	Reporter                client.Reporter
-	lastInstalledPackageUID string
-	ActiveInactiveBackend   activeinactive.Interface
-	lastReportedState       string
-
+	Version                   string
+	BuildTime                 string
+	Settings                  *Settings
+	Store                     afero.Fs
+	FirmwareMetadata          metadata.FirmwareMetadata
+	TimeStep                  time.Duration
+	API                       *client.ApiClient
+	Updater                   client.Updater
+	Reporter                  client.Reporter
+	lastInstalledPackageUID   string
+	ActiveInactiveBackend     activeinactive.Interface
+	lastReportedState         string
+	StateChangeCallbackPath   string
+	ErrorCallbackPath         string
 	InstallIfDifferentBackend installifdifferent.Interface
 	Sha256Checker
 	utils.Rebooter
+	utils.CmdLineExecuter
+	state      State
+	stateMutex sync.Mutex
 }
 
-func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, settings *Settings) *UpdateHub {
+func NewUpdateHub(gitversion string, buildtime string, stateChangeCallbackPath string, errorCallbackPath string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, settings *Settings) *UpdateHub {
 	uh := &UpdateHub{
 		ActiveInactiveBackend:     &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}},
 		Version:                   gitversion,
 		BuildTime:                 buildtime,
-		State:                     initialState,
+		state:                     initialState,
 		Updater:                   client.NewUpdateClient(),
 		TimeStep:                  time.Minute,
 		Store:                     fs,
@@ -109,9 +113,93 @@ func NewUpdateHub(gitversion string, buildtime string, fs afero.Fs, fm metadata.
 		InstallIfDifferentBackend: &installifdifferent.DefaultImpl{FileSystemBackend: fs},
 		CopyBackend:               copy.ExtendedIO{},
 		Rebooter:                  &utils.RebooterImpl{},
+		CmdLineExecuter:           &utils.CmdLine{},
+		StateChangeCallbackPath:   stateChangeCallbackPath,
+		ErrorCallbackPath:         errorCallbackPath,
 	}
 
 	return uh
+}
+
+func (uh *UpdateHub) Cancel(nextState State) {
+	uh.state.Cancel(true, nextState)
+}
+
+func (uh *UpdateHub) GetState() State {
+	return uh.state
+}
+
+func (uh *UpdateHub) SetState(state State) {
+	uh.stateMutex.Lock()
+	defer uh.stateMutex.Unlock()
+
+	uh.state = state
+}
+
+func (uh *UpdateHub) stateChangeCallback(cmd utils.CmdLineExecuter, state State, action string) error {
+	exists, _ := afero.Exists(uh.Store, uh.StateChangeCallbackPath)
+	if !exists {
+		return nil
+	}
+
+	s := StateToString(state.ID())
+	_, err := cmd.Execute(fmt.Sprintf("%s %s %s", uh.StateChangeCallbackPath, action, s))
+
+	return err
+}
+
+func (uh *UpdateHub) errorCallback(cmd utils.CmdLineExecuter, message string) error {
+	exists, _ := afero.Exists(uh.Store, uh.ErrorCallbackPath)
+	if !exists {
+		return nil
+	}
+
+	_, err := cmd.Execute(fmt.Sprintf("%s '%s'", uh.ErrorCallbackPath, message))
+
+	return err
+}
+
+func (uh *UpdateHub) ProcessCurrentState() State {
+	uh.stateMutex.Lock()
+	defer uh.stateMutex.Unlock()
+
+	var err error
+
+	uh.ReportCurrentState()
+
+	es, isErrorState := uh.state.(*ErrorState)
+	if isErrorState {
+		err = uh.errorCallback(uh.CmdLineExecuter, es.cause.Error())
+		if err != nil {
+			log.Warn(err)
+		}
+
+		state, _ := uh.state.Handle(uh)
+		uh.state = state
+	} else {
+		err = uh.stateChangeCallback(uh.CmdLineExecuter, uh.state, "enter")
+		if err != nil {
+			log.Error(err)
+			uh.state = NewErrorState(nil, NewTransientError(err))
+			return uh.state
+		}
+
+		state, cancel := uh.state.Handle(uh)
+
+		err = uh.stateChangeCallback(uh.CmdLineExecuter, uh.state, "leave")
+		if err != nil {
+			log.Warn(err)
+		}
+
+		cs, ok := uh.state.(*CancellableState)
+		if cancel && ok {
+			uh.state = cs.NextState()
+		} else {
+			uh.state = state
+		}
+	}
+
+	return uh.state
 }
 
 type Controller interface {
@@ -315,8 +403,8 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 }
 
 func (uh *UpdateHub) ReportCurrentState() error {
-	if rs, ok := uh.State.(ReportableState); ok {
-		stateString := StateToString(uh.State.ID())
+	if rs, ok := uh.state.(ReportableState); ok {
+		stateString := StateToString(uh.state.ID())
 
 		if uh.lastReportedState == stateString {
 			return nil
@@ -328,7 +416,7 @@ func (uh *UpdateHub) ReportCurrentState() error {
 		}
 
 		errorMessage := ""
-		if es, ok := uh.State.(*ErrorState); ok {
+		if es, ok := uh.state.(*ErrorState); ok {
 			errorMessage = es.cause.Cause().Error()
 		}
 
@@ -345,12 +433,15 @@ func (uh *UpdateHub) ReportCurrentState() error {
 
 // StartPolling starts the polling process
 func (uh *UpdateHub) StartPolling() {
+	uh.stateMutex.Lock()
+	defer uh.stateMutex.Unlock()
+
 	now := time.Now()
 	now = time.Unix(now.Unix(), 0)
 
 	poll := NewPollState(uh.Settings.PollingInterval)
 
-	uh.State = poll
+	uh.state = poll
 
 	timeZero := (time.Time{}).UTC()
 
@@ -359,10 +450,10 @@ func (uh *UpdateHub) StartPolling() {
 		uh.Settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.Settings.PollingInterval))))
 	} else if uh.Settings.LastPoll == timeZero && now.After(uh.Settings.FirstPoll) {
 		// it never did a poll before
-		uh.State = NewUpdateProbeState()
+		uh.state = NewUpdateProbeState()
 	} else if uh.Settings.LastPoll.Add(uh.Settings.PollingInterval).Before(now) {
 		// pending regular interval
-		uh.State = NewUpdateProbeState()
+		uh.state = NewUpdateProbeState()
 	} else {
 		nextPoll := time.Unix(uh.Settings.FirstPoll.Unix(), 0)
 		for nextPoll.Before(now) {
