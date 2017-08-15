@@ -11,6 +11,7 @@ package controllermock
 import (
 	"time"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/stretchr/testify/mock"
 )
@@ -19,13 +20,13 @@ type ControllerMock struct {
 	mock.Mock
 }
 
-func (cm *ControllerMock) ProbeUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
-	args := cm.Called(retries)
+func (cm *ControllerMock) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, time.Duration) {
+	args := cm.Called(apiClient, retries)
 	return args.Get(0).(*metadata.UpdateMetadata), args.Get(1).(time.Duration)
 }
 
-func (cm *ControllerMock) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
-	args := cm.Called(updateMetadata, cancel, progressChan)
+func (cm *ControllerMock) DownloadUpdate(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+	args := cm.Called(apiClient, updateMetadata, cancel, progressChan)
 	return args.Error(0)
 }
 

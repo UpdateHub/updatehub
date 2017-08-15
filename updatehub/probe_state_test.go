@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
@@ -32,7 +33,7 @@ var probeUpdateCases = []struct {
 		"UpdateAvailable",
 		&testController{updateAvailable: true},
 		&Settings{},
-		NewProbeState(),
+		NewProbeState(client.NewApiClient("address")),
 		&DownloadingState{},
 		func(t *testing.T, uh *UpdateHub, state State) {},
 	},
@@ -41,7 +42,7 @@ var probeUpdateCases = []struct {
 		"UpdateNotAvailable",
 		&testController{updateAvailable: false},
 		&Settings{},
-		NewProbeState(),
+		NewProbeState(client.NewApiClient("address")),
 		&IdleState{},
 		func(t *testing.T, uh *UpdateHub, state State) {},
 	},
@@ -57,7 +58,7 @@ var probeUpdateCases = []struct {
 				PollingInterval: 15 * time.Second,
 			},
 		},
-		NewProbeState(),
+		NewProbeState(client.NewApiClient("address")),
 		&PollState{},
 		func(t *testing.T, uh *UpdateHub, state State) {
 			poll := state.(*PollState)
@@ -102,7 +103,9 @@ func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 	cm := &controllermock.ControllerMock{}
 
-	uh, err := newTestUpdateHub(NewProbeState(), aim)
+	apiClient := client.NewApiClient("address")
+
+	uh, err := newTestUpdateHub(NewProbeState(apiClient), aim)
 	assert.NoError(t, err)
 
 	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
@@ -110,7 +113,7 @@ func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 
 	uh.lastInstalledPackageUID = m.PackageUID()
 
-	cm.On("ProbeUpdate", 0).Return(m, time.Duration(0))
+	cm.On("ProbeUpdate", apiClient, 0).Return(m, time.Duration(0))
 
 	uh.Controller = cm
 	uh.Settings = &Settings{}
@@ -125,7 +128,7 @@ func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 }
 
 func TestStateProbeToMap(t *testing.T) {
-	state := NewProbeState()
+	state := NewProbeState(client.NewApiClient("address"))
 
 	expectedMap := map[string]interface{}{}
 	expectedMap["status"] = "probe"

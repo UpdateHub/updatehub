@@ -12,11 +12,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewErrorStateToMap(t *testing.T) {
-	state := NewErrorState(nil, NewTransientError(fmt.Errorf("error message")))
+	state := NewErrorState(client.NewApiClient("address"), nil, NewTransientError(fmt.Errorf("error message")))
 
 	expectedMap := map[string]interface{}{}
 	expectedMap["status"] = "error"

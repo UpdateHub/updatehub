@@ -9,12 +9,16 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"path"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
@@ -202,7 +206,7 @@ func TestInfoRoute(t *testing.T) {
 	rwm.AssertExpectations(t)
 }
 
-func TestProbeRoute(t *testing.T) {
+func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 	out := map[string]interface{}{}
 	out["update-available"] = false
 	out["try-again-in"] = 3600
@@ -219,7 +223,7 @@ func TestProbeRoute(t *testing.T) {
 	cm := &controllermock.ControllerMock{}
 
 	uh.Controller = cm
-	cm.On("ProbeUpdate", 5).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
+	cm.On("ProbeUpdate", uh.DefaultApiClient, 5).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
 
 	rwm := &responsewritermock.ResponseWriterMock{}
 	rwm.On("WriteHeader", 200)
@@ -245,6 +249,77 @@ func TestProbeRoute(t *testing.T) {
 	rwm.AssertExpectations(t)
 }
 
+func TestProbeRouteWithServerAddressField(t *testing.T) {
+	testCases := []struct {
+		Name        string
+		Address     string
+		ExpectedURL string
+	}{
+		{
+			"ServerAddressAlreadySanitized",
+			"http://different-address:8080",
+			"http://different-address:8080",
+		},
+		{
+			"ServerAddressNonSanitized",
+			"different-address:8080",
+			"https://different-address:8080",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			out := map[string]interface{}{}
+			out["update-available"] = false
+			out["try-again-in"] = 3600
+
+			expectedResponse, _ := json.MarshalIndent(out, "", "    ")
+
+			uh, ab, clm, rm := setup(t)
+			defer teardown(t)
+
+			apiClient := client.NewApiClient(tc.ExpectedURL)
+
+			uh.TimeStep = time.Second
+			s := updatehub.NewIdleState()
+			uh.SetState(s)
+
+			cm := &controllermock.ControllerMock{}
+
+			uh.Controller = cm
+			cm.On("ProbeUpdate", apiClient, 5).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
+
+			rwm := &responsewritermock.ResponseWriterMock{}
+			rwm.On("WriteHeader", 200)
+			rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
+
+			go func() {
+				ok := false
+				for ok == false {
+					_, ok = s.NextState().(*updatehub.ProbeState)
+					time.Sleep(100 * time.Millisecond)
+				}
+
+				s.NextState().Handle(uh)
+			}()
+
+			body := bytes.NewBufferString(fmt.Sprintf(`{ "server-address": "%s" }`, tc.ExpectedURL))
+
+			req, err := http.NewRequest("POST", tc.Address, body)
+			assert.NoError(t, err)
+
+			ab.probe(rwm, req, nil)
+
+			assert.IsType(t, &updatehub.ProbeState{}, s.NextState())
+
+			clm.AssertExpectations(t)
+			cm.AssertExpectations(t)
+			rm.AssertExpectations(t)
+			rwm.AssertExpectations(t)
+		})
+	}
+}
+
 func TestUpdateDownloadAbortRoute(t *testing.T) {
 	expectedJSON := []byte(`{ "message": "request accepted, download aborted" }`)
 
@@ -259,7 +334,7 @@ func TestUpdateDownloadAbortRoute(t *testing.T) {
 
 	uh.TimeStep = time.Second
 
-	ds := updatehub.NewDownloadingState(nil, &updatehub.ProgressTrackerImpl{})
+	ds := updatehub.NewDownloadingState(uh.DefaultApiClient, nil, &updatehub.ProgressTrackerImpl{})
 
 	uh.SetState(ds)
 

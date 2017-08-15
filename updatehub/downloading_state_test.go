@@ -12,6 +12,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
@@ -35,6 +36,8 @@ func TestStateDownloading(t *testing.T) {
 
 	memFs := afero.NewMemMapFs()
 
+	apiClient := client.NewApiClient("address")
+
 	testCases := []struct {
 		name               string
 		controller         *testController
@@ -44,14 +47,14 @@ func TestStateDownloading(t *testing.T) {
 		{
 			"WithoutError",
 			&testController{downloadUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
-			NewDownloadedState(m),
+			NewDownloadedState(apiClient, m),
 			[]int{33, 66, 99, 100},
 		},
 
 		{
 			"WithError",
 			&testController{downloadUpdateError: errors.New("download error"), installUpdateError: nil, progressList: []int{33}},
-			NewErrorState(m, NewTransientError(errors.New("download error"))),
+			NewErrorState(apiClient, m, NewTransientError(errors.New("download error"))),
 			[]int{33},
 		},
 	}
@@ -63,7 +66,7 @@ func TestStateDownloading(t *testing.T) {
 				ptm.On("SetProgress", p).Once()
 			}
 
-			s := NewDownloadingState(m, ptm)
+			s := NewDownloadingState(apiClient, m, ptm)
 
 			uh, err := newTestUpdateHub(s, nil)
 			assert.NoError(t, err)
@@ -84,7 +87,9 @@ func TestStateDownloading(t *testing.T) {
 func TestStateDownloadingToMap(t *testing.T) {
 	ptm := &progresstrackermock.ProgressTrackerMock{}
 
-	state := NewDownloadingState(&metadata.UpdateMetadata{}, ptm)
+	c := client.NewApiClient("address")
+
+	state := NewDownloadingState(c, &metadata.UpdateMetadata{}, ptm)
 
 	ptm.On("GetProgress").Return(0).Once()
 	expectedMap := map[string]interface{}{}

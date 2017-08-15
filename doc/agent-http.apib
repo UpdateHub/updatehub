@@ -86,6 +86,14 @@ boolean field. It also may contain a "try-again-in" field which means
 the caller should try the request again 'n' seconds from now, where
 'n' is the value of "try-again-in".
 
+This request accepts a "server-address" parameter on POST. When it's
+present, it will use the address for the triggered probe (and the
+update procedure too in case there is an update available).
+
++ Attributes
+
+    + "server-address": "http://different-address:8080" (string) - Server address which the update procedure will use for this request
+    
 + Response 200 (application/json)
 
     + Body

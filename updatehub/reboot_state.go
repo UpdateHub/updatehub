@@ -8,6 +8,8 @@
 
 package updatehub
 
+import "github.com/UpdateHub/updatehub/client"
+
 // RebootState is the State interface implementation for the UpdateHubStateReboot
 type RebootState struct {
 	BaseState
@@ -22,17 +24,19 @@ func (state *RebootState) ID() UpdateHubState {
 func (state *RebootState) Handle(uh *UpdateHub) (State, bool) {
 	err := uh.Reboot()
 	if err != nil {
-		return NewErrorState(nil, NewTransientError(err)), false
+		return NewErrorState(state.apiClient, nil, NewTransientError(err)), false
 	}
 
 	return NewIdleState(), false
 }
 
 // NewRebootState creates a new RebootState
-func NewRebootState() *RebootState {
+func NewRebootState(apiClient *client.ApiClient) *RebootState {
 	state := &RebootState{
 		BaseState: BaseState{id: UpdateHubStateReboot},
 	}
+
+	state.apiClient = apiClient
 
 	return state
 }

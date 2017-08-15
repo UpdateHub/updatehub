@@ -8,6 +8,11 @@
 
 package utils
 
+import (
+	"net/url"
+	"strings"
+)
+
 type Rebooter interface {
 	Reboot() error
 }
@@ -21,4 +26,18 @@ func (r *RebooterImpl) Reboot() error {
 	_, err := c.Execute("/sbin/reboot")
 
 	return err
+}
+
+func SanitizeServerAddress(address string) (string, error) {
+	a := address
+	if !strings.HasPrefix(a, "http://") && !strings.HasPrefix(a, "https://") {
+		a = "https://" + a
+	}
+
+	serverURL, err := url.Parse(a)
+	if err != nil {
+		return "", err
+	}
+
+	return serverURL.String(), nil
 }

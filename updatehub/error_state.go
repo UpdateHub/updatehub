@@ -12,6 +12,7 @@ import (
 	"errors"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 )
 
@@ -49,14 +50,18 @@ func (state *ErrorState) ToMap() map[string]interface{} {
 }
 
 // NewErrorState creates a new ErrorState from a UpdateHubErrorReporter
-func NewErrorState(updateMetadata *metadata.UpdateMetadata, err UpdateHubErrorReporter) State {
+func NewErrorState(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata, err UpdateHubErrorReporter) State {
 	if err == nil {
 		err = NewFatalError(errors.New("generic error"))
 	}
 
-	return &ErrorState{
+	s := &ErrorState{
 		BaseState:      BaseState{id: UpdateHubStateError},
 		cause:          err,
 		updateMetadata: updateMetadata,
 	}
+
+	s.apiClient = apiClient
+
+	return s
 }

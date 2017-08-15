@@ -8,7 +8,10 @@
 
 package updatehub
 
-import "github.com/UpdateHub/updatehub/metadata"
+import (
+	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
+)
 
 // DownloadedState is the State interface implementation for the UpdateHubStateDownloaded
 type DownloadedState struct {
@@ -30,15 +33,17 @@ func (state *DownloadedState) UpdateMetadata() *metadata.UpdateMetadata {
 
 // Handle for DownloadedState just returns a new installing state
 func (state *DownloadedState) Handle(uh *UpdateHub) (State, bool) {
-	return NewInstallingState(state.updateMetadata, &ProgressTrackerImpl{}, uh.Store), false
+	return NewInstallingState(state.apiClient, state.updateMetadata, &ProgressTrackerImpl{}, uh.Store), false
 }
 
 // NewDownloadedState creates a new DownloadedState
-func NewDownloadedState(updateMetadata *metadata.UpdateMetadata) *DownloadedState {
+func NewDownloadedState(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata) *DownloadedState {
 	state := &DownloadedState{
 		BaseState:      BaseState{id: UpdateHubStateDownloaded},
 		updateMetadata: updateMetadata,
 	}
+
+	state.apiClient = apiClient
 
 	return state
 }

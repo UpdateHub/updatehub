@@ -12,12 +12,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/testsmocks/rebootermock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestStateRebootID(t *testing.T) {
-	s := NewRebootState()
+	s := NewRebootState(client.NewApiClient("address"))
 
 	assert.Equal(t, UpdateHubState(UpdateHubStateReboot), s.ID())
 }
@@ -26,7 +27,7 @@ func TestStateRebootHandle(t *testing.T) {
 	rm := &rebootermock.RebooterMock{}
 	rm.On("Reboot").Return(nil)
 
-	s := NewRebootState()
+	s := NewRebootState(client.NewApiClient("address"))
 
 	uh, err := newTestUpdateHub(s, nil)
 	assert.NoError(t, err)
@@ -39,12 +40,14 @@ func TestStateRebootHandle(t *testing.T) {
 }
 
 func TestStateRebootHandleWithError(t *testing.T) {
+	apiClient := client.NewApiClient("address")
+
 	expectedError := fmt.Errorf("reboot error")
 
 	rm := &rebootermock.RebooterMock{}
 	rm.On("Reboot").Return(expectedError)
 
-	s := NewRebootState()
+	s := NewRebootState(apiClient)
 
 	uh, err := newTestUpdateHub(s, nil)
 	assert.NoError(t, err)
@@ -53,7 +56,7 @@ func TestStateRebootHandleWithError(t *testing.T) {
 
 	nextState, cancelled := s.Handle(uh)
 
-	expectedState := NewErrorState(nil, NewTransientError(expectedError))
+	expectedState := NewErrorState(apiClient, nil, NewTransientError(expectedError))
 
 	assert.Equal(t, expectedState, nextState)
 	assert.Equal(t, false, cancelled)

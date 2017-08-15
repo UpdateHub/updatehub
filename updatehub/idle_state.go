@@ -45,7 +45,7 @@ func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
 		log.Info("ExtraPoll received: ", extraPollTime)
 
 		if extraPollTime.Before(now) {
-			return NewProbeState(), false
+			return NewProbeState(uh.DefaultApiClient), false
 		}
 	}
 

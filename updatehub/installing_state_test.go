@@ -12,6 +12,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
@@ -36,6 +37,8 @@ func TestStateInstalling(t *testing.T) {
 	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
 	assert.NoError(t, err)
 
+	apiClient := client.NewApiClient("address")
+
 	testCases := []struct {
 		name               string
 		controller         *testController
@@ -45,14 +48,14 @@ func TestStateInstalling(t *testing.T) {
 		{
 			"WithoutError",
 			&testController{downloadUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
-			NewInstalledState(m),
+			NewInstalledState(apiClient, m),
 			[]int{33, 66, 99, 100},
 		},
 
 		{
 			"WithError",
 			&testController{downloadUpdateError: nil, installUpdateError: errors.New("install error"), progressList: []int{33}},
-			NewErrorState(m, NewTransientError(errors.New("install error"))),
+			NewErrorState(apiClient, m, NewTransientError(errors.New("install error"))),
 			[]int{33},
 		},
 	}
@@ -66,7 +69,7 @@ func TestStateInstalling(t *testing.T) {
 				ptm.On("SetProgress", p).Once()
 			}
 
-			s := NewInstallingState(m, ptm, memFs)
+			s := NewInstallingState(apiClient, m, ptm, memFs)
 
 			uh, err := newTestUpdateHub(s, nil)
 			assert.NoError(t, err)
@@ -107,7 +110,9 @@ func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 
 	ptm := &progresstrackermock.ProgressTrackerMock{}
 
-	s := NewInstallingState(m, ptm, memFs)
+	apiClient := client.NewApiClient("address")
+
+	s := NewInstallingState(apiClient, m, ptm, memFs)
 
 	uh, err := newTestUpdateHub(s, aim)
 	assert.NoError(t, err)
@@ -115,7 +120,7 @@ func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 	uh.lastInstalledPackageUID = m.PackageUID()
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewWaitingForRebootState(m)
+	expectedState := NewWaitingForRebootState(apiClient, m)
 	assert.Equal(t, expectedState, nextState)
 
 	uh.SetState(nextState)
@@ -130,7 +135,7 @@ func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 func TestStateInstallingToMap(t *testing.T) {
 	ptm := &progresstrackermock.ProgressTrackerMock{}
 
-	state := NewInstallingState(nil, ptm, nil)
+	state := NewInstallingState(client.NewApiClient("address"), nil, ptm, nil)
 
 	ptm.On("GetProgress").Return(0).Once()
 	expectedMap := map[string]interface{}{}

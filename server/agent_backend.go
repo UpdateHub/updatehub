@@ -9,12 +9,15 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/updatehub"
+	"github.com/UpdateHub/updatehub/utils"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -55,9 +58,30 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 }
 
 func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	out := map[string]interface{}{}
+	apiClient := ab.UpdateHub.DefaultApiClient
 
-	s := updatehub.NewProbeState()
+	if r != nil {
+		buffer := new(bytes.Buffer)
+		buffer.ReadFrom(r.Body)
+		body := buffer.Bytes()
+
+		in := map[string]string{}
+		err := json.Unmarshal(body, &in)
+		if err != nil {
+			log.Warn("failed to parse a /probe request: ", err)
+		}
+
+		if address, ok := in["server-address"]; ok {
+			sanitizedAddress, err := utils.SanitizeServerAddress(address)
+			if err != nil {
+				log.Warn("failed to sanitize a server address from /probe request: ", err)
+			} else {
+				apiClient = client.NewApiClient(sanitizedAddress)
+			}
+		}
+	}
+
+	s := updatehub.NewProbeState(apiClient)
 	go func() {
 		ab.UpdateHub.Cancel(s)
 	}()
@@ -66,6 +90,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprout
 
 	um, d := s.ProbeResponse()
 
+	out := map[string]interface{}{}
 	if um == nil {
 		out["update-available"] = false
 	} else {
@@ -96,7 +121,7 @@ func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Reque
 		fmt.Fprintf(w, string(outputJSON))
 		log.Error(string(outputJSON))
 
-		ab.UpdateHub.SetState(updatehub.NewErrorState(nil, updatehub.NewTransientError(fmt.Errorf("there is no download to be aborted"))))
+		ab.UpdateHub.SetState(updatehub.NewErrorState(ab.UpdateHub.DefaultApiClient, nil, updatehub.NewTransientError(fmt.Errorf("there is no download to be aborted"))))
 		return
 	}
 

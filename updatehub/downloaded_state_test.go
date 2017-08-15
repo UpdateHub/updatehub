@@ -31,17 +31,17 @@ func TestStateDownloaded(t *testing.T) {
 	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
 	assert.NoError(t, err)
 
-	s := NewDownloadedState(m)
-
-	assert.Equal(t, UpdateHubStateDownloaded, int(s.ID()))
-	assert.Equal(t, m, s.UpdateMetadata())
-
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
 	uh, err := newTestUpdateHub(NewIdleState(), aim)
 	assert.NoError(t, err)
 
-	expectedNextState := NewInstallingState(m, &ProgressTrackerImpl{}, uh.Store)
+	s := NewDownloadedState(uh.DefaultApiClient, m)
+
+	assert.Equal(t, UpdateHubStateDownloaded, int(s.ID()))
+	assert.Equal(t, m, s.UpdateMetadata())
+
+	expectedNextState := NewInstallingState(uh.DefaultApiClient, m, &ProgressTrackerImpl{}, uh.Store)
 
 	nextState, _ := s.Handle(uh)
 	assert.Equal(t, expectedNextState, nextState)

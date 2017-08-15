@@ -8,7 +8,10 @@
 
 package updatehub
 
-import "github.com/UpdateHub/updatehub/metadata"
+import (
+	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
+)
 
 // WaitingForRebootState is the State interface implementation for the UpdateHubStateWaitingForReboot
 type WaitingForRebootState struct {
@@ -35,11 +38,13 @@ func (state *WaitingForRebootState) UpdateMetadata() *metadata.UpdateMetadata {
 }
 
 // NewWaitingForRebootState creates a new WaitingForRebootState
-func NewWaitingForRebootState(updateMetadata *metadata.UpdateMetadata) *WaitingForRebootState {
+func NewWaitingForRebootState(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata) *WaitingForRebootState {
 	state := &WaitingForRebootState{
 		BaseState:      BaseState{id: UpdateHubStateWaitingForReboot},
 		updateMetadata: updateMetadata,
 	}
+
+	state.apiClient = apiClient
 
 	return state
 }
