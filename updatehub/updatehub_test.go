@@ -236,8 +236,9 @@ func TestProcessCurrentStateIsError(t *testing.T) {
 	uh.CmdLineExecuter = cm
 	uh.Reporter = rm
 	uh.Store = fs
+	uh.previousState = NewIdleState()
 
-	rm.On("ReportState", uh.API.Request(), "", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
+	rm.On("ReportState", uh.API.Request(), "", "idle", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
 
 	nextState := uh.ProcessCurrentState()
 
@@ -260,8 +261,9 @@ func TestProcessCurrentStateIsErrorWithNonExistantCallback(t *testing.T) {
 	uh.CmdLineExecuter = cm
 	uh.Reporter = rm
 	uh.Store = fs
+	uh.previousState = NewIdleState()
 
-	rm.On("ReportState", uh.API.Request(), "", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
+	rm.On("ReportState", uh.API.Request(), "", "idle", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
 
 	nextState := uh.ProcessCurrentState()
 
@@ -1570,9 +1572,10 @@ func TestUpdateHubReportState(t *testing.T) {
 
 			uh, _ := newTestUpdateHub(state, aim)
 			uh.Reporter = rm
+			uh.previousState = NewIdleState()
 
 			// error the first report
-			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "downloading", "", uh.FirmwareMetadata).Return(fmt.Errorf("report error")).Once()
+			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "idle", "downloading", "", uh.FirmwareMetadata).Return(fmt.Errorf("report error")).Once()
 
 			err := uh.ReportCurrentState()
 			assert.EqualError(t, err, "report error")
@@ -1580,7 +1583,7 @@ func TestUpdateHubReportState(t *testing.T) {
 			// the subsequent reports are successful. "Once()" is
 			// important here since the same state shouldn't be
 			// reported more than one time in a row
-			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "downloading", "", uh.FirmwareMetadata).Return(nil).Once()
+			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "idle", "downloading", "", uh.FirmwareMetadata).Return(nil).Once()
 
 			err = uh.ReportCurrentState()
 			assert.NoError(t, err)

@@ -18,7 +18,7 @@ type ReporterMock struct {
 	mock.Mock
 }
 
-func (rm *ReporterMock) ReportState(api client.ApiRequester, packageUID string, state string, errorMessage string, fm metadata.FirmwareMetadata) error {
-	args := rm.Called(api, packageUID, state, errorMessage, fm)
+func (rm *ReporterMock) ReportState(api client.ApiRequester, packageUID string, previousState string, state string, errorMessage string, fm metadata.FirmwareMetadata) error {
+	args := rm.Called(api, packageUID, previousState, state, errorMessage, fm)
 	return args.Error(0)
 }

@@ -23,13 +23,14 @@ type ReportClient struct {
 }
 
 type Reporter interface {
-	ReportState(api ApiRequester, packageUID string, state string, errorMessage string, fm metadata.FirmwareMetadata) error
+	ReportState(api ApiRequester, packageUID string, previousState string, state string, errorMessage string, fm metadata.FirmwareMetadata) error
 }
 
-func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state string, errorMessage string, fm metadata.FirmwareMetadata) error {
+func (u *ReportClient) ReportState(api ApiRequester, packageUID string, previousState string, state string, errorMessage string, fm metadata.FirmwareMetadata) error {
 	log.Debug("reporting state: ", state)
 	log.Debug("  error message: ", errorMessage)
 	log.Debug("  packageUID: ", packageUID)
+	log.Debug("  previous state: ", previousState)
 
 	if api == nil {
 		finalErr := fmt.Errorf("invalid api requester")
@@ -41,6 +42,7 @@ func (u *ReportClient) ReportState(api ApiRequester, packageUID string, state st
 
 	data := make(map[string]interface{})
 	data["status"] = state
+	data["previous-state"] = previousState
 	data["package-uid"] = packageUID
 	data["error-message"] = errorMessage
 

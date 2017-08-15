@@ -93,8 +93,9 @@ type UpdateHub struct {
 	Sha256Checker
 	utils.Rebooter
 	utils.CmdLineExecuter
-	state      State
-	stateMutex sync.Mutex
+	state         State
+	previousState State
+	stateMutex    sync.Mutex
 }
 
 func NewUpdateHub(gitversion string, buildtime string, stateChangeCallbackPath string, errorCallbackPath string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, settings *Settings) *UpdateHub {
@@ -103,6 +104,7 @@ func NewUpdateHub(gitversion string, buildtime string, stateChangeCallbackPath s
 		Version:                   gitversion,
 		BuildTime:                 buildtime,
 		state:                     initialState,
+		previousState:             nil,
 		Updater:                   client.NewUpdateClient(),
 		TimeStep:                  time.Minute,
 		Store:                     fs,
@@ -166,6 +168,9 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 	var err error
 
 	uh.ReportCurrentState()
+
+	// this must be done after the report, because the report uses it
+	uh.previousState = uh.state
 
 	es, isErrorState := uh.state.(*ErrorState)
 	if isErrorState {
@@ -420,7 +425,12 @@ func (uh *UpdateHub) ReportCurrentState() error {
 			errorMessage = es.cause.Cause().Error()
 		}
 
-		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, stateString, errorMessage, uh.FirmwareMetadata)
+		var previousStateString string
+		if uh.previousState != nil {
+			previousStateString = StateToString(uh.previousState.ID())
+		}
+
+		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, previousStateString, stateString, errorMessage, uh.FirmwareMetadata)
 		if err != nil {
 			return err
 		}

@@ -51,7 +51,8 @@ func TestDaemonRun(t *testing.T) {
 
 	state := NewStateTest(d)
 
-	uh.SetState(state)
+	uh.previousState = NewIdleState()
+	uh.state = state
 	uh.Store = fs
 
 	d.Run()
@@ -84,7 +85,7 @@ func TestDaemonExitStateStop(t *testing.T) {
 	uh, _ := newTestUpdateHub(nil, aim)
 	uh.Reporter = rm
 
-	rm.On("ReportState", uh.API.Request(), "", "error", "err_msg", uh.FirmwareMetadata).Return(nil).Once()
+	rm.On("ReportState", uh.API.Request(), "", "", "error", "err_msg", uh.FirmwareMetadata).Return(nil).Once()
 
 	d := NewDaemon(uh)
 
