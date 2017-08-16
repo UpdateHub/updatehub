@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
@@ -84,11 +83,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = loadSettings(osFs, settings, settings.RuntimeSettingsPath)
+	runtimeSettings := &updatehub.Settings{}
+	err = loadSettings(osFs, runtimeSettings, settings.RuntimeSettingsPath)
 	if err != nil && !os.IsNotExist(err) {
 		log.Fatal(err)
 		os.Exit(1)
 	}
+
+	settings.PersistentPollingSettings = runtimeSettings.PersistentPollingSettings
 
 	log.Info("starting UpdateHub Agent")
 	log.Info("    version: ", gitversion)
@@ -160,10 +162,7 @@ func loadSettings(fs afero.Fs, structToSaveOn *updatehub.Settings, pathToLoadFro
 		return err
 	}
 
-	err = mergo.Merge(structToSaveOn, s)
-	if err != nil {
-		return err
-	}
+	*structToSaveOn = *s
 
 	return nil
 }
