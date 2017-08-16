@@ -91,8 +91,8 @@ func TestNewAgentBackend(t *testing.T) {
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 
 	assert.Equal(t, "POST", routes[2].Method)
-	assert.Equal(t, "/update/probe", routes[2].Path)
-	expectedFunction = reflect.ValueOf(ab.updateProbe)
+	assert.Equal(t, "/probe", routes[2].Path)
+	expectedFunction = reflect.ValueOf(ab.probe)
 	receivedFunction = reflect.ValueOf(routes[2].Handle)
 	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 
@@ -136,13 +136,13 @@ func setup(t *testing.T) (*updatehub.UpdateHub, *AgentBackend, *cmdlinemock.CmdL
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
-	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID), nil)
-	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware), nil)
-	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(firmwareVersion), nil)
-	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte("id1=value1"), nil)
-	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key2")).Return([]byte("id2=value2"), nil)
-	clm.On("Execute", path.Join(metadataPath, "/device-attributes.d/attr1")).Return([]byte("attr1=value1"), nil)
-	clm.On("Execute", path.Join(metadataPath, "/device-attributes.d/attr2")).Return([]byte("attr2=value2"), nil)
+	clm.On("Execute", path.Join(metadataPath, "product-uid")).Return([]byte(productUID), nil).Once()
+	clm.On("Execute", path.Join(metadataPath, "hardware")).Return([]byte(hardware), nil).Once()
+	clm.On("Execute", path.Join(metadataPath, "version")).Return([]byte(firmwareVersion), nil).Once()
+	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key1")).Return([]byte("id1=value1"), nil).Once()
+	clm.On("Execute", path.Join(metadataPath, "/device-identity.d/key2")).Return([]byte("id2=value2"), nil).Once()
+	clm.On("Execute", path.Join(metadataPath, "/device-attributes.d/attr1")).Return([]byte("attr1=value1"), nil).Once()
+	clm.On("Execute", path.Join(metadataPath, "/device-attributes.d/attr2")).Return([]byte("attr2=value2"), nil).Once()
 
 	// create objects
 	file, err := fs.Open(systemSettingsPath)
@@ -165,6 +165,7 @@ func setup(t *testing.T) (*updatehub.UpdateHub, *AgentBackend, *cmdlinemock.CmdL
 		Version:          agentVersion,
 		BuildTime:        buildTime,
 		Rebooter:         rm,
+		CmdLineExecuter:  clm,
 	}
 
 	ab, err := NewAgentBackend(uh)
@@ -201,7 +202,7 @@ func TestInfoRoute(t *testing.T) {
 	rwm.AssertExpectations(t)
 }
 
-func TestUpdateProbeRoute(t *testing.T) {
+func TestProbeRoute(t *testing.T) {
 	out := map[string]interface{}{}
 	out["update-available"] = false
 	out["try-again-in"] = 3600
@@ -212,20 +213,31 @@ func TestUpdateProbeRoute(t *testing.T) {
 	defer teardown(t)
 
 	uh.TimeStep = time.Second
-	uh.SetState(updatehub.NewIdleState())
+	s := updatehub.NewIdleState()
+	uh.SetState(s)
 
 	cm := &controllermock.ControllerMock{}
 
 	uh.Controller = cm
-	cm.On("ProbeUpdate", 0).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
+	cm.On("ProbeUpdate", 5).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
 
 	rwm := &responsewritermock.ResponseWriterMock{}
 	rwm.On("WriteHeader", 200)
 	rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
 
-	ab.updateProbe(rwm, nil, nil)
+	go func() {
+		ok := false
+		for ok == false {
+			_, ok = s.NextState().(*updatehub.ProbeState)
+			time.Sleep(100 * time.Millisecond)
+		}
 
-	assert.IsType(t, &updatehub.IdleState{}, uh.GetState())
+		s.NextState().Handle(uh)
+	}()
+
+	ab.probe(rwm, nil, nil)
+
+	assert.IsType(t, &updatehub.ProbeState{}, s.NextState())
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)

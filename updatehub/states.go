@@ -22,9 +22,9 @@ const (
 	UpdateHubStateIdle
 	// UpdateHubStatePoll is set when the agent is in the "polling" mode
 	UpdateHubStatePoll
-	// UpdateHubStateUpdateProbe is set when the agent is running a
+	// UpdateHubStateProbe is set when the agent is running a
 	// "probeUpdate" procedure
-	UpdateHubStateUpdateProbe
+	UpdateHubStateProbe
 	// UpdateHubStateDownloading is set when the agent is downloading
 	// an update
 	UpdateHubStateDownloading
@@ -52,7 +52,7 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubDummyState:            "dummy",
 	UpdateHubStateIdle:             "idle",
 	UpdateHubStatePoll:             "poll",
-	UpdateHubStateUpdateProbe:      "update-probe",
+	UpdateHubStateProbe:      "probe",
 	UpdateHubStateDownloading:      "downloading",
 	UpdateHubStateDownloaded:       "downloaded",
 	UpdateHubStateInstalling:       "installing",

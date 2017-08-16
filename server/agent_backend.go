@@ -32,7 +32,7 @@ func (ab *AgentBackend) Routes() []Route {
 	return []Route{
 		{Method: "GET", Path: "/info", Handle: ab.info},
 		{Method: "GET", Path: "/log", Handle: ab.log},
-		{Method: "POST", Path: "/update/probe", Handle: ab.updateProbe},
+		{Method: "POST", Path: "/probe", Handle: ab.probe},
 		{Method: "POST", Path: "/update/download/abort", Handle: ab.updateDownloadAbort},
 	}
 }
@@ -54,10 +54,17 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 	log.Debug(string(outputJSON))
 }
 
-func (ab *AgentBackend) updateProbe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	out := map[string]interface{}{}
 
-	um, d := ab.UpdateHub.Controller.ProbeUpdate(0)
+	s := updatehub.NewProbeState()
+	go func() {
+		ab.UpdateHub.Cancel(s)
+	}()
+
+	<-s.ProbeResponseReady
+
+	um, d := s.ProbeResponse()
 
 	if um == nil {
 		out["update-available"] = false

@@ -1648,7 +1648,7 @@ func TestStartPolling(t *testing.T) {
 			0,
 			now.Add(-1 * time.Second),
 			(time.Time{}).UTC(),
-			&UpdateProbeState{},
+			&ProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {},
 		},
 
@@ -1658,7 +1658,7 @@ func TestStartPolling(t *testing.T) {
 			0,
 			now.Add(-4 * time.Second),
 			now.Add(-2 * time.Second),
-			&UpdateProbeState{},
+			&ProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {},
 		},
 

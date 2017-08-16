@@ -32,7 +32,7 @@ var probeUpdateCases = []struct {
 		"UpdateAvailable",
 		&testController{updateAvailable: true},
 		&Settings{},
-		NewUpdateProbeState(),
+		NewProbeState(),
 		&DownloadingState{},
 		func(t *testing.T, uh *UpdateHub, state State) {},
 	},
@@ -41,7 +41,7 @@ var probeUpdateCases = []struct {
 		"UpdateNotAvailable",
 		&testController{updateAvailable: false},
 		&Settings{},
-		NewUpdateProbeState(),
+		NewProbeState(),
 		&IdleState{},
 		func(t *testing.T, uh *UpdateHub, state State) {},
 	},
@@ -57,7 +57,7 @@ var probeUpdateCases = []struct {
 				PollingInterval: 15 * time.Second,
 			},
 		},
-		NewUpdateProbeState(),
+		NewProbeState(),
 		&PollState{},
 		func(t *testing.T, uh *UpdateHub, state State) {
 			poll := state.(*PollState)
@@ -67,7 +67,7 @@ var probeUpdateCases = []struct {
 	},
 }
 
-func TestStateUpdateProbe(t *testing.T) {
+func TestStateProbe(t *testing.T) {
 	for _, tc := range probeUpdateCases {
 		t.Run(tc.name, func(t *testing.T) {
 			aim := &activeinactivemock.ActiveInactiveMock{}
@@ -89,7 +89,7 @@ func TestStateUpdateProbe(t *testing.T) {
 	}
 }
 
-func TestStateUpdateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
+func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	om := &objectmock.ObjectMock{}
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
@@ -102,7 +102,7 @@ func TestStateUpdateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 	cm := &controllermock.ControllerMock{}
 
-	uh, err := newTestUpdateHub(NewUpdateProbeState(), aim)
+	uh, err := newTestUpdateHub(NewProbeState(), aim)
 	assert.NoError(t, err)
 
 	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
@@ -124,11 +124,11 @@ func TestStateUpdateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	om.AssertExpectations(t)
 }
 
-func TestStateUpdateProbeToMap(t *testing.T) {
-	state := NewUpdateProbeState()
+func TestStateProbeToMap(t *testing.T) {
+	state := NewProbeState()
 
 	expectedMap := map[string]interface{}{}
-	expectedMap["status"] = "update-probe"
+	expectedMap["status"] = "probe"
 
 	assert.Equal(t, expectedMap, state.ToMap())
 }
