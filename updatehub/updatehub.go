@@ -460,10 +460,10 @@ func (uh *UpdateHub) StartPolling() {
 		uh.Settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.Settings.PollingInterval))))
 	} else if uh.Settings.LastPoll == timeZero && now.After(uh.Settings.FirstPoll) {
 		// it never did a poll before
-		uh.state = NewUpdateProbeState()
+		uh.state = NewProbeState()
 	} else if uh.Settings.LastPoll.Add(uh.Settings.PollingInterval).Before(now) {
 		// pending regular interval
-		uh.state = NewUpdateProbeState()
+		uh.state = NewProbeState()
 	} else {
 		nextPoll := time.Unix(uh.Settings.FirstPoll.Unix(), 0)
 		for nextPoll.Before(now) {

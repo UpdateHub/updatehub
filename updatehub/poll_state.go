@@ -60,7 +60,7 @@ func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
 				ticks++
 
 				if ticks > 0 && ticks%int64(state.interval.Seconds()/uh.TimeStep.Seconds()) == 0 {
-					nextState = NewUpdateProbeState()
+					nextState = NewProbeState()
 					break polling
 				}
 			case <-state.cancel:

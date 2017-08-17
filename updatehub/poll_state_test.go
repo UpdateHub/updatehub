@@ -73,7 +73,7 @@ func TestPollingRetries(t *testing.T) {
 	uh.SetState(NewPollState(uh.Settings.PollingInterval))
 
 	next, _ := uh.GetState().Handle(uh)
-	assert.IsType(t, &UpdateProbeState{}, next)
+	assert.IsType(t, &ProbeState{}, next)
 
 	for i := 1; i < 3; i++ {
 		state, _ := next.Handle(uh)
@@ -81,7 +81,7 @@ func TestPollingRetries(t *testing.T) {
 		next, _ = state.Handle(uh)
 		assert.IsType(t, &PollState{}, next)
 		next, _ = next.Handle(uh)
-		assert.IsType(t, &UpdateProbeState{}, next)
+		assert.IsType(t, &ProbeState{}, next)
 		assert.Equal(t, i, uh.Settings.PollingRetries)
 	}
 
@@ -180,9 +180,7 @@ func TestPollingWithIntervalSmallerThanTimeStep(t *testing.T) {
 
 	nextState, _ := s.Handle(uh)
 
-	expectedState := NewUpdateProbeState()
-
-	assert.Equal(t, expectedState, nextState)
+	assert.IsType(t, &ProbeState{}, nextState)
 	assert.Equal(t, uh.TimeStep, s.interval)
 
 	aim.AssertExpectations(t)

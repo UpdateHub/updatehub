@@ -131,8 +131,12 @@ func processUpgradeResponse(res *http.Response) (interface{}, error) {
 			return nil, finalErr
 		}
 
+		log.Info("Update available")
+
 		return data, nil
 	case http.StatusNotFound:
+		log.Info("Update not available")
+
 		// NotFound is not an error in this case, just means there is no update available
 		return nil, nil
 	}

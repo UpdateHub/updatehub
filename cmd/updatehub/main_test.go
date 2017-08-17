@@ -87,7 +87,7 @@ func TestLoadSettings(t *testing.T) {
 			"InvalidSettingsFile",
 			"test",
 			"test",
-			ini.ErrDelimiterNotFound{"test"},
+			ini.ErrDelimiterNotFound{Line: "test"},
 			updatehub.Settings{},
 		},
 

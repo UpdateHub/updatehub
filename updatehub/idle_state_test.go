@@ -59,7 +59,7 @@ func TestStateIdle(t *testing.T) {
 					PollingEnabled: true,
 				},
 			},
-			&UpdateProbeState{},
+			&ProbeState{},
 		},
 	}
 
