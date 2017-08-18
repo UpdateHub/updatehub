@@ -11,6 +11,7 @@ package updatehub
 import (
 	"sync"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/spf13/afero"
 )
@@ -33,7 +34,7 @@ func (state *InstallingState) ID() UpdateHubState {
 func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 	packageUID := state.updateMetadata.PackageUID()
 	if packageUID == uh.lastInstalledPackageUID {
-		return NewWaitingForRebootState(state.updateMetadata), false
+		return NewWaitingForRebootState(state.apiClient, state.updateMetadata), false
 	}
 
 	// register the packageUID at the start so it won't redo the
@@ -61,10 +62,10 @@ func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 	}
 
 	if err != nil {
-		return NewErrorState(state.updateMetadata, NewTransientError(err)), false
+		return NewErrorState(state.apiClient, state.updateMetadata, NewTransientError(err)), false
 	}
 
-	return NewInstalledState(state.updateMetadata), false
+	return NewInstalledState(state.apiClient, state.updateMetadata), false
 }
 
 // ToMap is for the State interface implementation
@@ -81,6 +82,7 @@ func (state *InstallingState) UpdateMetadata() *metadata.UpdateMetadata {
 
 // NewInstallingState creates a new InstallingState
 func NewInstallingState(
+	apiClient *client.ApiClient,
 	updateMetadata *metadata.UpdateMetadata,
 	pti ProgressTracker,
 	fsb afero.Fs) *InstallingState {
@@ -90,6 +92,8 @@ func NewInstallingState(
 		FileSystemBackend: fsb,
 		ProgressTracker:   pti,
 	}
+
+	state.apiClient = apiClient
 
 	return state
 }

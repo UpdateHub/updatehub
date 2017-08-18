@@ -11,6 +11,7 @@ package updatehub
 import (
 	"time"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 )
 
@@ -61,7 +62,7 @@ const (
 	}`
 )
 
-func (c *testController) ProbeUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
+func (c *testController) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, time.Duration) {
 	if c.updateAvailable {
 		return &metadata.UpdateMetadata{}, c.extraPoll
 	}
@@ -69,7 +70,7 @@ func (c *testController) ProbeUpdate(retries int) (*metadata.UpdateMetadata, tim
 	return nil, c.extraPoll
 }
 
-func (c *testController) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+func (c *testController) DownloadUpdate(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
 	for _, p := range c.progressList {
 		// "non-blocking" write to channel
 		select {

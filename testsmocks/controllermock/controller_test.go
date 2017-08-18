@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,10 +22,11 @@ func TestProbeUpdate(t *testing.T) {
 	expectedMetadata := &metadata.UpdateMetadata{}
 	expectedDuration := 10 * time.Second
 
+	apiClient := client.NewApiClient("address")
 	cm := &ControllerMock{}
-	cm.On("ProbeUpdate", 0).Return(expectedMetadata, expectedDuration)
+	cm.On("ProbeUpdate", apiClient, 0).Return(expectedMetadata, expectedDuration)
 
-	m, d := cm.ProbeUpdate(0)
+	m, d := cm.ProbeUpdate(apiClient, 0)
 
 	assert.Equal(t, expectedMetadata, m)
 	assert.Equal(t, expectedDuration, d)
@@ -38,10 +40,12 @@ func TestDownloadUpdate(t *testing.T) {
 	cancelChannel := make(<-chan bool)
 	progressChannel := make(chan<- int)
 
-	cm := &ControllerMock{}
-	cm.On("DownloadUpdate", metadata, cancelChannel, progressChannel).Return(expectedError)
+	apiClient := client.NewApiClient("address")
 
-	err := cm.DownloadUpdate(metadata, cancelChannel, progressChannel)
+	cm := &ControllerMock{}
+	cm.On("DownloadUpdate", apiClient, metadata, cancelChannel, progressChannel).Return(expectedError)
+
+	err := cm.DownloadUpdate(apiClient, metadata, cancelChannel, progressChannel)
 
 	assert.Equal(t, expectedError, err)
 

@@ -11,6 +11,7 @@ package updatehub
 import (
 	"time"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 )
 
@@ -36,7 +37,7 @@ func (state *ProbeState) ID() UpdateHubState {
 // proceed to download the update if there is one. It goes back to the
 // polling state otherwise.
 func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
-	state.probeUpdateMetadata, state.probeExtraPoll = uh.Controller.ProbeUpdate(uh.Settings.PollingRetries)
+	state.probeUpdateMetadata, state.probeExtraPoll = uh.Controller.ProbeUpdate(state.apiClient, uh.Settings.PollingRetries)
 
 	// "non-blocking" write to channel
 	select {
@@ -55,10 +56,10 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 	if state.probeUpdateMetadata != nil {
 		packageUID := state.probeUpdateMetadata.PackageUID()
 		if packageUID == uh.lastInstalledPackageUID {
-			return NewWaitingForRebootState(state.probeUpdateMetadata), false
+			return NewWaitingForRebootState(state.apiClient, state.probeUpdateMetadata), false
 		}
 
-		return NewDownloadingState(state.probeUpdateMetadata, &ProgressTrackerImpl{}), false
+		return NewDownloadingState(state.apiClient, state.probeUpdateMetadata, &ProgressTrackerImpl{}), false
 	}
 
 	if state.probeExtraPoll > 0 {
@@ -87,11 +88,12 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 }
 
 // NewProbeState creates a new ProbeState
-func NewProbeState() *ProbeState {
+func NewProbeState(apiClient *client.ApiClient) *ProbeState {
 	state := &ProbeState{
 		BaseState: BaseState{id: UpdateHubStateProbe},
 	}
 
+	state.apiClient = apiClient
 	state.ProbeResponseReady = make(chan bool, 1)
 
 	return state

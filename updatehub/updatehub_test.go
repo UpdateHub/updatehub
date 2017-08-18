@@ -84,7 +84,7 @@ const (
 }`
 )
 
-func startDownloadUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata) ([]int, error) {
+func startDownloadUpdateInAnotherFunc(apiClient *client.ApiClient, uh *UpdateHub, um *metadata.UpdateMetadata) ([]int, error) {
 	var progressList []int
 	var err error
 
@@ -97,7 +97,7 @@ func startDownloadUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata
 		m.Lock()
 		defer m.Unlock()
 
-		err = uh.DownloadUpdate(um, nil, progressChan)
+		err = uh.DownloadUpdate(apiClient, um, nil, progressChan)
 		close(progressChan)
 	}()
 
@@ -232,13 +232,15 @@ func TestProcessCurrentStateIsError(t *testing.T) {
 
 	cm.On("Execute", "/usr/share/updatehub/error-callback 'transient error: some error'").Return([]byte(""), nil).Once()
 
-	uh, _ := newTestUpdateHub(NewErrorState(nil, NewTransientError(expectedError)), aim)
+	apiClient := client.NewApiClient("address")
+
+	uh, _ := newTestUpdateHub(NewErrorState(apiClient, nil, NewTransientError(expectedError)), aim)
 	uh.CmdLineExecuter = cm
 	uh.Reporter = rm
 	uh.Store = fs
 	uh.previousState = NewIdleState()
 
-	rm.On("ReportState", uh.API.Request(), "", "idle", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
+	rm.On("ReportState", apiClient.Request(), "", "idle", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
 
 	nextState := uh.ProcessCurrentState()
 
@@ -257,13 +259,15 @@ func TestProcessCurrentStateIsErrorWithNonExistantCallback(t *testing.T) {
 
 	expectedError := fmt.Errorf("some error")
 
-	uh, _ := newTestUpdateHub(NewErrorState(nil, NewTransientError(expectedError)), aim)
+	apiClient := client.NewApiClient("address")
+
+	uh, _ := newTestUpdateHub(NewErrorState(apiClient, nil, NewTransientError(expectedError)), aim)
 	uh.CmdLineExecuter = cm
 	uh.Reporter = rm
 	uh.Store = fs
 	uh.previousState = NewIdleState()
 
-	rm.On("ReportState", uh.API.Request(), "", "idle", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
+	rm.On("ReportState", apiClient.Request(), "", "idle", "error", "some error", uh.FirmwareMetadata).Return(nil).Once()
 
 	nextState := uh.ProcessCurrentState()
 
@@ -292,7 +296,7 @@ func TestNewUpdateHub(t *testing.T) {
 
 	settings := &Settings{}
 
-	uh := NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, memFs, *fm, initialState, settings)
+	uh := NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, memFs, *fm, initialState, settings, client.NewApiClient("address"))
 
 	assert.Equal(t, &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}}, uh.ActiveInactiveBackend)
 	assert.Equal(t, gitversion, uh.Version)
@@ -533,12 +537,14 @@ func TestUpdateHubProbeUpdate(t *testing.T) {
 			data.FirmwareMetadata = uh.FirmwareMetadata
 			data.Retries = 0
 
+			apiClient := client.NewApiClient("address")
+
 			um := &updatermock.UpdaterMock{}
-			um.On("ProbeUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
+			um.On("ProbeUpdate", apiClient.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
 
 			uh.Updater = um
 
-			updateMetadata, extraPoll := uh.ProbeUpdate(0)
+			updateMetadata, extraPoll := uh.ProbeUpdate(apiClient, 0)
 
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 			assert.Equal(t, tc.extraPoll, extraPoll)
@@ -586,12 +592,14 @@ func TestUpdateHubProbeUpdateWithNilUpdateMetadata(t *testing.T) {
 	data.FirmwareMetadata = uh.FirmwareMetadata
 	data.Retries = 0
 
+	apiClient := client.NewApiClient("address")
+
 	um := &updatermock.UpdaterMock{}
-	um.On("ProbeUpdate", uh.API.Request(), client.UpgradesEndpoint, data).Return(nil, time.Duration(3000), nil)
+	um.On("ProbeUpdate", apiClient.Request(), client.UpgradesEndpoint, data).Return(nil, time.Duration(3000), nil)
 
 	uh.Updater = um
 
-	updateMetadata, extraPoll := uh.ProbeUpdate(0)
+	updateMetadata, extraPoll := uh.ProbeUpdate(apiClient, 0)
 
 	assert.Equal(t, (*metadata.UpdateMetadata)(nil), updateMetadata)
 	assert.Equal(t, time.Duration(3000), extraPoll)
@@ -646,7 +654,7 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	source1.On("Close").Return(nil).Once()
 	source1Content := []byte("content1")
 
-	um.On("DownloadUpdate", uh.API.Request(), uri1).Return(source1, int64(len(source1Content)), nil).Once()
+	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri1).Return(source1, int64(len(source1Content)), nil).Once()
 
 	// obj2
 	objectUID2 := "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae"
@@ -656,7 +664,7 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	source2.On("Close").Return(nil).Once()
 	source2Content := []byte("content2")
 
-	um.On("DownloadUpdate", uh.API.Request(), uri2).Return(source2, int64(len(source2Content)), nil).Once()
+	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri2).Return(source2, int64(len(source2Content)), nil).Once()
 
 	// obj3
 	objectUID3 := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
@@ -666,7 +674,7 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	source3.On("Close").Return(nil).Once()
 	source3Content := []byte("content3")
 
-	um.On("DownloadUpdate", uh.API.Request(), uri3).Return(source3, int64(len(source3Content)), nil).Once()
+	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri3).Return(source3, int64(len(source3Content)), nil).Once()
 
 	// setup filesystembackend
 
@@ -697,7 +705,7 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	fsm.On("Open", path.Join(uh.Settings.DownloadDir, objectUID3)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID3)).Return(target3, nil).Once()
 
-	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh.DefaultApiClient, uh, updateMetadata)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int{33, 66, 99, 100}, progressList)
@@ -765,7 +773,7 @@ func TestUpdateHubDownloadUpdateWithObjectsAlreadyDownloaded(t *testing.T) {
 	err = afero.WriteFile(fs, path.Join(downloadDir, objectUID), []byte("content1"), 0644)
 	assert.NoError(t, err)
 
-	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh.DefaultApiClient, uh, updateMetadata)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int{100}, progressList)
@@ -807,7 +815,7 @@ func TestUpdateHubDownloadUpdateWithTargetFileError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
 	uh.Store = fsm
 
-	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh.DefaultApiClient, uh, updateMetadata)
 
 	assert.EqualError(t, err, "create error")
 	assert.Equal(t, []int(nil), progressList)
@@ -843,6 +851,8 @@ func TestUpdateHubDownloadUpdateWithUpdaterError(t *testing.T) {
 	}
 	uh.FirmwareMetadata = *fm
 
+	apiClient := client.NewApiClient("address")
+
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
@@ -851,7 +861,7 @@ func TestUpdateHubDownloadUpdateWithUpdaterError(t *testing.T) {
 	source := &filemock.FileMock{}
 
 	um := &updatermock.UpdaterMock{}
-	um.On("DownloadUpdate", uh.API.Request(), uri).Return(source, int64(0), fmt.Errorf("updater error"))
+	um.On("DownloadUpdate", apiClient.Request(), uri).Return(source, int64(0), fmt.Errorf("updater error"))
 	uh.Updater = um
 
 	// setup filesystembackend
@@ -867,7 +877,7 @@ func TestUpdateHubDownloadUpdateWithUpdaterError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
-	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(apiClient, uh, updateMetadata)
 
 	assert.EqualError(t, err, "updater error")
 	assert.Equal(t, []int(nil), progressList)
@@ -905,6 +915,8 @@ func TestUpdateHubDownloadUpdateWithCopyError(t *testing.T) {
 	}
 	uh.FirmwareMetadata = *fm
 
+	apiClient := client.NewApiClient("address")
+
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
 	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
 
@@ -915,7 +927,7 @@ func TestUpdateHubDownloadUpdateWithCopyError(t *testing.T) {
 	sourceContent := []byte("content")
 
 	um := &updatermock.UpdaterMock{}
-	um.On("DownloadUpdate", uh.API.Request(), uri).Return(source, int64(len(sourceContent)), nil)
+	um.On("DownloadUpdate", apiClient.Request(), uri).Return(source, int64(len(sourceContent)), nil)
 	uh.Updater = um
 
 	// setup filesystembackend
@@ -932,7 +944,7 @@ func TestUpdateHubDownloadUpdateWithCopyError(t *testing.T) {
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
 
-	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(apiClient, uh, updateMetadata)
 
 	assert.EqualError(t, err, "copy error")
 	assert.Equal(t, []int(nil), progressList)
@@ -972,6 +984,8 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	}
 	uh.FirmwareMetadata = *fm
 
+	apiClient := client.NewApiClient("address")
+
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadataWithActiveInactive))
 
 	expectedURIPrefix := "/products"
@@ -993,7 +1007,7 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 
 	objectUIDFirst := updateMetadata.Objects[1][0].GetObjectMetadata().Sha256sum
 	uri1 := path.Join(expectedURIPrefix, objectUIDFirst)
-	um.On("DownloadUpdate", uh.API.Request(), uri1).Return(source1, int64(len(file1Content)), nil)
+	um.On("DownloadUpdate", apiClient.Request(), uri1).Return(source1, int64(len(file1Content)), nil)
 
 	// download of file 2 setup
 	file2Content := []byte("content2butbigger") // this matches with the sha256sum in "validUpdateMetadataWithActiveInactive"
@@ -1003,7 +1017,7 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 
 	objectUIDSecond := updateMetadata.Objects[1][1].GetObjectMetadata().Sha256sum
 	uri2 := path.Join(expectedURIPrefix, objectUIDSecond)
-	um.On("DownloadUpdate", uh.API.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
+	um.On("DownloadUpdate", apiClient.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
 
 	// setup filesystembackend
 	target1 := &filemock.FileMock{}
@@ -1026,7 +1040,7 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	cpm.On("Copy", target2, source2, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil)
 	uh.CopyBackend = cpm
 
-	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(apiClient, uh, updateMetadata)
 
 	assert.NoError(t, err)
 	assert.Equal(t, []int{50, 100}, progressList)
@@ -1063,7 +1077,7 @@ func TestUpdateHubDownloadUpdateWithActiveInactiveError(t *testing.T) {
 	um := &updatermock.UpdaterMock{}
 	uh.Updater = um
 
-	progressList, err := startDownloadUpdateInAnotherFunc(uh, updateMetadata)
+	progressList, err := startDownloadUpdateInAnotherFunc(uh.DefaultApiClient, uh, updateMetadata)
 
 	assert.EqualError(t, err, "update metadata must have 1 or 2 objects. Found 0")
 	assert.Equal(t, []int(nil), progressList)
@@ -1564,7 +1578,9 @@ func TestUpdateHubReportState(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			state := NewDownloadingState(updateMetadata, &ProgressTrackerImpl{})
+			apiClient := client.NewApiClient("address")
+
+			state := NewDownloadingState(apiClient, updateMetadata, &ProgressTrackerImpl{})
 			state.updateMetadata = tc.updateMetadata
 
 			aim := &activeinactivemock.ActiveInactiveMock{}
@@ -1575,7 +1591,7 @@ func TestUpdateHubReportState(t *testing.T) {
 			uh.previousState = NewIdleState()
 
 			// error the first report
-			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "idle", "downloading", "", uh.FirmwareMetadata).Return(fmt.Errorf("report error")).Once()
+			rm.On("ReportState", apiClient.Request(), tc.expectedUMSha256sum, "idle", "downloading", "", uh.FirmwareMetadata).Return(fmt.Errorf("report error")).Once()
 
 			err := uh.ReportCurrentState()
 			assert.EqualError(t, err, "report error")
@@ -1583,7 +1599,7 @@ func TestUpdateHubReportState(t *testing.T) {
 			// the subsequent reports are successful. "Once()" is
 			// important here since the same state shouldn't be
 			// reported more than one time in a row
-			rm.On("ReportState", uh.API.Request(), tc.expectedUMSha256sum, "idle", "downloading", "", uh.FirmwareMetadata).Return(nil).Once()
+			rm.On("ReportState", apiClient.Request(), tc.expectedUMSha256sum, "idle", "downloading", "", uh.FirmwareMetadata).Return(nil).Once()
 
 			err = uh.ReportCurrentState()
 			assert.NoError(t, err)
@@ -1729,15 +1745,16 @@ func newTestInstallMode(objs []metadata.Object) installmodes.InstallMode {
 func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, error) {
 	fs := afero.NewMemMapFs()
 	uh := &UpdateHub{
-		Store:    fs,
-		state:    state,
-		TimeStep: time.Second,
-		API:      client.NewApiClient("localhost"),
+		Store:                   fs,
+		state:                   state,
+		TimeStep:                time.Second,
 		ActiveInactiveBackend:   aii,
 		CmdLineExecuter:         &utils.CmdLine{},
 		StateChangeCallbackPath: "/usr/share/updatehub/state-change-callback",
 		ErrorCallbackPath:       "/usr/share/updatehub/error-callback",
 	}
+
+	uh.DefaultApiClient = client.NewApiClient("localhost")
 
 	settings, err := LoadSettings(bytes.NewReader([]byte("")))
 	if err != nil {

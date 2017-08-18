@@ -11,6 +11,7 @@ package updatehub
 import (
 	"testing"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,7 @@ import (
 
 func TestStateInstalled(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
-	s := NewInstalledState(m)
+	s := NewInstalledState(client.NewApiClient("address"), m)
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
@@ -34,7 +35,7 @@ func TestStateInstalled(t *testing.T) {
 }
 
 func TestStateInstalledToMap(t *testing.T) {
-	state := NewInstalledState(nil)
+	state := NewInstalledState(client.NewApiClient("address"), nil)
 
 	expectedMap := map[string]interface{}{}
 	expectedMap["status"] = "installed"

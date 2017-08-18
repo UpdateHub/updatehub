@@ -9,6 +9,7 @@
 package updatehub
 
 import (
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 )
 
@@ -52,7 +53,7 @@ var statusNames = map[UpdateHubState]string{
 	UpdateHubDummyState:            "dummy",
 	UpdateHubStateIdle:             "idle",
 	UpdateHubStatePoll:             "poll",
-	UpdateHubStateProbe:      "probe",
+	UpdateHubStateProbe:            "probe",
 	UpdateHubStateDownloading:      "downloading",
 	UpdateHubStateDownloaded:       "downloaded",
 	UpdateHubStateInstalling:       "installing",
@@ -86,7 +87,8 @@ func (pti *ProgressTrackerImpl) GetProgress() int {
 
 // BaseState is the state from which all others must do composition
 type BaseState struct {
-	id UpdateHubState
+	id        UpdateHubState
+	apiClient *client.ApiClient
 }
 
 // ToMap is for the State interface implementation
@@ -101,6 +103,11 @@ func (b *BaseState) ID() UpdateHubState {
 	return b.id
 }
 
+// ApiClient returns the apiClient
+func (b *BaseState) ApiClient() *client.ApiClient {
+	return b.apiClient
+}
+
 // Cancel cancels a state if it is cancellable
 func (b *BaseState) Cancel(ok bool, nextState State) bool {
 	return ok
@@ -112,6 +119,7 @@ type State interface {
 	Handle(*UpdateHub) (State, bool) // Handle implements the behavior when the State is set
 	Cancel(bool, State) bool
 	ToMap() map[string]interface{}
+	ApiClient() *client.ApiClient
 }
 
 // StateToString converts a "UpdateHubState" to string

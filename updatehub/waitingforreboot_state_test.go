@@ -11,6 +11,7 @@ package updatehub
 import (
 	"testing"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,7 @@ import (
 
 func TestStateWaitingForReboot(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
-	s := NewWaitingForRebootState(m)
+	s := NewWaitingForRebootState(client.NewApiClient("localhost"), m)
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
@@ -37,7 +38,7 @@ func TestStateWaitingForReboot(t *testing.T) {
 }
 
 func TestStateWaitingForRebootToMap(t *testing.T) {
-	state := NewWaitingForRebootState(nil)
+	state := NewWaitingForRebootState(client.NewApiClient("localhost"), nil)
 
 	expectedMap := map[string]interface{}{}
 	expectedMap["status"] = "waiting-for-reboot"

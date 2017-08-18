@@ -10,10 +10,8 @@ package main
 
 import (
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -111,7 +109,13 @@ func main() {
 
 	osFs.MkdirAll(settings.DownloadDir, 0755)
 
-	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, osFs, *fm, updatehub.NewIdleState(), settings)
+	address, err := utils.SanitizeServerAddress(settings.ServerAddress)
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+
+	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, osFs, *fm, updatehub.NewIdleState(), settings, client.NewApiClient(address))
 
 	backend, err := server.NewAgentBackend(uh)
 	if err != nil {
@@ -131,14 +135,6 @@ func main() {
 	}()
 
 	uh.Controller = uh
-
-	address, err := sanitizeServerAddress(uh.Settings.ServerAddress)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-
-	uh.API = client.NewApiClient(address)
 
 	uh.StartPolling()
 
@@ -165,18 +161,4 @@ func loadSettings(fs afero.Fs, structToSaveOn *updatehub.Settings, pathToLoadFro
 	*structToSaveOn = *s
 
 	return nil
-}
-
-func sanitizeServerAddress(address string) (string, error) {
-	a := address
-	if !strings.HasPrefix(a, "http://") && !strings.HasPrefix(a, "https://") {
-		a = "https://" + a
-	}
-
-	serverURL, err := url.Parse(a)
-	if err != nil {
-		return "", err
-	}
-
-	return serverURL.String(), nil
 }

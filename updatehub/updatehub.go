@@ -81,7 +81,6 @@ type UpdateHub struct {
 	Store                     afero.Fs
 	FirmwareMetadata          metadata.FirmwareMetadata
 	TimeStep                  time.Duration
-	API                       *client.ApiClient
 	Updater                   client.Updater
 	Reporter                  client.Reporter
 	lastInstalledPackageUID   string
@@ -93,12 +92,23 @@ type UpdateHub struct {
 	Sha256Checker
 	utils.Rebooter
 	utils.CmdLineExecuter
-	state         State
-	previousState State
-	stateMutex    sync.Mutex
+	state            State
+	previousState    State
+	stateMutex       sync.Mutex
+	DefaultApiClient *client.ApiClient
 }
 
-func NewUpdateHub(gitversion string, buildtime string, stateChangeCallbackPath string, errorCallbackPath string, fs afero.Fs, fm metadata.FirmwareMetadata, initialState State, settings *Settings) *UpdateHub {
+func NewUpdateHub(
+	gitversion string,
+	buildtime string,
+	stateChangeCallbackPath string,
+	errorCallbackPath string,
+	fs afero.Fs,
+	fm metadata.FirmwareMetadata,
+	initialState State,
+	settings *Settings,
+	DefaultApiClient *client.ApiClient) *UpdateHub {
+
 	uh := &UpdateHub{
 		ActiveInactiveBackend:     &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}},
 		Version:                   gitversion,
@@ -118,6 +128,7 @@ func NewUpdateHub(gitversion string, buildtime string, stateChangeCallbackPath s
 		CmdLineExecuter:           &utils.CmdLine{},
 		StateChangeCallbackPath:   stateChangeCallbackPath,
 		ErrorCallbackPath:         errorCallbackPath,
+		DefaultApiClient:          DefaultApiClient,
 	}
 
 	return uh
@@ -185,7 +196,7 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 		err = uh.stateChangeCallback(uh.CmdLineExecuter, uh.state, "enter")
 		if err != nil {
 			log.Error(err)
-			uh.state = NewErrorState(nil, NewTransientError(err))
+			uh.state = NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
 			return uh.state
 		}
 
@@ -208,12 +219,12 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 }
 
 type Controller interface {
-	ProbeUpdate(int) (*metadata.UpdateMetadata, time.Duration)
-	DownloadUpdate(*metadata.UpdateMetadata, <-chan bool, chan<- int) error
+	ProbeUpdate(*client.ApiClient, int) (*metadata.UpdateMetadata, time.Duration)
+	DownloadUpdate(*client.ApiClient, *metadata.UpdateMetadata, <-chan bool, chan<- int) error
 	InstallUpdate(*metadata.UpdateMetadata, chan<- int) error
 }
 
-func (uh *UpdateHub) ProbeUpdate(retries int) (*metadata.UpdateMetadata, time.Duration) {
+func (uh *UpdateHub) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, time.Duration) {
 	var data struct {
 		Retries int `json:"retries"`
 		metadata.FirmwareMetadata
@@ -224,7 +235,7 @@ func (uh *UpdateHub) ProbeUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 
 	updateMetadataPath := path.Join(uh.Settings.DownloadDir, metadata.UpdateMetadataFilename)
 
-	updateMetadata, extraPoll, err := uh.Updater.ProbeUpdate(uh.API.Request(), client.UpgradesEndpoint, data)
+	updateMetadata, extraPoll, err := uh.Updater.ProbeUpdate(apiClient.Request(), client.UpgradesEndpoint, data)
 	if err != nil {
 		uh.Store.Remove(updateMetadataPath)
 		return nil, -1
@@ -242,7 +253,7 @@ func (uh *UpdateHub) ProbeUpdate(retries int) (*metadata.UpdateMetadata, time.Du
 }
 
 // it is recommended to use a buffered channel for "progressChan" to ensure no progress event is lost
-func (uh *UpdateHub) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
+func (uh *UpdateHub) DownloadUpdate(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
 	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.ActiveInactiveBackend, updateMetadata)
 	if err != nil {
 		return err
@@ -279,7 +290,7 @@ func (uh *UpdateHub) DownloadUpdate(updateMetadata *metadata.UpdateMetadata, can
 		defer wr.Close()
 
 		log.Debug("route: ", uri)
-		rd, _, err := uh.Updater.DownloadUpdate(uh.API.Request(), uri)
+		rd, _, err := uh.Updater.DownloadUpdate(apiClient.Request(), uri)
 		if err != nil {
 			return err
 		}
@@ -430,7 +441,7 @@ func (uh *UpdateHub) ReportCurrentState() error {
 			previousStateString = StateToString(uh.previousState.ID())
 		}
 
-		err := uh.Reporter.ReportState(uh.API.Request(), packageUID, previousStateString, stateString, errorMessage, uh.FirmwareMetadata)
+		err := uh.Reporter.ReportState(uh.state.ApiClient().Request(), packageUID, previousStateString, stateString, errorMessage, uh.FirmwareMetadata)
 		if err != nil {
 			return err
 		}
@@ -460,10 +471,10 @@ func (uh *UpdateHub) StartPolling() {
 		uh.Settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.Settings.PollingInterval))))
 	} else if uh.Settings.LastPoll == timeZero && now.After(uh.Settings.FirstPoll) {
 		// it never did a poll before
-		uh.state = NewProbeState()
+		uh.state = NewProbeState(uh.DefaultApiClient)
 	} else if uh.Settings.LastPoll.Add(uh.Settings.PollingInterval).Before(now) {
 		// pending regular interval
-		uh.state = NewProbeState()
+		uh.state = NewProbeState(uh.DefaultApiClient)
 	} else {
 		nextPoll := time.Unix(uh.Settings.FirstPoll.Unix(), 0)
 		for nextPoll.Before(now) {

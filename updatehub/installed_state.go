@@ -8,7 +8,10 @@
 
 package updatehub
 
-import "github.com/UpdateHub/updatehub/metadata"
+import (
+	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
+)
 
 // InstalledState is the State interface implementation for the UpdateHubStateInstalled
 type InstalledState struct {
@@ -25,7 +28,7 @@ func (state *InstalledState) ID() UpdateHubState {
 
 // Handle for InstalledState implements the installation process itself
 func (state *InstalledState) Handle(uh *UpdateHub) (State, bool) {
-	return NewRebootState(), false
+	return NewRebootState(state.apiClient), false
 }
 
 // UpdateMetadata is the ReportableState interface implementation
@@ -34,11 +37,13 @@ func (state *InstalledState) UpdateMetadata() *metadata.UpdateMetadata {
 }
 
 // NewInstalledState creates a new InstalledState
-func NewInstalledState(updateMetadata *metadata.UpdateMetadata) *InstalledState {
+func NewInstalledState(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata) *InstalledState {
 	state := &InstalledState{
 		BaseState:      BaseState{id: UpdateHubStateInstalled},
 		updateMetadata: updateMetadata,
 	}
+
+	state.apiClient = apiClient
 
 	return state
 }

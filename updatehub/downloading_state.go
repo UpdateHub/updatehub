@@ -11,6 +11,7 @@ package updatehub
 import (
 	"sync"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 )
 
@@ -58,7 +59,7 @@ func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 		m.Lock()
 		defer m.Unlock()
 
-		err = uh.Controller.DownloadUpdate(state.updateMetadata, state.cancel, progressChan)
+		err = uh.Controller.DownloadUpdate(state.apiClient, state.updateMetadata, state.cancel, progressChan)
 		close(progressChan)
 	}()
 
@@ -68,9 +69,9 @@ func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 	}
 
 	if err != nil {
-		nextState = NewErrorState(state.updateMetadata, NewTransientError(err))
+		nextState = NewErrorState(state.apiClient, state.updateMetadata, NewTransientError(err))
 	} else {
-		nextState = NewDownloadedState(state.updateMetadata)
+		nextState = NewDownloadedState(state.apiClient, state.updateMetadata)
 	}
 
 	// state cancelled
@@ -89,12 +90,14 @@ func (state *DownloadingState) ToMap() map[string]interface{} {
 }
 
 // NewDownloadingState creates a new DownloadingState from a metadata.UpdateMetadata
-func NewDownloadingState(updateMetadata *metadata.UpdateMetadata, pti ProgressTracker) *DownloadingState {
+func NewDownloadingState(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata, pti ProgressTracker) *DownloadingState {
 	state := &DownloadingState{
 		BaseState:       BaseState{id: UpdateHubStateDownloading},
 		updateMetadata:  updateMetadata,
 		ProgressTracker: pti,
 	}
+
+	state.apiClient = apiClient
 
 	return state
 }
