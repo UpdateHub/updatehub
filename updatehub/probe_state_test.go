@@ -9,6 +9,8 @@
 package updatehub
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,57 +20,58 @@ import (
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
-var probeUpdateCases = []struct {
-	name         string
-	controller   *testController
-	settings     *Settings
-	initialState State
-	nextState    State
-	subTest      func(t *testing.T, uh *UpdateHub, state State)
-}{
-	{
-		"UpdateAvailable",
-		&testController{updateAvailable: true},
-		&Settings{},
-		NewProbeState(client.NewApiClient("address")),
-		&DownloadingState{},
-		func(t *testing.T, uh *UpdateHub, state State) {},
-	},
+func TestStateProbe(t *testing.T) {
+	var probeUpdateCases = []struct {
+		name         string
+		controller   *testController
+		settings     *Settings
+		initialState State
+		nextState    State
+		subTest      func(t *testing.T, uh *UpdateHub, state State)
+	}{
+		{
+			"UpdateAvailable",
+			&testController{updateAvailable: true},
+			&Settings{},
+			NewProbeState(client.NewApiClient("address")),
+			&DownloadingState{},
+			func(t *testing.T, uh *UpdateHub, state State) {},
+		},
 
-	{
-		"UpdateNotAvailable",
-		&testController{updateAvailable: false},
-		&Settings{},
-		NewProbeState(client.NewApiClient("address")),
-		&IdleState{},
-		func(t *testing.T, uh *UpdateHub, state State) {},
-	},
+		{
+			"UpdateNotAvailable",
+			&testController{updateAvailable: false},
+			&Settings{},
+			NewProbeState(client.NewApiClient("address")),
+			&IdleState{},
+			func(t *testing.T, uh *UpdateHub, state State) {},
+		},
 
-	{
-		"ExtraPoll",
-		&testController{updateAvailable: false, extraPoll: 5 * time.Second},
-		&Settings{
-			PollingSettings: PollingSettings{
-				PersistentPollingSettings: PersistentPollingSettings{
-					FirstPoll: time.Now().Add(-5 * time.Second),
+		{
+			"ExtraPoll",
+			&testController{updateAvailable: false, extraPoll: 5 * time.Second},
+			&Settings{
+				PollingSettings: PollingSettings{
+					PersistentPollingSettings: PersistentPollingSettings{
+						FirstPoll: time.Now().Add(-5 * time.Second),
+					},
+					PollingInterval: 15 * time.Second,
 				},
-				PollingInterval: 15 * time.Second,
+			},
+			NewProbeState(client.NewApiClient("address")),
+			&PollState{},
+			func(t *testing.T, uh *UpdateHub, state State) {
+				poll := state.(*PollState)
+				assert.Equal(t, 5*time.Second, poll.interval)
+				assert.Equal(t, 5*time.Second, uh.Settings.ExtraPollingInterval)
 			},
 		},
-		NewProbeState(client.NewApiClient("address")),
-		&PollState{},
-		func(t *testing.T, uh *UpdateHub, state State) {
-			poll := state.(*PollState)
-			assert.Equal(t, 5*time.Second, poll.interval)
-			assert.Equal(t, 5*time.Second, uh.Settings.ExtraPollingInterval)
-		},
-	},
-}
+	}
 
-func TestStateProbe(t *testing.T) {
 	for _, tc := range probeUpdateCases {
 		t.Run(tc.name, func(t *testing.T) {
 			aim := &activeinactivemock.ActiveInactiveMock{}
@@ -79,11 +82,22 @@ func TestStateProbe(t *testing.T) {
 			uh.Controller = tc.controller
 			uh.Settings = tc.settings
 
+			uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
 			next, _ := uh.GetState().Handle(uh)
 
 			assert.IsType(t, tc.nextState, next)
 
 			tc.subTest(t, uh, next)
+
+			data, err := afero.ReadFile(uh.Store, uh.Settings.RuntimeSettingsPath)
+			assert.NoError(t, err)
+			assert.True(t, strings.Contains(string(data), fmt.Sprintf("ProbeASAP=%t", tc.settings.ProbeASAP)))
+			assert.True(t, strings.Contains(string(data), fmt.Sprintf("Retries=%d", tc.settings.PollingRetries)))
+			assert.True(t, strings.Contains(string(data), fmt.Sprintf("ExtraInterval=%d", tc.settings.ExtraPollingInterval)))
+			// timestamps are relative to "Now()" so just test if they were written
+			assert.True(t, strings.Contains(string(data), "FirstPoll="))
+			assert.True(t, strings.Contains(string(data), "LastPoll="))
 
 			aim.AssertExpectations(t)
 		})
@@ -118,9 +132,20 @@ func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	uh.Controller = cm
 	uh.Settings = &Settings{}
 
+	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
 	next, _ := uh.GetState().Handle(uh)
 
-	assert.IsType(t, &WaitingForRebootingState{}, next)
+	assert.IsType(t, &IdleState{}, next)
+
+	data, err := afero.ReadFile(uh.Store, uh.Settings.RuntimeSettingsPath)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(string(data), "ProbeASAP=false"))
+	assert.True(t, strings.Contains(string(data), "Retries=0"))
+	assert.True(t, strings.Contains(string(data), "ExtraInterval=0"))
+	// timestamps are relative to "Now()" so just test if they were written
+	assert.True(t, strings.Contains(string(data), "FirstPoll="))
+	assert.True(t, strings.Contains(string(data), "LastPoll="))
 
 	aim.AssertExpectations(t)
 	cm.AssertExpectations(t)

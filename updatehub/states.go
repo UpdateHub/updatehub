@@ -38,9 +38,6 @@ const (
 	// UpdateHubStateInstalled is set when the agent finished
 	// installing an update
 	UpdateHubStateInstalled
-	// UpdateHubStateWaitingForReboot is set when the agent is waiting
-	// for reboot
-	UpdateHubStateWaitingForReboot
 	// UpdateHubStateExit is set when the daemon is about to quit
 	UpdateHubStateExit
 	// UpdateHubStateError is set when an error occured on the agent
@@ -50,18 +47,17 @@ const (
 )
 
 var statusNames = map[UpdateHubState]string{
-	UpdateHubDummyState:            "dummy",
-	UpdateHubStateIdle:             "idle",
-	UpdateHubStatePoll:             "poll",
-	UpdateHubStateProbe:            "probe",
-	UpdateHubStateDownloading:      "downloading",
-	UpdateHubStateDownloaded:       "downloaded",
-	UpdateHubStateInstalling:       "installing",
-	UpdateHubStateInstalled:        "installed",
-	UpdateHubStateWaitingForReboot: "waiting-for-reboot",
-	UpdateHubStateExit:             "exit",
-	UpdateHubStateError:            "error",
-	UpdateHubStateRebooting:        "rebooting",
+	UpdateHubDummyState:       "dummy",
+	UpdateHubStateIdle:        "idle",
+	UpdateHubStatePoll:        "poll",
+	UpdateHubStateProbe:       "probe",
+	UpdateHubStateDownloading: "downloading",
+	UpdateHubStateDownloaded:  "downloaded",
+	UpdateHubStateInstalling:  "installing",
+	UpdateHubStateInstalled:   "installed",
+	UpdateHubStateExit:        "exit",
+	UpdateHubStateError:       "error",
+	UpdateHubStateRebooting:   "rebooting",
 }
 
 // ProgressTracker will define which way the progress is kept

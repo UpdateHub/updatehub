@@ -52,11 +52,12 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 
 	uh.Settings.LastPoll = time.Now()
 	uh.Settings.ExtraPollingInterval = 0
+	uh.Settings.Save(uh.Store)
 
 	if state.probeUpdateMetadata != nil {
 		packageUID := state.probeUpdateMetadata.PackageUID()
 		if packageUID == uh.lastInstalledPackageUID {
-			return NewWaitingForRebootingState(state.apiClient, state.probeUpdateMetadata), false
+			return NewIdleState(), false
 		}
 
 		return NewDownloadingState(state.apiClient, state.probeUpdateMetadata, &ProgressTrackerImpl{}), false
@@ -73,6 +74,7 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 
 		if probeExtraPollTime.Before(nextPoll) {
 			uh.Settings.ExtraPollingInterval = state.probeExtraPoll
+			uh.Settings.Save(uh.Store)
 
 			poll := NewPollState(uh.Settings.PollingInterval)
 			poll.interval = state.probeExtraPoll
@@ -83,6 +85,7 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 
 	// Increment the number of polling retries in case of ProbeUpdate failure
 	uh.Settings.PollingRetries++
+	uh.Settings.Save(uh.Store)
 
 	return NewIdleState(), false
 }

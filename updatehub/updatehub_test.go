@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -532,10 +533,14 @@ func TestUpdateHubProbeUpdate(t *testing.T) {
 			var data struct {
 				Retries int `json:"retries"`
 				metadata.FirmwareMetadata
+				LastInstalledPackage string `json:"last-installed-package,omitempty"`
 			}
 
 			data.FirmwareMetadata = uh.FirmwareMetadata
 			data.Retries = 0
+			data.LastInstalledPackage = "61be55a8e2f6b4e172338bddf184d6dbee29c98853e0a0485ecee7f27b9af0b4"
+
+			uh.lastInstalledPackageUID = "61be55a8e2f6b4e172338bddf184d6dbee29c98853e0a0485ecee7f27b9af0b4"
 
 			apiClient := client.NewApiClient("address")
 
@@ -587,10 +592,12 @@ func TestUpdateHubProbeUpdateWithNilUpdateMetadata(t *testing.T) {
 	var data struct {
 		Retries int `json:"retries"`
 		metadata.FirmwareMetadata
+		LastInstalledPackage string `json:"last-installed-package,omitempty"`
 	}
 
 	data.FirmwareMetadata = uh.FirmwareMetadata
 	data.Retries = 0
+	data.LastInstalledPackage = ""
 
 	apiClient := client.NewApiClient("address")
 
@@ -1647,6 +1654,7 @@ func TestStartPolling(t *testing.T) {
 		lastPoll             time.Time
 		expectedState        State
 		subTest              func(t *testing.T, uh *UpdateHub, state State)
+		probeASAP            bool
 	}{
 		{
 			"RegularPoll",
@@ -1655,7 +1663,17 @@ func TestStartPolling(t *testing.T) {
 			(time.Time{}).UTC(),
 			(time.Time{}).UTC(),
 			&PollState{},
-			func(t *testing.T, uh *UpdateHub, state State) {},
+			func(t *testing.T, uh *UpdateHub, state State) {
+				data, err := afero.ReadFile(uh.Store, uh.Settings.RuntimeSettingsPath)
+				assert.NoError(t, err)
+				assert.True(t, strings.Contains(string(data), "ProbeASAP=false"))
+				assert.True(t, strings.Contains(string(data), "Retries=0"))
+				assert.True(t, strings.Contains(string(data), "ExtraInterval=0"))
+				// timestamps are relative to "Now()" so just test if they were written
+				assert.True(t, strings.Contains(string(data), "FirstPoll="))
+				assert.True(t, strings.Contains(string(data), "LastPoll="))
+			},
+			false,
 		},
 
 		{
@@ -1666,6 +1684,7 @@ func TestStartPolling(t *testing.T) {
 			(time.Time{}).UTC(),
 			&ProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {},
+			false,
 		},
 
 		{
@@ -1676,6 +1695,7 @@ func TestStartPolling(t *testing.T) {
 			now.Add(-2 * time.Second),
 			&ProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {},
+			false,
 		},
 
 		{
@@ -1689,6 +1709,29 @@ func TestStartPolling(t *testing.T) {
 				poll := state.(*PollState)
 				assert.Equal(t, 3*time.Second, poll.interval)
 			},
+			false,
+		},
+
+		{
+			"WithProbeASAPSet",
+			time.Second,
+			0,
+			(time.Time{}).UTC(),
+			(time.Time{}).UTC(),
+			&ProbeState{},
+			func(t *testing.T, uh *UpdateHub, state State) {
+				assert.Equal(t, false, uh.Settings.ProbeASAP)
+
+				data, err := afero.ReadFile(uh.Store, uh.Settings.RuntimeSettingsPath)
+				assert.NoError(t, err)
+				assert.True(t, strings.Contains(string(data), "ProbeASAP=false"))
+				assert.True(t, strings.Contains(string(data), "Retries=0"))
+				assert.True(t, strings.Contains(string(data), "ExtraInterval=0"))
+				// timestamps are relative to "Now()" so just test if they were written
+				assert.True(t, strings.Contains(string(data), "FirstPoll="))
+				assert.True(t, strings.Contains(string(data), "LastPoll="))
+			},
+			true,
 		},
 	}
 
@@ -1711,6 +1754,9 @@ func TestStartPolling(t *testing.T) {
 			uh.Settings.ExtraPollingInterval = tc.extraPollingInterval
 			uh.Settings.FirstPoll = tc.firstPoll
 			uh.Settings.LastPoll = tc.lastPoll
+			uh.Settings.ProbeASAP = tc.probeASAP
+
+			uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
 
 			uh.StartPolling()
 			assert.IsType(t, tc.expectedState, uh.GetState())
