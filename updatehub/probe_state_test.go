@@ -120,7 +120,7 @@ func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 
 	next, _ := uh.GetState().Handle(uh)
 
-	assert.IsType(t, &WaitingForRebootState{}, next)
+	assert.IsType(t, &WaitingForRebootingState{}, next)
 
 	aim.AssertExpectations(t)
 	cm.AssertExpectations(t)

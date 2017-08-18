@@ -13,8 +13,8 @@ import (
 	"github.com/UpdateHub/updatehub/metadata"
 )
 
-// WaitingForRebootState is the State interface implementation for the UpdateHubStateWaitingForReboot
-type WaitingForRebootState struct {
+// WaitingForRebootingState is the State interface implementation for the UpdateHubStateWaitingForReboot
+type WaitingForRebootingState struct {
 	BaseState
 	ReportableState
 
@@ -22,24 +22,24 @@ type WaitingForRebootState struct {
 }
 
 // ID returns the state id
-func (state *WaitingForRebootState) ID() UpdateHubState {
+func (state *WaitingForRebootingState) ID() UpdateHubState {
 	return state.id
 }
 
-// Handle for WaitingForRebootState tells us that an installation has
+// Handle for WaitingForRebootingState tells us that an installation has
 // been made and it is waiting for a reboot
-func (state *WaitingForRebootState) Handle(uh *UpdateHub) (State, bool) {
+func (state *WaitingForRebootingState) Handle(uh *UpdateHub) (State, bool) {
 	return NewIdleState(), false
 }
 
 // UpdateMetadata is the ReportableState interface implementation
-func (state *WaitingForRebootState) UpdateMetadata() *metadata.UpdateMetadata {
+func (state *WaitingForRebootingState) UpdateMetadata() *metadata.UpdateMetadata {
 	return state.updateMetadata
 }
 
-// NewWaitingForRebootState creates a new WaitingForRebootState
-func NewWaitingForRebootState(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata) *WaitingForRebootState {
-	state := &WaitingForRebootState{
+// NewWaitingForRebootingState creates a new WaitingForRebootingState
+func NewWaitingForRebootingState(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata) *WaitingForRebootingState {
+	state := &WaitingForRebootingState{
 		BaseState:      BaseState{id: UpdateHubStateWaitingForReboot},
 		updateMetadata: updateMetadata,
 	}

@@ -19,7 +19,7 @@ import (
 
 func TestStateWaitingForReboot(t *testing.T) {
 	m := &metadata.UpdateMetadata{}
-	s := NewWaitingForRebootState(client.NewApiClient("localhost"), m)
+	s := NewWaitingForRebootingState(client.NewApiClient("localhost"), m)
 
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
@@ -38,7 +38,7 @@ func TestStateWaitingForReboot(t *testing.T) {
 }
 
 func TestStateWaitingForRebootToMap(t *testing.T) {
-	state := NewWaitingForRebootState(client.NewApiClient("localhost"), nil)
+	state := NewWaitingForRebootingState(client.NewApiClient("localhost"), nil)
 
 	expectedMap := map[string]interface{}{}
 	expectedMap["status"] = "waiting-for-reboot"

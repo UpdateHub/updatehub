@@ -56,7 +56,7 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 	if state.probeUpdateMetadata != nil {
 		packageUID := state.probeUpdateMetadata.PackageUID()
 		if packageUID == uh.lastInstalledPackageUID {
-			return NewWaitingForRebootState(state.apiClient, state.probeUpdateMetadata), false
+			return NewWaitingForRebootingState(state.apiClient, state.probeUpdateMetadata), false
 		}
 
 		return NewDownloadingState(state.apiClient, state.probeUpdateMetadata, &ProgressTrackerImpl{}), false

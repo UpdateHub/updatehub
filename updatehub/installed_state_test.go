@@ -28,7 +28,7 @@ func TestStateInstalled(t *testing.T) {
 
 	nextState, _ := s.Handle(uh)
 
-	assert.IsType(t, &RebootState{}, nextState)
+	assert.IsType(t, &RebootingState{}, nextState)
 	assert.Equal(t, m, s.UpdateMetadata())
 
 	aim.AssertExpectations(t)
