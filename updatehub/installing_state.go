@@ -34,7 +34,7 @@ func (state *InstallingState) ID() UpdateHubState {
 func (state *InstallingState) Handle(uh *UpdateHub) (State, bool) {
 	packageUID := state.updateMetadata.PackageUID()
 	if packageUID == uh.lastInstalledPackageUID {
-		return NewWaitingForRebootState(state.apiClient, state.updateMetadata), false
+		return NewWaitingForRebootingState(state.apiClient, state.updateMetadata), false
 	}
 
 	// register the packageUID at the start so it won't redo the

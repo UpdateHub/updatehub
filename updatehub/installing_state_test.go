@@ -120,7 +120,7 @@ func TestStateInstallingWithUpdateMetadataAlreadyInstalled(t *testing.T) {
 	uh.lastInstalledPackageUID = m.PackageUID()
 
 	nextState, _ := s.Handle(uh)
-	expectedState := NewWaitingForRebootState(apiClient, m)
+	expectedState := NewWaitingForRebootingState(apiClient, m)
 	assert.Equal(t, expectedState, nextState)
 
 	uh.SetState(nextState)
