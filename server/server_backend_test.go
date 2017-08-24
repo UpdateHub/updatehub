@@ -182,10 +182,11 @@ func TestParseUhuPkgWithNewReaderError(t *testing.T) {
 	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
-	data, err := sb.parseUhuPkg(pkgpath)
+	data, signature, err := sb.parseUhuPkg(pkgpath)
 	assert.EqualError(t, err, "libarchive error")
 
 	assert.Nil(t, data)
+	assert.Nil(t, signature)
 	assert.Nil(t, sb.selectedPackage)
 
 	lam.AssertExpectations(t)
@@ -212,10 +213,11 @@ func TestParseUhuPkgWithExtractFileError(t *testing.T) {
 	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
-	data, err := sb.parseUhuPkg(pkgpath)
+	data, signature, err := sb.parseUhuPkg(pkgpath)
 	assert.EqualError(t, err, fmt.Sprintf("file 'metadata' not found in: '%s'", pkgpath))
 
 	assert.Nil(t, data)
+	assert.Nil(t, signature)
 	assert.Nil(t, sb.selectedPackage)
 
 	lam.AssertExpectations(t)

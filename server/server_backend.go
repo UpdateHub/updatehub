@@ -10,6 +10,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -27,6 +28,7 @@ import (
 
 type SelectedPackage struct {
 	updateMetadata []byte
+	signature      []byte
 	uhupkgPath     string
 }
 
@@ -81,19 +83,25 @@ func (sb *ServerBackend) parseUpdateMetadata() ([]byte, error) {
 	return data, nil
 }
 
-func (sb *ServerBackend) parseUhuPkg(pkgpath string) ([]byte, error) {
+func (sb *ServerBackend) parseUhuPkg(pkgpath string) ([]byte, []byte, error) {
 	reader, err := libarchive.NewReader(sb.LibArchive, pkgpath, 10240)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	buff := bytes.NewBuffer(nil)
-	err = reader.ExtractFile("metadata", buff)
+	metadataBuff := bytes.NewBuffer(nil)
+	err = reader.ExtractFile("metadata", metadataBuff)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return buff.Bytes(), nil
+	signatureBuff := bytes.NewBuffer(nil)
+	err = reader.ExtractFile("signature", signatureBuff)
+	if err != nil {
+		return metadataBuff.Bytes(), nil, nil
+	}
+
+	return metadataBuff.Bytes(), signatureBuff.Bytes(), nil
 }
 
 func (sb *ServerBackend) ProcessDirectory() error {
@@ -120,6 +128,7 @@ func (sb *ServerBackend) ProcessDirectory() error {
 	pkgpath := path.Join(sb.path, packagesFound[0])
 
 	var updateMetadata []byte
+	var signature []byte
 	var uhupkgPath string
 
 	log.Info("selected package: ", pkgpath)
@@ -127,7 +136,7 @@ func (sb *ServerBackend) ProcessDirectory() error {
 		updateMetadata, err = sb.parseUpdateMetadata()
 	} else {
 		uhupkgPath = pkgpath
-		updateMetadata, err = sb.parseUhuPkg(pkgpath)
+		updateMetadata, signature, err = sb.parseUhuPkg(pkgpath)
 	}
 
 	if err != nil {
@@ -136,6 +145,7 @@ func (sb *ServerBackend) ProcessDirectory() error {
 
 	p := &SelectedPackage{
 		updateMetadata: updateMetadata,
+		signature:      signature,
 		uhupkgPath:     uhupkgPath,
 	}
 
@@ -163,6 +173,7 @@ func (sb *ServerBackend) getUpdateMetadata(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("UH-Signature", base64.StdEncoding.EncodeToString(sb.selectedPackage.signature))
 
 	if _, err := w.Write(sb.selectedPackage.updateMetadata); err != nil {
 		log.Warn(err)
