@@ -9,6 +9,9 @@
 package metadata
 
 import (
+	"crypto"
+	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/json"
 
 	"github.com/UpdateHub/updatehub/utils"
@@ -62,4 +65,10 @@ func NewUpdateMetadata(bytes []byte) (*UpdateMetadata, error) {
 
 func (m *UpdateMetadata) PackageUID() string {
 	return utils.DataSha256sum(m.RawBytes)
+}
+
+func (m *UpdateMetadata) VerifySignature(key *rsa.PublicKey, signature []byte) bool {
+	sha256sum := sha256.Sum256(m.RawBytes)
+	err := rsa.VerifyPKCS1v15(key, crypto.SHA256, sha256sum[:], signature)
+	return err == nil
 }
