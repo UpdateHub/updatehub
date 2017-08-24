@@ -156,7 +156,7 @@ func TestPolling(t *testing.T) {
 			uh.Settings.FirstPoll = tc.firstPoll
 			uh.Settings.LastPoll = tc.firstPoll
 
-			uh.StartPolling()
+			uh.Start()
 
 			poll := uh.GetState()
 			assert.IsType(t, &PollState{}, poll)

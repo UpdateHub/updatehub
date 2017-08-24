@@ -36,6 +36,7 @@ import (
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 	"github.com/UpdateHub/updatehub/testsmocks/installifdifferentmock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
+	"github.com/UpdateHub/updatehub/testsmocks/rebootermock"
 	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
 	"github.com/UpdateHub/updatehub/testsmocks/statesmock"
 	"github.com/UpdateHub/updatehub/testsmocks/updatermock"
@@ -286,6 +287,8 @@ func TestNewUpdateHub(t *testing.T) {
 	initialState := NewIdleState()
 	stateChangeCallbackPath := "/usr/share/updatehub/state-change-callback"
 	errorCallbackPath := "/usr/share/updatehub/error-callback"
+	validateCallbackPath := "/usr/share/updatehub/validate-callback"
+	rollbackCallbackPath := "/usr/share/updatehub/rollback-callback"
 
 	fm := &metadata.FirmwareMetadata{
 		ProductUID:       "productuid-value",
@@ -297,7 +300,7 @@ func TestNewUpdateHub(t *testing.T) {
 
 	settings := &Settings{}
 
-	uh := NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, memFs, *fm, initialState, settings, client.NewApiClient("address"))
+	uh := NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, memFs, *fm, initialState, settings, client.NewApiClient("address"))
 
 	assert.Equal(t, &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}}, uh.ActiveInactiveBackend)
 	assert.Equal(t, gitversion, uh.Version)
@@ -1643,7 +1646,7 @@ func TestReportCurrentStateNotReportable(t *testing.T) {
 	rm.AssertExpectations(t)
 }
 
-func TestStartPolling(t *testing.T) {
+func TestStart(t *testing.T) {
 	now := time.Now()
 
 	testCases := []struct {
@@ -1758,7 +1761,7 @@ func TestStartPolling(t *testing.T) {
 
 			uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
 
-			uh.StartPolling()
+			uh.Start()
 			assert.IsType(t, tc.expectedState, uh.GetState())
 
 			tc.subTest(t, uh, uh.GetState())
@@ -1766,6 +1769,137 @@ func TestStartPolling(t *testing.T) {
 			aim.AssertExpectations(t)
 		})
 	}
+}
+
+func TestStartWithSuccessfulInstallationValidation(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(0, nil).Once()
+
+	uh, _ := newTestUpdateHub(nil, aim)
+
+	uh.Settings.ProbeASAP = true
+	uh.Settings.UpgradeToInstallation = 0
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	uh.CmdLineExecuter = cm
+
+	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
+	// the callback will succeed because the file doesn't exists
+	// (assume callback success)
+	uh.Start()
+	assert.IsType(t, &ProbeState{}, uh.GetState())
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestStartWithSuccessfulInstallationRollback(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(0, nil).Once()
+
+	uh, _ := newTestUpdateHub(nil, aim)
+
+	uh.Settings.ProbeASAP = true
+	uh.Settings.UpgradeToInstallation = 1
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	uh.CmdLineExecuter = cm
+
+	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
+	// the callback will succeed because the file doesn't exists
+	// (assume callback success)
+	uh.Start()
+	assert.IsType(t, &ProbeState{}, uh.GetState())
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestStartWithFailureToGetActivePartition(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	activeErr := fmt.Errorf("active error")
+	aim.On("Active").Return(0, activeErr)
+
+	uh, _ := newTestUpdateHub(nil, aim)
+
+	uh.Settings.UpgradeToInstallation = 0
+
+	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
+	uh.Start()
+
+	err := fmt.Errorf("couldn't get active partition, cannot detect whether the installation is successful or not. Error: %s", activeErr)
+	assert.Equal(t, NewErrorState(uh.DefaultApiClient, nil, NewTransientError(err)), uh.GetState())
+
+	aim.AssertExpectations(t)
+}
+
+func TestStartWithFailureOnValidateProcedure(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	aim.On("Active").Return(0, nil).Once()
+	aim.On("Active").Return(0, nil).Once()
+	aim.On("SetActive", 1).Return(nil).Once()
+
+	uh, _ := newTestUpdateHub(nil, aim)
+
+	uh.Settings.UpgradeToInstallation = 0
+
+	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
+	err := afero.WriteFile(uh.Store, uh.ValidateCallbackPath, []byte("dummy content"), 0755)
+	assert.NoError(t, err)
+
+	err = fmt.Errorf("validate error")
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	cm.On("Execute", uh.ValidateCallbackPath).Return([]byte("output"), err)
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+	rm.On("Reboot").Return(nil)
+
+	uh.Start()
+
+	assert.Equal(t, NewErrorState(uh.DefaultApiClient, nil, NewTransientError(err)), uh.GetState())
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestStartWithFailureOnRollbackProcedure(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	aim.On("Active").Return(0, nil).Once()
+
+	uh, _ := newTestUpdateHub(nil, aim)
+
+	uh.Settings.UpgradeToInstallation = 1
+
+	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
+	err := afero.WriteFile(uh.Store, uh.RollbackCallbackPath, []byte("dummy content"), 0755)
+	assert.NoError(t, err)
+
+	err = fmt.Errorf("rollback error")
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	cm.On("Execute", uh.RollbackCallbackPath).Return([]byte("output"), err)
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+
+	uh.Start()
+
+	assert.Equal(t, NewErrorState(uh.DefaultApiClient, nil, NewTransientError(err)), uh.GetState())
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }
 
 type testObject struct {
@@ -1798,6 +1932,8 @@ func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, er
 		CmdLineExecuter:         &utils.CmdLine{},
 		StateChangeCallbackPath: "/usr/share/updatehub/state-change-callback",
 		ErrorCallbackPath:       "/usr/share/updatehub/error-callback",
+		ValidateCallbackPath:    "/usr/share/updatehub/validate-callback",
+		RollbackCallbackPath:    "/usr/share/updatehub/rollback-callback",
 	}
 
 	uh.DefaultApiClient = client.NewApiClient("localhost")
@@ -1811,4 +1947,218 @@ func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, er
 	uh.Settings.PollingInterval = 1
 
 	return uh, err
+}
+
+func TestValidateProcedureWithNonExistantCallback(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(nil, aim)
+	assert.NoError(t, err)
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+
+	err = uh.validateProcedure()
+
+	assert.NoError(t, err)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestValidateProcedureWithCallbackSuccess(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(nil, aim)
+	assert.NoError(t, err)
+
+	err = afero.WriteFile(uh.Store, uh.ValidateCallbackPath, []byte("dummy content"), 0755)
+	assert.NoError(t, err)
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	cm.On("Execute", uh.ValidateCallbackPath).Return([]byte("output"), nil)
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+
+	err = uh.validateProcedure()
+
+	assert.NoError(t, err)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestValidateProcedureWithCallbackFailure(t *testing.T) {
+	expectedError := fmt.Errorf("callback error")
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(1, nil)
+	aim.On("SetActive", 0).Return(nil)
+
+	uh, err := newTestUpdateHub(nil, aim)
+	assert.NoError(t, err)
+
+	uh.DefaultApiClient = client.NewApiClient("address")
+
+	err = afero.WriteFile(uh.Store, uh.ValidateCallbackPath, []byte("dummy content"), 0755)
+	assert.NoError(t, err)
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	cm.On("Execute", uh.ValidateCallbackPath).Return([]byte("output"), expectedError)
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	rm.On("Reboot").Return(nil)
+	uh.Rebooter = rm
+
+	err = uh.validateProcedure()
+
+	assert.Equal(t, expectedError, err)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestValidateProcedureWithActiveFailure(t *testing.T) {
+	expectedError := fmt.Errorf("active error")
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(0, expectedError)
+
+	uh, err := newTestUpdateHub(nil, aim)
+	assert.NoError(t, err)
+
+	uh.DefaultApiClient = client.NewApiClient("address")
+
+	err = afero.WriteFile(uh.Store, uh.ValidateCallbackPath, []byte("dummy content"), 0755)
+	assert.NoError(t, err)
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	cm.On("Execute", uh.ValidateCallbackPath).Return([]byte("output"), fmt.Errorf("callback error"))
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+
+	err = uh.validateProcedure()
+
+	assert.Equal(t, expectedError, err)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestValidateProcedureWithSetActiveFailure(t *testing.T) {
+	expectedError := fmt.Errorf("set active error")
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	aim.On("Active").Return(0, nil)
+	aim.On("SetActive", 1).Return(expectedError)
+
+	uh, err := newTestUpdateHub(nil, aim)
+	assert.NoError(t, err)
+
+	uh.DefaultApiClient = client.NewApiClient("address")
+
+	err = afero.WriteFile(uh.Store, uh.ValidateCallbackPath, []byte("dummy content"), 0755)
+	assert.NoError(t, err)
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	cm.On("Execute", uh.ValidateCallbackPath).Return([]byte("output"), fmt.Errorf("callback error"))
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+
+	err = uh.validateProcedure()
+
+	assert.Equal(t, expectedError, err)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestRollbackProcedureWithNonExistantCallback(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(nil, aim)
+	assert.NoError(t, err)
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+
+	err = uh.rollbackProcedure()
+
+	assert.NoError(t, err)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestRollbackProcedureWithCallbackSuccess(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(nil, aim)
+	assert.NoError(t, err)
+
+	err = afero.WriteFile(uh.Store, uh.RollbackCallbackPath, []byte("dummy content"), 0755)
+	assert.NoError(t, err)
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	cm.On("Execute", uh.RollbackCallbackPath).Return([]byte("output"), nil)
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+
+	err = uh.rollbackProcedure()
+
+	assert.NoError(t, err)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
+}
+
+func TestRollbackProcedureWithCallbackFailure(t *testing.T) {
+	expectedError := fmt.Errorf("callback error")
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, err := newTestUpdateHub(nil, aim)
+	assert.NoError(t, err)
+
+	uh.DefaultApiClient = client.NewApiClient("address")
+
+	err = afero.WriteFile(uh.Store, uh.RollbackCallbackPath, []byte("dummy content"), 0755)
+	assert.NoError(t, err)
+
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	cm.On("Execute", uh.RollbackCallbackPath).Return([]byte("output"), expectedError)
+	uh.CmdLineExecuter = cm
+
+	rm := &rebootermock.RebooterMock{}
+	uh.Rebooter = rm
+
+	err = uh.rollbackProcedure()
+
+	assert.Equal(t, expectedError, err)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	rm.AssertExpectations(t)
 }

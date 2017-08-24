@@ -22,4 +22,12 @@ const (
 	// handled. Ex.:
 	// <errorCallbackPath> 'error_message'
 	errorCallbackPath = "/usr/share/updatehub/error-callback"
+
+	// The validate callback is executed whenever a successful
+	// installation is booted.
+	validateCallbackPath = "/usr/share/updatehub/validate-callback"
+
+	// The rollback callback is executed whenever the agent boots
+	// after an errored installation boot
+	rollbackCallbackPath = "/usr/share/updatehub/rollback-callback"
 )
