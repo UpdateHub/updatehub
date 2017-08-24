@@ -228,10 +228,12 @@ func (uh *UpdateHub) ProbeUpdate(apiClient *client.ApiClient, retries int) (*met
 	var data struct {
 		Retries int `json:"retries"`
 		metadata.FirmwareMetadata
+		LastInstalledPackage string `json:"last-installed-package,omitempty"`
 	}
 
 	data.FirmwareMetadata = uh.FirmwareMetadata
 	data.Retries = retries
+	data.LastInstalledPackage = uh.lastInstalledPackageUID
 
 	updateMetadataPath := path.Join(uh.Settings.DownloadDir, metadata.UpdateMetadataFilename)
 
@@ -469,6 +471,7 @@ func (uh *UpdateHub) StartPolling() {
 	if uh.Settings.FirstPoll == timeZero {
 		// Apply an offset in first poll
 		uh.Settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.Settings.PollingInterval))))
+		uh.Settings.Save(uh.Store)
 	} else if uh.Settings.LastPoll == timeZero && now.After(uh.Settings.FirstPoll) {
 		// it never did a poll before
 		uh.state = NewProbeState(uh.DefaultApiClient)
@@ -493,5 +496,11 @@ func (uh *UpdateHub) StartPolling() {
 		}
 
 		log.Info("next poll is expected at: ", nextPoll)
+	}
+
+	if uh.Settings.ProbeASAP {
+		uh.state = NewProbeState(uh.DefaultApiClient)
+		uh.Settings.ProbeASAP = false
+		uh.Settings.Save(uh.Store)
 	}
 }

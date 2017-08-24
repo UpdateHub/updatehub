@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -186,17 +187,25 @@ func TestLoadSettings(t *testing.T) {
 }
 
 func TestSaveSettings(t *testing.T) {
-	expectedSettings, err := LoadSettings(bytes.NewReader([]byte("")))
-	assert.NoError(t, err)
-	assert.NotNil(t, expectedSettings)
+	fs := afero.NewMemMapFs()
 
-	var buf bytes.Buffer
-	err = SaveSettings(expectedSettings, &buf)
+	settings, err := LoadSettings(bytes.NewReader([]byte(customSettings)))
+	assert.NoError(t, err)
+	assert.NotNil(t, settings)
+
+	err = settings.Save(fs)
 	assert.NoError(t, err)
 
-	s, err := LoadSettings(bytes.NewReader(buf.Bytes()))
+	data, err := afero.ReadFile(fs, "/var/lib/updatehub.conf")
 	assert.NoError(t, err)
-	assert.NotNil(t, s)
 
-	assert.Equal(t, expectedSettings, s)
+	expectedData := `[Polling]
+LastPoll=2017-01-01T00:00:00Z
+FirstPoll=2017-02-02T00:00:00Z
+ExtraInterval=4
+Retries=5
+ProbeASAP=false
+
+`
+	assert.Equal(t, expectedData, string(data))
 }

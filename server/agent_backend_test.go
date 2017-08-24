@@ -229,6 +229,7 @@ func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 	rwm.On("WriteHeader", 200)
 	rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
 
+	done := make(chan bool, 1)
 	go func() {
 		ok := false
 		for ok == false {
@@ -237,9 +238,13 @@ func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 		}
 
 		s.NextState().Handle(uh)
+
+		done <- true
 	}()
 
 	ab.probe(rwm, nil, nil)
+
+	<-done
 
 	assert.IsType(t, &updatehub.ProbeState{}, s.NextState())
 
@@ -293,6 +298,7 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 			rwm.On("WriteHeader", 200)
 			rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
 
+			done := make(chan bool, 1)
 			go func() {
 				ok := false
 				for ok == false {
@@ -301,6 +307,8 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 				}
 
 				s.NextState().Handle(uh)
+
+				done <- true
 			}()
 
 			body := bytes.NewBufferString(fmt.Sprintf(`{ "server-address": "%s" }`, tc.ExpectedURL))
@@ -309,6 +317,8 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 			assert.NoError(t, err)
 
 			ab.probe(rwm, req, nil)
+
+			<-done
 
 			assert.IsType(t, &updatehub.ProbeState{}, s.NextState())
 

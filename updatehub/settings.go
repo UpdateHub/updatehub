@@ -16,6 +16,7 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/go-ini/ini"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -32,6 +33,7 @@ var DefaultSettings = Settings{
 			FirstPoll:            (time.Time{}).UTC(),
 			ExtraPollingInterval: 0,
 			PollingRetries:       0,
+			ProbeASAP:            false,
 		},
 	},
 
@@ -77,6 +79,7 @@ type PersistentPollingSettings struct {
 	FirstPoll            time.Time     `ini:"FirstPoll" json:"first-poll"`
 	ExtraPollingInterval time.Duration `ini:"ExtraInterval" json:"extra-interval"`
 	PollingRetries       int           `ini:"Retries" json:"retries"`
+	ProbeASAP            bool          `ini:"ProbeASAP" json:"probe-asap"`
 }
 
 type StorageSettings struct {
@@ -106,6 +109,34 @@ func (s *Settings) ToString() string {
 	return string(outputJSON)
 }
 
+func (s *Settings) Save(fs afero.Fs) error {
+	log.Debug("Saving: \n", s.ToString())
+
+	file, err := fs.Create(s.RuntimeSettingsPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	ps := &PersistentSettings{
+		PersistentPollingSettings: s.PollingSettings.PersistentPollingSettings,
+	}
+
+	cfg := ini.Empty()
+
+	err = ini.ReflectFrom(cfg, ps)
+	if err != nil {
+		return err
+	}
+
+	_, err = cfg.WriteTo(file)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func LoadSettings(r io.Reader) (*Settings, error) {
 	cfg, err := ini.Load(ioutil.NopCloser(r))
 	if err != nil || cfg == nil {
@@ -120,26 +151,4 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 	}
 
 	return &s, nil
-}
-
-func SaveSettings(s *Settings, w io.Writer) error {
-	log.Debug("\n", s.ToString())
-
-	ps := &PersistentSettings{
-		PersistentPollingSettings: s.PollingSettings.PersistentPollingSettings,
-	}
-
-	cfg := ini.Empty()
-
-	err := ini.ReflectFrom(cfg, ps)
-	if err != nil {
-		return err
-	}
-
-	_, err = cfg.WriteTo(w)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
