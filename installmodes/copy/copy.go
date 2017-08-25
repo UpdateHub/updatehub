@@ -11,6 +11,7 @@ package copy
 import (
 	"fmt"
 	"path"
+	"path/filepath"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
@@ -106,8 +107,13 @@ func (cp *CopyObject) Install(downloadDir string) error {
 
 	targetPath := path.Join(cp.tempDirPath, cp.TargetPath)
 
+	err := cp.FileSystemBackend.MkdirAll(filepath.Dir(targetPath), 0755)
+	if err != nil {
+		return err
+	}
+
 	sourcePath := path.Join(downloadDir, cp.Sha256sum)
-	err := cp.CopyBackend.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
+	err = cp.CopyBackend.CopyFile(cp.FileSystemBackend, cp.LibArchiveBackend, sourcePath, targetPath, cp.ChunkSize, 0, 0, -1, true, cp.Compressed)
 	if err != nil {
 		errorList = append(errorList, err)
 	}
