@@ -9,6 +9,7 @@
 package updatehub
 
 import (
+	"errors"
 	"time"
 
 	"github.com/UpdateHub/updatehub/client"
@@ -37,7 +38,8 @@ func (state *ProbeState) ID() UpdateHubState {
 // proceed to download the update if there is one. It goes back to the
 // polling state otherwise.
 func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
-	state.probeUpdateMetadata, state.probeExtraPoll = uh.Controller.ProbeUpdate(state.apiClient, uh.Settings.PollingRetries)
+	var signature []byte
+	state.probeUpdateMetadata, signature, state.probeExtraPoll = uh.Controller.ProbeUpdate(state.apiClient, uh.Settings.PollingRetries)
 
 	// "non-blocking" write to channel
 	select {
@@ -58,6 +60,11 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 		packageUID := state.probeUpdateMetadata.PackageUID()
 		if packageUID == uh.lastInstalledPackageUID {
 			return NewIdleState(), false
+		}
+
+		if !state.probeUpdateMetadata.VerifySignature(uh.PublicKey, signature) {
+			err := errors.New("invalid signature")
+			return NewErrorState(state.apiClient, state.probeUpdateMetadata, NewTransientError(err)), false
 		}
 
 		return NewDownloadingState(state.apiClient, state.probeUpdateMetadata, &ProgressTrackerImpl{}), false

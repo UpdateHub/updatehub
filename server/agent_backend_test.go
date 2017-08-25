@@ -223,7 +223,7 @@ func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 	cm := &controllermock.ControllerMock{}
 
 	uh.Controller = cm
-	cm.On("ProbeUpdate", uh.DefaultApiClient, 5).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
+	cm.On("ProbeUpdate", uh.DefaultApiClient, 5).Return((*metadata.UpdateMetadata)(nil), []byte{}, 3600*time.Second)
 
 	rwm := &responsewritermock.ResponseWriterMock{}
 	rwm.On("WriteHeader", 200)
@@ -292,7 +292,7 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 			cm := &controllermock.ControllerMock{}
 
 			uh.Controller = cm
-			cm.On("ProbeUpdate", apiClient, 5).Return((*metadata.UpdateMetadata)(nil), 3600*time.Second)
+			cm.On("ProbeUpdate", apiClient, 5).Return((*metadata.UpdateMetadata)(nil), []byte{}, 3600*time.Second)
 
 			rwm := &responsewritermock.ResponseWriterMock{}
 			rwm.On("WriteHeader", 200)

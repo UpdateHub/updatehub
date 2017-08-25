@@ -9,9 +9,15 @@
 package main
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+
+	"github.com/pkg/errors"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/sirupsen/logrus"
@@ -117,7 +123,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, osFs, *fm, updatehub.NewIdleState(), settings, client.NewApiClient(address))
+	pubKey, err := readPublicKey(osFs, settings)
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "failed to read public key"))
+	}
+
+	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, osFs, *fm, pubKey, updatehub.NewIdleState(), settings, client.NewApiClient(address))
 
 	backend, err := server.NewAgentBackend(uh)
 	if err != nil {
@@ -163,4 +174,24 @@ func loadSettings(fs afero.Fs, structToSaveOn *updatehub.Settings, pathToLoadFro
 	*structToSaveOn = *s
 
 	return nil
+}
+
+func readPublicKey(fs afero.Fs, settings *updatehub.Settings) (*rsa.PublicKey, error) {
+	pubKeyPath := path.Join(settings.FirmwareMetadataPath, "key.pub")
+	data, err := afero.ReadFile(fs, pubKeyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return nil, errors.New("Failed to decode PEM")
+	}
+
+	key, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return key.(*rsa.PublicKey), nil
 }

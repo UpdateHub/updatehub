@@ -9,6 +9,7 @@
 package client
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,9 +34,10 @@ func TestProbeUpdateWithInvalidApiRequester(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(nil, UpgradesEndpoint, fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(nil, UpgradesEndpoint, fm)
 
 	assert.Nil(t, updateMetadata)
+	assert.Nil(t, signature)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "invalid api requester")
 }
@@ -53,9 +55,10 @@ func TestProbeUpdateWithNewRequestError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), "/resource%s", fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(ac.Request(), "/resource%s", fm)
 
 	assert.Nil(t, updateMetadata)
+	assert.Nil(t, signature)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "failed to create probe update request: parse http://localhost/resource%s: invalid URL escape \"%s\"")
 }
@@ -73,9 +76,10 @@ func TestProbeUpdateWithApiDoError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), "/resource", fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(ac.Request(), "/resource", fm)
 
 	assert.Nil(t, updateMetadata)
+	assert.Nil(t, signature)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.True(t, strings.HasPrefix(err.Error(), "probe update request failed: Post http://invalid/resource: dial tcp: lookup invalid"))
 }
@@ -105,9 +109,10 @@ func TestProbeUpdateWithExtraPollHeaderError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
+	assert.Nil(t, signature)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "failed to parse extra poll header: strconv.ParseInt: parsing \"@3\": invalid syntax")
 }
@@ -137,9 +142,10 @@ func TestProbeUpdateWithResponseBodyReadError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
+	assert.Nil(t, signature)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "error reading response body: unexpected EOF")
 }
@@ -169,9 +175,10 @@ func TestProbeUpdateWithResponseBodyParseError(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
+	assert.Nil(t, signature)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "failed to parse upgrade response: invalid character 'e' looking for beginning of value")
 }
@@ -201,9 +208,10 @@ func TestProbeUpdateWithInvalidStatusCode(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
+	assert.Nil(t, signature)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.EqualError(t, err, "invalid response received from the server. HTTP code: 502")
 }
@@ -233,9 +241,10 @@ func TestProbeUpdateWithNoUpdateAvailable(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
 	assert.Nil(t, updateMetadata)
+	assert.Nil(t, signature)
 	assert.Equal(t, time.Duration(3), extraPoll)
 	assert.NoError(t, err)
 }
@@ -256,12 +265,14 @@ func TestProbeUpdateWithUpdateAvailable(t *testing.T) {
 	  ],
 	  "version": "1.2"
 	}`
+	expectedSignature := []byte("bytes")
 	address := "localhost"
 	path := "/resource"
 
 	thh := &testHttpHandler{
-		Path:         path,
-		ResponseBody: string(expectedBody),
+		Path:            path,
+		ResponseBody:    string(expectedBody),
+		ResponseHeaders: map[string]string{"UH-Signature": base64.StdEncoding.EncodeToString(expectedSignature)},
 	}
 
 	port, _, err := StartNewTestHttpServer(address, thh)
@@ -279,8 +290,9 @@ func TestProbeUpdateWithUpdateAvailable(t *testing.T) {
 		Version:          "version-value",
 	}
 
-	updateMetadata, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
+	updateMetadata, signature, extraPoll, err := uc.ProbeUpdate(ac.Request(), path, fm)
 
+	assert.Equal(t, expectedSignature, signature)
 	assert.Equal(t, time.Duration(0), extraPoll)
 	assert.NoError(t, err)
 
@@ -394,10 +406,15 @@ func TestDownloadUpdateWithSuccess(t *testing.T) {
 type testHttpHandler struct {
 	Path              string
 	ResponseBody      string
+	ResponseHeaders   map[string]string
 	LastRequestHeader http.Header
 }
 
 func (thh *testHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	for key, value := range thh.ResponseHeaders {
+		w.Header().Add(key, value)
+	}
+
 	if r.URL.Path == "/ping" {
 		fmt.Fprintf(w, "pong")
 	}

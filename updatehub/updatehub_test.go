@@ -10,7 +10,12 @@ package updatehub
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -85,6 +90,16 @@ const (
   ]
 }`
 )
+
+var testPrivateKey *rsa.PrivateKey
+
+func init() {
+	var err error
+	testPrivateKey, err = rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func startDownloadUpdateInAnotherFunc(apiClient *client.ApiClient, uh *UpdateHub, um *metadata.UpdateMetadata) ([]int, error) {
 	var progressList []int
@@ -300,7 +315,9 @@ func TestNewUpdateHub(t *testing.T) {
 
 	settings := &Settings{}
 
-	uh := NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, memFs, *fm, initialState, settings, client.NewApiClient("address"))
+	pubKey := &testPrivateKey.PublicKey
+
+	uh := NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, memFs, *fm, pubKey, initialState, settings, client.NewApiClient("address"))
 
 	assert.Equal(t, &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}}, uh.ActiveInactiveBackend)
 	assert.Equal(t, gitversion, uh.Version)
@@ -533,6 +550,11 @@ func TestUpdateHubProbeUpdate(t *testing.T) {
 			err := afero.WriteFile(uh.Store, updateMetadataPath, []byte("dummyfile"), 0644)
 			assert.NoError(t, err)
 
+			sha256sum := sha256.Sum256([]byte(tc.updateMetadata))
+			expectedSignature, err := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
+			assert.NoError(t, err)
+			assert.NotEmpty(t, expectedSignature)
+
 			var data struct {
 				Retries int `json:"retries"`
 				metadata.FirmwareMetadata
@@ -548,13 +570,13 @@ func TestUpdateHubProbeUpdate(t *testing.T) {
 			apiClient := client.NewApiClient("address")
 
 			um := &updatermock.UpdaterMock{}
-			um.On("ProbeUpdate", apiClient.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, tc.extraPoll, nil)
-
+			um.On("ProbeUpdate", apiClient.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, expectedSignature, tc.extraPoll, nil)
 			uh.Updater = um
 
-			updateMetadata, extraPoll := uh.ProbeUpdate(apiClient, 0)
+			updateMetadata, signature, extraPoll := uh.ProbeUpdate(apiClient, 0)
 
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
+			assert.Equal(t, expectedSignature, signature)
 			assert.Equal(t, tc.extraPoll, extraPoll)
 			um.AssertExpectations(t)
 
@@ -605,13 +627,14 @@ func TestUpdateHubProbeUpdateWithNilUpdateMetadata(t *testing.T) {
 	apiClient := client.NewApiClient("address")
 
 	um := &updatermock.UpdaterMock{}
-	um.On("ProbeUpdate", apiClient.Request(), client.UpgradesEndpoint, data).Return(nil, time.Duration(3000), nil)
+	um.On("ProbeUpdate", apiClient.Request(), client.UpgradesEndpoint, data).Return(nil, []byte{}, time.Duration(3000), nil)
 
 	uh.Updater = um
 
-	updateMetadata, extraPoll := uh.ProbeUpdate(apiClient, 0)
+	updateMetadata, signature, extraPoll := uh.ProbeUpdate(apiClient, 0)
 
 	assert.Equal(t, (*metadata.UpdateMetadata)(nil), updateMetadata)
+	assert.Equal(t, []byte{}, signature)
 	assert.Equal(t, time.Duration(3000), extraPoll)
 	um.AssertExpectations(t)
 
@@ -1926,6 +1949,7 @@ func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, er
 	fs := afero.NewMemMapFs()
 	uh := &UpdateHub{
 		Store:                   fs,
+		PublicKey:               &testPrivateKey.PublicKey,
 		state:                   state,
 		TimeStep:                time.Second,
 		ActiveInactiveBackend:   aii,

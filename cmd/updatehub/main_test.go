@@ -9,6 +9,10 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"path"
@@ -124,4 +128,38 @@ func TestLoadSettingsWithOpenError(t *testing.T) {
 	assert.EqualError(t, err, "open error")
 
 	fsbm.AssertExpectations(t)
+}
+
+func TestReadPublicKey(t *testing.T) {
+	settings := &updatehub.Settings{
+		FirmwareSettings: updatehub.FirmwareSettings{
+			FirmwareMetadataPath: "/tmp",
+		},
+	}
+
+	memFs := afero.NewMemMapFs()
+
+	key, err := rsa.GenerateKey(rand.Reader, 1024)
+	assert.NoError(t, err)
+
+	pubBytes, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
+	assert.NoError(t, err)
+
+	var pemBlock = &pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubBytes,
+	}
+
+	outFile, err := memFs.Create("/tmp/key.pub")
+	assert.NoError(t, err)
+
+	err = pem.Encode(outFile, pemBlock)
+	assert.NoError(t, err)
+
+	outFile.Close()
+
+	pubKey, err := readPublicKey(memFs, settings)
+	assert.NoError(t, err)
+
+	assert.Equal(t, pubKey, &key.PublicKey)
 }

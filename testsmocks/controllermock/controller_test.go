@@ -20,15 +20,17 @@ import (
 
 func TestProbeUpdate(t *testing.T) {
 	expectedMetadata := &metadata.UpdateMetadata{}
+	expectedSignature := []byte{}
 	expectedDuration := 10 * time.Second
 
 	apiClient := client.NewApiClient("address")
 	cm := &ControllerMock{}
-	cm.On("ProbeUpdate", apiClient, 0).Return(expectedMetadata, expectedDuration)
+	cm.On("ProbeUpdate", apiClient, 0).Return(expectedMetadata, expectedSignature, expectedDuration)
 
-	m, d := cm.ProbeUpdate(apiClient, 0)
+	m, s, d := cm.ProbeUpdate(apiClient, 0)
 
 	assert.Equal(t, expectedMetadata, m)
+	assert.Equal(t, expectedSignature, s)
 	assert.Equal(t, expectedDuration, d)
 
 	cm.AssertExpectations(t)

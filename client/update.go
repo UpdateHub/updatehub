@@ -10,6 +10,7 @@ package client
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -27,15 +28,15 @@ type UpdateClient struct {
 }
 
 type Updater interface {
-	ProbeUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error)
+	ProbeUpdate(api ApiRequester, uri string, data interface{}) (interface{}, []byte, time.Duration, error)
 	DownloadUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error)
 }
 
-func (u *UpdateClient) ProbeUpdate(api ApiRequester, uri string, data interface{}) (interface{}, time.Duration, error) {
+func (u *UpdateClient) ProbeUpdate(api ApiRequester, uri string, data interface{}) (interface{}, []byte, time.Duration, error) {
 	if api == nil {
 		finalErr := fmt.Errorf("invalid api requester")
 		log.Error(finalErr)
-		return nil, 0, finalErr
+		return nil, nil, 0, finalErr
 	}
 
 	url := serverURL(api.Client(), uri)
@@ -47,7 +48,7 @@ func (u *UpdateClient) ProbeUpdate(api ApiRequester, uri string, data interface{
 	if err != nil {
 		finalErr := fmt.Errorf("failed to create probe update request: %s", err)
 		log.Error(finalErr)
-		return nil, 0, finalErr
+		return nil, nil, 0, finalErr
 	}
 
 	req.Header.Set("Api-Content-Type", "application/vnd.updatehub-v1+json")
@@ -57,26 +58,26 @@ func (u *UpdateClient) ProbeUpdate(api ApiRequester, uri string, data interface{
 	if err != nil {
 		finalErr := fmt.Errorf("probe update request failed: %s", err)
 		log.Error(finalErr)
-		return nil, 0, finalErr
+		return nil, nil, 0, finalErr
 	}
 
 	defer res.Body.Close()
 
 	var extraPoll int64
 
-	r, err := processUpgradeResponse(res)
+	r, signature, err := processUpgradeResponse(res)
 	if err == nil {
 		if v, ok := res.Header["Add-Extra-Poll"]; ok {
 			extraPoll, err = strconv.ParseInt(strings.Join(v, ""), 10, 0)
 			if err != nil {
 				finalErr := fmt.Errorf("failed to parse extra poll header: %s", err)
 				log.Error(finalErr)
-				return nil, 0, finalErr
+				return nil, nil, 0, finalErr
 			}
 		}
 	}
 
-	return r, time.Duration(extraPoll), err
+	return r, signature, time.Duration(extraPoll), err
 }
 
 func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error) {
@@ -114,12 +115,12 @@ func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string) (io.ReadClos
 	return res.Body, res.ContentLength, nil
 }
 
-func processUpgradeResponse(res *http.Response) (interface{}, error) {
+func processUpgradeResponse(res *http.Response) (interface{}, []byte, error) {
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		finalErr := fmt.Errorf("error reading response body: %s", err)
 		log.Error(finalErr)
-		return nil, finalErr
+		return nil, nil, finalErr
 	}
 
 	switch res.StatusCode {
@@ -128,22 +129,27 @@ func processUpgradeResponse(res *http.Response) (interface{}, error) {
 		if err != nil {
 			finalErr := fmt.Errorf("failed to parse upgrade response: %s", err)
 			log.Error(finalErr)
-			return nil, finalErr
+			return nil, nil, finalErr
 		}
 
 		log.Info("Update available")
 
-		return data, nil
+		signature, err := base64.StdEncoding.DecodeString(res.Header.Get("UH-Signature"))
+		if err != nil {
+			return data, nil, nil
+		}
+
+		return data, signature, nil
 	case http.StatusNotFound:
 		log.Info("Update not available")
 
 		// NotFound is not an error in this case, just means there is no update available
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	finalErr := fmt.Errorf("invalid response received from the server. HTTP code: %d", res.StatusCode)
 	log.Error(finalErr)
-	return nil, finalErr
+	return nil, nil, finalErr
 }
 
 func NewUpdateClient() *UpdateClient {
