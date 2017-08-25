@@ -10,7 +10,9 @@ package copy
 
 import (
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/UpdateHub/updatehub/copy"
@@ -191,6 +193,56 @@ func TestCopySetupWithMountError(t *testing.T) {
 	assert.Equal(t, expectedTargetPath, cp.GetTarget())
 }
 
+func TestCopyInstallWithMkdirAllError(t *testing.T) {
+	expectedError := fmt.Errorf("mkdirall error")
+
+	lam := &libarchivemock.LibArchiveMock{}
+	fsbm := &filesystemmock.FileSystemBackendMock{}
+
+	fsbm.On("MkdirAll", "/dummy-path/subdir", os.FileMode(0755)).Return(expectedError)
+
+	targetDevice := "/dev/xx1"
+	targetPath := "/subdir/inner-path"
+	fsType := "ext4"
+	mountOptions := "-o rw"
+	sha256sum := "2ab0cfa4332841d4de81ea738d641ef943ddec60a6f4638adcc0091f5345a226"
+	compressed := false
+
+	tempDirPath := "/dummy-path"
+
+	fsm := &filesystemmock.FileSystemHelperMock{}
+
+	downloadDir := "/dummy-download-dir"
+
+	cm := &copymock.CopyMock{}
+
+	cp := CopyObject{
+		FileSystemHelper:  fsm,
+		CopyBackend:       cm,
+		FileSystemBackend: fsbm,
+		LibArchiveBackend: lam,
+		ChunkSize:         128 * 1024,
+	}
+	cp.Target = targetDevice
+	cp.TargetPath = targetPath
+	cp.FSType = fsType
+	cp.MountOptions = mountOptions
+	cp.Sha256sum = sha256sum
+	cp.Compressed = compressed
+	cp.tempDirPath = tempDirPath
+
+	err := cp.Install(downloadDir)
+
+	assert.Equal(t, expectedError, err)
+	fsm.AssertExpectations(t)
+	fsbm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	lam.AssertExpectations(t)
+
+	expectedTargetPath := path.Join(tempDirPath, targetPath)
+	assert.Equal(t, expectedTargetPath, cp.GetTarget())
+}
+
 func TestCopyInstallWithCopyFileError(t *testing.T) {
 	lam := &libarchivemock.LibArchiveMock{}
 	fsbm := &filesystemmock.FileSystemBackendMock{}
@@ -203,6 +255,7 @@ func TestCopyInstallWithCopyFileError(t *testing.T) {
 	compressed := false
 
 	tempDirPath := "/dummy-path"
+	fsbm.On("MkdirAll", tempDirPath, os.FileMode(0755)).Return(nil)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 
@@ -254,6 +307,7 @@ func TestCopyInstallWithChmodAndChownErrors(t *testing.T) {
 	gid = "group"
 
 	tempDirPath := "/dummy-path"
+	fsbm.On("MkdirAll", tempDirPath, os.FileMode(0755)).Return(nil)
 
 	fsm := &filesystemmock.FileSystemHelperMock{}
 
@@ -332,6 +386,22 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			false,
 		},
 		{
+			"WithSubdirInnerPath",
+			"2ab0cfa4332841d4de81ea738d641ef943ddec60a6f4638adcc0091f5345a226",
+			"/dev/xx1",
+			"device",
+			"/subdir/inner-path",
+			"0777",
+			"user",
+			"group",
+			"ext4",
+			"-y",
+			true,
+			"-o rw",
+			2048,
+			false,
+		},
+		{
 			"WithNegativeChunkSize",
 			"2ab0cfa4332841d4de81ea738d641ef943ddec60a6f4638adcc0091f5345a226",
 			"/dev/xx1",
@@ -387,6 +457,8 @@ func TestCopyInstallWithSuccess(t *testing.T) {
 			lam := &libarchivemock.LibArchiveMock{}
 
 			tempDirPath := "/dummy-path"
+
+			fsbm.On("MkdirAll", filepath.Dir(path.Join(tempDirPath, tc.TargetPath)), os.FileMode(0755)).Return(nil)
 
 			fsm := &filesystemmock.FileSystemHelperMock{}
 
