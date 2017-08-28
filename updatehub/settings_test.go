@@ -11,6 +11,7 @@ package updatehub
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -18,9 +19,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const customSettings = `
+const (
+	customSettings = `
 [Polling]
-Interval=1
+Interval=2h
 Enabled=false
 LastPoll=2017-01-01T00:00:00Z
 FirstPoll=2017-02-02T00:00:00Z
@@ -40,6 +42,30 @@ ServerAddress=http://localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 `
+
+	customSettingsWithInvalidPollingInterval = `
+[Polling]
+Interval=20s
+Enabled=false
+LastPoll=2017-01-01T00:00:00Z
+FirstPoll=2017-02-02T00:00:00Z
+ExtraInterval=4
+Retries=5
+
+[Storage]
+ReadOnly=true
+
+[Update]
+DownloadDir=/tmp/download
+SupportedInstallModes=mode1,mode2
+
+[Network]
+ServerAddress=http://localhost
+
+[Firmware]
+MetadataPath=/tmp/metadata
+`
+)
 
 func TestToString(t *testing.T) {
 	s := &Settings{
@@ -64,7 +90,7 @@ func TestToString(t *testing.T) {
 		},
 
 		NetworkSettings: NetworkSettings{
-			ServerAddress: "api.updatehub.io",
+			ServerAddress: "https://api.updatehub.io",
 		},
 
 		FirmwareSettings: FirmwareSettings{
@@ -95,7 +121,7 @@ func TestLoadSettingsDefaultValues(t *testing.T) {
 	assert.Equal(t, []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"}, s.UpdateSettings.SupportedInstallModes)
 	assert.Equal(t, -1, s.UpdateSettings.PersistentUpdateSettings.UpgradeToInstallation)
 
-	assert.Equal(t, "api.updatehub.io", s.NetworkSettings.ServerAddress)
+	assert.Equal(t, "https://api.updatehub.io", s.NetworkSettings.ServerAddress)
 
 	assert.Equal(t, "/usr/share/updatehub", s.FirmwareSettings.FirmwareMetadataPath)
 }
@@ -135,7 +161,7 @@ func TestLoadSettings(t *testing.T) {
 				},
 
 				NetworkSettings: NetworkSettings{
-					ServerAddress: "api.updatehub.io",
+					ServerAddress: "https://api.updatehub.io",
 				},
 
 				FirmwareSettings: FirmwareSettings{
@@ -149,7 +175,7 @@ func TestLoadSettings(t *testing.T) {
 			customSettings,
 			&Settings{
 				PollingSettings: PollingSettings{
-					PollingInterval: 1,
+					PollingInterval: 2 * time.Hour,
 					PollingEnabled:  false,
 					PersistentPollingSettings: PersistentPollingSettings{
 						LastPoll:             time.Date(2017, time.January, 1, 0, 0, 0, 0, time.UTC),
@@ -193,6 +219,14 @@ func TestLoadSettings(t *testing.T) {
 	}
 }
 
+func TestLoadSettingsWithError(t *testing.T) {
+	ds := DefaultSettings
+	ds.PollingInterval = 20 * time.Second
+
+	_, err := LoadSettings(bytes.NewReader([]byte(customSettingsWithInvalidPollingInterval)))
+	assert.EqualError(t, err, "Settings invalid config: Polling interval can't be less than 1m0s")
+}
+
 func TestSaveSettings(t *testing.T) {
 	fs := afero.NewMemMapFs()
 
@@ -218,4 +252,60 @@ UpgradeToInstallation=-1
 
 `
 	assert.Equal(t, expectedData, string(data))
+}
+
+func TestValidateValues(t *testing.T) {
+	testCases := []struct {
+		name          string
+		settings      *Settings
+		expectedError error
+	}{
+		{
+			"SuccessfulValues",
+			func() *Settings {
+				s := DefaultSettings
+				return &s
+			}(),
+			nil,
+		},
+		{
+			"UnsanitizedAddress",
+			func() *Settings {
+				s := DefaultSettings
+				s.ServerAddress = "api.updatehub.io"
+				return &s
+			}(),
+			nil,
+		},
+		{
+			"NegativeExtraPollingInterval",
+			func() *Settings {
+				s := DefaultSettings
+				s.ExtraPollingInterval = -1
+				return &s
+			}(),
+			fmt.Errorf("Extra polling interval can't be negative"),
+		},
+		{
+			"PollingIntervalLessThanAMinute",
+			func() *Settings {
+				s := DefaultSettings
+				s.PollingInterval = 30 * time.Second
+				return &s
+			}(),
+			fmt.Errorf("Polling interval can't be less than 1m0s"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateValues(tc.settings)
+
+			if tc.expectedError == nil {
+				assert.Nil(t, err)
+			} else {
+				assert.EqualError(t, err, tc.expectedError.Error())
+			}
+		})
+	}
 }
