@@ -117,18 +117,12 @@ func main() {
 
 	osFs.MkdirAll(settings.DownloadDir, 0755)
 
-	address, err := utils.SanitizeServerAddress(settings.ServerAddress)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-
 	pubKey, err := readPublicKey(osFs, settings)
 	if err != nil {
 		log.Fatal(errors.Wrap(err, "failed to read public key"))
 	}
 
-	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, osFs, *fm, pubKey, updatehub.NewIdleState(), settings, client.NewApiClient(address))
+	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, osFs, *fm, pubKey, updatehub.NewIdleState(), settings, client.NewApiClient(settings.ServerAddress))
 
 	backend, err := server.NewAgentBackend(uh)
 	if err != nil {

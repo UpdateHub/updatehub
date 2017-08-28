@@ -10,18 +10,20 @@ package updatehub
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"time"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/UpdateHub/updatehub/utils"
 	"github.com/go-ini/ini"
 	"github.com/spf13/afero"
 )
 
 const (
 	defaultPollingInterval = time.Hour
-	defaultServerAddress   = "api.updatehub.io"
+	defaultServerAddress   = "https://api.updatehub.io"
 )
 
 var DefaultSettings = Settings{
@@ -160,5 +162,29 @@ func LoadSettings(r io.Reader) (*Settings, error) {
 		return nil, err
 	}
 
+	err = validateValues(&s)
+	if err != nil {
+		return nil, fmt.Errorf("Settings invalid config: %s", err)
+	}
+
 	return &s, nil
+}
+
+func validateValues(s *Settings) error {
+	if s.PollingInterval < time.Minute {
+		return fmt.Errorf("Polling interval can't be less than %s", time.Minute)
+	}
+
+	if s.ExtraPollingInterval < 0 {
+		return fmt.Errorf("Extra polling interval can't be negative")
+	}
+
+	address, err := utils.SanitizeServerAddress(s.ServerAddress)
+	if err != nil {
+		return err
+	}
+
+	s.ServerAddress = address
+
+	return nil
 }
