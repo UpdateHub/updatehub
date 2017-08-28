@@ -9,6 +9,10 @@
 package updatehub
 
 import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"time"
 
 	"github.com/UpdateHub/updatehub/client"
@@ -62,12 +66,15 @@ const (
 	}`
 )
 
-func (c *testController) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, time.Duration) {
+func (c *testController) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, []byte, time.Duration) {
+	sha256sum := sha256.Sum256([]byte{})
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
+
 	if c.updateAvailable {
-		return &metadata.UpdateMetadata{}, c.extraPoll
+		return &metadata.UpdateMetadata{}, signature, c.extraPoll
 	}
 
-	return nil, c.extraPoll
+	return nil, nil, c.extraPoll
 }
 
 func (c *testController) DownloadUpdate(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {

@@ -20,9 +20,9 @@ type ControllerMock struct {
 	mock.Mock
 }
 
-func (cm *ControllerMock) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, time.Duration) {
+func (cm *ControllerMock) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, []byte, time.Duration) {
 	args := cm.Called(apiClient, retries)
-	return args.Get(0).(*metadata.UpdateMetadata), args.Get(1).(time.Duration)
+	return args.Get(0).(*metadata.UpdateMetadata), args.Get(1).([]byte), args.Get(2).(time.Duration)
 }
 
 func (cm *ControllerMock) DownloadUpdate(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {

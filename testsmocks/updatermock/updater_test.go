@@ -35,6 +35,7 @@ const (
 func TestProbeUpdate(t *testing.T) {
 	_ = &copy.CopyObject{} // just to register the copy object
 
+	expectedSignature := []byte("signature")
 	expectedError := fmt.Errorf("some error")
 	api := client.NewApiClient("localhost")
 
@@ -42,11 +43,12 @@ func TestProbeUpdate(t *testing.T) {
 	assert.NoError(t, err)
 
 	um := &UpdaterMock{}
-	um.On("ProbeUpdate", api.Request(), "uri", "data").Return(expectedUpdateMetadata, time.Duration(5), expectedError)
+	um.On("ProbeUpdate", api.Request(), "uri", "data").Return(expectedUpdateMetadata, expectedSignature, time.Duration(5), expectedError)
 
-	updateMetadata, extraPoll, err := um.ProbeUpdate(api.Request(), "uri", "data")
+	updateMetadata, signature, extraPoll, err := um.ProbeUpdate(api.Request(), "uri", "data")
 
 	assert.Equal(t, expectedUpdateMetadata, updateMetadata)
+	assert.Equal(t, expectedSignature, signature)
 	assert.Equal(t, time.Duration(5), extraPoll)
 	assert.Equal(t, expectedError, err)
 

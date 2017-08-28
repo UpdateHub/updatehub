@@ -127,7 +127,7 @@ func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 
 	uh.lastInstalledPackageUID = m.PackageUID()
 
-	cm.On("ProbeUpdate", apiClient, 0).Return(m, time.Duration(0))
+	cm.On("ProbeUpdate", apiClient, 0).Return(m, []byte{}, time.Duration(0))
 
 	uh.Controller = cm
 	uh.Settings = &Settings{}
