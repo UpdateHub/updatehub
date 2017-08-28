@@ -95,10 +95,15 @@ func (sb *ServerBackend) parseUhuPkg(pkgpath string) ([]byte, []byte, error) {
 		return nil, nil, err
 	}
 
+	reader, err = libarchive.NewReader(sb.LibArchive, pkgpath, 10240)
+	if err != nil {
+		return metadataBuff.Bytes(), nil, err
+	}
+
 	signatureBuff := bytes.NewBuffer(nil)
 	err = reader.ExtractFile("signature", signatureBuff)
 	if err != nil {
-		return metadataBuff.Bytes(), nil, nil
+		return metadataBuff.Bytes(), nil, err
 	}
 
 	return metadataBuff.Bytes(), signatureBuff.Bytes(), nil

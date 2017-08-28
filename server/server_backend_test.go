@@ -11,6 +11,10 @@ package server
 import (
 	"archive/zip"
 	"bytes"
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -26,7 +30,6 @@ import (
 	"github.com/UpdateHub/updatehub/utils"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 const (
@@ -192,25 +195,26 @@ func TestParseUhuPkgWithNewReaderError(t *testing.T) {
 	lam.AssertExpectations(t)
 }
 
-func TestParseUhuPkgWithExtractFileError(t *testing.T) {
-	lam := &libarchivemock.LibArchiveMock{}
+func TestParseUhuPkgWithExtractMetadataFileError(t *testing.T) {
+	memFs := afero.NewOsFs()
 
-	testPath, err := ioutil.TempDir("", "server-test")
+	la := &libarchive.LibArchive{}
+
+	// setup filesystem
+	tarballPath, err := generateUhupkg(memFs, false, true)
 	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
+	defer memFs.Remove(tarballPath)
 
-	pkgpath := path.Join(testPath, "dummy")
+	testPath, err := afero.TempDir(memFs, "", "server-test")
+	assert.NoError(t, err)
+	defer memFs.RemoveAll(testPath)
 
-	a := libarchive.LibArchive{}.NewRead()
-	lam.On("NewRead").Return(a)
-	lam.On("ReadSupportFilterAll", a).Return(nil)
-	lam.On("ReadSupportFormatRaw", a).Return(nil)
-	lam.On("ReadSupportFormatEmpty", a).Return(nil)
-	lam.On("ReadSupportFormatAll", a).Return(nil)
-	lam.On("ReadOpenFileName", a, pkgpath, 10240).Return(nil)
-	lam.On("ReadNextHeader", a, mock.Anything).Return(fmt.Errorf("libarchive extract error"))
+	pkgpath := path.Join(testPath, "name.uhupkg")
 
-	sb, err := NewServerBackend(lam, testPath)
+	os.Link(tarballPath, pkgpath)
+
+	// setup server
+	sb, err := NewServerBackend(la, testPath)
 	assert.NoError(t, err)
 
 	data, signature, err := sb.parseUhuPkg(pkgpath)
@@ -219,8 +223,36 @@ func TestParseUhuPkgWithExtractFileError(t *testing.T) {
 	assert.Nil(t, data)
 	assert.Nil(t, signature)
 	assert.Nil(t, sb.selectedPackage)
+}
 
-	lam.AssertExpectations(t)
+func TestParseUhuPkgWithExtractSignatureFileError(t *testing.T) {
+	memFs := afero.NewOsFs()
+
+	la := &libarchive.LibArchive{}
+
+	// setup filesystem
+	tarballPath, err := generateUhupkg(memFs, true, false)
+	assert.NoError(t, err)
+	defer memFs.Remove(tarballPath)
+
+	testPath, err := afero.TempDir(memFs, "", "server-test")
+	assert.NoError(t, err)
+	defer memFs.RemoveAll(testPath)
+
+	pkgpath := path.Join(testPath, "name.uhupkg")
+
+	os.Link(tarballPath, pkgpath)
+
+	// setup server
+	sb, err := NewServerBackend(la, testPath)
+	assert.NoError(t, err)
+
+	data, signature, err := sb.parseUhuPkg(pkgpath)
+	assert.EqualError(t, err, fmt.Sprintf("file 'signature' not found in: '%s'", pkgpath))
+
+	assert.NotNil(t, data)
+	assert.Nil(t, signature)
+	assert.Nil(t, sb.selectedPackage)
 }
 
 func TestProcessDirectoryWithMoreThanOnePackage(t *testing.T) {
@@ -275,7 +307,7 @@ func TestProcessDirectoryWithExactlyOneUhuPkg(t *testing.T) {
 
 	la := &libarchive.LibArchive{}
 
-	tarballPath, err := generateUhupkg(memFs, true)
+	tarballPath, err := generateUhupkg(memFs, true, true)
 	assert.NoError(t, err)
 	defer memFs.Remove(tarballPath)
 
@@ -424,7 +456,7 @@ func TestGetObjectRouteWithUhupkg(t *testing.T) {
 	object := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
 
 	// setup filesystem
-	tarballPath, err := generateUhupkg(memFs, true)
+	tarballPath, err := generateUhupkg(memFs, true, true)
 	assert.NoError(t, err)
 	defer memFs.Remove(tarballPath)
 
@@ -469,7 +501,7 @@ func TestGetObjectRouteWithUhupkgAndObjectDownloadedTwice(t *testing.T) {
 	object := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
 
 	// setup filesystem
-	tarballPath, err := generateUhupkg(memFs, true)
+	tarballPath, err := generateUhupkg(memFs, true, true)
 	assert.NoError(t, err)
 	defer memFs.Remove(tarballPath)
 
@@ -563,7 +595,7 @@ func TestGetObjectRouteWithUhupkgExtractError(t *testing.T) {
 	object := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
 
 	// setup filesystem
-	tarballPath, err := generateUhupkg(memFs, false) // with error
+	tarballPath, err := generateUhupkg(memFs, false, false)
 	assert.NoError(t, err)
 	defer memFs.Remove(tarballPath)
 
@@ -583,7 +615,7 @@ func TestGetObjectRouteWithUhupkgExtractError(t *testing.T) {
 	server := httptest.NewServer(router.HTTPRouter)
 
 	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
+	assert.Error(t, err)
 
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
@@ -673,7 +705,7 @@ func TestReportRouteWithInvalidReportData(t *testing.T) {
 	lam.AssertExpectations(t)
 }
 
-func generateUhupkg(fsBackend afero.Fs, valid bool) (string, error) {
+func generateUhupkg(fsBackend afero.Fs, withMetadata, withSignature bool) (string, error) {
 	zipPath := "/tmp/output.zip"
 	file, err := fsBackend.Create(zipPath)
 	if err != nil {
@@ -683,15 +715,27 @@ func generateUhupkg(fsBackend afero.Fs, valid bool) (string, error) {
 
 	zw := zip.NewWriter(file)
 
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", err
+	}
+
+	sha256sum := sha256.Sum256([]byte(ValidJSONMetadata))
+	signature, err := rsa.SignPKCS1v15(rand.Reader, key, crypto.SHA256, sha256sum[:])
+	if err != nil {
+		return "", err
+	}
+
 	var files = []struct {
 		Name, Body string
 	}{
 		{"d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa", "content1"},
 		{"metadata", ValidJSONMetadata},
+		{"signature", string(signature)},
 	}
 
 	for _, file := range files {
-		if !valid && file.Name != "metadata" {
+		if !withMetadata && file.Name == "metadata" || !withSignature && file.Name == "signature" {
 			// if it's an invalid file, write only the metadata
 			continue
 		}
