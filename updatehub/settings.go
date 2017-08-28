@@ -45,6 +45,9 @@ var DefaultSettings = Settings{
 	UpdateSettings: UpdateSettings{
 		DownloadDir:           "/tmp",
 		SupportedInstallModes: []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
+		PersistentUpdateSettings: PersistentUpdateSettings{
+			UpgradeToInstallation: -1,
+		},
 	},
 
 	NetworkSettings: NetworkSettings{
@@ -66,6 +69,7 @@ type Settings struct {
 
 type PersistentSettings struct {
 	PersistentPollingSettings `ini:"Polling"`
+	PersistentUpdateSettings  `ini:"Update"`
 }
 
 type PollingSettings struct {
@@ -88,8 +92,13 @@ type StorageSettings struct {
 }
 
 type UpdateSettings struct {
-	DownloadDir           string   `ini:"DownloadDir" json:"download-dir"`
-	SupportedInstallModes []string `ini:"SupportedInstallModes" json:"supported-install-modes"`
+	DownloadDir              string   `ini:"DownloadDir" json:"download-dir"`
+	SupportedInstallModes    []string `ini:"SupportedInstallModes" json:"supported-install-modes"`
+	PersistentUpdateSettings `ini:"Update"`
+}
+
+type PersistentUpdateSettings struct {
+	UpgradeToInstallation int `ini:"UpgradeToInstallation" json:"upgrade-to-installation"`
 }
 
 type NetworkSettings struct {
@@ -120,6 +129,7 @@ func (s *Settings) Save(fs afero.Fs) error {
 
 	ps := &PersistentSettings{
 		PersistentPollingSettings: s.PollingSettings.PersistentPollingSettings,
+		PersistentUpdateSettings:  s.UpdateSettings.PersistentUpdateSettings,
 	}
 
 	cfg := ini.Empty()

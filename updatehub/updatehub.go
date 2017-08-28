@@ -88,6 +88,8 @@ type UpdateHub struct {
 	lastReportedState         string
 	StateChangeCallbackPath   string
 	ErrorCallbackPath         string
+	ValidateCallbackPath      string
+	RollbackCallbackPath      string
 	InstallIfDifferentBackend installifdifferent.Interface
 	Sha256Checker
 	utils.Rebooter
@@ -103,6 +105,8 @@ func NewUpdateHub(
 	buildtime string,
 	stateChangeCallbackPath string,
 	errorCallbackPath string,
+	validateCallbackPath string,
+	rollbackCallbackPath string,
 	fs afero.Fs,
 	fm metadata.FirmwareMetadata,
 	initialState State,
@@ -128,6 +132,8 @@ func NewUpdateHub(
 		CmdLineExecuter:           &utils.CmdLine{},
 		StateChangeCallbackPath:   stateChangeCallbackPath,
 		ErrorCallbackPath:         errorCallbackPath,
+		ValidateCallbackPath:      validateCallbackPath,
+		RollbackCallbackPath:      rollbackCallbackPath,
 		DefaultApiClient:          DefaultApiClient,
 	}
 
@@ -149,25 +155,47 @@ func (uh *UpdateHub) SetState(state State) {
 	uh.state = state
 }
 
-func (uh *UpdateHub) stateChangeCallback(cmd utils.CmdLineExecuter, state State, action string) error {
+func (uh *UpdateHub) stateChangeCallback(state State, action string) error {
 	exists, _ := afero.Exists(uh.Store, uh.StateChangeCallbackPath)
 	if !exists {
 		return nil
 	}
 
 	s := StateToString(state.ID())
-	_, err := cmd.Execute(fmt.Sprintf("%s %s %s", uh.StateChangeCallbackPath, action, s))
+	_, err := uh.CmdLineExecuter.Execute(fmt.Sprintf("%s %s %s", uh.StateChangeCallbackPath, action, s))
 
 	return err
 }
 
-func (uh *UpdateHub) errorCallback(cmd utils.CmdLineExecuter, message string) error {
+func (uh *UpdateHub) errorCallback(message string) error {
 	exists, _ := afero.Exists(uh.Store, uh.ErrorCallbackPath)
 	if !exists {
 		return nil
 	}
 
-	_, err := cmd.Execute(fmt.Sprintf("%s '%s'", uh.ErrorCallbackPath, message))
+	_, err := uh.CmdLineExecuter.Execute(fmt.Sprintf("%s '%s'", uh.ErrorCallbackPath, message))
+
+	return err
+}
+
+func (uh *UpdateHub) validateCallback() error {
+	exists, _ := afero.Exists(uh.Store, uh.ValidateCallbackPath)
+	if !exists {
+		return nil
+	}
+
+	_, err := uh.CmdLineExecuter.Execute(uh.ValidateCallbackPath)
+
+	return err
+}
+
+func (uh *UpdateHub) rollbackCallback() error {
+	exists, _ := afero.Exists(uh.Store, uh.RollbackCallbackPath)
+	if !exists {
+		return nil
+	}
+
+	_, err := uh.CmdLineExecuter.Execute(uh.RollbackCallbackPath)
 
 	return err
 }
@@ -185,7 +213,7 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 
 	es, isErrorState := uh.state.(*ErrorState)
 	if isErrorState {
-		err = uh.errorCallback(uh.CmdLineExecuter, es.cause.Error())
+		err = uh.errorCallback(es.cause.Error())
 		if err != nil {
 			log.Warn(err)
 		}
@@ -193,7 +221,7 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 		state, _ := uh.state.Handle(uh)
 		uh.state = state
 	} else {
-		err = uh.stateChangeCallback(uh.CmdLineExecuter, uh.state, "enter")
+		err = uh.stateChangeCallback(uh.state, "enter")
 		if err != nil {
 			log.Error(err)
 			uh.state = NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
@@ -202,7 +230,7 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 
 		state, cancel := uh.state.Handle(uh)
 
-		err = uh.stateChangeCallback(uh.CmdLineExecuter, uh.state, "leave")
+		err = uh.stateChangeCallback(uh.state, "leave")
 		if err != nil {
 			log.Warn(err)
 		}
@@ -454,10 +482,39 @@ func (uh *UpdateHub) ReportCurrentState() error {
 	return nil
 }
 
-// StartPolling starts the polling process
-func (uh *UpdateHub) StartPolling() {
+// Start starts the updatehub
+func (uh *UpdateHub) Start() {
 	uh.stateMutex.Lock()
 	defer uh.stateMutex.Unlock()
+
+	if uh.Settings.UpgradeToInstallation >= 0 {
+		// new installation just booted
+
+		active, err := uh.ActiveInactiveBackend.Active()
+		if err != nil {
+			e := fmt.Errorf("couldn't get active partition, cannot detect whether the installation is successful or not. Error: %s", err)
+			uh.state = NewErrorState(uh.DefaultApiClient, nil, NewTransientError(e))
+			return
+		}
+
+		if uh.Settings.UpgradeToInstallation == active {
+			err := uh.validateProcedure()
+			if err != nil {
+				// actually the code will never get here since it will
+				// reboot inside the validate procedure. but just in
+				// case something unexpected occurs, this will tell us
+				// what happened
+				uh.state = NewErrorState(uh.DefaultApiClient, nil, NewTransientError(err))
+				return
+			}
+		} else {
+			err := uh.rollbackProcedure()
+			if err != nil {
+				uh.state = NewErrorState(uh.DefaultApiClient, nil, NewTransientError(err))
+				return
+			}
+		}
+	}
 
 	now := time.Now()
 	now = time.Unix(now.Unix(), 0)
@@ -503,4 +560,33 @@ func (uh *UpdateHub) StartPolling() {
 		uh.Settings.ProbeASAP = false
 		uh.Settings.Save(uh.Store)
 	}
+}
+
+func (uh *UpdateHub) rollbackProcedure() error {
+	return uh.rollbackCallback()
+}
+
+func (uh *UpdateHub) validateProcedure() error {
+	err := uh.validateCallback()
+	if err != nil {
+		aii := uh.ActiveInactiveBackend
+
+		active, activeErr := aii.Active()
+		if activeErr != nil {
+			return activeErr
+		}
+
+		newActive := (active - 1) * -1
+
+		setActiveErr := aii.SetActive(newActive)
+		if setActiveErr != nil {
+			return setActiveErr
+		}
+
+		uh.Rebooter.Reboot()
+
+		return err
+	}
+
+	return nil
 }

@@ -93,6 +93,7 @@ func TestLoadSettingsDefaultValues(t *testing.T) {
 
 	assert.Equal(t, "/tmp", s.UpdateSettings.DownloadDir)
 	assert.Equal(t, []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"}, s.UpdateSettings.SupportedInstallModes)
+	assert.Equal(t, -1, s.UpdateSettings.PersistentUpdateSettings.UpgradeToInstallation)
 
 	assert.Equal(t, "api.updatehub.io", s.NetworkSettings.ServerAddress)
 
@@ -128,6 +129,9 @@ func TestLoadSettings(t *testing.T) {
 				UpdateSettings: UpdateSettings{
 					DownloadDir:           "/tmp",
 					SupportedInstallModes: []string{"dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"},
+					PersistentUpdateSettings: PersistentUpdateSettings{
+						UpgradeToInstallation: -1,
+					},
 				},
 
 				NetworkSettings: NetworkSettings{
@@ -163,6 +167,9 @@ func TestLoadSettings(t *testing.T) {
 				UpdateSettings: UpdateSettings{
 					DownloadDir:           "/tmp/download",
 					SupportedInstallModes: []string{"mode1", "mode2"},
+					PersistentUpdateSettings: PersistentUpdateSettings{
+						UpgradeToInstallation: -1,
+					},
 				},
 
 				NetworkSettings: NetworkSettings{
@@ -205,6 +212,9 @@ FirstPoll=2017-02-02T00:00:00Z
 ExtraInterval=4
 Retries=5
 ProbeASAP=false
+
+[Update]
+UpgradeToInstallation=-1
 
 `
 	assert.Equal(t, expectedData, string(data))

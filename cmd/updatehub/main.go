@@ -98,6 +98,8 @@ func main() {
 	log.Info("    firmware metadata path: ", settings.FirmwareMetadataPath)
 	log.Info("    state change callback path: ", stateChangeCallbackPath)
 	log.Info("    error callback path: ", errorCallbackPath)
+	log.Info("    validate callback path: ", validateCallbackPath)
+	log.Info("    rollback callback path: ", rollbackCallbackPath)
 
 	log.Debug("settings:\n", settings.ToString())
 
@@ -115,7 +117,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, osFs, *fm, updatehub.NewIdleState(), settings, client.NewApiClient(address))
+	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, osFs, *fm, updatehub.NewIdleState(), settings, client.NewApiClient(address))
 
 	backend, err := server.NewAgentBackend(uh)
 	if err != nil {
@@ -136,7 +138,7 @@ func main() {
 
 	uh.Controller = uh
 
-	uh.StartPolling()
+	uh.Start()
 
 	log.Info("UpdateHub Agent started")
 
