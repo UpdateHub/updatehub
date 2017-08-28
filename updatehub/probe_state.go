@@ -39,6 +39,7 @@ func (state *ProbeState) ID() UpdateHubState {
 // polling state otherwise.
 func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 	var signature []byte
+
 	state.probeUpdateMetadata, signature, state.probeExtraPoll = uh.Controller.ProbeUpdate(state.apiClient, uh.Settings.PollingRetries)
 
 	// "non-blocking" write to channel

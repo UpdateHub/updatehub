@@ -9,25 +9,8 @@
 package updatehub
 
 import (
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
-	"time"
-
-	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
 )
-
-type testController struct {
-	extraPoll               time.Duration
-	pollingInterval         time.Duration
-	updateAvailable         bool
-	downloadUpdateError     error
-	installUpdateError      error
-	reportCurrentStateError error
-	progressList            []int
-}
 
 const (
 	validJSONMetadata = `{
@@ -65,45 +48,6 @@ const (
 	  ]
 	}`
 )
-
-func (c *testController) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, []byte, time.Duration) {
-	sha256sum := sha256.Sum256([]byte{})
-	signature, _ := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
-
-	if c.updateAvailable {
-		return &metadata.UpdateMetadata{}, signature, c.extraPoll
-	}
-
-	return nil, nil, c.extraPoll
-}
-
-func (c *testController) DownloadUpdate(apiClient *client.ApiClient, updateMetadata *metadata.UpdateMetadata, cancel <-chan bool, progressChan chan<- int) error {
-	for _, p := range c.progressList {
-		// "non-blocking" write to channel
-		select {
-		case progressChan <- p:
-		default:
-		}
-	}
-
-	return c.downloadUpdateError
-}
-
-func (c *testController) InstallUpdate(updateMetadata *metadata.UpdateMetadata, progressChan chan<- int) error {
-	for _, p := range c.progressList {
-		// "non-blocking" write to channel
-		select {
-		case progressChan <- p:
-		default:
-		}
-	}
-
-	return c.installUpdateError
-}
-
-func (c *testController) ReportCurrentState() error {
-	return c.reportCurrentStateError
-}
 
 type testReportableState struct {
 	BaseState

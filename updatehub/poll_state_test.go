@@ -9,10 +9,18 @@
 package updatehub
 
 import (
+	"crypto"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
 	"testing"
 	"time"
 
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
+	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 	"github.com/bouk/monkey"
 	"github.com/stretchr/testify/assert"
 )
@@ -39,9 +47,20 @@ func TestStatePollToMap(t *testing.T) {
 
 func TestPollingRetries(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
+	om := &objectmock.ObjectMock{}
+	cm := &controllermock.ControllerMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
 
 	uh, err := newTestUpdateHub(nil, aim)
 	assert.NoError(t, err)
+
+	apiClient := uh.DefaultApiClient
 
 	var elapsed time.Duration
 
@@ -61,12 +80,11 @@ func TestPollingRetries(t *testing.T) {
 		})
 	}().Unpatch()
 
-	c := &testController{
-		updateAvailable: false,
-		extraPoll:       -1,
-	}
+	cm.On("ProbeUpdate", apiClient, 0).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1)).Once()
+	cm.On("ProbeUpdate", apiClient, 1).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1)).Once()
+	cm.On("ProbeUpdate", apiClient, 2).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1)).Once()
 
-	uh.Controller = c
+	uh.Controller = cm
 	uh.Settings.PollingInterval = time.Second
 	uh.Settings.LastPoll = time.Now()
 
@@ -85,14 +103,29 @@ func TestPollingRetries(t *testing.T) {
 		assert.Equal(t, i, uh.Settings.PollingRetries)
 	}
 
-	c.updateAvailable = true
-	c.extraPoll = 0
+	um, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	sha256sum := sha256.Sum256([]byte(validJSONMetadata))
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
+
+	cm.On("ProbeUpdate", apiClient, 3).Return(um, signature, time.Duration(0)).Once()
+
+	state, _ := next.Handle(uh)
+	assert.IsType(t, &IdleState{}, state)
+	next, _ = state.Handle(uh)
+	assert.IsType(t, &PollState{}, next)
+	next, _ = next.Handle(uh)
+	assert.IsType(t, &ProbeState{}, next)
+	assert.Equal(t, 3, uh.Settings.PollingRetries)
 
 	next, _ = next.Handle(uh)
 	assert.IsType(t, &DownloadingState{}, next)
 	assert.Equal(t, 0, uh.Settings.PollingRetries)
 
 	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+	cm.AssertExpectations(t)
 }
 
 func TestPolling(t *testing.T) {
