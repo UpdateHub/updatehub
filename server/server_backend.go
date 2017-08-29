@@ -10,7 +10,6 @@ package server
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -178,7 +177,7 @@ func (sb *ServerBackend) getUpdateMetadata(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("UH-Signature", base64.StdEncoding.EncodeToString(sb.selectedPackage.signature))
+	w.Header().Set("UH-Signature", string(sb.selectedPackage.signature))
 
 	if _, err := w.Write(sb.selectedPackage.updateMetadata); err != nil {
 		log.Warn(err)
