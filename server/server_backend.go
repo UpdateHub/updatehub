@@ -213,10 +213,13 @@ func (sb *ServerBackend) getObject(w http.ResponseWriter, r *http.Request, p htt
 	}
 
 	if sb.selectedPackage.uhupkgPath != "" {
+		// is uhupkg in the directory
+
 		fileName := p.ByName("object")
 
 		// package was already parsed, we can safely ignore the error here
 		reader, _ := libarchive.NewReader(sb.LibArchive, sb.selectedPackage.uhupkgPath, 10240)
+		defer reader.Free()
 
 		err := reader.ExtractFile(fileName, w)
 		if err != nil {
@@ -226,6 +229,8 @@ func (sb *ServerBackend) getObject(w http.ResponseWriter, r *http.Request, p htt
 			return
 		}
 	} else {
+		// is updatemetadata.json in the directory
+
 		fileName := path.Join(sb.path, p.ByName("product"), p.ByName("package"), p.ByName("object"))
 		http.ServeFile(w, r, fileName)
 	}

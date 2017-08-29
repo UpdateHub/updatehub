@@ -459,6 +459,64 @@ func TestGetObjectRouteWithUhupkg(t *testing.T) {
 	assert.Equal(t, "content1", string(bodyContent))
 }
 
+func TestGetObjectRouteWithUhupkgAndObjectDownloadedTwice(t *testing.T) {
+	memFs := afero.NewOsFs()
+
+	la := &libarchive.LibArchive{}
+
+	productUID := "548873c4d4e8e751fdd46c38a3d5a8656cf87bf27a404f346ad58086f627a4ea"
+	packageUID := utils.DataSha256sum([]byte(ValidJSONMetadata))
+	object := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
+
+	// setup filesystem
+	tarballPath, err := generateUhupkg(memFs, true)
+	assert.NoError(t, err)
+	defer memFs.Remove(tarballPath)
+
+	testPath, err := afero.TempDir(memFs, "", "server-test")
+	assert.NoError(t, err)
+	defer memFs.RemoveAll(testPath)
+
+	pkgpath := path.Join(testPath, "name.uhupkg")
+
+	os.Link(tarballPath, pkgpath)
+
+	// setup server
+	sb, err := NewServerBackend(la, testPath)
+	assert.NoError(t, err)
+
+	router := NewBackendRouter(sb)
+	server := httptest.NewServer(router.HTTPRouter)
+
+	err = sb.ProcessDirectory()
+	assert.NoError(t, err)
+
+	// do the request
+	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
+	r, err := http.Get(finalURL)
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, r.StatusCode)
+	assert.Equal(t, "content1", string(bodyContent))
+
+	// do the request again, since libarchive doesn't support seek, we
+	// need to ensure that on each request the uhupkg is reopened
+
+	r, err = http.Get(finalURL)
+	assert.NoError(t, err)
+
+	body = ioutil.NopCloser(r.Body)
+	bodyContent, err = ioutil.ReadAll(body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, r.StatusCode)
+	assert.Equal(t, "content1", string(bodyContent))
+}
+
 func TestGetObjectRouteWithUhupkgNoPackageSelectedError(t *testing.T) {
 	lam := &libarchivemock.LibArchiveMock{}
 
