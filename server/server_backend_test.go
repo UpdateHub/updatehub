@@ -16,14 +16,11 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -123,8 +120,8 @@ func TestNewServerBackend(t *testing.T) {
 	assert.Equal(t, reflect.ValueOf(sb.getObject).Pointer(), reflect.ValueOf(routes[2].Handle).Pointer())
 
 	assert.Equal(t, "POST", routes[3].Method)
-	assert.Equal(t, "/upload", routes[3].Path)
-	assert.Equal(t, reflect.ValueOf(sb.upload).Pointer(), reflect.ValueOf(routes[3].Handle).Pointer())
+	assert.Equal(t, "/packages", routes[3].Path)
+	assert.Equal(t, reflect.ValueOf(sb.receiveUpdateMetadata).Pointer(), reflect.ValueOf(routes[3].Handle).Pointer())
 
 	lam.AssertExpectations(t)
 }
@@ -146,7 +143,7 @@ func TestParseUpdateMetadataWithStatError(t *testing.T) {
 
 	os.Remove(updateMetadataFilePath)
 
-	data, err := sb.parseUpdateMetadata()
+	data, err := sb.parseUpdateMetadata(updateMetadataFilePath)
 	assert.EqualError(t, err, fmt.Sprintf("stat %s: no such file or directory", updateMetadataFilePath))
 	assert.Nil(t, data)
 
@@ -168,7 +165,7 @@ func TestParseUpdateMetadataWithUnmarshalError(t *testing.T) {
 	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
-	data, err := sb.parseUpdateMetadata()
+	data, err := sb.parseUpdateMetadata(updateMetadataFilePath)
 	assert.EqualError(t, err, fmt.Sprintf("Invalid update metadata: invalid character '\\n' in string literal"))
 	assert.Nil(t, data)
 
@@ -277,10 +274,7 @@ func TestProcessDirectoryWithMoreThanOnePackage(t *testing.T) {
 	err = ioutil.WriteFile(pkg2, []byte("dummy_content"), 0666)
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(lam, testPath)
-	assert.NoError(t, err)
-
-	err = sb.ProcessDirectory()
+	_, err = NewServerBackend(lam, testPath)
 	assert.Equal(t, fmt.Errorf("the path provided must not have more than 1 package. Found: 2"), err)
 
 	lam.AssertExpectations(t)
@@ -301,9 +295,9 @@ func TestProcessDirectoryWithExactlyOneUpdateMetadata(t *testing.T) {
 	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-	assert.Equal(t, "", sb.selectedPackage.uhupkgPath)
+	assert.NotNil(t, sb.selectedPackage)
+	assert.Equal(t, false, sb.selectedPackage.isUhupkgSingleFile)
+	assert.Equal(t, testPath, sb.selectedPackage.path)
 	assert.Equal(t, ValidJSONMetadata, string(sb.selectedPackage.updateMetadata))
 
 	lam.AssertExpectations(t)
@@ -329,11 +323,9 @@ func TestProcessDirectoryWithExactlyOneUhuPkg(t *testing.T) {
 	sb, err := NewServerBackend(la, testPath)
 	assert.NoError(t, err)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
 	assert.NotNil(t, sb.selectedPackage)
-	assert.Equal(t, pkgpath, sb.selectedPackage.uhupkgPath)
+	assert.Equal(t, pkgpath, sb.selectedPackage.path)
+	assert.Equal(t, true, sb.selectedPackage.isUhupkgSingleFile)
 	assert.Equal(t, ValidJSONMetadata, string(sb.selectedPackage.updateMetadata))
 }
 
@@ -356,9 +348,6 @@ func TestUpgradesRoute(t *testing.T) {
 
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
 
 	// do the request
 	r, err := http.Post(server.URL+"/upgrades", "application/json", bytes.NewBuffer([]byte("{\"content\": true}")))
@@ -435,9 +424,6 @@ func TestGetObjectRoute(t *testing.T) {
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
 	r, err := http.Get(finalURL)
@@ -482,9 +468,6 @@ func TestGetObjectRouteWithUhupkg(t *testing.T) {
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
 	r, err := http.Get(finalURL)
@@ -526,9 +509,6 @@ func TestGetObjectRouteWithUhupkgAndObjectDownloadedTwice(t *testing.T) {
 
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
 
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
@@ -621,9 +601,6 @@ func TestGetObjectRouteWithUhupkgExtractError(t *testing.T) {
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	err = sb.ProcessDirectory()
-	assert.Error(t, err)
-
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
 	r, err := http.Get(finalURL)
@@ -656,9 +633,6 @@ func TestReportRoute(t *testing.T) {
 
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
 
 	// do the request
 	reportData := []byte("{\"status\": \"downloading\", \"package-uid\": \"puid\"}")
@@ -695,9 +669,6 @@ func TestReportRouteWithInvalidReportData(t *testing.T) {
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
 	// do the request
 	r, err := http.Post(server.URL+"/report", "application/json", bytes.NewBuffer([]byte("{\"content\": ")))
 	assert.NoError(t, err)
@@ -710,155 +681,6 @@ func TestReportRouteWithInvalidReportData(t *testing.T) {
 	assert.Equal(t, []byte("500 internal server error\n"), bodyContent)
 
 	lam.AssertExpectations(t)
-}
-
-func TestUploadRoute(t *testing.T) {
-	memFs := afero.NewOsFs()
-
-	la := &libarchive.LibArchive{}
-
-	// setup filesystem
-	tarballPath, err := generateUhupkg(memFs, true, true)
-	assert.NoError(t, err)
-	defer memFs.Remove(tarballPath)
-
-	testPath, err := afero.TempDir(memFs, "", "server-test")
-	assert.NoError(t, err)
-	defer memFs.RemoveAll(testPath)
-
-	// setup server
-	sb, err := NewServerBackend(la, testPath)
-	assert.NoError(t, err)
-
-	router := NewBackendRouter(sb)
-	server := httptest.NewServer(router.HTTPRouter)
-
-	// do the request
-	r, err := uploadUhupkg(server.URL+"/upload", tarballPath, "uhupkg")
-	assert.NoError(t, err)
-
-	body := ioutil.NopCloser(r.Body)
-	bodyContent, err := ioutil.ReadAll(body)
-	assert.NoError(t, err)
-
-	assert.Equal(t, http.StatusOK, r.StatusCode)
-	assert.Equal(t, "File uploaded successfully", string(bodyContent))
-
-	pkgpath := path.Join(testPath, filepath.Base(tarballPath))
-
-	readData, err := afero.ReadFile(memFs, pkgpath)
-	assert.NoError(t, err)
-
-	expectedData, err := afero.ReadFile(memFs, tarballPath)
-	assert.NoError(t, err)
-
-	assert.Equal(t, expectedData, readData)
-}
-
-func TestUploadRouteWithWrongFormFileName(t *testing.T) {
-	memFs := afero.NewOsFs()
-
-	la := &libarchive.LibArchive{}
-
-	// setup filesystem
-	tarballPath, err := generateUhupkg(memFs, true, true)
-	assert.NoError(t, err)
-	defer memFs.Remove(tarballPath)
-
-	testPath, err := afero.TempDir(memFs, "", "server-test")
-	assert.NoError(t, err)
-	defer memFs.RemoveAll(testPath)
-
-	// setup server
-	sb, err := NewServerBackend(la, testPath)
-	assert.NoError(t, err)
-
-	router := NewBackendRouter(sb)
-	server := httptest.NewServer(router.HTTPRouter)
-
-	// do the request
-	r, err := uploadUhupkg(server.URL+"/upload", tarballPath, "wrongname")
-	assert.NoError(t, err)
-
-	body := ioutil.NopCloser(r.Body)
-	bodyContent, err := ioutil.ReadAll(body)
-	assert.NoError(t, err)
-
-	assert.Equal(t, http.StatusInternalServerError, r.StatusCode)
-	assert.Equal(t, "500 internal server error\n", string(bodyContent))
-}
-
-func TestUploadRouteWithFileCreationFailure(t *testing.T) {
-	memFs := afero.NewOsFs()
-
-	la := &libarchive.LibArchive{}
-
-	// setup filesystem
-	tarballPath, err := generateUhupkg(memFs, true, true)
-	assert.NoError(t, err)
-	defer memFs.Remove(tarballPath)
-
-	testPath, err := afero.TempDir(memFs, "", "server-test")
-	assert.NoError(t, err)
-	defer memFs.RemoveAll(testPath)
-
-	// setup server
-	sb, err := NewServerBackend(la, testPath)
-	assert.NoError(t, err)
-
-	router := NewBackendRouter(sb)
-	server := httptest.NewServer(router.HTTPRouter)
-
-	// overwrite to a wrong path
-	sb.path = path.Join(sb.path, "inexistant/path")
-
-	// do the request
-	r, err := uploadUhupkg(server.URL+"/upload", tarballPath, "uhupkg")
-	assert.NoError(t, err)
-
-	body := ioutil.NopCloser(r.Body)
-	bodyContent, err := ioutil.ReadAll(body)
-	assert.NoError(t, err)
-
-	assert.Equal(t, http.StatusInternalServerError, r.StatusCode)
-	assert.Equal(t, "500 internal server error\n", string(bodyContent))
-}
-
-func uploadUhupkg(url string, filePath string, formName string) (*http.Response, error) {
-	var b bytes.Buffer
-	w := multipart.NewWriter(&b)
-
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	fw, err := w.CreateFormFile(formName, filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = io.Copy(fw, f)
-	if err != nil {
-		return nil, err
-	}
-	w.Close()
-
-	req, err := http.NewRequest("POST", url, &b)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", w.FormDataContentType())
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }
 
 func generateUhupkg(fsBackend afero.Fs, withMetadata, withSignature bool) (string, error) {

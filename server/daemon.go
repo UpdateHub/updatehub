@@ -22,14 +22,16 @@ type Daemon struct {
 	done            chan bool
 	started         chan bool
 	metadataWritten chan bool
+	watchedDir      string
 }
 
-func NewDaemon(sb *ServerBackend) (*Daemon, error) {
+func NewDaemon(sb *ServerBackend, dirpath string) (*Daemon, error) {
 	d := &Daemon{
 		backend:         sb,
 		done:            make(chan bool),
 		started:         make(chan bool),
 		metadataWritten: make(chan bool),
+		watchedDir:      dirpath,
 	}
 
 	fswatcher, err := fsnotify.NewWatcher()
@@ -37,7 +39,7 @@ func NewDaemon(sb *ServerBackend) (*Daemon, error) {
 		return nil, err
 	}
 
-	if err = fswatcher.Add(sb.path); err != nil {
+	if err = fswatcher.Add(d.watchedDir); err != nil {
 		return nil, err
 	}
 
@@ -53,13 +55,13 @@ func (d *Daemon) Run() {
 			case event := <-d.fswatcher.Events:
 				switch event.Op {
 				case fsnotify.Remove:
-					if event.Name == d.backend.path {
+					if event.Name == d.watchedDir {
 						d.done <- true
 					}
 				case fsnotify.Write:
-					umFileName := path.Join(d.backend.path, metadata.UpdateMetadataFilename)
+					umFileName := path.Join(d.watchedDir, metadata.UpdateMetadataFilename)
 					if event.Name == umFileName {
-						err := d.backend.ProcessDirectory()
+						err := d.backend.ProcessDirectory(d.watchedDir)
 						if err != nil {
 							log.Error(err)
 						}
