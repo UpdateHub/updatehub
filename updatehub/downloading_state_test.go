@@ -15,14 +15,17 @@ import (
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 	"github.com/UpdateHub/updatehub/testsmocks/progresstrackermock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
-func TestStateDownloading(t *testing.T) {
+func TestStateDownloadingWithSuccess(t *testing.T) {
 	om := &objectmock.ObjectMock{}
+	cm := &controllermock.ControllerMock{}
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
@@ -38,50 +41,94 @@ func TestStateDownloading(t *testing.T) {
 
 	apiClient := client.NewApiClient("address")
 
-	testCases := []struct {
-		name               string
-		controller         *testController
-		expectedState      State
-		expectedProgresses []int
-	}{
-		{
-			"WithoutError",
-			&testController{downloadUpdateError: nil, installUpdateError: nil, progressList: []int{33, 66, 99, 100}},
-			NewDownloadedState(apiClient, m),
-			[]int{33, 66, 99, 100},
-		},
+	expectedState := NewDownloadedState(apiClient, m)
+	expectedProgresses := []int{33, 66, 99, 100}
 
-		{
-			"WithError",
-			&testController{downloadUpdateError: errors.New("download error"), installUpdateError: nil, progressList: []int{33}},
-			NewErrorState(apiClient, m, NewTransientError(errors.New("download error"))),
-			[]int{33},
-		},
+	ptm := &progresstrackermock.ProgressTrackerMock{}
+	for _, p := range expectedProgresses {
+		ptm.On("SetProgress", p).Once()
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			ptm := &progresstrackermock.ProgressTrackerMock{}
-			for _, p := range tc.expectedProgresses {
-				ptm.On("SetProgress", p).Once()
+	cm.On("DownloadUpdate", apiClient, m, mock.Anything, mock.AnythingOfType("chan<- int")).Run(func(args mock.Arguments) {
+		progressChan := args.Get(3).(chan<- int)
+
+		for _, p := range expectedProgresses {
+			// "non-blocking" write to channel
+			select {
+			case progressChan <- p:
+			default:
 			}
+		}
+	}).Return(nil)
 
-			s := NewDownloadingState(apiClient, m, ptm)
+	s := NewDownloadingState(apiClient, m, ptm)
 
-			uh, err := newTestUpdateHub(s, nil)
-			assert.NoError(t, err)
-			uh.Store = memFs
+	uh, err := newTestUpdateHub(s, nil)
+	assert.NoError(t, err)
+	uh.Store = memFs
 
-			uh.Controller = tc.controller
+	uh.Controller = cm
 
-			nextState, _ := s.Handle(uh)
-			assert.Equal(t, tc.expectedState, nextState)
+	nextState, _ := s.Handle(uh)
+	assert.Equal(t, expectedState, nextState)
 
-			ptm.AssertExpectations(t)
-		})
+	ptm.AssertExpectations(t)
+	om.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestStateDownloadingWithError(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+	cm := &controllermock.ControllerMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	memFs := afero.NewMemMapFs()
+
+	apiClient := client.NewApiClient("address")
+
+	expectedState := NewErrorState(apiClient, m, NewTransientError(errors.New("download error")))
+	expectedProgresses := []int{33}
+
+	ptm := &progresstrackermock.ProgressTrackerMock{}
+	for _, p := range expectedProgresses {
+		ptm.On("SetProgress", p).Once()
 	}
 
+	cm.On("DownloadUpdate", apiClient, m, mock.Anything, mock.AnythingOfType("chan<- int")).Run(func(args mock.Arguments) {
+		progressChan := args.Get(3).(chan<- int)
+
+		for _, p := range expectedProgresses {
+			// "non-blocking" write to channel
+			select {
+			case progressChan <- p:
+			default:
+			}
+		}
+	}).Return(errors.New("download error"))
+
+	s := NewDownloadingState(apiClient, m, ptm)
+
+	uh, err := newTestUpdateHub(s, nil)
+	assert.NoError(t, err)
+	uh.Store = memFs
+
+	uh.Controller = cm
+
+	nextState, _ := s.Handle(uh)
+	assert.Equal(t, expectedState, nextState)
+
+	ptm.AssertExpectations(t)
 	om.AssertExpectations(t)
+	cm.AssertExpectations(t)
 }
 
 func TestStateDownloadingToMap(t *testing.T) {
