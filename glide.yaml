@@ -14,3 +14,6 @@ import:
 - package: github.com/OSSystems/pkg
   subpackages:
   - log
+- package: github.com/hokaccha/go-prettyjson
+- package: github.com/parnurzeal/gorequest
+  version: ^0.2.15

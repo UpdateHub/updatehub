@@ -1,59 +1,80 @@
-hash: d2fec29a711e0604de610f377a97516dafc92de493f8076b9847805fd747ab8b
-updated: 2017-06-29T17:50:24.082619719-03:00
+hash: 116c921c1eae4e7d9cf54cd7f187161482e2ca6e8fcc86ee781d6f8ee78a348c
+updated: 2017-08-30T16:52:01.213091238-03:00
 imports:
 - name: github.com/bouk/monkey
   version: 5dace501dd6dad5b369748946db553903c8e839c
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
+- name: github.com/fatih/color
+  version: 67c513e5729f918f5e69786686770c27141a4490
 - name: github.com/fsnotify/fsnotify
   version: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - name: github.com/go-ini/ini
-  version: e3c2d47c61e5333f9aa2974695dd94396eb69c75
-- name: github.com/imdario/mergo
-  version: 50d4dbd4eb0e84778abe37cefef140271d96fade
+  version: c787282c39ac1fc618827141a1f762240def08a3
+- name: github.com/hokaccha/go-prettyjson
+  version: e6b9231a2b1cc5798b336fdbf99c16cd8ad1e0c9
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/julienschmidt/httprouter
-  version: 8a45e95fc75cb77048068a62daed98cc22fdac7c
+  version: 975b5c4c7c21c0e3d2764200bf2aa8e34657ae6e
+- name: github.com/mattn/go-colorable
+  version: 5411d3eea5978e6cdc258b30de592b60df6aba96
+  repo: https://github.com/mattn/go-colorable
+- name: github.com/mattn/go-isatty
+  version: 57fdcb988a5c543893cc61bce354a6e24ab70022
+  repo: https://github.com/mattn/go-isatty
 - name: github.com/mattn/go-shellwords
-  version: 005a0944d84452842197c2108bd9168ced206f78
+  version: 95c860c1895b21b58903abdd1d9c591560b0601c
+- name: github.com/moul/http2curl
+  version: 4e24498b31dba4683efb9d35c1c8a91e2eda28c8
 - name: github.com/OSSystems/pkg
   version: 0c38fb3a1f0ffbf57cdcd47857ee8d2dc84af1ef
   subpackages:
   - log
+- name: github.com/parnurzeal/gorequest
+  version: a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3
 - name: github.com/pkg/errors
-  version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
+  version: c605e284fe17294bda444b34710735b29d1a9d90
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/sirupsen/logrus
-  version: 3d4380f53a34dcdc95f0c1db702615992b38d9a4
+  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
   subpackages:
   - hooks/test
 - name: github.com/spf13/afero
-  version: 72b31426848c6ef12a7a8e216708cb0d1530f074
+  version: 36f8810e2e3d7eeac4ac05b57f65690fbfba62a2
   subpackages:
   - mem
 - name: github.com/spf13/cobra
-  version: d236d298109208d194bf9c305dda03acbd1cc8d2
+  version: 2df9a531813370438a4d79bfc33e21f58063ed87
 - name: github.com/spf13/pflag
   version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
 - name: github.com/stretchr/objx
   version: cbeaeb16a013161a98496fad62933b1d21786672
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: 890a5c3458b43e6104ff5da8dfa139d013d77544
   subpackages:
   - assert
   - mock
+- name: golang.org/x/crypto
+  version: 81e90905daefcd6fd217b62423c0908922eadb30
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 66aacef3dd8a676686c7ae3716979581e8b03c47
+  subpackages:
+  - publicsuffix
 - name: golang.org/x/sys
-  version: 99f16d856c9836c42d24e7ab64ea72916925fa97
+  version: bb24a47a89eac6c1227fbcb2ae37a8b9ed323366
   subpackages:
   - unix
+  - windows
 - name: golang.org/x/text
-  version: 506f9d5c962f284575e88337e7d9296d27e729d3
+  version: 18c65dde6afd36dbc39197ca72008895b8dfbfb6
   subpackages:
   - transform
   - unicode/norm
