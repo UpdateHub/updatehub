@@ -16,11 +16,14 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -105,7 +108,7 @@ func TestNewServerBackend(t *testing.T) {
 
 	routes := sb.Routes()
 
-	assert.Equal(t, 3, len(routes))
+	assert.Equal(t, 4, len(routes))
 
 	assert.Equal(t, "POST", routes[0].Method)
 	assert.Equal(t, "/upgrades", routes[0].Path)
@@ -118,6 +121,10 @@ func TestNewServerBackend(t *testing.T) {
 	assert.Equal(t, "GET", routes[2].Method)
 	assert.Equal(t, "/products/:product/packages/:package/objects/:object", routes[2].Path)
 	assert.Equal(t, reflect.ValueOf(sb.getObject).Pointer(), reflect.ValueOf(routes[2].Handle).Pointer())
+
+	assert.Equal(t, "POST", routes[3].Method)
+	assert.Equal(t, "/upload", routes[3].Path)
+	assert.Equal(t, reflect.ValueOf(sb.upload).Pointer(), reflect.ValueOf(routes[3].Handle).Pointer())
 
 	lam.AssertExpectations(t)
 }
@@ -703,6 +710,155 @@ func TestReportRouteWithInvalidReportData(t *testing.T) {
 	assert.Equal(t, []byte("500 internal server error\n"), bodyContent)
 
 	lam.AssertExpectations(t)
+}
+
+func TestUploadRoute(t *testing.T) {
+	memFs := afero.NewOsFs()
+
+	la := &libarchive.LibArchive{}
+
+	// setup filesystem
+	tarballPath, err := generateUhupkg(memFs, true, true)
+	assert.NoError(t, err)
+	defer memFs.Remove(tarballPath)
+
+	testPath, err := afero.TempDir(memFs, "", "server-test")
+	assert.NoError(t, err)
+	defer memFs.RemoveAll(testPath)
+
+	// setup server
+	sb, err := NewServerBackend(la, testPath)
+	assert.NoError(t, err)
+
+	router := NewBackendRouter(sb)
+	server := httptest.NewServer(router.HTTPRouter)
+
+	// do the request
+	r, err := uploadUhupkg(server.URL+"/upload", tarballPath, "uhupkg")
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusOK, r.StatusCode)
+	assert.Equal(t, "File uploaded successfully", string(bodyContent))
+
+	pkgpath := path.Join(testPath, filepath.Base(tarballPath))
+
+	readData, err := afero.ReadFile(memFs, pkgpath)
+	assert.NoError(t, err)
+
+	expectedData, err := afero.ReadFile(memFs, tarballPath)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectedData, readData)
+}
+
+func TestUploadRouteWithWrongFormFileName(t *testing.T) {
+	memFs := afero.NewOsFs()
+
+	la := &libarchive.LibArchive{}
+
+	// setup filesystem
+	tarballPath, err := generateUhupkg(memFs, true, true)
+	assert.NoError(t, err)
+	defer memFs.Remove(tarballPath)
+
+	testPath, err := afero.TempDir(memFs, "", "server-test")
+	assert.NoError(t, err)
+	defer memFs.RemoveAll(testPath)
+
+	// setup server
+	sb, err := NewServerBackend(la, testPath)
+	assert.NoError(t, err)
+
+	router := NewBackendRouter(sb)
+	server := httptest.NewServer(router.HTTPRouter)
+
+	// do the request
+	r, err := uploadUhupkg(server.URL+"/upload", tarballPath, "wrongname")
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusInternalServerError, r.StatusCode)
+	assert.Equal(t, "500 internal server error\n", string(bodyContent))
+}
+
+func TestUploadRouteWithFileCreationFailure(t *testing.T) {
+	memFs := afero.NewOsFs()
+
+	la := &libarchive.LibArchive{}
+
+	// setup filesystem
+	tarballPath, err := generateUhupkg(memFs, true, true)
+	assert.NoError(t, err)
+	defer memFs.Remove(tarballPath)
+
+	testPath, err := afero.TempDir(memFs, "", "server-test")
+	assert.NoError(t, err)
+	defer memFs.RemoveAll(testPath)
+
+	// setup server
+	sb, err := NewServerBackend(la, testPath)
+	assert.NoError(t, err)
+
+	router := NewBackendRouter(sb)
+	server := httptest.NewServer(router.HTTPRouter)
+
+	// overwrite to a wrong path
+	sb.path = path.Join(sb.path, "inexistant/path")
+
+	// do the request
+	r, err := uploadUhupkg(server.URL+"/upload", tarballPath, "uhupkg")
+	assert.NoError(t, err)
+
+	body := ioutil.NopCloser(r.Body)
+	bodyContent, err := ioutil.ReadAll(body)
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusInternalServerError, r.StatusCode)
+	assert.Equal(t, "500 internal server error\n", string(bodyContent))
+}
+
+func uploadUhupkg(url string, filePath string, formName string) (*http.Response, error) {
+	var b bytes.Buffer
+	w := multipart.NewWriter(&b)
+
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	fw, err := w.CreateFormFile(formName, filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = io.Copy(fw, f)
+	if err != nil {
+		return nil, err
+	}
+	w.Close()
+
+	req, err := http.NewRequest("POST", url, &b)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", w.FormDataContentType())
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func generateUhupkg(fsBackend afero.Fs, withMetadata, withSignature bool) (string, error) {

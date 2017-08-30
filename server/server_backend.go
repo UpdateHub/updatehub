@@ -12,10 +12,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/OSSystems/pkg/log"
@@ -166,6 +168,7 @@ func (sb *ServerBackend) Routes() []Route {
 		{Method: "POST", Path: "/upgrades", Handle: sb.getUpdateMetadata},
 		{Method: "POST", Path: "/report", Handle: sb.reportStatus},
 		{Method: "GET", Path: "/products/:product/packages/:package/objects/:object", Handle: sb.getObject},
+		{Method: "POST", Path: "/upload", Handle: sb.upload},
 	}
 }
 
@@ -238,4 +241,41 @@ func (sb *ServerBackend) getObject(w http.ResponseWriter, r *http.Request, p htt
 		fileName := path.Join(sb.path, p.ByName("product"), p.ByName("package"), p.ByName("object"))
 		http.ServeFile(w, r, fileName)
 	}
+}
+
+func (sb *ServerBackend) upload(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	uploadedFile, header, err := r.FormFile("uhupkg")
+	if err != nil {
+		log.Error(err)
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "500 internal server error\n")
+		return
+	}
+	defer uploadedFile.Close()
+
+	targetFilePath := path.Join(sb.path, filepath.Base(header.Filename))
+
+	targetFile, err := os.Create(targetFilePath)
+	if err != nil {
+		log.Error(err)
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "500 internal server error\n")
+		return
+	}
+	defer targetFile.Close()
+
+	log.Info("Receiving file upload")
+
+	_, err = io.Copy(targetFile, uploadedFile)
+	if err != nil {
+		log.Error(err)
+		w.WriteHeader(500)
+		fmt.Fprintf(w, "500 internal server error\n")
+		return
+	}
+
+	msg := "File uploaded successfully"
+	w.WriteHeader(200)
+	fmt.Fprintf(w, msg)
+	log.Info(msg)
 }
