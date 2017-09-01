@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/OSSystems/pkg/log"
 	_ "github.com/UpdateHub/updatehub/installmodes/copy"
@@ -21,10 +22,25 @@ import (
 	_ "github.com/UpdateHub/updatehub/installmodes/tarball"
 	_ "github.com/UpdateHub/updatehub/installmodes/ubifs"
 	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/server"
+	"github.com/UpdateHub/updatehub/updatehub"
+	"github.com/parnurzeal/gorequest"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
+
+type AgentInfo struct {
+	Version   string                    `json:"version"`
+	BuildTime string                    `json:"build-time"`
+	Config    updatehub.Settings        `json:"config"`
+	Firmware  metadata.FirmwareMetadata `json:"firmware"`
+}
+
+type ProbeResponse struct {
+	UpdateAvailable bool `json:"update-available"`
+	TryAgainIn      int  `json:"try-again-in"`
+}
 
 func main() {
 	var path string
@@ -45,6 +61,7 @@ func main() {
 
 	isQuiet := cmd.PersistentFlags().Bool("quiet", false, "sets the log level to 'error'")
 	isDebug := cmd.PersistentFlags().Bool("debug", false, "sets the log level to 'debug'")
+	wait := cmd.PersistentFlags().Bool("wait", false, "wait for UpdateHub Agent")
 
 	err := cmd.Execute()
 	if err != nil {
@@ -92,10 +109,50 @@ func main() {
 
 	go func() {
 		router := server.NewBackendRouter(backend)
-		if err := http.ListenAndServe(":8080", router.HTTPRouter); err != nil {
+		if err := http.ListenAndServe(":8088", router.HTTPRouter); err != nil {
 			log.Fatal(err)
 		}
 	}()
 
+	var info *AgentInfo
+
+	// Wait and check for UpdateHub Agent is running
+	for ok := true; ok; ok = *wait {
+		_, _, errs := gorequest.New().Get(buildURL("/info")).EndStruct(&info)
+		if len(errs) == 0 {
+			log.Info("UpdateHub Agent is running")
+			*wait = false
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	// UpdateHub Agent is running?
+	if info != nil {
+		probe := ProbeResponse{UpdateAvailable: false}
+
+		var req struct {
+			ServerAddress string `json:"server-address"`
+		}
+		req.ServerAddress = "localhost:8080"
+
+		// Probe for update
+		_, _, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
+		if len(errs) == 0 {
+			if probe.UpdateAvailable {
+				log.Info("Update available")
+			} else {
+				log.Info("Update not available")
+				os.Exit(0)
+			}
+		} else {
+			log.Fatal("Invalid response from UpdateHub Agent")
+		}
+	}
+
 	d.Run()
+}
+
+func buildURL(path string) string {
+	return fmt.Sprintf("http://localhost:8080/%s", path[1:])
 }
