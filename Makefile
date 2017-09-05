@@ -18,7 +18,7 @@ IGNORED_PACKAGES := /vendor/
 all: build
 
 .PHONY: build
-build: .GOPATH/.ok updatehub updatehub-server
+build: .GOPATH/.ok updatehub updatehub-server updatehub-ctl
 
 .PHONY: updatehub
 updatehub: .GOPATH/.ok vendor
@@ -30,6 +30,12 @@ updatehub: .GOPATH/.ok vendor
 updatehub-server: .GOPATH/.ok
 	@echo -n "building updatehub-server… "
 	$Q go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-server
+	@echo "done"
+
+.PHONY: updatehub-ctl vendor
+updatehub-ctl: .GOPATH/.ok
+	@echo -n "building updatehub-ctl… "
+	$Q go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-ctl
 	@echo "done"
 
 ##### =====> Utility targets <===== #####
