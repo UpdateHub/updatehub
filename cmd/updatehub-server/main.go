@@ -134,7 +134,7 @@ func main() {
 		var req struct {
 			ServerAddress string `json:"server-address"`
 		}
-		req.ServerAddress = "localhost:8080"
+		req.ServerAddress = "localhost:8088"
 
 		// Probe for update
 		_, _, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
