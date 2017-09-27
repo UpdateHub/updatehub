@@ -11,6 +11,8 @@ package utils
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"io"
+	"os"
 
 	"github.com/spf13/afero"
 )
@@ -25,10 +27,14 @@ func DataSha256sum(data []byte) string {
 }
 
 func FileSha256sum(fsb afero.Fs, filepath string) (string, error) {
-	data, err := afero.ReadFile(fsb, filepath)
+	f, err := fsb.OpenFile(filepath, os.O_RDONLY, 0)
 	if err != nil {
 		return "", err
 	}
 
-	return DataSha256sum(data), nil
+	hash := sha256.New()
+
+	_, _ = io.Copy(hash, f)
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
