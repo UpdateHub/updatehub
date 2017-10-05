@@ -166,9 +166,19 @@ func (uh *UpdateHub) stateChangeCallback(state State, action string) (State, err
 	}
 
 	s := StateToString(state.ID())
-	_, err := uh.CmdLineExecuter.Execute(fmt.Sprintf("%s %s %s", uh.StateChangeCallbackPath, action, s))
+	output, err := uh.CmdLineExecuter.Execute(fmt.Sprintf("%s %s %s", uh.StateChangeCallbackPath, action, s))
 	if err != nil {
 		return nil, err
+	}
+
+	flow, _ := DetermineTransitionFlow(output)
+
+	switch flow {
+	case TransitionFlowCancelled:
+		return NewIdleState(), nil
+	case TransitionFlowPostponed:
+		log.Warn("postponed state transition not supported yet")
+		return NewIdleState(), nil
 	}
 
 	return nil, nil
@@ -228,19 +238,29 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 		state, _ := uh.state.Handle(uh)
 		uh.state = state
 	} else {
-		_, err := uh.stateChangeCallback(uh.state, "enter")
+		flow, err := uh.stateChangeCallback(uh.state, "enter")
 		if err != nil {
 			log.Error(err)
 			uh.state = NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
 			return uh.state
 		}
 
+		if flow != nil {
+			uh.state = flow
+			return uh.state
+		}
+
 		state, cancel := uh.state.Handle(uh)
 
-		_, err = uh.stateChangeCallback(uh.state, "leave")
+		flow, err = uh.stateChangeCallback(uh.state, "leave")
 		if err != nil {
 			log.Error(err)
 			uh.state = NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
+			return uh.state
+		}
+
+		if flow != nil {
+			uh.state = flow
 			return uh.state
 		}
 
