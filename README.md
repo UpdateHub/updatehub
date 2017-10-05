@@ -166,9 +166,14 @@ When it's executed after the <state>, the agent calls it like this:
 
     <callback> leave <state>
 
-The output in this case is ignored so if the callback fails, it
-proceeds as normal. ``Default path:
+If this callback fails, the agent enter a error state. ``Default path:
 /usr/share/updatehub/state-change-callback``
+
+The output of both enter and leave actions are parsed to determine
+transition state flow.
+
+To cancel the current state transition, the callback must write
+to stdout: ``cancel``.
 
 * **Error**
 

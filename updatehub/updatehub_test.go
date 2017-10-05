@@ -231,7 +231,7 @@ func TestProcessCurrentStateWithLeaveError(t *testing.T) {
 
 	nextState := uh.ProcessCurrentState()
 
-	assert.IsType(t, &PollState{}, nextState)
+	assert.IsType(t, &ErrorState{}, nextState)
 
 	aim.AssertExpectations(t)
 	cm.AssertExpectations(t)
@@ -293,6 +293,49 @@ func TestProcessCurrentStateIsErrorWithNonExistantCallback(t *testing.T) {
 	aim.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	rm.AssertExpectations(t)
+}
+
+func TestProcessCurrentStateWithEnterFlow(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	fs := afero.NewMemMapFs()
+
+	afero.WriteFile(fs, "/usr/share/updatehub/state-change-callback", []byte("a"), 0755)
+
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter poll").Return([]byte("cancel"), nil).Once()
+
+	uh, _ := newTestUpdateHub(NewPollState(0), aim)
+	uh.CmdLineExecuter = cm
+	uh.Store = fs
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &IdleState{}, nextState)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestProcessCurrentStateWithLeaveFlow(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	fs := afero.NewMemMapFs()
+
+	afero.WriteFile(fs, "/usr/share/updatehub/state-change-callback", []byte("a"), 0755)
+
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter poll").Return([]byte(""), nil).Once()
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback leave poll").Return([]byte("cancel"), nil).Once()
+
+	uh, _ := newTestUpdateHub(NewPollState(0), aim)
+	uh.CmdLineExecuter = cm
+	uh.Store = fs
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &IdleState{}, nextState)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
 }
 
 func TestNewUpdateHub(t *testing.T) {
