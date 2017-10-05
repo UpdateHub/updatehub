@@ -231,7 +231,7 @@ func TestProcessCurrentStateWithLeaveError(t *testing.T) {
 
 	nextState := uh.ProcessCurrentState()
 
-	assert.IsType(t, &PollState{}, nextState)
+	assert.IsType(t, &ErrorState{}, nextState)
 
 	aim.AssertExpectations(t)
 	cm.AssertExpectations(t)

@@ -236,7 +236,9 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 
 		err = uh.stateChangeCallback(uh.state, "leave")
 		if err != nil {
-			log.Warn(err)
+			log.Error(err)
+			uh.state = NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
+			return uh.state
 		}
 
 		cs, ok := uh.state.(*CancellableState)
