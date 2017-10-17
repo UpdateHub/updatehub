@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/UpdateHub/updatehub/libarchive"
-	"github.com/UpdateHub/updatehub/utils"
+	"github.com/updatehub/updatehub/libarchive"
+	"github.com/updatehub/updatehub/utils"
 	shellwords "github.com/mattn/go-shellwords"
 	"github.com/spf13/afero"
 )

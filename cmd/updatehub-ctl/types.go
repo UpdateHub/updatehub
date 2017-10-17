@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/UpdateHub/updatehub/metadata"
-	"github.com/UpdateHub/updatehub/updatehub"
+	"github.com/updatehub/updatehub/metadata"
+	"github.com/updatehub/updatehub/updatehub"
 )
 
 type AgentInfo struct {

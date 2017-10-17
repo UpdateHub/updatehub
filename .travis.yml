@@ -6,7 +6,7 @@ go:
   - 1.9
   - master
 
-go_import_path: github.com/UpdateHub/updatehub
+go_import_path: github.com/updatehub/updatehub
 
 matrix:
   allow_failures:

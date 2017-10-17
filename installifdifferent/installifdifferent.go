@@ -12,8 +12,8 @@ import (
 	"fmt"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/UpdateHub/updatehub/metadata"
-	"github.com/UpdateHub/updatehub/utils"
+	"github.com/updatehub/updatehub/metadata"
+	"github.com/updatehub/updatehub/utils"
 	"github.com/spf13/afero"
 )
 

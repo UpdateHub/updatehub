@@ -12,7 +12,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/UpdateHub/updatehub/client"
+	"github.com/updatehub/updatehub/client"
 	"github.com/stretchr/testify/mock"
 )
 

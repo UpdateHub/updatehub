@@ -19,12 +19,12 @@ import (
 	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
-	"github.com/UpdateHub/updatehub/activeinactive"
-	"github.com/UpdateHub/updatehub/client"
-	"github.com/UpdateHub/updatehub/copy"
-	"github.com/UpdateHub/updatehub/installifdifferent"
-	"github.com/UpdateHub/updatehub/metadata"
-	"github.com/UpdateHub/updatehub/utils"
+	"github.com/updatehub/updatehub/activeinactive"
+	"github.com/updatehub/updatehub/client"
+	"github.com/updatehub/updatehub/copy"
+	"github.com/updatehub/updatehub/installifdifferent"
+	"github.com/updatehub/updatehub/metadata"
+	"github.com/updatehub/updatehub/utils"
 )
 
 // GetIndexOfObjectToBeInstalled selects which object will be installed from the update metadata

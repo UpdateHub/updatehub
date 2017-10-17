@@ -16,8 +16,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/installmodes"
-	"github.com/UpdateHub/updatehub/utils"
+	"github.com/updatehub/updatehub/installmodes"
+	"github.com/updatehub/updatehub/utils"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
 	"github.com/stretchr/testify/assert"
 )
 

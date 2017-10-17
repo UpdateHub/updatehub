@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/updatehub/updatehub/libarchive"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -17,8 +17,8 @@ import (
 	"path"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/testsmocks/filemock"
-	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/updatehub/updatehub/testsmocks/filemock"
+	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

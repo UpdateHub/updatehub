@@ -9,8 +9,8 @@
 package updatehub
 
 import (
-	"github.com/UpdateHub/updatehub/client"
-	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/updatehub/updatehub/client"
+	"github.com/updatehub/updatehub/metadata"
 )
 
 // DownloadedState is the State interface implementation for the UpdateHubStateDownloaded

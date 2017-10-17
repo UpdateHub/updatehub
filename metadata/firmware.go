@@ -19,7 +19,7 @@ import (
 	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
-	"github.com/UpdateHub/updatehub/utils"
+	"github.com/updatehub/updatehub/utils"
 )
 
 type SupportedHardwareChecker interface {

@@ -1,4 +1,4 @@
-package: github.com/UpdateHub/updatehub
+package: github.com/updatehub/updatehub
 import:
 - package: github.com/go-ini/ini
 - package: github.com/julienschmidt/httprouter

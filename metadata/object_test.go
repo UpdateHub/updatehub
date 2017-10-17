@@ -11,7 +11,7 @@ package metadata
 import (
 	"testing"
 
-	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/updatehub/updatehub/installmodes"
 	"github.com/stretchr/testify/assert"
 )
 

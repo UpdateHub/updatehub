@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpdateHub/updatehub/metadata"
-	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
+	"github.com/updatehub/updatehub/metadata"
+	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
 	"github.com/stretchr/testify/assert"
 )
 

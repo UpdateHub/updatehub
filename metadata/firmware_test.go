@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/installmodes"
-	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/updatehub/updatehub/installmodes"
+	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 )

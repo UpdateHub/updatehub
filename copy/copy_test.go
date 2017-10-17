@@ -21,11 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpdateHub/updatehub/libarchive"
-	"github.com/UpdateHub/updatehub/testsmocks/filemock"
-	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
-	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
-	"github.com/UpdateHub/updatehub/utils"
+	"github.com/updatehub/updatehub/libarchive"
+	"github.com/updatehub/updatehub/testsmocks/filemock"
+	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
+	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
+	"github.com/updatehub/updatehub/utils"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"

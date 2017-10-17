@@ -17,7 +17,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/updatehub/updatehub/metadata"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 	"github.com/stretchr/testify/assert"
 )
 

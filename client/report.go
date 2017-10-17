@@ -16,7 +16,7 @@ import (
 	"net/http"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/updatehub/updatehub/metadata"
 )
 
 type ReportClient struct {

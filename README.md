@@ -1,6 +1,6 @@
-# Update Hub [![Build Status](https://travis-ci.org/UpdateHub/updatehub.svg?branch=master)](https://travis-ci.org/UpdateHub/updatehub) [![Coverage Status](https://coveralls.io/repos/github/UpdateHub/updatehub/badge.svg?branch=master)](https://coveralls.io/github/UpdateHub/updatehub?branch=master)
+# updatehub [![Build Status](https://travis-ci.org/updatehub/updatehub.svg?branch=master)](https://travis-ci.org/updatehub/updatehub) [![Coverage Status](https://coveralls.io/repos/github/updatehub/updatehub/badge.svg?branch=master)](https://coveralls.io/github/updatehub/updatehub?branch=master)
 
-Update Hub provides a generic and safe Firmware Over-The-Air agent for Embedded and
+updatehub provides a generic and safe Firmware Over-The-Air agent for Embedded and
 Industrial Linux-based devices.
 
 Features
@@ -64,7 +64,7 @@ Build and test
     make
     make test
 
-UpdateHub Usage
+updatehub Usage
 --------
 
     ./bin/updatehub [flags]
@@ -74,7 +74,7 @@ UpdateHub Usage
       -h, --help    help for updatehub
           --quiet   sets the log level to 'error'
 
-UpdateHub Server Usage
+updatehub Server Usage
 --------
 
     ./bin/updatehub-server path [flags]
@@ -87,7 +87,7 @@ UpdateHub Server Usage
       -h, --help    help for updatehub-server
           --quiet   sets the log level to 'error'
 
-UpdateHub Settings File
+updatehub Settings File
 --------
 
 Default path:

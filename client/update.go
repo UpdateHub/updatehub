@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/updatehub/updatehub/metadata"
 )
 
 type UpdateClient struct {

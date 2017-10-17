@@ -9,7 +9,7 @@
 package objectmock
 
 import (
-	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/updatehub/updatehub/metadata"
 	"github.com/stretchr/testify/mock"
 )
 

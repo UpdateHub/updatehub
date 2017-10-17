@@ -17,8 +17,8 @@ import (
 	"regexp"
 	"unicode"
 
-	"github.com/UpdateHub/updatehub/libarchive"
-	"github.com/UpdateHub/updatehub/utils"
+	"github.com/updatehub/updatehub/libarchive"
+	"github.com/updatehub/updatehub/utils"
 	"github.com/spf13/afero"
 )
 

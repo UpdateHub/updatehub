@@ -15,9 +15,9 @@ import (
 	"net/http"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/UpdateHub/updatehub/client"
-	"github.com/UpdateHub/updatehub/updatehub"
-	"github.com/UpdateHub/updatehub/utils"
+	"github.com/updatehub/updatehub/client"
+	"github.com/updatehub/updatehub/updatehub"
+	"github.com/updatehub/updatehub/utils"
 	"github.com/julienschmidt/httprouter"
 )
 

@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/client"
-	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/updatehub/updatehub/client"
+	"github.com/updatehub/updatehub/metadata"
 	"github.com/stretchr/testify/assert"
 )
 

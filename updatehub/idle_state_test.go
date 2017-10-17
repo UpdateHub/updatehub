@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/updatehub/updatehub/testsmocks/activeinactivemock"
 	"github.com/stretchr/testify/assert"
 )
 

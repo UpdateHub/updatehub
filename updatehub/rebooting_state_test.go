@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/UpdateHub/updatehub/client"
-	"github.com/UpdateHub/updatehub/installmodes"
-	"github.com/UpdateHub/updatehub/metadata"
-	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
-	"github.com/UpdateHub/updatehub/testsmocks/rebootermock"
+	"github.com/updatehub/updatehub/client"
+	"github.com/updatehub/updatehub/installmodes"
+	"github.com/updatehub/updatehub/metadata"
+	"github.com/updatehub/updatehub/testsmocks/objectmock"
+	"github.com/updatehub/updatehub/testsmocks/rebootermock"
 	"github.com/stretchr/testify/assert"
 )
 
