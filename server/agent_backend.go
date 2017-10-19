@@ -71,7 +71,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprout
 			log.Warn("failed to parse a /probe request: ", err)
 		}
 
-		if address, ok := in["server-address"]; ok {
+		if address, ok := in["server-address"]; ok && address != "" {
 			sanitizedAddress, err := utils.SanitizeServerAddress(address)
 			if err != nil {
 				log.Warn("failed to sanitize a server address from /probe request: ", err)

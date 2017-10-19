@@ -42,7 +42,7 @@ func main() {
 		},
 	}
 
-	probeCmd.Flags().StringVarP(&probeServerAddress, "server-address", "s", "localhost:8080", "Server address for the triggered probe")
+	probeCmd.Flags().StringVarP(&probeServerAddress, "server-address", "s", "", "Server address for the triggered probe")
 
 	rootCmd.AddCommand(probeCmd)
 	rootCmd.AddCommand(infoCmd)
