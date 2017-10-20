@@ -31,6 +31,7 @@ func FileSha256sum(fsb afero.Fs, filepath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer f.Close()
 
 	hash := sha256.New()
 
