@@ -27,7 +27,8 @@ const (
         "target": "/tmp/dev/xx1",
         "target-type": "device",
         "target-path": "/path",
-        "install-if-different": "b5a2c96250612366ea272ffac6d9744aaf4b45aacd96aa7cfcb931ee3b558259"
+        "install-if-different": "sha256sum",
+        "sha256sum": "b5a2c96250612366ea272ffac6d9744aaf4b45aacd96aa7cfcb931ee3b558259"
 	}`
 
 	ObjectWithInstallIfDifferentPattern = `{
@@ -59,6 +60,14 @@ const (
         "target-type": "device",
         "target-path": "/path",
         "install-if-different": [ 1, 2, 3 ]
+	}`
+
+	ObjectWithInstallIfDifferentUnknownStringFormat = `{
+        "mode": "test",
+        "target": "/tmp/dev/xx1",
+        "target-type": "device",
+        "target-path": "/path",
+        "install-if-different": "foo"
 	}`
 
 	ObjectWithInstallIfDifferentPatternWithArrayPattern = `{
@@ -372,6 +381,30 @@ func TestProceedWithUnknownFormatError(t *testing.T) {
 	iif := &DefaultImpl{memFs}
 
 	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentUnknownFormat))
+	assert.NoError(t, err)
+
+	install, err := iif.Proceed(o)
+	assert.EqualError(t, err, "unknown install-if-different format")
+	assert.False(t, install)
+}
+
+func TestProceedWithUnknownStringFormatError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	err := afero.WriteFile(memFs, testObjectGetTargetReturn, []byte("dummy"), 0666)
+	assert.NoError(t, err)
+	defer memFs.Remove(testObjectGetTargetReturn)
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return &testObject{} },
+	})
+	defer mode.Unregister()
+
+	iif := &DefaultImpl{memFs}
+
+	o, err := metadata.NewObjectMetadata([]byte(ObjectWithInstallIfDifferentUnknownStringFormat))
 	assert.NoError(t, err)
 
 	install, err := iif.Proceed(o)

@@ -46,18 +46,19 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 	target := tg.GetTarget()
 	log.Debug("install-if-different target: ", target)
 
-	sha256sum, ok := o.GetObjectMetadata().InstallIfDifferent.(string)
-	if ok {
-		log.Info("Checking sha256sum")
-		// is string, so is a Sha256Sum
-		return installIfDifferentSha256Sum(iid.FileSystemBackend, target, sha256sum)
-	}
-
-	pattern, ok := o.GetObjectMetadata().InstallIfDifferent.(map[string]interface{})
-	if ok {
+	switch value := o.GetObjectMetadata().InstallIfDifferent.(type) {
+	case string:
+		if value == "sha256sum" {
+			log.Info("Checking sha256sum")
+			// is string, so is a Sha256Sum
+			sha256sum := o.GetObjectMetadata().Sha256sum
+			return installIfDifferentSha256Sum(iid.FileSystemBackend, target, sha256sum)
+		}
+		break
+	case map[string]interface{}:
 		log.Info("checking pattern")
 		// is object, so is a Pattern
-		return installIfDifferentPattern(iid.FileSystemBackend, target, pattern)
+		return installIfDifferentPattern(iid.FileSystemBackend, target, value)
 	}
 
 	finalErr := fmt.Errorf("unknown install-if-different format")
