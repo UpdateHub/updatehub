@@ -27,7 +27,8 @@ const (
         "target": "/tmp/dev/xx1",
         "target-type": "device",
         "target-path": "/path",
-        "install-if-different": "b5a2c96250612366ea272ffac6d9744aaf4b45aacd96aa7cfcb931ee3b558259"
+        "install-if-different": "sha256sum",
+        "sha256sum": "b5a2c96250612366ea272ffac6d9744aaf4b45aacd96aa7cfcb931ee3b558259"
 	}`
 
 	ObjectWithInstallIfDifferentPattern = `{
