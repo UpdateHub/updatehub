@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/updatehub/updatehub/testsmocks/filemock"
-	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/updatehub/updatehub/testsmocks/filemock"
+	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 )
 
 func TestNewKernelFileInfoWithInvalidFilename(t *testing.T) {

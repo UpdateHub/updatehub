@@ -15,6 +15,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/updatehub/updatehub/copy"
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/libarchive"
@@ -23,8 +25,6 @@ import (
 	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
 	"github.com/updatehub/updatehub/testsmocks/permissionsmock"
 	"github.com/updatehub/updatehub/utils"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCopyInit(t *testing.T) {

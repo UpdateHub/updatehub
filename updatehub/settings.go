@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/updatehub/updatehub/utils"
 	"github.com/go-ini/ini"
 	"github.com/spf13/afero"
+	"github.com/updatehub/updatehub/utils"
 )
 
 const (

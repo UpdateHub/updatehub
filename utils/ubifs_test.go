@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
 )
 
 const ubinfoStdoutTemplate string = `Volume ID:   %d (on ubi%d)

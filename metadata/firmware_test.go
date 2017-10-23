@@ -15,10 +15,10 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/updatehub/updatehub/installmodes"
+	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
 )
 
 func TestNewFirmwareMetadataWithInexistantPath(t *testing.T) {

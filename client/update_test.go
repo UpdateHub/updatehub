@@ -18,9 +18,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/updatehub/updatehub/installmodes/imxkobs"
 	"github.com/updatehub/updatehub/metadata"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestProbeUpdateWithInvalidApiRequester(t *testing.T) {

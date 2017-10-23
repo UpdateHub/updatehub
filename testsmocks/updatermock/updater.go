@@ -12,8 +12,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/updatehub/updatehub/client"
 	"github.com/stretchr/testify/mock"
+	"github.com/updatehub/updatehub/client"
 )
 
 type UpdaterMock struct {

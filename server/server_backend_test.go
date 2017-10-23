@@ -24,12 +24,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/updatehub/updatehub/libarchive"
 	"github.com/updatehub/updatehub/metadata"
 	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
 	"github.com/updatehub/updatehub/utils"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 const (

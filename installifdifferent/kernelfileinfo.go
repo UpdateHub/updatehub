@@ -17,9 +17,9 @@ import (
 	"regexp"
 	"unicode"
 
+	"github.com/spf13/afero"
 	"github.com/updatehub/updatehub/libarchive"
 	"github.com/updatehub/updatehub/utils"
-	"github.com/spf13/afero"
 )
 
 type LinuxArch int

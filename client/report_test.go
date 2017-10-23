@@ -17,8 +17,8 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/updatehub/updatehub/metadata"
 	"github.com/stretchr/testify/assert"
+	"github.com/updatehub/updatehub/metadata"
 )
 
 func TestReportState(t *testing.T) {

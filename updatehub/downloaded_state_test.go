@@ -11,11 +11,11 @@ package updatehub
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/metadata"
 	"github.com/updatehub/updatehub/testsmocks/activeinactivemock"
 	"github.com/updatehub/updatehub/testsmocks/objectmock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestStateDownloaded(t *testing.T) {

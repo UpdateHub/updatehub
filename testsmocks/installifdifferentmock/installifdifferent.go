@@ -9,8 +9,8 @@
 package installifdifferentmock
 
 import (
-	"github.com/updatehub/updatehub/metadata"
 	"github.com/stretchr/testify/mock"
+	"github.com/updatehub/updatehub/metadata"
 )
 
 type InstallIfDifferentMock struct {
