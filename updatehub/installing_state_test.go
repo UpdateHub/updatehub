@@ -12,6 +12,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/updatehub/updatehub/client"
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/metadata"
@@ -21,9 +24,6 @@ import (
 	"github.com/updatehub/updatehub/testsmocks/objectmock"
 	"github.com/updatehub/updatehub/testsmocks/progresstrackermock"
 	"github.com/updatehub/updatehub/testsmocks/statesmock"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 func TestStateInstallingWithSuccess(t *testing.T) {

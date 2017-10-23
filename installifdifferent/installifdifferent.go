@@ -12,9 +12,9 @@ import (
 	"fmt"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/spf13/afero"
 	"github.com/updatehub/updatehub/metadata"
 	"github.com/updatehub/updatehub/utils"
-	"github.com/spf13/afero"
 )
 
 type Interface interface {

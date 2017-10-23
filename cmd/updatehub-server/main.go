@@ -15,6 +15,9 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/parnurzeal/gorequest"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	_ "github.com/updatehub/updatehub/installmodes/copy"
 	_ "github.com/updatehub/updatehub/installmodes/flash"
 	_ "github.com/updatehub/updatehub/installmodes/imxkobs"
@@ -25,9 +28,6 @@ import (
 	"github.com/updatehub/updatehub/metadata"
 	"github.com/updatehub/updatehub/server"
 	"github.com/updatehub/updatehub/updatehub"
-	"github.com/parnurzeal/gorequest"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 )
 
 type AgentInfo struct {

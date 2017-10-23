@@ -12,8 +12,8 @@ import (
 	"path"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/updatehub/updatehub/metadata"
 	"github.com/fsnotify/fsnotify"
+	"github.com/updatehub/updatehub/metadata"
 )
 
 type Daemon struct {

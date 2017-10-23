@@ -13,14 +13,14 @@ import (
 	"path"
 	"testing"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 	"github.com/updatehub/updatehub/copy"
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/libarchive"
 	"github.com/updatehub/updatehub/testsmocks/copymock"
 	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestRawInit(t *testing.T) {

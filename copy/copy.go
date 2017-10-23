@@ -16,10 +16,10 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/updatehub/updatehub/libarchive"
-	"github.com/updatehub/updatehub/utils"
 	shellwords "github.com/mattn/go-shellwords"
 	"github.com/spf13/afero"
+	"github.com/updatehub/updatehub/libarchive"
+	"github.com/updatehub/updatehub/utils"
 )
 
 type Interface interface {

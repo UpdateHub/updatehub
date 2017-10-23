@@ -18,6 +18,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/updatehub/updatehub/client"
 	"github.com/updatehub/updatehub/metadata"
 	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
@@ -26,9 +29,6 @@ import (
 	"github.com/updatehub/updatehub/testsmocks/reportermock"
 	"github.com/updatehub/updatehub/testsmocks/responsewritermock"
 	"github.com/updatehub/updatehub/updatehub"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 const (
