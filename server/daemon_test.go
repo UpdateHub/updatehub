@@ -115,7 +115,7 @@ func TestRunWithRemoveNotification(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	assert.Equal(t, (*SelectedPackage)(nil), d.backend.selectedPackage)
+	assert.Equal(t, (*Package)(nil), d.backend.selectedPackage)
 
 	lam.AssertExpectations(t)
 }

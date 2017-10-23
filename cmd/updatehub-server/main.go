@@ -95,12 +95,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = backend.ProcessDirectory()
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
-	}
-
 	d, err := server.NewDaemon(backend)
 	if err != nil {
 		log.Fatal(fmt.Errorf("%s: %s", path, err))

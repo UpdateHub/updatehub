@@ -1968,10 +1968,6 @@ func TestStartWithFailureOnRollbackProcedure(t *testing.T) {
 	rm.AssertExpectations(t)
 }
 
-type testObject struct {
-	metadata.ObjectMetadata
-}
-
 func newTestInstallMode(objs []metadata.Object) installmodes.InstallMode {
 	i := 0
 	return installmodes.RegisterInstallMode(installmodes.InstallMode{

@@ -105,7 +105,7 @@ func TestNewServerBackend(t *testing.T) {
 
 	routes := sb.Routes()
 
-	assert.Equal(t, 3, len(routes))
+	assert.Equal(t, 4, len(routes))
 
 	assert.Equal(t, "POST", routes[0].Method)
 	assert.Equal(t, "/upgrades", routes[0].Path)
@@ -118,6 +118,10 @@ func TestNewServerBackend(t *testing.T) {
 	assert.Equal(t, "GET", routes[2].Method)
 	assert.Equal(t, "/products/:product/packages/:package/objects/:object", routes[2].Path)
 	assert.Equal(t, reflect.ValueOf(sb.getObject).Pointer(), reflect.ValueOf(routes[2].Handle).Pointer())
+
+	assert.Equal(t, "POST", routes[3].Method)
+	assert.Equal(t, "/packages", routes[3].Path)
+	assert.Equal(t, reflect.ValueOf(sb.receiveUpdateMetadata).Pointer(), reflect.ValueOf(routes[3].Handle).Pointer())
 
 	lam.AssertExpectations(t)
 }
@@ -139,7 +143,7 @@ func TestParseUpdateMetadataWithStatError(t *testing.T) {
 
 	os.Remove(updateMetadataFilePath)
 
-	data, err := sb.parseUpdateMetadata()
+	data, err := sb.parseUpdateMetadata(updateMetadataFilePath)
 	assert.EqualError(t, err, fmt.Sprintf("stat %s: no such file or directory", updateMetadataFilePath))
 	assert.Nil(t, data)
 
@@ -161,7 +165,7 @@ func TestParseUpdateMetadataWithUnmarshalError(t *testing.T) {
 	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
-	data, err := sb.parseUpdateMetadata()
+	data, err := sb.parseUpdateMetadata(updateMetadataFilePath)
 	assert.EqualError(t, err, fmt.Sprintf("Invalid update metadata: invalid character '\\n' in string literal"))
 	assert.Nil(t, data)
 
@@ -270,10 +274,7 @@ func TestProcessDirectoryWithMoreThanOnePackage(t *testing.T) {
 	err = ioutil.WriteFile(pkg2, []byte("dummy_content"), 0666)
 	assert.NoError(t, err)
 
-	sb, err := NewServerBackend(lam, testPath)
-	assert.NoError(t, err)
-
-	err = sb.ProcessDirectory()
+	_, err = NewServerBackend(lam, testPath)
 	assert.Equal(t, fmt.Errorf("the path provided must not have more than 1 package. Found: 2"), err)
 
 	lam.AssertExpectations(t)
@@ -294,9 +295,9 @@ func TestProcessDirectoryWithExactlyOneUpdateMetadata(t *testing.T) {
 	sb, err := NewServerBackend(lam, testPath)
 	assert.NoError(t, err)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-	assert.Equal(t, "", sb.selectedPackage.uhupkgPath)
+	assert.NotNil(t, sb.selectedPackage)
+	assert.Equal(t, false, sb.selectedPackage.isUhupkgSingleFile)
+	assert.Equal(t, testPath, sb.selectedPackage.path)
 	assert.Equal(t, ValidJSONMetadata, string(sb.selectedPackage.updateMetadata))
 
 	lam.AssertExpectations(t)
@@ -322,11 +323,9 @@ func TestProcessDirectoryWithExactlyOneUhuPkg(t *testing.T) {
 	sb, err := NewServerBackend(la, testPath)
 	assert.NoError(t, err)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
 	assert.NotNil(t, sb.selectedPackage)
-	assert.Equal(t, pkgpath, sb.selectedPackage.uhupkgPath)
+	assert.Equal(t, pkgpath, sb.selectedPackage.path)
+	assert.Equal(t, true, sb.selectedPackage.isUhupkgSingleFile)
 	assert.Equal(t, ValidJSONMetadata, string(sb.selectedPackage.updateMetadata))
 }
 
@@ -349,9 +348,6 @@ func TestUpgradesRoute(t *testing.T) {
 
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
 
 	// do the request
 	r, err := http.Post(server.URL+"/upgrades", "application/json", bytes.NewBuffer([]byte("{\"content\": true}")))
@@ -428,9 +424,6 @@ func TestGetObjectRoute(t *testing.T) {
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
 	r, err := http.Get(finalURL)
@@ -475,9 +468,6 @@ func TestGetObjectRouteWithUhupkg(t *testing.T) {
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
 	r, err := http.Get(finalURL)
@@ -519,9 +509,6 @@ func TestGetObjectRouteWithUhupkgAndObjectDownloadedTwice(t *testing.T) {
 
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
 
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
@@ -614,9 +601,6 @@ func TestGetObjectRouteWithUhupkgExtractError(t *testing.T) {
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
 
-	err = sb.ProcessDirectory()
-	assert.Error(t, err)
-
 	// do the request
 	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
 	r, err := http.Get(finalURL)
@@ -649,9 +633,6 @@ func TestReportRoute(t *testing.T) {
 
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
 
 	// do the request
 	reportData := []byte("{\"status\": \"downloading\", \"package-uid\": \"puid\"}")
@@ -687,9 +668,6 @@ func TestReportRouteWithInvalidReportData(t *testing.T) {
 
 	router := NewBackendRouter(sb)
 	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
 
 	// do the request
 	r, err := http.Post(server.URL+"/report", "application/json", bytes.NewBuffer([]byte("{\"content\": ")))
