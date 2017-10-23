@@ -48,10 +48,13 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 
 	switch value := o.GetObjectMetadata().InstallIfDifferent.(type) {
 	case string:
-		log.Info("Checking sha256sum")
-		// is string, so is a Sha256Sum
-		sha256sum := o.GetObjectMetadata().Sha256sum
-		return installIfDifferentSha256Sum(iid.FileSystemBackend, target, sha256sum)
+		if value == "sha256sum" {
+			log.Info("Checking sha256sum")
+			// is string, so is a Sha256Sum
+			sha256sum := o.GetObjectMetadata().Sha256sum
+			return installIfDifferentSha256Sum(iid.FileSystemBackend, target, sha256sum)
+		}
+		break
 	case map[string]interface{}:
 		log.Info("checking pattern")
 		// is object, so is a Pattern
