@@ -11,6 +11,7 @@ package client
 import (
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // TODO: https support
@@ -19,6 +20,8 @@ const (
 	UpgradesEndpoint    = "/upgrades"
 	StateReportEndpoint = "/report"
 )
+
+const requestTimeout = 5 * time.Second
 
 type ApiClient struct {
 	http.Client
@@ -33,7 +36,12 @@ func (client *ApiClient) Request() *ApiRequest {
 }
 
 func NewApiClient(server string) *ApiClient {
-	return &ApiClient{Client: http.Client{}, server: server}
+	return &ApiClient{
+		Client: http.Client{
+			Timeout: requestTimeout,
+		},
+		server: server,
+	}
 }
 
 type ApiRequest struct {
