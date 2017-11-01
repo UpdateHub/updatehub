@@ -90,6 +90,9 @@ This request accepts a "server-address" parameter on POST. When it's
 present, it will use the address for the triggered probe (and the
 update procedure too in case there is an update available).
 
+If agent is busy (e.g. downloading a object or installing a object) the
+returned http code is 202.
+
 + Attributes
 
     + "server-address": "http://different-address:8080" (string) - Server address which the update procedure will use for this request
@@ -101,6 +104,15 @@ update procedure too in case there is an update available).
             {
                 "update-available": false,
                 "try-again-in": 3600
+            }
+
++ Response 202 (application/json)
+
+    + Body
+
+            {
+                "busy": true,
+                "current-state": "probe"
             }
 
 ### abort download [POST /update/download/abort]
