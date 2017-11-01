@@ -81,27 +81,35 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprout
 		}
 	}
 
-	s := updatehub.NewProbeState(apiClient)
-	go func() {
-		ab.UpdateHub.Cancel(s)
-	}()
-
-	<-s.ProbeResponseReady
-
-	um, d := s.ProbeResponse()
-
 	out := map[string]interface{}{}
-	if um == nil {
-		out["update-available"] = false
-	} else {
-		out["update-available"] = true
-	}
 
-	if d > 0 {
-		out["try-again-in"] = d.Seconds()
-	}
+	switch state := ab.UpdateHub.GetState().(type) {
+	case *updatehub.IdleState, *updatehub.PollState:
+		s := updatehub.NewProbeState(apiClient)
 
-	w.WriteHeader(200)
+		ab.UpdateHub.Cancel(s)
+
+		<-s.ProbeResponseReady
+
+		um, d := s.ProbeResponse()
+
+		if um == nil {
+			out["update-available"] = false
+		} else {
+			out["update-available"] = true
+		}
+
+		if d > 0 {
+			out["try-again-in"] = d.Seconds()
+		}
+
+		w.WriteHeader(200)
+	default:
+		out["busy"] = true
+		out["current-state"] = updatehub.StateToString(state.ID())
+
+		w.WriteHeader(202)
+	}
 
 	outputJSON, _ := json.MarshalIndent(out, "", "    ")
 	fmt.Fprintf(w, string(outputJSON))

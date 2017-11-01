@@ -254,6 +254,28 @@ func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 	rwm.AssertExpectations(t)
 }
 
+func TestProbeRouteIsBusy(t *testing.T) {
+	out := map[string]interface{}{}
+	out["busy"] = true
+	out["current-state"] = "probe"
+
+	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
+
+	uh, ab, _, _ := setup(t)
+	defer teardown(t)
+
+	s := updatehub.NewProbeState(uh.DefaultApiClient)
+	uh.SetState(s)
+
+	rwm := &responsewritermock.ResponseWriterMock{}
+	rwm.On("WriteHeader", 202)
+	rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
+
+	ab.probe(rwm, nil, nil)
+
+	rwm.AssertExpectations(t)
+}
+
 func TestProbeRouteWithServerAddressField(t *testing.T) {
 	testCases := []struct {
 		Name        string
