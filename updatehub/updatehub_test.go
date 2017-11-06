@@ -760,6 +760,8 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	uh.Store = fsm
 
+	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
+
 	// file1
 	target1 := &filemock.FileMock{}
 	target1.On("Close").Return(nil).Once()
@@ -887,6 +889,7 @@ func TestUpdateHubDownloadUpdateWithTargetFileError(t *testing.T) {
 	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
 	uh.Store = fsm
@@ -949,6 +952,7 @@ func TestUpdateHubDownloadUpdateWithUpdaterError(t *testing.T) {
 	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
@@ -1016,6 +1020,7 @@ func TestUpdateHubDownloadUpdateWithCopyError(t *testing.T) {
 	uh.CopyBackend = cpm
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
 	uh.Store = fsm
@@ -1102,6 +1107,7 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	target2.On("Close").Return(nil)
 
 	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDFirst), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUIDFirst)).Return(target1, nil)
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDSecond), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
@@ -2228,4 +2234,41 @@ func TestRollbackProcedureWithCallbackFailure(t *testing.T) {
 	aim.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	rm.AssertExpectations(t)
+}
+
+func TestClearDownloadDir(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	fs := afero.NewMemMapFs()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.Store = fs
+
+	afero.WriteFile(fs, path.Join(uh.Settings.DownloadDir, "old-file"), []byte("a"), 0755)
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
+	assert.NoError(t, err)
+
+	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
+	afero.WriteFile(fs, path.Join(uh.Settings.DownloadDir, objectUID), []byte("a"), 0755)
+
+	uh.clearDownloadDir(updateMetadata.Objects[0])
+
+	downloadDir, err := fs.Open(uh.Settings.DownloadDir)
+	assert.NoError(t, err)
+
+	expectedFiles := []string{objectUID}
+
+	files, err := downloadDir.Readdirnames(0)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedFiles, files, "Expected files in download dir should be only objects from update metadata")
 }

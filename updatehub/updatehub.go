@@ -322,6 +322,8 @@ func (uh *UpdateHub) DownloadUpdate(apiClient *client.ApiClient, updateMetadata 
 
 	log.Info(fmt.Sprintf("downloading update. (package-uid: %s)", packageUID))
 
+	uh.clearDownloadDir(updateMetadata.Objects[indexToInstall])
+
 	progress := 0
 	for _, obj := range updateMetadata.Objects[indexToInstall] {
 		objectUID := obj.GetObjectMetadata().Sha256sum
@@ -618,4 +620,26 @@ func (uh *UpdateHub) validateProcedure() error {
 	}
 
 	return nil
+}
+
+func (uh *UpdateHub) clearDownloadDir(objects []metadata.Object) {
+	mapFiles := map[string]bool{}
+
+	dir, _ := afero.ReadDir(uh.Store, uh.Settings.DownloadDir)
+	for _, file := range dir {
+		mapFiles[file.Name()] = false
+	}
+
+	for _, obj := range objects {
+		filename := obj.GetObjectMetadata().Sha256sum
+		if _, ok := mapFiles[filename]; ok {
+			mapFiles[filename] = true
+		}
+	}
+
+	for filename, preserv := range mapFiles {
+		if !preserv {
+			uh.Store.Remove(path.Join(uh.Settings.DownloadDir, filename))
+		}
+	}
 }
