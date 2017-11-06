@@ -10,6 +10,7 @@ package client
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 )
@@ -21,7 +22,15 @@ const (
 	StateReportEndpoint = "/report"
 )
 
-const requestTimeout = 5 * time.Second
+var defaultHttpTransport = http.Transport{
+	Dial: (&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}).Dial,
+	TLSHandshakeTimeout:   30 * time.Second,
+	ResponseHeaderTimeout: 30 * time.Second,
+	ExpectContinueTimeout: 1 * time.Second,
+}
 
 type ApiClient struct {
 	http.Client
@@ -38,7 +47,7 @@ func (client *ApiClient) Request() *ApiRequest {
 func NewApiClient(server string) *ApiClient {
 	return &ApiClient{
 		Client: http.Client{
-			Timeout: requestTimeout,
+			Transport: &defaultHttpTransport,
 		},
 		server: server,
 	}
