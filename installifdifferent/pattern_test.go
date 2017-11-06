@@ -113,7 +113,7 @@ func TestNewPatternFromInstallIfDifferentObject(t *testing.T) {
 	p, err := NewPatternFromInstallIfDifferentObject(memFs, InstallIfDifferentObjectWithUBootPattern)
 	assert.NoError(t, err)
 	assert.Equal(t, UBootPattern, p.Type)
-	assert.Equal(t, `U-Boot (\S+) \(.*\)`, p.RegExp)
+	assert.Equal(t, `U-Boot(?: SPL)? (\S+) \(.*\)`, p.RegExp)
 	assert.Equal(t, int64(0), p.Seek)
 	assert.Equal(t, int64(0), p.BufferSize)
 	assert.True(t, p.IsValid())
@@ -290,6 +290,36 @@ func TestCaptureWithUbootPattern(t *testing.T) {
 
 	//                              U-Boot 13.08.1988 (13/08/1988)
 	decoded, _ := hex.DecodeString("01552d426f6f742031332e30382e31393838202831332f30382f313938382902")
+
+	_ = afero.WriteFile(fs, testFile, decoded, 0666)
+
+	expectedVersion := "13.08.1988"
+
+	pattern := map[string]interface{}{
+		"pattern": "u-boot",
+	}
+
+	p, err := NewPatternFromInstallIfDifferentObject(fs, pattern)
+	assert.NoError(t, err)
+
+	assert.True(t, p.IsValid())
+	assert.Equal(t, UBootPattern, p.Type)
+
+	version, err := p.Capture(testFile)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedVersion, version)
+}
+
+func TestCaptureWithUbootSplPattern(t *testing.T) {
+	fs := afero.NewOsFs()
+
+	tempDirPath, err := afero.TempDir(fs, "", "pattern-test")
+	assert.NoError(t, err)
+	testFile := path.Join(tempDirPath, "test-file")
+	defer fs.RemoveAll(tempDirPath)
+
+	//                              U-Boot SPL 13.08.1988 (13/08/1988)
+	decoded, _ := hex.DecodeString("01552d426f6f742053504c2031332e30382e31393838202831332f30382f313938382902")
 
 	_ = afero.WriteFile(fs, testFile, decoded, 0666)
 
