@@ -86,7 +86,7 @@ func NewPatternFromInstallIfDifferentObject(fsb afero.Fs, pattern map[string]int
 	if ok {
 		if s == "u-boot" {
 			p.Type = UBootPattern
-			p.RegExp = `U-Boot (\S+) \(.*\)`
+			p.RegExp = `U-Boot(?: SPL)? (\S+) \(.*\)`
 			p.Seek = 0
 			p.BufferSize = 0
 			return p, nil
