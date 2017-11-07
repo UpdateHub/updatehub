@@ -12,15 +12,13 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
+	"os"
 	"path"
 	"testing"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/testsmocks/filemock"
-	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 )
 
 func TestIsValid(t *testing.T) {
@@ -151,49 +149,16 @@ func TestCaptureWithUnknownPattern(t *testing.T) {
 	assert.False(t, p.IsValid())
 	assert.Equal(t, PatternType(-1), p.Type)
 
-	version, err := p.Capture("/dummy-file")
+	err := afero.WriteFile(fs, "/dummy-file", []byte("dummy"), 0666)
+	assert.NoError(t, err)
+	defer fs.Remove("/dummy-file")
+
+	f, err := fs.OpenFile("/dummy-file", os.O_RDONLY, 0)
+	assert.NoError(t, err)
+
+	version, err := p.Capture(f)
 	assert.EqualError(t, err, "unknown pattern type")
 	assert.Equal(t, "", version)
-}
-
-func TestCaptureWithLinuxKernelPatternError(t *testing.T) {
-	targetFile := "/dummy-file"
-	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Open", targetFile).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
-
-	p := &Pattern{
-		Type:              LinuxKernelPattern,
-		FileSystemBackend: fsm,
-	}
-
-	assert.True(t, p.IsValid())
-	assert.Equal(t, LinuxKernelPattern, p.Type)
-
-	version, err := p.Capture(targetFile)
-	assert.EqualError(t, err, "open error")
-	assert.Equal(t, "", version)
-
-	fsm.AssertExpectations(t)
-}
-
-func TestCaptureWithCustomPatternError(t *testing.T) {
-	targetFile := "/dummy-file"
-	fsm := &filesystemmock.FileSystemBackendMock{}
-	fsm.On("Open", targetFile).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
-
-	p := &Pattern{
-		Type:              CustomPattern,
-		FileSystemBackend: fsm,
-	}
-
-	assert.True(t, p.IsValid())
-	assert.Equal(t, CustomPattern, p.Type)
-
-	version, err := p.Capture(targetFile)
-	assert.EqualError(t, err, "open error")
-	assert.Equal(t, "", version)
-
-	fsm.AssertExpectations(t)
 }
 
 func TestCaptureWithCustomPattern(t *testing.T) {
@@ -229,7 +194,10 @@ func TestCaptureWithCustomPattern(t *testing.T) {
 	assert.Equal(t, expectedRegexp, p.RegExp)
 	assert.Equal(t, expectedBufferSize, p.BufferSize)
 
-	version, err := p.Capture(testFile)
+	f, err := fs.OpenFile(testFile, os.O_RDONLY, 0)
+	assert.NoError(t, err)
+
+	version, err := p.Capture(f)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedVersion, version)
 }
@@ -275,7 +243,10 @@ func TestCaptureWithLinuxKernelPattern(t *testing.T) {
 	assert.True(t, p.IsValid())
 	assert.Equal(t, LinuxKernelPattern, p.Type)
 
-	version, err := p.Capture(testFile)
+	f, err := fs.OpenFile(testFile, os.O_RDONLY, 0)
+	assert.NoError(t, err)
+
+	version, err := p.Capture(f)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedVersion, version)
 }
@@ -305,7 +276,10 @@ func TestCaptureWithUbootPattern(t *testing.T) {
 	assert.True(t, p.IsValid())
 	assert.Equal(t, UBootPattern, p.Type)
 
-	version, err := p.Capture(testFile)
+	f, err := fs.OpenFile(testFile, os.O_RDONLY, 0)
+	assert.NoError(t, err)
+
+	version, err := p.Capture(f)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedVersion, version)
 }
@@ -335,7 +309,10 @@ func TestCaptureWithUbootSplPattern(t *testing.T) {
 	assert.True(t, p.IsValid())
 	assert.Equal(t, UBootPattern, p.Type)
 
-	version, err := p.Capture(testFile)
+	f, err := fs.OpenFile(testFile, os.O_RDONLY, 0)
+	assert.NoError(t, err)
+
+	version, err := p.Capture(f)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedVersion, version)
 }

@@ -47,13 +47,7 @@ type KernelFileInfo struct {
 	FileSystemBackend afero.Fs
 }
 
-func NewKernelFileInfo(fsb afero.Fs, filename string) (*KernelFileInfo, error) {
-	file, err := fsb.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
+func NewKernelFileInfo(fsb afero.Fs, file afero.File) *KernelFileInfo {
 	kfi := &KernelFileInfo{FileSystemBackend: fsb}
 
 	if isARMzImage(file) {
@@ -81,7 +75,7 @@ func NewKernelFileInfo(fsb afero.Fs, filename string) (*KernelFileInfo, error) {
 		kfi.Version = matched[1]
 	}
 
-	return kfi, nil
+	return kfi
 }
 
 // we can ignore errors here since if it fails, just means it is
@@ -183,7 +177,10 @@ func (kfi *KernelFileInfo) captureVersion(fsh utils.FileSystemHelper, file io.Re
 		la := &libarchive.LibArchive{}
 		la.Unpack(gzippedFile.Name(), tempdir, true)
 
-		return CaptureTextFromBinaryFile(kfi.FileSystemBackend, path.Join(tempdir, "data"), `Linux version (\S+).*`)
+		data, _ := kfi.FileSystemBackend.OpenFile(path.Join(tempdir, "data"), os.O_RDONLY, 0)
+		defer data.Close()
+
+		return CaptureTextFromBinaryFile(data, `Linux version (\S+).*`)
 	} else if kfi.Arch == x86LinuxArch {
 		file.Seek(0x20E, io.SeekStart)
 		var offset uint16 // 2 bytes
@@ -198,13 +195,7 @@ func (kfi *KernelFileInfo) captureVersion(fsh utils.FileSystemHelper, file io.Re
 	return ""
 }
 
-func CaptureTextFromBinaryFile(fsb afero.Fs, filename string, regularExpression string) string {
-	file, err := fsb.Open(filename)
-	if err != nil {
-		return ""
-	}
-	defer file.Close()
-
+func CaptureTextFromBinaryFile(file afero.File, regularExpression string) string {
 	trailing := make([]byte, 4)
 	bytesRead := make([]byte, 1)
 	index := 0

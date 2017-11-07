@@ -10,6 +10,7 @@ package installifdifferent
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -18,15 +19,6 @@ import (
 	"github.com/updatehub/updatehub/testsmocks/filemock"
 	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 )
-
-func TestNewKernelFileInfoWithInvalidFilename(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	filepath := "/tmp/inexistant"
-	kfi, err := NewKernelFileInfo(memFs, filepath)
-	assert.EqualError(t, err, "open /tmp/inexistant: file does not exist")
-	assert.Nil(t, kfi)
-}
 
 func TestNewKernelFileInfo(t *testing.T) {
 	testCases := []struct {
@@ -70,8 +62,10 @@ func TestNewKernelFileInfo(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			osFs := afero.NewOsFs()
 
-			kfi, err := NewKernelFileInfo(osFs, tc.Filename)
+			f, err := osFs.OpenFile(tc.Filename, os.O_RDONLY, 0)
 			assert.NoError(t, err)
+
+			kfi := NewKernelFileInfo(osFs, f)
 			assert.NotNil(t, kfi)
 
 			assert.Equal(t, tc.Arch, kfi.Arch)
@@ -81,24 +75,18 @@ func TestNewKernelFileInfo(t *testing.T) {
 	}
 }
 
-func TestCaptureTextFromBinaryFileWithInvalidFile(t *testing.T) {
-	fs := afero.NewMemMapFs()
-
-	capturedText := CaptureTextFromBinaryFile(fs, "/inexistant-file", ".*")
-
-	assert.Equal(t, "", capturedText)
-}
-
 func TestCaptureTextFromBinaryFileWithReadError(t *testing.T) {
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fm := &filemock.FileMock{}
 
-	fsm.On("Open", "/some-file").Return(fm, nil)
+	fsm.On("OpenFile", "/some-file", os.O_RDONLY, os.FileMode(0)).Return(fm, nil)
 
 	fm.On("Read", mock.AnythingOfType("[]uint8")).Return(0, fmt.Errorf("read error"))
-	fm.On("Close").Return(nil)
 
-	capturedText := CaptureTextFromBinaryFile(fsm, "/some-file", ".*")
+	f, err := fsm.OpenFile("/some-file", os.O_RDONLY, 0)
+	assert.NoError(t, err)
+
+	capturedText := CaptureTextFromBinaryFile(f, ".*")
 
 	assert.Equal(t, "", capturedText)
 

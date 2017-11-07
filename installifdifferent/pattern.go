@@ -44,28 +44,18 @@ func (p *Pattern) IsValid() bool {
 	return false
 }
 
-func (p *Pattern) Capture(target string) (string, error) {
+func (p *Pattern) Capture(target afero.File) (string, error) {
 	switch p.Type {
 	case LinuxKernelPattern:
-		kfi, err := NewKernelFileInfo(p.FileSystemBackend, target)
-		if err != nil {
-			return "", err
-		}
-
+		kfi := NewKernelFileInfo(p.FileSystemBackend, target)
 		return kfi.Version, nil
 	case UBootPattern:
-		return CaptureTextFromBinaryFile(p.FileSystemBackend, target, p.RegExp), nil
+		return CaptureTextFromBinaryFile(target, p.RegExp), nil
 	case CustomPattern:
 		data := make([]byte, p.BufferSize)
 
-		file, err := p.FileSystemBackend.Open(target)
-		if err != nil {
-			return "", err
-		}
-		defer file.Close()
-
-		file.Seek(p.Seek, io.SeekStart)
-		file.Read(data)
+		target.Seek(p.Seek, io.SeekStart)
+		target.Read(data)
 
 		re, _ := regexp.Compile(p.RegExp)
 		matched := re.FindStringSubmatch(string(data))

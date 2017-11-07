@@ -11,6 +11,7 @@ package installifdifferent
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/spf13/afero"
@@ -226,7 +227,7 @@ func TestProceedWithSha256SumWithOpenError(t *testing.T) {
 	assert.NoError(t, err)
 
 	install, err := iif.Proceed(o)
-	assert.EqualError(t, err, fmt.Sprintf("failed to check sha256sums: open %s: file does not exist", testObjectGetTargetReturn))
+	assert.EqualError(t, err, fmt.Sprintf("open %s: file does not exist", testObjectGetTargetReturn))
 	assert.False(t, install)
 }
 
@@ -343,7 +344,7 @@ func TestProceedWithPatternWithInvalidPattern(t *testing.T) {
 
 func TestProceedWithPatternWithCaptureError(t *testing.T) {
 	fs := &filesystemmock.FileSystemBackendMock{}
-	fs.On("Open", testObjectGetTargetReturn).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
+	fs.On("OpenFile", testObjectGetTargetReturn, os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 
 	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
 		Name:              "test",
