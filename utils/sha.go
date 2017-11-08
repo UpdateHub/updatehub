@@ -33,9 +33,14 @@ func FileSha256sum(fsb afero.Fs, filepath string) (string, error) {
 	}
 	defer f.Close()
 
+	return FsbFileSha256sum(f), nil
+}
+
+func FsbFileSha256sum(f afero.File) string {
 	hash := sha256.New()
 
 	_, _ = io.Copy(hash, f)
 
-	return hex.EncodeToString(hash.Sum(nil)), nil
+	return hex.EncodeToString(hash.Sum(nil))
+
 }

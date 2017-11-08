@@ -10,6 +10,7 @@ package raw
 
 import (
 	"fmt"
+	"io"
 	"path"
 
 	"github.com/OSSystems/pkg/log"
@@ -46,7 +47,7 @@ type RawObject struct {
 	LibArchiveBackend libarchive.API `json:"-"`
 	FileSystemBackend afero.Fs
 	CopyBackend       copy.Interface `json:"-"`
-	installifdifferent.TargetGetter
+	installifdifferent.TargetProvider
 
 	Target     string `json:"target"`
 	TargetType string `json:"target-type"`
@@ -87,4 +88,9 @@ func (r *RawObject) Cleanup() error {
 // GetTarget implementation for the "raw" handler
 func (r *RawObject) GetTarget() string {
 	return r.Target
+}
+
+// SetupTarget implementation for the "raw" handler
+func (r *RawObject) SetupTarget(target afero.File) {
+	target.Seek(int64(r.Seek*r.ChunkSize), io.SeekStart)
 }

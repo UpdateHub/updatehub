@@ -10,6 +10,7 @@ package installifdifferent
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
@@ -33,7 +34,7 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 	mode := o.GetObjectMetadata().Mode
 	log.Info(fmt.Sprintf("checking install-if-different support for '%s'", mode))
 
-	tg, ok := o.(TargetGetter)
+	tg, ok := o.(TargetProvider)
 	if !ok {
 		// "o" does NOT support install-if-different
 		log.Info(fmt.Sprintf("'%s' mode doesn't support install-if-different", mode))
@@ -43,8 +44,19 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 	// "o" does support install-if-different
 	log.Info(fmt.Sprintf("'%s' mode supports install-if-different", mode))
 
-	target := tg.GetTarget()
-	log.Debug("install-if-different target: ", target)
+	log.Debug("install-if-different target: ", tg.GetTarget())
+
+	target, err := iid.FileSystemBackend.OpenFile(tg.GetTarget(), os.O_RDONLY, 0)
+	if err != nil {
+		return false, err
+	}
+	defer target.Close()
+
+	if _, ok := o.(interface {
+		SetupTarget(afero.File)
+	}); ok {
+		tg.SetupTarget(target)
+	}
 
 	switch value := o.GetObjectMetadata().InstallIfDifferent.(type) {
 	case string:
@@ -66,17 +78,13 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 	return false, finalErr
 }
 
-type TargetGetter interface {
+type TargetProvider interface {
 	GetTarget() string
+	SetupTarget(target afero.File)
 }
 
-func installIfDifferentSha256Sum(fsb afero.Fs, target string, sha256sum string) (bool, error) {
-	calculatedSha256sum, err := utils.FileSha256sum(fsb, target)
-	if err != nil {
-		finalErr := fmt.Errorf("failed to check sha256sums: %s", err)
-		log.Error(finalErr)
-		return false, finalErr
-	}
+func installIfDifferentSha256Sum(fsb afero.Fs, target afero.File, sha256sum string) (bool, error) {
+	calculatedSha256sum := utils.FsbFileSha256sum(target)
 
 	if calculatedSha256sum == sha256sum {
 		log.Info("Sha256sums match. No need to install")
@@ -87,7 +95,7 @@ func installIfDifferentSha256Sum(fsb afero.Fs, target string, sha256sum string) 
 	return true, nil
 }
 
-func installIfDifferentPattern(fsb afero.Fs, target string, pattern map[string]interface{}) (bool, error) {
+func installIfDifferentPattern(fsb afero.Fs, target afero.File, pattern map[string]interface{}) (bool, error) {
 	p, err := NewPatternFromInstallIfDifferentObject(fsb, pattern)
 	if err != nil {
 		finalErr := fmt.Errorf("failed to parse install-if-different object: %s", err)

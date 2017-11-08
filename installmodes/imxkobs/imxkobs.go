@@ -44,7 +44,7 @@ func getObject() interface{} {
 type ImxKobsObject struct {
 	metadata.ObjectMetadata
 	utils.CmdLineExecuter
-	installifdifferent.TargetGetter
+	installifdifferent.TargetProvider
 
 	Add1KPadding    bool   `json:"1k_padding,omitempty"`
 	SearchExponent  int    `json:"search_exponent,omitempty"`

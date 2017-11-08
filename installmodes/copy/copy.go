@@ -52,7 +52,7 @@ type CopyObject struct {
 	FileSystemBackend      afero.Fs
 	CopyBackend            copy.Interface `json:"-"`
 	utils.Permissions
-	installifdifferent.TargetGetter
+	installifdifferent.TargetProvider
 	tempDirPath string
 
 	Target        string      `json:"target"`
