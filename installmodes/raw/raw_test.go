@@ -10,6 +10,8 @@ package raw
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"path"
 	"testing"
 
@@ -19,6 +21,7 @@ import (
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/libarchive"
 	"github.com/updatehub/updatehub/testsmocks/copymock"
+	"github.com/updatehub/updatehub/testsmocks/filemock"
 	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
 )
@@ -168,6 +171,26 @@ func TestRawInstallWithSuccess(t *testing.T) {
 			assert.Equal(t, tc.Target, r.GetTarget())
 		})
 	}
+}
+
+func TestRawSetupTarget(t *testing.T) {
+	r := RawObject{
+		ChunkSize: 512,
+		Seek:      1,
+	}
+
+	targetMock := &filemock.FileMock{}
+	targetMock.On("Seek", int64(r.Seek*r.ChunkSize), io.SeekStart).Return(int64(r.Seek*r.ChunkSize), nil)
+
+	fsbm := &filesystemmock.FileSystemBackendMock{}
+	fsbm.On("OpenFile", "/target", os.O_RDONLY, os.FileMode(0)).Return(targetMock, nil)
+
+	target, err := fsbm.OpenFile("/target", os.O_RDONLY, 0)
+	assert.NoError(t, err)
+
+	r.SetupTarget(target)
+
+	fsbm.AssertExpectations(t)
 }
 
 func TestRawCleanupNil(t *testing.T) {
