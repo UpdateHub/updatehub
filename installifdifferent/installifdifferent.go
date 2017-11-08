@@ -34,7 +34,7 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 	mode := o.GetObjectMetadata().Mode
 	log.Info(fmt.Sprintf("checking install-if-different support for '%s'", mode))
 
-	tg, ok := o.(TargetGetter)
+	tg, ok := o.(TargetProvider)
 	if !ok {
 		// "o" does NOT support install-if-different
 		log.Info(fmt.Sprintf("'%s' mode doesn't support install-if-different", mode))
@@ -51,6 +51,12 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 		return false, err
 	}
 	defer target.Close()
+
+	if _, ok := o.(interface {
+		SetupTarget(afero.File)
+	}); ok {
+		tg.SetupTarget(target)
+	}
 
 	switch value := o.GetObjectMetadata().InstallIfDifferent.(type) {
 	case string:
@@ -72,8 +78,9 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 	return false, finalErr
 }
 
-type TargetGetter interface {
+type TargetProvider interface {
 	GetTarget() string
+	SetupTarget(target afero.File)
 }
 
 func installIfDifferentSha256Sum(fsb afero.Fs, target afero.File, sha256sum string) (bool, error) {

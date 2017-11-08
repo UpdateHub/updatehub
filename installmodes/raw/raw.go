@@ -46,7 +46,7 @@ type RawObject struct {
 	LibArchiveBackend libarchive.API `json:"-"`
 	FileSystemBackend afero.Fs
 	CopyBackend       copy.Interface `json:"-"`
-	installifdifferent.TargetGetter
+	installifdifferent.TargetProvider
 
 	Target     string `json:"target"`
 	TargetType string `json:"target-type"`

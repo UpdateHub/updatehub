@@ -55,7 +55,7 @@ type FlashObject struct {
 	utils.CmdLineExecuter
 	FileSystemBackend afero.Fs
 	utils.MtdUtils
-	installifdifferent.TargetGetter
+	installifdifferent.TargetProvider
 
 	Target     string `json:"target"`
 	TargetType string `json:"target-type"`

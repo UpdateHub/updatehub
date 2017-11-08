@@ -104,11 +104,14 @@ const (
 
 type testObject struct {
 	metadata.ObjectMetadata
-	TargetGetter
+	TargetProvider
 }
 
 func (to *testObject) GetTarget() string {
 	return testObjectGetTargetReturn
+}
+
+func (to *testObject) SetupTarget(target afero.File) {
 }
 
 type testObjectWithoutIIDSupport struct {
