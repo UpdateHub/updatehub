@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/stretchr/testify/assert"
 	"github.com/updatehub/updatehub/installmodes/imxkobs"
 	"github.com/updatehub/updatehub/metadata"
@@ -401,6 +402,95 @@ func TestDownloadUpdateWithSuccess(t *testing.T) {
 
 	assert.Equal(t, expectedBody, buffer)
 	assert.Equal(t, "application/vnd.updatehub-v1+json", thh.LastRequestHeader.Get("Api-Content-Type"))
+}
+
+func TestGetUpdateContentRangeWithInvalidApiRequester(t *testing.T) {
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(nil, "/resource", 0)
+
+	assert.Nil(t, contentRange)
+	assert.EqualError(t, err, "invalid api requester")
+}
+
+func TestGetUpdateContentRangeWithNewRequestError(t *testing.T) {
+	ac := NewApiClient("http://localhost")
+
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(ac.Request(), "/resource%s", 0)
+
+	assert.Nil(t, contentRange)
+	assert.True(t, strings.Contains(err.Error(), "failed to create update content range request"))
+	assert.True(t, strings.Contains(err.Error(), "invalid URL escape"))
+}
+
+func TestGetUpdateContentRangeWithApiDoError(t *testing.T) {
+	ac := NewApiClient("http://invalid")
+
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(ac.Request(), "/resource", 0)
+
+	assert.Nil(t, contentRange)
+	assert.True(t, strings.Contains(err.Error(), "get update content range failed"))
+	assert.True(t, strings.Contains(err.Error(), "no such host"))
+}
+
+func TestGetUpdateContentRangeWithHTTPError(t *testing.T) {
+	expectedBody := []byte("Not found")
+	address := "localhost"
+	path := "/not-found"
+
+	thh := &testHttpHandler{
+		Path:         path,
+		ResponseBody: string(expectedBody),
+	}
+
+	port, _, err := StartNewTestHttpServer(address, thh)
+	assert.NoError(t, err)
+
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
+
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(ac.Request(), path, 0)
+
+	assert.Nil(t, contentRange)
+	assert.EqualError(t, err, "failed to get update content range. maybe the file is missing?")
+}
+
+func TestGetUpdateContentRangeWithSuccess(t *testing.T) {
+	expectedBody := []byte("expected body")
+	expectedContentRange := &httptoo.BytesContentRange{
+		First:  0,
+		Last:   int64(len(expectedBody) - 1),
+		Length: int64(len(expectedBody)),
+	}
+
+	address := "localhost"
+	path := "/resource"
+
+	thh := &testHttpHandler{
+		Path:         path,
+		ResponseBody: string(expectedBody),
+		ResponseHeaders: map[string]string{
+			"Content-Range": fmt.Sprintf("bytes %d-%d/%d", expectedContentRange.First, expectedContentRange.Last, expectedContentRange.Length),
+		},
+	}
+
+	port, _, err := StartNewTestHttpServer(address, thh)
+	assert.NoError(t, err)
+
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
+
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(ac.Request(), path, 0)
+
+	assert.NotNil(t, contentRange)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedContentRange, contentRange)
 }
 
 type testHttpHandler struct {

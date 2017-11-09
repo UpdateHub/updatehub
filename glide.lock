@@ -1,8 +1,14 @@
-hash: 16390c103ef797e15e922f4845ff71ad6964e354fa0180af707461bb70580223
-updated: 2017-10-26T16:39:39.756645775-02:00
+hash: 4c2e5b20d080d205a8ec45fc84442f632c4d077f245c0cda3de33c1c1c74d2d6
+updated: 2017-11-09T14:57:21.589764475-02:00
 imports:
+- name: github.com/anacrolix/missinggo
+  version: 081ada5bb4413ac4f42cf047a8ee485b228778a0
+  subpackages:
+  - httptoo
 - name: github.com/bouk/monkey
   version: b96e337f6e5b36906584cd0cf9803bbab09284f7
+- name: github.com/bradfitz/iter
+  version: 454541ec3da2a73fc34fd049b19ee5777bf19345
 - name: github.com/davecgh/go-spew
   version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
@@ -67,6 +73,7 @@ imports:
 - name: golang.org/x/net
   version: 4b14673ba32bee7f5ac0f990a48f033919fd418b
   subpackages:
+  - context
   - publicsuffix
 - name: golang.org/x/sys
   version: 3e3646d2c706c21b222a5dbcaa6db12b3e0cc765

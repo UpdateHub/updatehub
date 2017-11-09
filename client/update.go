@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/updatehub/updatehub/metadata"
 )
 
@@ -113,6 +114,48 @@ func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string) (io.ReadClos
 	}
 
 	return res.Body, res.ContentLength, nil
+}
+
+func (u *UpdateClient) GetUpdateContentRange(api ApiRequester, uri string, start int64) (*httptoo.BytesContentRange, error) {
+	if api == nil {
+		finalErr := fmt.Errorf("invalid api requester")
+		log.Error(finalErr)
+		return nil, finalErr
+	}
+
+	url := serverURL(api.Client(), uri)
+
+	req, err := http.NewRequest(http.MethodHead, url, nil)
+	if err != nil {
+		finalErr := fmt.Errorf("failed to create update content range request: %s", err)
+		log.Error(finalErr)
+		return nil, finalErr
+	}
+
+	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", start))
+
+	res, err := api.Do(req)
+	if err != nil {
+		finalErr := fmt.Errorf("get update content range failed: %s", err)
+		log.Error(finalErr)
+		return nil, finalErr
+	}
+
+	if res.StatusCode != http.StatusOK {
+		res.Body.Close()
+		finalErr := fmt.Errorf("failed to get update content range. maybe the file is missing?")
+		log.Error(finalErr)
+		return nil, finalErr
+	}
+
+	cr, ok := httptoo.ParseBytesContentRange(res.Header.Get("Content-Range"))
+	if !ok {
+		finalErr := fmt.Errorf("error parsing content range")
+		log.Error(finalErr)
+		return nil, finalErr
+	}
+
+	return &cr, nil
 }
 
 func processUpgradeResponse(res *http.Response) (interface{}, []byte, error) {
