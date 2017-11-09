@@ -767,21 +767,21 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	target1.On("Close").Return(nil).Once()
 	cpm.On("Copy", target1, source1, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID1), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID1)).Return(target1, nil).Once()
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID1), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target1, nil).Once()
 
 	// file2
 	target2 := &filemock.FileMock{}
 	target2.On("Close").Return(nil).Once()
 	cpm.On("Copy", target2, source2, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID2), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID2)).Return(target2, nil).Once()
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID2), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target2, nil).Once()
 
 	// file3
 	target3 := &filemock.FileMock{}
 	target3.On("Close").Return(nil).Once()
 	cpm.On("Copy", target3, source3, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID3), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID3)).Return(target3, nil).Once()
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID3), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target3, nil).Once()
 
 	progressList, err := startDownloadUpdateInAnotherFunc(uh.DefaultApiClient, uh, updateMetadata)
 
@@ -891,7 +891,7 @@ func TestUpdateHubDownloadUpdateWithTargetFileError(t *testing.T) {
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return((*filemock.FileMock)(nil), fmt.Errorf("create error"))
 	uh.Store = fsm
 
 	progressList, err := startDownloadUpdateInAnotherFunc(uh.DefaultApiClient, uh, updateMetadata)
@@ -954,7 +954,7 @@ func TestUpdateHubDownloadUpdateWithUpdaterError(t *testing.T) {
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target, nil)
 	uh.Store = fsm
 
 	progressList, err := startDownloadUpdateInAnotherFunc(apiClient, uh, updateMetadata)
@@ -1022,7 +1022,7 @@ func TestUpdateHubDownloadUpdateWithCopyError(t *testing.T) {
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUID)).Return(target, nil)
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target, nil)
 	uh.Store = fsm
 
 	progressList, err := startDownloadUpdateInAnotherFunc(apiClient, uh, updateMetadata)
@@ -1109,9 +1109,9 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDFirst), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUIDFirst)).Return(target1, nil)
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDFirst), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target1, nil)
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDSecond), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
-	fsm.On("Create", path.Join(uh.Settings.DownloadDir, objectUIDSecond)).Return(target2, nil)
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDSecond), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target2, nil)
 	uh.Store = fsm
 
 	// finish setup

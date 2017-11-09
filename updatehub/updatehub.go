@@ -12,6 +12,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"math/rand"
+	"os"
 	"path"
 	"sync"
 	"time"
@@ -344,7 +345,7 @@ func (uh *UpdateHub) DownloadUpdate(apiClient *client.ApiClient, updateMetadata 
 		uri = path.Join(uri, "objects")
 		uri = path.Join(uri, objectUID)
 
-		wr, err := uh.Store.Create(objectPath)
+		wr, err := uh.Store.OpenFile(objectPath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 		if err != nil {
 			return err
 		}
