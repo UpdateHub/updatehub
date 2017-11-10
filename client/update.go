@@ -30,7 +30,8 @@ type UpdateClient struct {
 
 type Updater interface {
 	ProbeUpdate(api ApiRequester, uri string, data interface{}) (interface{}, []byte, time.Duration, error)
-	DownloadUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error)
+	DownloadUpdate(api ApiRequester, uri string, cr *httptoo.BytesContentRange) (io.ReadCloser, int64, error)
+	GetUpdateContentRange(api ApiRequester, uri string, start int64) (*httptoo.BytesContentRange, error)
 }
 
 func (u *UpdateClient) ProbeUpdate(api ApiRequester, uri string, data interface{}) (interface{}, []byte, time.Duration, error) {
@@ -81,7 +82,7 @@ func (u *UpdateClient) ProbeUpdate(api ApiRequester, uri string, data interface{
 	return r, signature, time.Duration(extraPoll), err
 }
 
-func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string) (io.ReadCloser, int64, error) {
+func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string, cr *httptoo.BytesContentRange) (io.ReadCloser, int64, error) {
 	if api == nil {
 		finalErr := fmt.Errorf("invalid api requester")
 		log.Error(finalErr)
@@ -98,6 +99,10 @@ func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string) (io.ReadClos
 	}
 
 	req.Header.Set("Api-Content-Type", "application/vnd.updatehub-v1+json")
+
+	if cr != nil {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", cr.First))
+	}
 
 	res, err := api.Do(req)
 	if err != nil {

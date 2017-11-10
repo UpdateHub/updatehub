@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/stretchr/testify/assert"
 	"github.com/updatehub/updatehub/client"
 	"github.com/updatehub/updatehub/installmodes/copy"
@@ -64,10 +65,27 @@ func TestDownloadUpdate(t *testing.T) {
 	um := &UpdaterMock{}
 	um.On("DownloadUpdate", api.Request(), "uri").Return(expectedBody, int64(19), expectedError)
 
-	bodyRD, contentLength, err := um.DownloadUpdate(api.Request(), "uri")
+	bodyRD, contentLength, err := um.DownloadUpdate(api.Request(), "uri", &httptoo.BytesContentRange{})
 
 	assert.Equal(t, expectedBody, bodyRD)
 	assert.Equal(t, int64(19), contentLength)
+	assert.Equal(t, expectedError, err)
+
+	um.AssertExpectations(t)
+}
+
+func TestGetUpdateContentRange(t *testing.T) {
+	expectedError := fmt.Errorf("some error")
+	api := client.NewApiClient("localhost")
+
+	expectedContentRange := &httptoo.BytesContentRange{}
+
+	um := &UpdaterMock{}
+	um.On("GetUpdateContentRange", api.Request(), "uri", int64(0)).Return(expectedContentRange, expectedError)
+
+	contentRange, err := um.GetUpdateContentRange(api.Request(), "uri", 0)
+
+	assert.Equal(t, expectedContentRange, contentRange)
 	assert.Equal(t, expectedError, err)
 
 	um.AssertExpectations(t)

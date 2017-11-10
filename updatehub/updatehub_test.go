@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/bouk/monkey"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -37,6 +38,7 @@ import (
 	"github.com/updatehub/updatehub/testsmocks/activeinactivemock"
 	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
 	"github.com/updatehub/updatehub/testsmocks/copymock"
+	"github.com/updatehub/updatehub/testsmocks/fileinfomock"
 	"github.com/updatehub/updatehub/testsmocks/filemock"
 	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 	"github.com/updatehub/updatehub/testsmocks/installifdifferentmock"
@@ -730,6 +732,7 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	source1.On("Close").Return(nil).Once()
 	source1Content := []byte("content1")
 
+	um.On("GetUpdateContentRange", uh.DefaultApiClient.Request(), uri1, int64(len(source1Content))).Return(&httptoo.BytesContentRange{}, nil).Once()
 	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri1).Return(source1, int64(len(source1Content)), nil).Once()
 
 	// obj2
@@ -741,6 +744,7 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	source2Content := []byte("content2")
 
 	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri2).Return(source2, int64(len(source2Content)), nil).Once()
+	um.On("GetUpdateContentRange", uh.DefaultApiClient.Request(), uri2, int64(len(source2Content))).Return(&httptoo.BytesContentRange{}, nil).Once()
 
 	// obj3
 	objectUID3 := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
@@ -751,6 +755,7 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	source3Content := []byte("content3")
 
 	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri3).Return(source3, int64(len(source3Content)), nil).Once()
+	um.On("GetUpdateContentRange", uh.DefaultApiClient.Request(), uri3, int64(len(source3Content))).Return(&httptoo.BytesContentRange{}, nil).Once()
 
 	// setup filesystembackend
 
@@ -763,21 +768,30 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 
 	// file1
+	target1Info := &fileinfomock.FileInfoMock{}
+	target1Info.On("Size").Return(int64(len(source1Content)))
 	target1 := &filemock.FileMock{}
+	target1.On("Stat").Return(target1Info, nil).Once()
 	target1.On("Close").Return(nil).Once()
 	cpm.On("Copy", target1, source1, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID1), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID1), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target1, nil).Once()
 
 	// file2
+	target2Info := &fileinfomock.FileInfoMock{}
+	target2Info.On("Size").Return(int64(len(source2Content)))
 	target2 := &filemock.FileMock{}
+	target2.On("Stat").Return(target2Info, nil).Once()
 	target2.On("Close").Return(nil).Once()
 	cpm.On("Copy", target2, source2, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID2), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID2), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target2, nil).Once()
 
 	// file3
+	target3Info := &fileinfomock.FileInfoMock{}
+	target3Info.On("Size").Return(int64(len(source3Content)))
 	target3 := &filemock.FileMock{}
+	target3.On("Stat").Return(target3Info, nil).Once()
 	target3.On("Close").Return(nil).Once()
 	cpm.On("Copy", target3, source3, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID3), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
@@ -945,7 +959,10 @@ func TestUpdateHubDownloadUpdateWithUpdaterError(t *testing.T) {
 
 	// setup filesystembackend
 
+	targetInfo := &fileinfomock.FileInfoMock{}
+	targetInfo.On("Size").Return(int64(0))
 	target := &filemock.FileMock{}
+	target.On("Stat").Return(targetInfo, nil)
 	target.On("Close").Return(nil)
 
 	cpm := &copymock.CopyMock{}
@@ -1012,7 +1029,10 @@ func TestUpdateHubDownloadUpdateWithCopyError(t *testing.T) {
 
 	// setup filesystembackend
 
+	targetInfo := &fileinfomock.FileInfoMock{}
+	targetInfo.On("Size").Return(int64(0))
 	target := &filemock.FileMock{}
+	target.On("Stat").Return(targetInfo, nil)
 	target.On("Close").Return(nil)
 
 	cpm := &copymock.CopyMock{}
@@ -1101,9 +1121,16 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	um.On("DownloadUpdate", apiClient.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
 
 	// setup filesystembackend
+	target1Info := &fileinfomock.FileInfoMock{}
+	target1Info.On("Size").Return(int64(0))
 	target1 := &filemock.FileMock{}
+	target1.On("Stat").Return(target1Info, nil)
 	target1.On("Close").Return(nil)
+
+	target2Info := &fileinfomock.FileInfoMock{}
+	target2Info.On("Size").Return(int64(0))
 	target2 := &filemock.FileMock{}
+	target2.On("Stat").Return(target2Info, nil)
 	target2.On("Close").Return(nil)
 
 	fsm := &filesystemmock.FileSystemBackendMock{}

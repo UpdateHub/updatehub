@@ -18,3 +18,4 @@ import:
 - package: github.com/parnurzeal/gorequest
   version: ^0.2.15
 - package: github.com/anacrolix/missinggo
+- package: github.com/koofr/go-httputils
