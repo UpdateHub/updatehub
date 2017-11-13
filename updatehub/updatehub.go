@@ -12,11 +12,13 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"math/rand"
+	"os"
 	"path"
 	"sync"
 	"time"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/spf13/afero"
 
 	"github.com/updatehub/updatehub/activeinactive"
@@ -344,14 +346,30 @@ func (uh *UpdateHub) DownloadUpdate(apiClient *client.ApiClient, updateMetadata 
 		uri = path.Join(uri, "objects")
 		uri = path.Join(uri, objectUID)
 
-		wr, err := uh.Store.Create(objectPath)
+		log.Debug("route: ", uri)
+
+		wr, err := uh.Store.OpenFile(objectPath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0666)
 		if err != nil {
 			return err
 		}
 		defer wr.Close()
 
-		log.Debug("route: ", uri)
-		rd, _, err := uh.Updater.DownloadUpdate(apiClient.Request(), uri)
+		stat, _ := wr.Stat()
+
+		var cr *httptoo.BytesContentRange
+
+		if stat.Size() > 0 {
+			log.Info("resuming object download")
+
+			cr, err := uh.Updater.GetUpdateContentRange(apiClient.Request(), uri, stat.Size())
+			if err != nil {
+				return err
+			}
+
+			log.Debug("current_bytes=%d remaining_bytes=%d bytes_available=%d", cr.First, cr.Last, cr.Length)
+		}
+
+		rd, _, err := uh.Updater.DownloadUpdate(apiClient.Request(), uri, cr)
 		if err != nil {
 			return err
 		}

@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anacrolix/missinggo/httptoo"
+	httputils "github.com/koofr/go-httputils"
 	"github.com/stretchr/testify/assert"
 	"github.com/updatehub/updatehub/installmodes/imxkobs"
 	"github.com/updatehub/updatehub/metadata"
@@ -314,7 +316,7 @@ func TestProbeUpdateWithUpdateAvailable(t *testing.T) {
 func TestDownloadUpdateWithInvalidApiRequester(t *testing.T) {
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.DownloadUpdate(nil, "/resource")
+	body, contentLength, err := uc.DownloadUpdate(nil, "/resource", nil)
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
@@ -326,7 +328,7 @@ func TestDownloadUpdateWithNewRequestError(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.DownloadUpdate(ac.Request(), "/resource%s")
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), "/resource%s", nil)
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
@@ -339,7 +341,7 @@ func TestDownloadUpdateWithApiDoError(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.DownloadUpdate(ac.Request(), "/resource")
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), "/resource", nil)
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
@@ -364,7 +366,7 @@ func TestDownloadUpdateWithHTTPError(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path)
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path, nil)
 
 	assert.Nil(t, body)
 	assert.Equal(t, int64(-1), contentLength)
@@ -388,7 +390,9 @@ func TestDownloadUpdateWithSuccess(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path)
+	cr := &httptoo.BytesContentRange{First: 0, Last: int64(len(expectedBody) - 1), Length: int64(len(expectedBody))}
+
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path, cr)
 	defer body.Close()
 
 	assert.Equal(t, int64(len(expectedBody)), contentLength)
@@ -401,6 +405,135 @@ func TestDownloadUpdateWithSuccess(t *testing.T) {
 
 	assert.Equal(t, expectedBody, buffer)
 	assert.Equal(t, "application/vnd.updatehub-v1+json", thh.LastRequestHeader.Get("Api-Content-Type"))
+}
+
+func TestResumeDownloadUpdateWithSuccess(t *testing.T) {
+	originalBody := []byte("original body")
+	expectedBody := []byte("body")
+	address := "localhost"
+	path := "/resource"
+
+	thh := &testHttpHandler{
+		Path:         path,
+		ResponseBody: string(originalBody),
+	}
+
+	port, _, err := StartNewTestHttpServer(address, thh)
+	assert.NoError(t, err)
+
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
+
+	uc := NewUpdateClient()
+
+	cr := &httptoo.BytesContentRange{
+		First:  int64(len(originalBody) - len(expectedBody)),
+		Last:   int64(len(originalBody) - 1),
+		Length: int64(len(originalBody)),
+	}
+
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path, cr)
+	defer body.Close()
+
+	assert.Equal(t, int64(len(expectedBody)), contentLength)
+	assert.NoError(t, err)
+
+	buffer := make([]byte, contentLength)
+	n, err := body.Read(buffer)
+	assert.Equal(t, io.EOF, err)
+	assert.Equal(t, contentLength, int64(n))
+
+	assert.Equal(t, expectedBody, buffer)
+	assert.Equal(t, "application/vnd.updatehub-v1+json", thh.LastRequestHeader.Get("Api-Content-Type"))
+	assert.Equal(t, fmt.Sprintf("bytes=%d-", cr.First), thh.LastRequestHeader.Get("Range"))
+}
+
+func TestGetUpdateContentRangeWithInvalidApiRequester(t *testing.T) {
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(nil, "/resource", 0)
+
+	assert.Nil(t, contentRange)
+	assert.EqualError(t, err, "invalid api requester")
+}
+
+func TestGetUpdateContentRangeWithNewRequestError(t *testing.T) {
+	ac := NewApiClient("http://localhost")
+
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(ac.Request(), "/resource%s", 0)
+
+	assert.Nil(t, contentRange)
+	assert.True(t, strings.Contains(err.Error(), "failed to create update content range request"))
+	assert.True(t, strings.Contains(err.Error(), "invalid URL escape"))
+}
+
+func TestGetUpdateContentRangeWithApiDoError(t *testing.T) {
+	ac := NewApiClient("http://invalid")
+
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(ac.Request(), "/resource", 0)
+
+	assert.Nil(t, contentRange)
+	assert.True(t, strings.Contains(err.Error(), "get update content range failed"))
+	assert.True(t, strings.Contains(err.Error(), "no such host"))
+}
+
+func TestGetUpdateContentRangeWithHTTPError(t *testing.T) {
+	expectedBody := []byte("Not found")
+	address := "localhost"
+	path := "/not-found"
+
+	thh := &testHttpHandler{
+		Path:         path,
+		ResponseBody: string(expectedBody),
+	}
+
+	port, _, err := StartNewTestHttpServer(address, thh)
+	assert.NoError(t, err)
+
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
+
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(ac.Request(), path, 0)
+
+	assert.Nil(t, contentRange)
+	assert.EqualError(t, err, "failed to get update content range. maybe the file is missing?")
+}
+
+func TestGetUpdateContentRangeWithSuccess(t *testing.T) {
+	expectedBody := []byte("expected body")
+	expectedContentRange := &httptoo.BytesContentRange{
+		First:  0,
+		Last:   int64(len(expectedBody) - 1),
+		Length: int64(len(expectedBody)),
+	}
+
+	address := "localhost"
+	path := "/resource"
+
+	thh := &testHttpHandler{
+		Path:         path,
+		ResponseBody: string(expectedBody),
+		ResponseHeaders: map[string]string{
+			"Content-Range": fmt.Sprintf("bytes %d-%d/%d", expectedContentRange.First, expectedContentRange.Last, expectedContentRange.Length),
+		},
+	}
+
+	port, _, err := StartNewTestHttpServer(address, thh)
+	assert.NoError(t, err)
+
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
+
+	uc := NewUpdateClient()
+
+	contentRange, err := uc.GetUpdateContentRange(ac.Request(), path, 0)
+
+	assert.NotNil(t, contentRange)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedContentRange, contentRange)
 }
 
 type testHttpHandler struct {
@@ -443,7 +576,17 @@ func (thh *testHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.URL.Path == thh.Path {
 		thh.LastRequestHeader = r.Header
-		fmt.Fprintf(w, string(thh.ResponseBody))
+
+		if r.Method == http.MethodGet && r.Header.Get("Range") != "" {
+			rr, err := httputils.ParseRange(r.Header.Get("Range"), int64(len(thh.ResponseBody)))
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Fprintf(w, string(thh.ResponseBody)[rr[0].Start:])
+		} else {
+			fmt.Fprintf(w, string(thh.ResponseBody))
+		}
 	}
 }
 

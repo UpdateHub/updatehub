@@ -1,8 +1,16 @@
-hash: 16390c103ef797e15e922f4845ff71ad6964e354fa0180af707461bb70580223
-updated: 2017-10-26T16:39:39.756645775-02:00
+hash: df0e6f8410fc5b3c4fe837d054feebe6dcdd8347988c73a58c5f257ceae1bdc1
+updated: 2017-11-10T18:24:12.705303612-02:00
 imports:
+- name: github.com/AllenDang/w32
+  version: 9a4ee0f7d224efbff75947fa7060daadccc4741c
+- name: github.com/anacrolix/missinggo
+  version: 081ada5bb4413ac4f42cf047a8ee485b228778a0
+  subpackages:
+  - httptoo
 - name: github.com/bouk/monkey
   version: b96e337f6e5b36906584cd0cf9803bbab09284f7
+- name: github.com/bradfitz/iter
+  version: 454541ec3da2a73fc34fd049b19ee5777bf19345
 - name: github.com/davecgh/go-spew
   version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
@@ -19,6 +27,18 @@ imports:
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/julienschmidt/httprouter
   version: 975b5c4c7c21c0e3d2764200bf2aa8e34657ae6e
+- name: github.com/koofr/go-cryptoutils
+  version: fe224388747f833c92925c933f6e3dbf2765e983
+  subpackages:
+  - bettermd5
+- name: github.com/koofr/go-httpclient
+  version: 510188d5fb8737dc09536c7b0f2dbb5fbc63abef
+- name: github.com/koofr/go-httputils
+  version: 88c2b52f7b0fbba8802d6c4f930c1713e5cc251f
+- name: github.com/koofr/go-ioutils
+  version: 2135a71116c3b6b9da6d6e61f927c4f6bfe1f21a
+- name: github.com/koofr/pb
+  version: 0ccf57bef0b6c360429c6a1ac97b20a3088024e6
 - name: github.com/mattn/go-colorable
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
   repo: https://github.com/mattn/go-colorable
@@ -67,6 +87,7 @@ imports:
 - name: golang.org/x/net
   version: 4b14673ba32bee7f5ac0f990a48f033919fd418b
   subpackages:
+  - context
   - publicsuffix
 - name: golang.org/x/sys
   version: 3e3646d2c706c21b222a5dbcaa6db12b3e0cc765

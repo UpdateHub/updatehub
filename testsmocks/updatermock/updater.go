@@ -12,6 +12,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/stretchr/testify/mock"
 	"github.com/updatehub/updatehub/client"
 )
@@ -25,7 +26,12 @@ func (um *UpdaterMock) ProbeUpdate(api client.ApiRequester, uri string, data int
 	return args.Get(0), args.Get(1).([]byte), args.Get(2).(time.Duration), args.Error(3)
 }
 
-func (um *UpdaterMock) DownloadUpdate(api client.ApiRequester, uri string) (io.ReadCloser, int64, error) {
+func (um *UpdaterMock) DownloadUpdate(api client.ApiRequester, uri string, cr *httptoo.BytesContentRange) (io.ReadCloser, int64, error) {
 	args := um.Called(api, uri)
 	return args.Get(0).(io.ReadCloser), args.Get(1).(int64), args.Error(2)
+}
+
+func (um *UpdaterMock) GetUpdateContentRange(api client.ApiRequester, uri string, start int64) (*httptoo.BytesContentRange, error) {
+	args := um.Called(api, uri, start)
+	return args.Get(0).(*httptoo.BytesContentRange), args.Error(1)
 }
