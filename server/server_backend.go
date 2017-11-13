@@ -20,7 +20,6 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/julienschmidt/httprouter"
-	httputils "github.com/koofr/go-httputils"
 	"github.com/updatehub/updatehub/libarchive"
 	"github.com/updatehub/updatehub/metadata"
 	"github.com/updatehub/updatehub/utils"
@@ -167,7 +166,6 @@ func (sb *ServerBackend) Routes() []Route {
 		{Method: "POST", Path: "/upgrades", Handle: sb.getUpdateMetadata},
 		{Method: "POST", Path: "/report", Handle: sb.reportStatus},
 		{Method: "GET", Path: "/products/:product/packages/:package/objects/:object", Handle: sb.getObject},
-		{Method: "HEAD", Path: "/products/:product/packages/:package/objects/:object", Handle: sb.getObject},
 	}
 }
 
@@ -241,21 +239,6 @@ func (sb *ServerBackend) getObject(w http.ResponseWriter, r *http.Request, p htt
 
 		if r.Method == http.MethodGet {
 			http.ServeFile(w, r, fileName)
-		} else if r.Method == http.MethodHead {
-			stat, err := os.Stat(fileName)
-			if err != nil {
-				w.WriteHeader(404)
-				return
-			}
-
-			rr, err := httputils.ParseRange(r.Header.Get("Range"), stat.Size())
-			if err != nil || len(rr) == 0 {
-				w.WriteHeader(200)
-				return
-			}
-
-			w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rr[0].Start, rr[0].End, stat.Size()))
-			w.WriteHeader(200)
 		}
 	}
 }

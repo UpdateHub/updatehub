@@ -105,7 +105,7 @@ func TestNewServerBackend(t *testing.T) {
 
 	routes := sb.Routes()
 
-	assert.Equal(t, 4, len(routes))
+	assert.Equal(t, 3, len(routes))
 
 	assert.Equal(t, "POST", routes[0].Method)
 	assert.Equal(t, "/upgrades", routes[0].Path)
@@ -118,10 +118,6 @@ func TestNewServerBackend(t *testing.T) {
 	assert.Equal(t, "GET", routes[2].Method)
 	assert.Equal(t, "/products/:product/packages/:package/objects/:object", routes[2].Path)
 	assert.Equal(t, reflect.ValueOf(sb.getObject).Pointer(), reflect.ValueOf(routes[2].Handle).Pointer())
-
-	assert.Equal(t, "HEAD", routes[3].Method)
-	assert.Equal(t, "/products/:product/packages/:package/objects/:object", routes[3].Path)
-	assert.Equal(t, reflect.ValueOf(sb.getObject).Pointer(), reflect.ValueOf(routes[3].Handle).Pointer())
 
 	lam.AssertExpectations(t)
 }
@@ -634,103 +630,7 @@ func TestGetObjectRouteWithUhupkgExtractError(t *testing.T) {
 	assert.Equal(t, "500 internal server error\n", string(bodyContent))
 }
 
-func TestGetObjectHeadRouteWithFileNotFound(t *testing.T) {
-	lam := &libarchivemock.LibArchiveMock{}
-
-	productUID := "a"
-	packageUID := "b"
-	object := "c"
-
-	// setup filesystem
-	testPath, err := ioutil.TempDir("", "server-test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
-
-	updateMetadataFilePath := path.Join(testPath, metadata.UpdateMetadataFilename)
-
-	err = ioutil.WriteFile(updateMetadataFilePath, []byte(ValidJSONMetadata), 0666)
-	assert.NoError(t, err)
-
-	pkgdir := path.Join(testPath, productUID, packageUID)
-	err = os.MkdirAll(pkgdir, 0777)
-	assert.NoError(t, err)
-
-	// setup server
-	sb, err := NewServerBackend(lam, testPath)
-	assert.NoError(t, err)
-
-	router := NewBackendRouter(sb)
-	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
-	// do the request
-	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
-	client := &http.Client{}
-
-	req, err := http.NewRequest("HEAD", finalURL, nil)
-	assert.NoError(t, err)
-
-	r, err := client.Do(req)
-	assert.NoError(t, err)
-
-	assert.Equal(t, http.StatusNotFound, r.StatusCode)
-
-	lam.AssertExpectations(t)
-}
-
-func TestGetObjectHeadRouteWithoutRange(t *testing.T) {
-	lam := &libarchivemock.LibArchiveMock{}
-
-	productUID := "a"
-	packageUID := "b"
-	object := "c"
-
-	// setup filesystem
-	testPath, err := ioutil.TempDir("", "server-test")
-	assert.NoError(t, err)
-	defer os.RemoveAll(testPath)
-
-	updateMetadataFilePath := path.Join(testPath, metadata.UpdateMetadataFilename)
-
-	err = ioutil.WriteFile(updateMetadataFilePath, []byte(ValidJSONMetadata), 0666)
-	assert.NoError(t, err)
-
-	pkgdir := path.Join(testPath, productUID, packageUID)
-	err = os.MkdirAll(pkgdir, 0777)
-	assert.NoError(t, err)
-
-	objdir := path.Join(pkgdir, object)
-	err = ioutil.WriteFile(objdir, []byte("object_content"), 0777)
-	assert.NoError(t, err)
-
-	// setup server
-	sb, err := NewServerBackend(lam, testPath)
-	assert.NoError(t, err)
-
-	router := NewBackendRouter(sb)
-	server := httptest.NewServer(router.HTTPRouter)
-
-	err = sb.ProcessDirectory()
-	assert.NoError(t, err)
-
-	// do the request
-	finalURL := fmt.Sprintf("%s/products/%s/packages/%s/objects/%s", server.URL, productUID, packageUID, object)
-	client := &http.Client{}
-
-	req, err := http.NewRequest("HEAD", finalURL, nil)
-	assert.NoError(t, err)
-
-	r, err := client.Do(req)
-	assert.NoError(t, err)
-
-	assert.Equal(t, http.StatusOK, r.StatusCode)
-
-	lam.AssertExpectations(t)
-}
-
-func TestGetObjectHeadRouteWithRange(t *testing.T) {
+func TestGetObjectRouteWithRange(t *testing.T) {
 	lam := &libarchivemock.LibArchiveMock{}
 
 	productUID := "a"
@@ -773,14 +673,14 @@ func TestGetObjectHeadRouteWithRange(t *testing.T) {
 
 	firstBytes := len(bytes.Split(objectContent, []byte("_"))[0])
 
-	req, err := http.NewRequest("HEAD", finalURL, nil)
+	req, err := http.NewRequest("GET", finalURL, nil)
 	assert.NoError(t, err)
 	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", firstBytes))
 
 	r, err := client.Do(req)
 	assert.NoError(t, err)
 
-	assert.Equal(t, http.StatusOK, r.StatusCode)
+	assert.Equal(t, http.StatusPartialContent, r.StatusCode)
 	assert.Equal(t, r.Header.Get("Content-Range"), fmt.Sprintf("bytes %d-%d/%d", firstBytes, int64(len(objectContent)-1), len(objectContent)))
 
 	lam.AssertExpectations(t)

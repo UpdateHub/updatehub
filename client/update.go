@@ -111,7 +111,7 @@ func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string, cr *httptoo.
 		return nil, -1, finalErr
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusPartialContent {
 		res.Body.Close()
 		finalErr := fmt.Errorf("failed to download update. maybe the file is missing?")
 		log.Error(finalErr)
@@ -130,7 +130,7 @@ func (u *UpdateClient) GetUpdateContentRange(api ApiRequester, uri string, start
 
 	url := serverURL(api.Client(), uri)
 
-	req, err := http.NewRequest(http.MethodHead, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		finalErr := fmt.Errorf("failed to create update content range request: %s", err)
 		log.Error(finalErr)
@@ -146,7 +146,9 @@ func (u *UpdateClient) GetUpdateContentRange(api ApiRequester, uri string, start
 		return nil, finalErr
 	}
 
-	if res.StatusCode != http.StatusOK {
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusPartialContent {
 		res.Body.Close()
 		finalErr := fmt.Errorf("failed to get update content range. maybe the file is missing?")
 		log.Error(finalErr)
