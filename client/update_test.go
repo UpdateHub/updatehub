@@ -583,6 +583,7 @@ func (thh *testHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				panic(err)
 			}
 
+			w.WriteHeader(http.StatusPartialContent)
 			fmt.Fprintf(w, string(thh.ResponseBody)[rr[0].Start:])
 		} else {
 			fmt.Fprintf(w, string(thh.ResponseBody))
