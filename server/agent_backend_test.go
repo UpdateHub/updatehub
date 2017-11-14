@@ -338,6 +338,8 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 			req, err := http.NewRequest("POST", tc.Address, body)
 			assert.NoError(t, err)
 
+			ab.DefaultApiClient = apiClient
+
 			ab.probe(rwm, req, nil)
 
 			<-done
