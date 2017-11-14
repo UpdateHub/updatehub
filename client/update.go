@@ -101,7 +101,13 @@ func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string, cr *httptoo.
 	req.Header.Set("Api-Content-Type", "application/vnd.updatehub-v1+json")
 
 	if cr != nil {
-		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", cr.First))
+		if cr.First == cr.Length {
+			// Download is completed. No resume needed
+			return nil, cr.Length, nil
+		} else if cr.First < cr.Length {
+			// Download is incomplete. Resuming
+			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", cr.First))
+		}
 	}
 
 	res, err := api.Do(req)
@@ -137,7 +143,7 @@ func (u *UpdateClient) GetUpdateContentRange(api ApiRequester, uri string, start
 		return nil, finalErr
 	}
 
-	req.Header.Set("Range", fmt.Sprintf("bytes=%d-", start))
+	req.Header.Set("Range", "bytes=0-")
 
 	res, err := api.Do(req)
 	if err != nil {
@@ -156,6 +162,8 @@ func (u *UpdateClient) GetUpdateContentRange(api ApiRequester, uri string, start
 	}
 
 	cr, ok := httptoo.ParseBytesContentRange(res.Header.Get("Content-Range"))
+	cr.First = start
+
 	if !ok {
 		finalErr := fmt.Errorf("error parsing content range")
 		log.Error(finalErr)

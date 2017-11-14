@@ -405,6 +405,29 @@ func TestDownloadUpdateWithSuccess(t *testing.T) {
 	assert.Equal(t, "application/vnd.updatehub-v1+json", thh.LastRequestHeader.Get("Api-Content-Type"))
 }
 
+func TestDownloadUpdateWithContentRange(t *testing.T) {
+	address := "localhost"
+	path := "/resource"
+
+	thh := &testHttpHandler{
+		Path: path,
+	}
+
+	port, _, err := StartNewTestHttpServer(address, thh)
+	assert.NoError(t, err)
+
+	ac := NewApiClient(fmt.Sprintf("http://%s:%d", address, port))
+
+	uc := NewUpdateClient()
+
+	cr := &httptoo.BytesContentRange{First: 13, Last: 12, Length: 13}
+
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path, cr)
+	assert.Nil(t, body)
+	assert.Equal(t, cr.Length, contentLength)
+	assert.NoError(t, err)
+}
+
 func TestResumeDownloadUpdateWithSuccess(t *testing.T) {
 	originalBody := []byte("original body")
 	expectedBody := []byte("body")
