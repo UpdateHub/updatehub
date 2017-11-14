@@ -63,3 +63,89 @@ func TestServerURL(t *testing.T) {
 
 	assert.Equal(t, "http://localhost/test", url)
 }
+
+func TestCheckRedirect(t *testing.T) {
+	c := NewApiClient("http://localhost")
+	assert.NotNil(t, c)
+
+	req := c.Request()
+	assert.NotNil(t, req)
+
+	assert.Equal(t, c, req.Client())
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.String() {
+		case "/":
+			w.WriteHeader(http.StatusOK)
+		case "/redirect":
+			http.Redirect(w, r, "/", http.StatusFound)
+		}
+	}))
+
+	defer s.Close()
+
+	hreq, _ := http.NewRequest(http.MethodGet, s.URL, nil)
+
+	res, err := req.Do(hreq)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+
+func TestCheckRedirectWithHeaders(t *testing.T) {
+	c := NewApiClient("http://localhost")
+	assert.NotNil(t, c)
+
+	req := c.Request()
+	assert.NotNil(t, req)
+
+	assert.Equal(t, c, req.Client())
+
+	var headers http.Header
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.String() {
+		case "/":
+			headers = r.Header
+			w.WriteHeader(http.StatusOK)
+		case "/redirect":
+			http.Redirect(w, r, "/", http.StatusFound)
+		}
+	}))
+
+	defer s.Close()
+
+	hreq, _ := http.NewRequest(http.MethodGet, s.URL, nil)
+	hreq.Header.Set("Range", "bytes=0-")
+	hreq.Header.Set("User-Agent", "updatehub")
+
+	res, err := req.Do(hreq)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+
+	assert.Equal(t, hreq.Header, headers)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+}
+
+func TestCheckRedirectWithMaxRedirectError(t *testing.T) {
+	c := NewApiClient("http://localhost")
+	assert.NotNil(t, c)
+
+	req := c.Request()
+	assert.NotNil(t, req)
+
+	assert.Equal(t, c, req.Client())
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/", http.StatusFound)
+	}))
+
+	defer s.Close()
+
+	hreq, _ := http.NewRequest(http.MethodGet, s.URL, nil)
+
+	res, err := req.Do(hreq)
+	assert.Error(t, err, ErrMaxRedirect)
+	assert.NotNil(t, res)
+	assert.Equal(t, http.StatusFound, res.StatusCode)
+}
