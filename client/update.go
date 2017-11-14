@@ -111,7 +111,7 @@ func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string, cr *httptoo.
 		return nil, -1, finalErr
 	}
 
-	if res.StatusCode != http.StatusPartialContent {
+	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusPartialContent {
 		res.Body.Close()
 		finalErr := fmt.Errorf("failed to download update. maybe the file is missing?")
 		log.Error(finalErr)

@@ -390,9 +390,7 @@ func TestDownloadUpdateWithSuccess(t *testing.T) {
 
 	uc := NewUpdateClient()
 
-	cr := &httptoo.BytesContentRange{First: 0, Last: int64(len(expectedBody) - 1), Length: int64(len(expectedBody))}
-
-	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path, cr)
+	body, contentLength, err := uc.DownloadUpdate(ac.Request(), path, nil)
 	defer body.Close()
 
 	assert.Equal(t, int64(len(expectedBody)), contentLength)
