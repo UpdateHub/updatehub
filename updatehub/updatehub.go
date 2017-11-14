@@ -359,25 +359,30 @@ func (uh *UpdateHub) DownloadUpdate(apiClient *client.ApiClient, updateMetadata 
 		var cr *httptoo.BytesContentRange
 
 		if stat.Size() > 0 {
-			log.Info("resuming object download")
-
-			cr, err := uh.Updater.GetUpdateContentRange(apiClient.Request(), uri, stat.Size())
+			cr, err = uh.Updater.GetUpdateContentRange(apiClient.Request(), uri, stat.Size())
 			if err != nil {
 				return err
 			}
 
-			log.Debug("current_bytes=%d remaining_bytes=%d bytes_available=%d", cr.First, cr.Last, cr.Length)
+			log.Debug(fmt.Sprintf("first_bytes=%d last_bytes=%d length=%d", cr.First, cr.Last, cr.Length))
 		}
 
 		rd, _, err := uh.Updater.DownloadUpdate(apiClient.Request(), uri, cr)
 		if err != nil {
 			return err
 		}
-		defer rd.Close()
 
-		_, err = uh.CopyBackend.Copy(wr, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
-		if err != nil {
-			return err
+		if rd != nil {
+			defer rd.Close()
+
+			if cr != nil && cr.First > 0 {
+				log.Info("resuming object download")
+			}
+
+			_, err = uh.CopyBackend.Copy(wr, rd, 30*time.Second, cancel, utils.ChunkSize, 0, -1, false)
+			if err != nil {
+				return err
+			}
 		}
 
 		log.Info("object ", objectUID, " downloaded successfully")
