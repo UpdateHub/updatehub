@@ -9,6 +9,7 @@
 package client
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -21,6 +22,10 @@ const (
 	UpgradesEndpoint    = "/upgrades"
 	StateReportEndpoint = "/report"
 )
+
+const defaultRedirectLimit = 10
+
+var ErrMaxRedirect = errors.New("Exceeded max redirects")
 
 var defaultHttpTransport = http.Transport{
 	Dial: (&net.Dialer{
@@ -47,7 +52,8 @@ func (client *ApiClient) Request() *ApiRequest {
 func NewApiClient(server string) *ApiClient {
 	return &ApiClient{
 		Client: http.Client{
-			Transport: &defaultHttpTransport,
+			Transport:     &defaultHttpTransport,
+			CheckRedirect: checkRedirect,
 		},
 		server: server,
 	}
@@ -72,4 +78,22 @@ func (r *ApiRequest) Do(req *http.Request) (*http.Response, error) {
 
 func serverURL(c *ApiClient, path string) string {
 	return fmt.Sprintf("%s/%s", c.server, path[1:])
+}
+
+func checkRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) > defaultRedirectLimit {
+		return ErrMaxRedirect
+	}
+
+	if len(via) == 0 {
+		return nil
+	}
+
+	for key, val := range via[0].Header {
+		if key != "Referer" {
+			req.Header[key] = val
+		}
+	}
+
+	return nil
 }
