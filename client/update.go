@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/OSSystems/pkg/log"
 	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/updatehub/updatehub/metadata"
@@ -112,7 +114,7 @@ func (u *UpdateClient) DownloadUpdate(api ApiRequester, uri string, cr *httptoo.
 
 	res, err := api.Do(req)
 	if err != nil {
-		finalErr := fmt.Errorf("download update request failed: %s", err)
+		finalErr := errors.Wrap(err, "download update request failed")
 		log.Error(finalErr)
 		return nil, -1, finalErr
 	}

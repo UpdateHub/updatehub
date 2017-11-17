@@ -9,8 +9,11 @@
 package updatehub
 
 import (
+	"net"
 	"sync"
 
+	"github.com/OSSystems/pkg/log"
+	"github.com/pkg/errors"
 	"github.com/updatehub/updatehub/client"
 	"github.com/updatehub/updatehub/metadata"
 )
@@ -59,7 +62,17 @@ func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 		m.Lock()
 		defer m.Unlock()
 
-		err = uh.Controller.DownloadUpdate(state.apiClient, state.updateMetadata, state.cancel, progressChan)
+		for {
+			err = uh.Controller.DownloadUpdate(state.apiClient, state.updateMetadata, state.cancel, progressChan)
+
+			if neterr, ok := errors.Cause(err).(net.Error); ok && neterr.Timeout() {
+				log.Warn("timeout during download update")
+				continue
+			}
+
+			break
+		}
+
 		close(progressChan)
 	}()
 
