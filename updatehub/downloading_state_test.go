@@ -12,6 +12,7 @@ import (
 	"errors"
 	"testing"
 
+	errs "github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -131,6 +132,48 @@ func TestStateDownloadingWithError(t *testing.T) {
 	cm.AssertExpectations(t)
 }
 
+func TestStateDownloadingTimeout(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	memFs := afero.NewMemMapFs()
+
+	apiClient := client.NewApiClient("localhost")
+
+	s := NewDownloadingState(apiClient, m, nil)
+
+	uh, err := newTestUpdateHub(s, nil)
+	assert.NoError(t, err)
+
+	uh.Store = memFs
+
+	timeoutReached := false
+
+	cm := &controllermock.ControllerMock{}
+	cm.On("DownloadUpdate", apiClient, m, mock.Anything, mock.AnythingOfType("chan<- int")).Run(func(args mock.Arguments) {
+		timeoutReached = true
+	}).Return(errs.Wrap(&testTimeoutError{}, "download update failed")).Once()
+	cm.On("DownloadUpdate", apiClient, m, mock.Anything, mock.AnythingOfType("chan<- int")).Return(nil).Once()
+
+	uh.Controller = cm
+
+	nextState, _ := s.Handle(uh)
+
+	assert.True(t, timeoutReached)
+
+	expectedState := NewDownloadedState(apiClient, m)
+	assert.Equal(t, expectedState, nextState)
+}
+
 func TestStateDownloadingToMap(t *testing.T) {
 	ptm := &progresstrackermock.ProgressTrackerMock{}
 
@@ -149,4 +192,20 @@ func TestStateDownloadingToMap(t *testing.T) {
 	assert.Equal(t, expectedMap, state.ToMap())
 
 	ptm.AssertExpectations(t)
+}
+
+type testTimeoutError struct {
+	error
+}
+
+func (e *testTimeoutError) Timeout() bool {
+	return true
+}
+
+func (e *testTimeoutError) Temporary() bool {
+	return false
+}
+
+func (e *testTimeoutError) Error() string {
+	return "timeout error"
 }
