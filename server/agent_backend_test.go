@@ -306,6 +306,8 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 			defer teardown(t)
 
 			apiClient := client.NewApiClient(tc.ExpectedURL)
+			// Not needed for this test case
+			apiClient.CheckRedirect = nil
 
 			uh.TimeStep = time.Second
 			s := updatehub.NewIdleState()
@@ -314,7 +316,11 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 			cm := &controllermock.ControllerMock{}
 
 			uh.Controller = cm
-			cm.On("ProbeUpdate", apiClient, 5).Return((*metadata.UpdateMetadata)(nil), []byte{}, 3600*time.Second)
+			cm.On("ProbeUpdate", mock.MatchedBy(func(actual *client.ApiClient) bool {
+				// Not needed for this test case
+				actual.CheckRedirect = nil
+				return reflect.DeepEqual(actual, apiClient)
+			}), 5).Return((*metadata.UpdateMetadata)(nil), []byte{}, 3600*time.Second)
 
 			rwm := &responsewritermock.ResponseWriterMock{}
 			rwm.On("WriteHeader", 200)

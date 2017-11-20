@@ -76,7 +76,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprout
 
 			if err != nil {
 				log.Warn("failed to sanitize a server address from /probe request: ", err)
-			} else if ab.DefaultApiClient == nil {
+			} else {
 				apiClient = client.NewApiClient(sanitizedAddress)
 			}
 		}
