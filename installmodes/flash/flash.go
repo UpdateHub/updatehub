@@ -123,3 +123,7 @@ func (f *FlashObject) Cleanup() error {
 func (f *FlashObject) GetTarget() string {
 	return f.targetDevice + "ro"
 }
+
+// SetupTarget implementation for the "flash" handler
+func (f *FlashObject) SetupTarget(target afero.File) {
+}
