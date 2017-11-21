@@ -23,6 +23,7 @@ type ObjectMetadata struct {
 
 	Sha256sum          string      `json:"sha256sum"`
 	Mode               string      `json:"mode"`
+	Size               int64       `json:"size"`
 	Compressed         bool        `json:"bool"`
 	InstallIfDifferent interface{} `json:"install-if-different,omitempty"`
 }
