@@ -44,7 +44,7 @@ func (p *Pattern) IsValid() bool {
 	return false
 }
 
-func (p *Pattern) Capture(target afero.File) (string, error) {
+func (p *Pattern) Capture(target io.ReadSeeker) (string, error) {
 	switch p.Type {
 	case LinuxKernelPattern:
 		kfi := NewKernelFileInfo(p.FileSystemBackend, target)

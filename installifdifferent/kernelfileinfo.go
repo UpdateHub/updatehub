@@ -47,7 +47,7 @@ type KernelFileInfo struct {
 	FileSystemBackend afero.Fs
 }
 
-func NewKernelFileInfo(fsb afero.Fs, file afero.File) *KernelFileInfo {
+func NewKernelFileInfo(fsb afero.Fs, file io.ReadSeeker) *KernelFileInfo {
 	kfi := &KernelFileInfo{FileSystemBackend: fsb}
 
 	if isARMzImage(file) {
@@ -195,7 +195,7 @@ func (kfi *KernelFileInfo) captureVersion(fsh utils.FileSystemHelper, file io.Re
 	return ""
 }
 
-func CaptureTextFromBinaryFile(file afero.File, regularExpression string) string {
+func CaptureTextFromBinaryFile(file io.ReadSeeker, regularExpression string) string {
 	trailing := make([]byte, 4)
 	bytesRead := make([]byte, 1)
 	index := 0

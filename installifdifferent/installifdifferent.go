@@ -10,6 +10,7 @@ package installifdifferent
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/OSSystems/pkg/log"
@@ -95,7 +96,7 @@ func installIfDifferentSha256Sum(fsb afero.Fs, target afero.File, sha256sum stri
 	return true, nil
 }
 
-func installIfDifferentPattern(fsb afero.Fs, target afero.File, pattern map[string]interface{}) (bool, error) {
+func installIfDifferentPattern(fsb afero.Fs, target io.ReadSeeker, pattern map[string]interface{}) (bool, error) {
 	p, err := NewPatternFromInstallIfDifferentObject(fsb, pattern)
 	if err != nil {
 		finalErr := fmt.Errorf("failed to parse install-if-different object: %s", err)
