@@ -17,8 +17,10 @@ import (
 	"testing"
 	"time"
 
+	errs "github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/updatehub/updatehub/client"
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/metadata"
@@ -54,7 +56,7 @@ func TestStateProbeWithUpdateAvailable(t *testing.T) {
 	sha256sum := sha256.Sum256([]byte(validJSONMetadata))
 	signature, _ := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
 
-	cm.On("ProbeUpdate", apiClient, 0).Return(um, signature, time.Duration(0))
+	cm.On("ProbeUpdate", apiClient, 0).Return(um, signature, time.Duration(0), nil)
 
 	next, _ := uh.GetState().Handle(uh)
 
@@ -87,7 +89,7 @@ func TestStateProbeWithUpdateNotAvailable(t *testing.T) {
 
 	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
 
-	cm.On("ProbeUpdate", apiClient, 0).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(0))
+	cm.On("ProbeUpdate", apiClient, 0).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(0), nil)
 
 	next, _ := uh.GetState().Handle(uh)
 
@@ -127,7 +129,7 @@ func TestStateProbeWithExtraPoll(t *testing.T) {
 
 	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
 
-	cm.On("ProbeUpdate", apiClient, 0).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(5*time.Second))
+	cm.On("ProbeUpdate", apiClient, 0).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(5*time.Second), nil)
 
 	next, _ := uh.GetState().Handle(uh)
 
@@ -172,7 +174,7 @@ func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 
 	uh.lastInstalledPackageUID = m.PackageUID()
 
-	cm.On("ProbeUpdate", apiClient, 0).Return(m, []byte{}, time.Duration(0))
+	cm.On("ProbeUpdate", apiClient, 0).Return(m, []byte{}, time.Duration(0), nil)
 
 	uh.Controller = cm
 	uh.Settings = &Settings{}
@@ -195,6 +197,51 @@ func TestStateProbeWithUpdateAvailableButAlreadyInstalled(t *testing.T) {
 	aim.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	om.AssertExpectations(t)
+}
+
+func TestStateProbeTimeout(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	om := &objectmock.ObjectMock{}
+	cm := &controllermock.ControllerMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	um, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	apiClient := client.NewApiClient("address")
+	apiClient.CheckRedirect = nil
+
+	uh, err := newTestUpdateHub(NewProbeState(apiClient), aim)
+	assert.NoError(t, err)
+
+	uh.Controller = cm
+
+	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
+	sha256sum := sha256.Sum256([]byte(validJSONMetadata))
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
+
+	timeoutReached := false
+	cm.On("ProbeUpdate", apiClient, 0).Run(func(args mock.Arguments) {
+		timeoutReached = true
+	}).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(0), errs.Wrap(&testTimeoutError{}, "download update failed")).Once()
+	cm.On("ProbeUpdate", apiClient, 1).Return(um, signature, time.Duration(0), nil).Once()
+
+	next, _ := uh.GetState().Handle(uh)
+
+	assert.True(t, timeoutReached)
+
+	assert.Equal(t, NewDownloadingState(apiClient, um, &ProgressTrackerImpl{}), next)
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+	cm.AssertExpectations(t)
 }
 
 func TestStateProbeToMap(t *testing.T) {

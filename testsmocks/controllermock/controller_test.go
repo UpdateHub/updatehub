@@ -9,6 +9,7 @@
 package controllermock
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -22,16 +23,18 @@ func TestProbeUpdate(t *testing.T) {
 	expectedMetadata := &metadata.UpdateMetadata{}
 	expectedSignature := []byte{}
 	expectedDuration := 10 * time.Second
+	expectedErr := errors.New("")
 
 	apiClient := client.NewApiClient("address")
 	cm := &ControllerMock{}
-	cm.On("ProbeUpdate", apiClient, 0).Return(expectedMetadata, expectedSignature, expectedDuration)
+	cm.On("ProbeUpdate", apiClient, 0).Return(expectedMetadata, expectedSignature, expectedDuration, expectedErr)
 
-	m, s, d := cm.ProbeUpdate(apiClient, 0)
+	m, s, d, err := cm.ProbeUpdate(apiClient, 0)
 
 	assert.Equal(t, expectedMetadata, m)
 	assert.Equal(t, expectedSignature, s)
 	assert.Equal(t, expectedDuration, d)
+	assert.Equal(t, expectedErr, err)
 
 	cm.AssertExpectations(t)
 }

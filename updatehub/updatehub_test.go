@@ -618,11 +618,12 @@ func TestUpdateHubProbeUpdate(t *testing.T) {
 			um.On("ProbeUpdate", apiClient.Request(), client.UpgradesEndpoint, data).Return(expectedUpdateMetadata, expectedSignature, tc.extraPoll, nil)
 			uh.Updater = um
 
-			updateMetadata, signature, extraPoll := uh.ProbeUpdate(apiClient, 0)
+			updateMetadata, signature, extraPoll, err := uh.ProbeUpdate(apiClient, 0)
 
 			assert.Equal(t, expectedUpdateMetadata, updateMetadata)
 			assert.Equal(t, expectedSignature, signature)
 			assert.Equal(t, tc.extraPoll, extraPoll)
+			assert.Nil(t, err)
 			um.AssertExpectations(t)
 
 			if tc.updateMetadata == "" {
@@ -676,11 +677,12 @@ func TestUpdateHubProbeUpdateWithNilUpdateMetadata(t *testing.T) {
 
 	uh.Updater = um
 
-	updateMetadata, signature, extraPoll := uh.ProbeUpdate(apiClient, 0)
+	updateMetadata, signature, extraPoll, err := uh.ProbeUpdate(apiClient, 0)
 
 	assert.Equal(t, (*metadata.UpdateMetadata)(nil), updateMetadata)
 	assert.Equal(t, []byte{}, signature)
 	assert.Equal(t, time.Duration(3000), extraPoll)
+	assert.Nil(t, err)
 	um.AssertExpectations(t)
 
 	fileExists, err := afero.Exists(uh.Store, updateMetadataPath)

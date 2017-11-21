@@ -80,9 +80,9 @@ func TestPollingRetries(t *testing.T) {
 		})
 	}().Unpatch()
 
-	cm.On("ProbeUpdate", apiClient, 0).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1)).Once()
-	cm.On("ProbeUpdate", apiClient, 1).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1)).Once()
-	cm.On("ProbeUpdate", apiClient, 2).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1)).Once()
+	cm.On("ProbeUpdate", apiClient, 0).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1), nil).Once()
+	cm.On("ProbeUpdate", apiClient, 1).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1), nil).Once()
+	cm.On("ProbeUpdate", apiClient, 2).Return((*metadata.UpdateMetadata)(nil), []byte{}, time.Duration(-1), nil).Once()
 
 	uh.Controller = cm
 	uh.Settings.PollingInterval = time.Second
@@ -109,7 +109,7 @@ func TestPollingRetries(t *testing.T) {
 	sha256sum := sha256.Sum256([]byte(validJSONMetadata))
 	signature, _ := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
 
-	cm.On("ProbeUpdate", apiClient, 3).Return(um, signature, time.Duration(0)).Once()
+	cm.On("ProbeUpdate", apiClient, 3).Return(um, signature, time.Duration(0), nil).Once()
 
 	state, _ := next.Handle(uh)
 	assert.IsType(t, &IdleState{}, state)

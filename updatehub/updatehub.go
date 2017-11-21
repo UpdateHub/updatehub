@@ -278,12 +278,12 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 }
 
 type Controller interface {
-	ProbeUpdate(*client.ApiClient, int) (*metadata.UpdateMetadata, []byte, time.Duration)
+	ProbeUpdate(*client.ApiClient, int) (*metadata.UpdateMetadata, []byte, time.Duration, error)
 	DownloadUpdate(*client.ApiClient, *metadata.UpdateMetadata, <-chan bool, chan<- int) error
 	InstallUpdate(*metadata.UpdateMetadata, chan<- int) error
 }
 
-func (uh *UpdateHub) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, []byte, time.Duration) {
+func (uh *UpdateHub) ProbeUpdate(apiClient *client.ApiClient, retries int) (*metadata.UpdateMetadata, []byte, time.Duration, error) {
 	var data struct {
 		Retries int `json:"retries"`
 		metadata.FirmwareMetadata
@@ -299,18 +299,18 @@ func (uh *UpdateHub) ProbeUpdate(apiClient *client.ApiClient, retries int) (*met
 	updateMetadata, signature, extraPoll, err := uh.Updater.ProbeUpdate(apiClient.Request(), client.UpgradesEndpoint, data)
 	if err != nil {
 		uh.Store.Remove(updateMetadataPath)
-		return nil, nil, -1
+		return nil, nil, -1, err
 	}
 
 	if updateMetadata == nil || updateMetadata.(*metadata.UpdateMetadata) == nil {
 		uh.Store.Remove(updateMetadataPath)
-		return nil, signature, extraPoll
+		return nil, signature, extraPoll, nil
 	}
 
 	um := updateMetadata.(*metadata.UpdateMetadata)
 	afero.WriteFile(uh.Store, updateMetadataPath, um.RawBytes, 0644)
 
-	return um, signature, extraPoll
+	return um, signature, extraPoll, nil
 }
 
 // it is recommended to use a buffered channel for "progressChan" to ensure no progress event is lost
