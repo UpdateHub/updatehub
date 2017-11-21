@@ -159,3 +159,7 @@ func (cp *CopyObject) GetTarget() string {
 
 	return path.Join(cp.tempDirPath, cp.TargetPath)
 }
+
+// SetupTarget implementation for the "copy" handler
+func (cp *CopyObject) SetupTarget(target afero.File) {
+}
