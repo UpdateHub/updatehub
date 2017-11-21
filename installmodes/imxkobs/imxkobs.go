@@ -14,6 +14,7 @@ import (
 	"strconv"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/spf13/afero"
 	"github.com/updatehub/updatehub/installifdifferent"
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/metadata"
@@ -104,4 +105,8 @@ func (ik *ImxKobsObject) GetTarget() string {
 	}
 
 	return mtdDevicePath + "ro"
+}
+
+// SetupTarget implementation for the "imxkobs" handler
+func (ik *ImxKobsObject) SetupTarget(target afero.File) {
 }
