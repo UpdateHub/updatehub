@@ -9,9 +9,11 @@
 package updatehub
 
 import (
-	"errors"
+	"net"
 	"time"
 
+	"github.com/OSSystems/pkg/log"
+	"github.com/pkg/errors"
 	"github.com/updatehub/updatehub/client"
 	"github.com/updatehub/updatehub/metadata"
 )
@@ -39,8 +41,19 @@ func (state *ProbeState) ID() UpdateHubState {
 // polling state otherwise.
 func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 	var signature []byte
+	var err error
 
-	state.probeUpdateMetadata, signature, state.probeExtraPoll = uh.Controller.ProbeUpdate(state.apiClient, uh.Settings.PollingRetries)
+	for {
+		state.probeUpdateMetadata, signature, state.probeExtraPoll, err = uh.Controller.ProbeUpdate(state.apiClient, uh.Settings.PollingRetries)
+
+		if neterr, ok := errors.Cause(err).(net.Error); ok && neterr.Timeout() {
+			log.Warn("timeout during download update")
+			uh.Settings.PollingRetries++
+			continue
+		}
+
+		break
+	}
 
 	// "non-blocking" write to channel
 	select {
