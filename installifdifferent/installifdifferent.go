@@ -10,6 +10,7 @@ package installifdifferent
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/OSSystems/pkg/log"
@@ -70,7 +71,15 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 	case map[string]interface{}:
 		log.Info("checking pattern")
 		// is object, so is a Pattern
-		return installIfDifferentPattern(iid.FileSystemBackend, target, value)
+		var rs io.ReadSeeker
+
+		if o.GetObjectMetadata().Size > 0 {
+			rs = utils.LimitReader(target, o.GetObjectMetadata().Size)
+		} else {
+			rs = target
+		}
+
+		return installIfDifferentPattern(iid.FileSystemBackend, rs, value)
 	}
 
 	finalErr := fmt.Errorf("unknown install-if-different format")
@@ -95,7 +104,7 @@ func installIfDifferentSha256Sum(fsb afero.Fs, target afero.File, sha256sum stri
 	return true, nil
 }
 
-func installIfDifferentPattern(fsb afero.Fs, target afero.File, pattern map[string]interface{}) (bool, error) {
+func installIfDifferentPattern(fsb afero.Fs, target io.ReadSeeker, pattern map[string]interface{}) (bool, error) {
 	p, err := NewPatternFromInstallIfDifferentObject(fsb, pattern)
 	if err != nil {
 		finalErr := fmt.Errorf("failed to parse install-if-different object: %s", err)
