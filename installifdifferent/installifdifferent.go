@@ -71,7 +71,15 @@ func (iid *DefaultImpl) Proceed(o metadata.Object) (bool, error) {
 	case map[string]interface{}:
 		log.Info("checking pattern")
 		// is object, so is a Pattern
-		return installIfDifferentPattern(iid.FileSystemBackend, target, value)
+		var rs io.ReadSeeker
+
+		if o.GetObjectMetadata().Size > 0 {
+			rs = utils.LimitReader(target, o.GetObjectMetadata().Size)
+		} else {
+			rs = target
+		}
+
+		return installIfDifferentPattern(iid.FileSystemBackend, rs, value)
 	}
 
 	finalErr := fmt.Errorf("unknown install-if-different format")
