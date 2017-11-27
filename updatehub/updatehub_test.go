@@ -18,6 +18,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/bouk/monkey"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 
@@ -88,6 +90,16 @@ const (
       { "mode": "test", "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
       { "mode": "test", "sha256sum": "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae" },
       { "mode": "test", "sha256sum": "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa" }
+    ]
+  ]
+}`
+
+	updateMetadataWithValidSha256sum = `{
+  "product-uid": "123",
+  "objects": [
+    [
+      { "mode": "test", "target": "/dev/xxa1", "sha256sum": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9" },
+      { "mode": "test", "target": "/dev/xxa2", "sha256sum": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b" }
     ]
   ]
 }`
@@ -2300,4 +2312,151 @@ func TestClearDownloadDir(t *testing.T) {
 	files, err := downloadDir.Readdirnames(0)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedFiles, files, "Expected files in download dir should be only objects from update metadata")
+}
+
+func TestHasPendingDownload(t *testing.T) {
+	om1 := &objectmock.ObjectMock{}
+	om2 := &objectmock.ObjectMock{}
+	om3 := &objectmock.ObjectMock{}
+	om4 := &objectmock.ObjectMock{}
+
+	objs := []metadata.Object{om1, om2, om3, om4}
+
+	mode := newTestInstallMode(objs)
+	defer mode.Unregister()
+
+	fs := afero.NewMemMapFs()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.Store = fs
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(updateMetadataWithValidSha256sum))
+	assert.NoError(t, err)
+
+	pending, err := uh.hasPendingDownload(updateMetadata)
+	assert.NoError(t, err)
+
+	assert.True(t, pending)
+}
+
+func TestHasNotPendingDownload(t *testing.T) {
+	om1 := &objectmock.ObjectMock{}
+	om2 := &objectmock.ObjectMock{}
+
+	objs := []metadata.Object{om1, om2}
+
+	mode := newTestInstallMode(objs)
+	defer mode.Unregister()
+
+	fs := afero.NewMemMapFs()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.Store = fs
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(updateMetadataWithValidSha256sum))
+	assert.NoError(t, err)
+
+	for i, obj := range updateMetadata.Objects[0] {
+		objectUID := obj.GetObjectMetadata().Sha256sum
+		afero.WriteFile(fs, path.Join(uh.Settings.DownloadDir, objectUID), []byte(strconv.Itoa(i)), 0755)
+	}
+
+	pending, err := uh.hasPendingDownload(updateMetadata)
+	assert.NoError(t, err)
+
+	assert.False(t, pending)
+}
+
+func TestHasNotPendingDownloadWithMissingObject(t *testing.T) {
+	om1 := &objectmock.ObjectMock{}
+	om2 := &objectmock.ObjectMock{}
+
+	objs := []metadata.Object{om1, om2}
+
+	mode := newTestInstallMode(objs)
+	defer mode.Unregister()
+
+	fs := afero.NewMemMapFs()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.Store = fs
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(updateMetadataWithValidSha256sum))
+	assert.NoError(t, err)
+
+	pending, err := uh.hasPendingDownload(updateMetadata)
+	assert.NoError(t, err)
+
+	assert.True(t, pending)
+
+	aim.AssertExpectations(t)
+}
+
+func TestHasNotPendingDownloadWithInvalidSha256sum(t *testing.T) {
+	om1 := &objectmock.ObjectMock{}
+	om2 := &objectmock.ObjectMock{}
+
+	objs := []metadata.Object{om1, om2}
+
+	mode := newTestInstallMode(objs)
+	defer mode.Unregister()
+
+	fs := afero.NewMemMapFs()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.Store = fs
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(updateMetadataWithValidSha256sum))
+	assert.NoError(t, err)
+
+	for _, obj := range updateMetadata.Objects[0] {
+		objectUID := obj.GetObjectMetadata().Sha256sum
+		afero.WriteFile(fs, path.Join(uh.Settings.DownloadDir, objectUID), []byte(""), 0755)
+	}
+
+	pending, err := uh.hasPendingDownload(updateMetadata)
+	assert.NoError(t, err)
+
+	assert.True(t, pending)
+}
+
+func TestHasNotPendingDownloadWithError(t *testing.T) {
+	om1 := &objectmock.ObjectMock{}
+	om2 := &objectmock.ObjectMock{}
+	om3 := &objectmock.ObjectMock{}
+	om4 := &objectmock.ObjectMock{}
+
+	objs := []metadata.Object{om1, om2, om3, om4}
+
+	mode := newTestInstallMode(objs)
+	defer mode.Unregister()
+
+	fs := afero.NewMemMapFs()
+
+	expectedError := errors.New("error")
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	aim.On("Active").Return(0, expectedError).Once()
+
+	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	uh.Store = fs
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadataWithActiveInactive))
+	assert.NoError(t, err)
+
+	pending, err := uh.hasPendingDownload(updateMetadata)
+	assert.Error(t, expectedError, err)
+
+	assert.False(t, pending)
+
+	aim.AssertExpectations(t)
 }
