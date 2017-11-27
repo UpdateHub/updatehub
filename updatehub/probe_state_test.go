@@ -13,6 +13,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"path"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -241,6 +243,46 @@ func TestStateProbeTimeout(t *testing.T) {
 
 	aim.AssertExpectations(t)
 	om.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
+func TestStateProbeNotHavePendingDownload(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	cm := &controllermock.ControllerMock{}
+
+	om1 := &objectmock.ObjectMock{}
+	om2 := &objectmock.ObjectMock{}
+	objs := []metadata.Object{om1, om2}
+
+	mode := newTestInstallMode(objs)
+	defer mode.Unregister()
+
+	um, err := metadata.NewUpdateMetadata([]byte(updateMetadataWithValidSha256sum))
+	assert.NoError(t, err)
+
+	apiClient := client.NewApiClient("address")
+
+	uh, err := newTestUpdateHub(NewProbeState(apiClient), aim)
+	assert.NoError(t, err)
+
+	uh.Controller = cm
+
+	uh.Store = afero.NewMemMapFs()
+
+	for i, obj := range um.Objects[0] {
+		objectUID := obj.GetObjectMetadata().Sha256sum
+		afero.WriteFile(uh.Store, path.Join(uh.Settings.DownloadDir, objectUID), []byte(strconv.Itoa(i)), 0755)
+	}
+
+	sha256sum := sha256.Sum256([]byte(updateMetadataWithValidSha256sum))
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
+
+	cm.On("ProbeUpdate", apiClient, 0).Return(um, signature, time.Duration(0), nil)
+
+	next, _ := uh.GetState().Handle(uh)
+
+	assert.Equal(t, NewInstallingState(apiClient, um, &ProgressTrackerImpl{}, uh.Store), next)
+
 	cm.AssertExpectations(t)
 }
 

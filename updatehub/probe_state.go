@@ -81,6 +81,11 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 			return NewErrorState(state.apiClient, state.probeUpdateMetadata, NewTransientError(err)), false
 		}
 
+		pendingDownload, err := uh.hasPendingDownload(state.probeUpdateMetadata)
+		if !pendingDownload && err == nil {
+			return NewInstallingState(state.apiClient, state.probeUpdateMetadata, &ProgressTrackerImpl{}, uh.Store), false
+		}
+
 		return NewDownloadingState(state.apiClient, state.probeUpdateMetadata, &ProgressTrackerImpl{}), false
 	}
 
