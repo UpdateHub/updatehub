@@ -670,3 +670,26 @@ func (uh *UpdateHub) clearDownloadDir(objects []metadata.Object) {
 		}
 	}
 }
+
+func (uh *UpdateHub) hasPendingDownload(updateMetadata *metadata.UpdateMetadata) (bool, error) {
+	indexToInstall, err := GetIndexOfObjectToBeInstalled(uh.ActiveInactiveBackend, updateMetadata)
+	if err != nil {
+		return false, err
+	}
+
+	for _, obj := range updateMetadata.Objects[indexToInstall] {
+		objectUID := obj.GetObjectMetadata().Sha256sum
+		objectPath := path.Join(uh.Settings.DownloadDir, objectUID)
+
+		sha256sum, err := utils.FileSha256sum(uh.Store, objectPath)
+		if os.IsNotExist(err) {
+			return true, nil
+		}
+
+		if sha256sum != objectUID {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
