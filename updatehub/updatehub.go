@@ -19,6 +19,7 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/anacrolix/missinggo/httptoo"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 
 	"github.com/updatehub/updatehub/activeinactive"
@@ -28,6 +29,8 @@ import (
 	"github.com/updatehub/updatehub/metadata"
 	"github.com/updatehub/updatehub/utils"
 )
+
+var ErrSha256sum = errors.New("sha256sum's don't match")
 
 // GetIndexOfObjectToBeInstalled selects which object will be installed from the update metadata
 func GetIndexOfObjectToBeInstalled(aii activeinactive.Interface, um *metadata.UpdateMetadata) (int, error) {
@@ -383,6 +386,12 @@ func (uh *UpdateHub) DownloadUpdate(apiClient *client.ApiClient, updateMetadata 
 			}
 		}
 
+		ok, err := uh.CheckDownloadedObjectSha256sum(uh.Store, uh.Settings.DownloadDir, obj.GetObjectMetadata().Sha256sum)
+		if !ok {
+			uh.Store.Remove(path.Join(uh.Settings.DownloadDir, obj.GetObjectMetadata().Sha256sum))
+			return ErrSha256sum
+		}
+
 		log.Info("object ", objectUID, " downloaded successfully")
 
 		step := 100 / len(updateMetadata.Objects[indexToInstall])
@@ -431,10 +440,9 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 				return err
 			}
 
-			err = fmt.Errorf("sha256sum's don't match")
-			log.Error(err)
+			log.Error(ErrSha256sum)
 
-			return err
+			return ErrSha256sum
 		}
 		log.Info(fmt.Sprintf("installing object: %s (mode: %s)", obj.GetObjectMetadata().Sha256sum, obj.GetObjectMetadata().Mode))
 
