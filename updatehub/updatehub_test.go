@@ -406,7 +406,8 @@ func TestCheckDownloadedObjectSha256sum(t *testing.T) {
 	assert.NoError(t, err)
 
 	sci := &Sha256CheckerImpl{}
-	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
+	ok, err := sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
+	assert.True(t, ok)
 	assert.NoError(t, err)
 }
 
@@ -418,7 +419,8 @@ func TestCheckDownloadedObjectSha256sumWithOpenError(t *testing.T) {
 	fsm.On("OpenFile", path.Join(dummyPath, dummySha256sum), os.O_RDONLY, os.FileMode(0)).Return(&filemock.FileMock{}, fmt.Errorf("open error"))
 
 	sci := &Sha256CheckerImpl{}
-	err := sci.CheckDownloadedObjectSha256sum(fsm, dummyPath, dummySha256sum)
+	ok, err := sci.CheckDownloadedObjectSha256sum(fsm, dummyPath, dummySha256sum)
+	assert.False(t, ok)
 	assert.EqualError(t, err, "open error")
 
 	fsm.AssertExpectations(t)
@@ -437,8 +439,9 @@ func TestCheckDownloadedObjectSha256sumWithSumsDontMatching(t *testing.T) {
 	assert.NoError(t, err)
 
 	sci := &Sha256CheckerImpl{}
-	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
-	assert.EqualError(t, err, "sha256sum's don't match. Expected: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 / Calculated: ae448ac86c4e8e4dec645729708ef41873ae79c6dff84eff73360989487f08e5")
+	ok, err := sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
+	assert.False(t, ok)
+	assert.NoError(t, err)
 }
 
 func TestGetIndexOfObjectToBeInstalled(t *testing.T) {
@@ -1268,9 +1271,9 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadataWithThreeObjects" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae").Return(nil)
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(true, nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae").Return(true, nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1342,8 +1345,8 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadataWithActiveInactive" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(true, nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(true, nil)
 
 				return data
 			}(),
@@ -1423,8 +1426,8 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadataWithActiveInactive" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(true, nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(true, nil)
 
 				return data
 			}(),
@@ -1457,7 +1460,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1494,7 +1497,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1531,7 +1534,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1568,7 +1571,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1596,12 +1599,12 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(fmt.Errorf("sha256 error"))
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(false, nil)
 
 				return data
 			}(),
 			validUpdateMetadata,
-			fmt.Errorf("sha256 error"),
+			fmt.Errorf("sha256sum's don't match"),
 			[]int(nil),
 		},
 		{
@@ -1632,7 +1635,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),

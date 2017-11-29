@@ -53,25 +53,19 @@ func GetIndexOfObjectToBeInstalled(aii activeinactive.Interface, um *metadata.Up
 }
 
 type Sha256Checker interface {
-	CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) error
+	CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) (bool, error)
 }
 
 type Sha256CheckerImpl struct {
 }
 
-func (s *Sha256CheckerImpl) CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) error {
+func (s *Sha256CheckerImpl) CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) (bool, error) {
 	calculatedSha256sum, err := utils.FileSha256sum(fsBackend, path.Join(downloadDir, expectedSha256sum))
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	if calculatedSha256sum != expectedSha256sum {
-		err = fmt.Errorf("sha256sum's don't match. Expected: %s / Calculated: %s", expectedSha256sum, calculatedSha256sum)
-		log.Error(err)
-		return err
-	}
-
-	return nil
+	return calculatedSha256sum == expectedSha256sum, nil
 }
 
 type UpdateHub struct {
@@ -431,11 +425,17 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 	progress := 0
 
 	for _, obj := range updateMetadata.Objects[indexToInstall] {
-		err := uh.CheckDownloadedObjectSha256sum(uh.Store, uh.Settings.DownloadDir, obj.GetObjectMetadata().Sha256sum)
-		if err != nil {
+		ok, err := uh.CheckDownloadedObjectSha256sum(uh.Store, uh.Settings.DownloadDir, obj.GetObjectMetadata().Sha256sum)
+		if !ok {
+			if err != nil {
+				return err
+			}
+
+			err = fmt.Errorf("sha256sum's don't match")
+			log.Error(err)
+
 			return err
 		}
-
 		log.Info(fmt.Sprintf("installing object: %s (mode: %s)", obj.GetObjectMetadata().Sha256sum, obj.GetObjectMetadata().Mode))
 
 		err = obj.Setup()

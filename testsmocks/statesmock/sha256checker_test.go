@@ -18,13 +18,15 @@ import (
 
 func TestCheckDownloadedObjectSha256sum(t *testing.T) {
 	fs := afero.NewMemMapFs()
+	expectedResult := true
 	expectedError := fmt.Errorf("some error")
 
 	scm := &Sha256CheckerMock{}
-	scm.On("CheckDownloadedObjectSha256sum", fs, "downloaddir", "sha256sum").Return(expectedError)
+	scm.On("CheckDownloadedObjectSha256sum", fs, "downloaddir", "sha256sum").Return(expectedResult, expectedError)
 
-	err := scm.CheckDownloadedObjectSha256sum(fs, "downloaddir", "sha256sum")
+	ok, err := scm.CheckDownloadedObjectSha256sum(fs, "downloaddir", "sha256sum")
 
+	assert.Equal(t, expectedResult, ok)
 	assert.Equal(t, expectedError, err)
 
 	scm.AssertExpectations(t)
