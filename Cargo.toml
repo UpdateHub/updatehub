@@ -1,0 +1,18 @@
+[package]
+name = "updatehub"
+version = "0.1.0"
+authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
+
+[dependencies]
+log = "0.3.6"
+stderrlog = "0.2.3"
+app = "0.6.3"
+parse_duration = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+serde = "1.0"
+serde_derive = "1.0"
+serde_ini = "0.1"
+
+[dev-dependencies]
+serde_test = "1.0"
+
