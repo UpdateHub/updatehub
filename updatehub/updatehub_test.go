@@ -406,7 +406,8 @@ func TestCheckDownloadedObjectSha256sum(t *testing.T) {
 	assert.NoError(t, err)
 
 	sci := &Sha256CheckerImpl{}
-	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
+	ok, err := sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
+	assert.True(t, ok)
 	assert.NoError(t, err)
 }
 
@@ -418,7 +419,8 @@ func TestCheckDownloadedObjectSha256sumWithOpenError(t *testing.T) {
 	fsm.On("OpenFile", path.Join(dummyPath, dummySha256sum), os.O_RDONLY, os.FileMode(0)).Return(&filemock.FileMock{}, fmt.Errorf("open error"))
 
 	sci := &Sha256CheckerImpl{}
-	err := sci.CheckDownloadedObjectSha256sum(fsm, dummyPath, dummySha256sum)
+	ok, err := sci.CheckDownloadedObjectSha256sum(fsm, dummyPath, dummySha256sum)
+	assert.False(t, ok)
 	assert.EqualError(t, err, "open error")
 
 	fsm.AssertExpectations(t)
@@ -437,8 +439,9 @@ func TestCheckDownloadedObjectSha256sumWithSumsDontMatching(t *testing.T) {
 	assert.NoError(t, err)
 
 	sci := &Sha256CheckerImpl{}
-	err = sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
-	assert.EqualError(t, err, "sha256sum's don't match. Expected: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 / Calculated: ae448ac86c4e8e4dec645729708ef41873ae79c6dff84eff73360989487f08e5")
+	ok, err := sci.CheckDownloadedObjectSha256sum(memFs, testPath, expectedSha256sum)
+	assert.False(t, ok)
+	assert.NoError(t, err)
 }
 
 func TestGetIndexOfObjectToBeInstalled(t *testing.T) {
@@ -736,6 +739,20 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	}
 	uh.FirmwareMetadata = *fm
 
+	scm := &statesmock.Sha256CheckerMock{}
+
+	uh.Sha256Checker = scm
+
+	// setup filesystembackend
+
+	cpm := &copymock.CopyMock{}
+	uh.CopyBackend = cpm
+
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	uh.Store = fsm
+
+	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
+
 	// these sha256sum's are from "validUpdateMetadataWithThreeObjects" content
 
 	// obj1
@@ -749,6 +766,8 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	um.On("GetUpdateContentRange", uh.DefaultApiClient.Request(), uri1, int64(len(source1Content))).Return(&httptoo.BytesContentRange{}, nil).Once()
 	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri1).Return(source1, int64(len(source1Content)), nil).Once()
 
+	scm.On("CheckDownloadedObjectSha256sum", uh.Store, uh.Settings.DownloadDir, objectUID1).Return(true, nil).Once()
+
 	// obj2
 	objectUID2 := "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae"
 	uri2 := path.Join("/products", uh.FirmwareMetadata.ProductUID, "packages", packageUID, "objects", objectUID2)
@@ -759,6 +778,8 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 
 	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri2).Return(source2, int64(len(source2Content)), nil).Once()
 	um.On("GetUpdateContentRange", uh.DefaultApiClient.Request(), uri2, int64(len(source2Content))).Return(&httptoo.BytesContentRange{}, nil).Once()
+
+	scm.On("CheckDownloadedObjectSha256sum", uh.Store, uh.Settings.DownloadDir, objectUID2).Return(true, nil).Once()
 
 	// obj3
 	objectUID3 := "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa"
@@ -771,15 +792,7 @@ func TestUpdateHubDownloadUpdate(t *testing.T) {
 	um.On("DownloadUpdate", uh.DefaultApiClient.Request(), uri3).Return(source3, int64(len(source3Content)), nil).Once()
 	um.On("GetUpdateContentRange", uh.DefaultApiClient.Request(), uri3, int64(len(source3Content))).Return(&httptoo.BytesContentRange{}, nil).Once()
 
-	// setup filesystembackend
-
-	cpm := &copymock.CopyMock{}
-	uh.CopyBackend = cpm
-
-	fsm := &filesystemmock.FileSystemBackendMock{}
-	uh.Store = fsm
-
-	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
+	scm.On("CheckDownloadedObjectSha256sum", uh.Store, uh.Settings.DownloadDir, objectUID3).Return(true, nil).Once()
 
 	// file1
 	target1Info := &fileinfomock.FileInfoMock{}
@@ -1099,6 +1112,10 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	}
 	uh.FirmwareMetadata = *fm
 
+	scm := &statesmock.Sha256CheckerMock{}
+
+	uh.Sha256Checker = scm
+
 	apiClient := client.NewApiClient("address")
 
 	packageUID := utils.DataSha256sum([]byte(validUpdateMetadataWithActiveInactive))
@@ -1114,6 +1131,9 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 
 	um := &updatermock.UpdaterMock{}
 
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	uh.Store = fsm
+
 	// download of file 1 setup
 	file1Content := []byte("content1") // this matches with the sha256sum in "validUpdateMetadataWithActiveInactive"
 
@@ -1123,6 +1143,7 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	objectUIDFirst := updateMetadata.Objects[1][0].GetObjectMetadata().Sha256sum
 	uri1 := path.Join(expectedURIPrefix, objectUIDFirst)
 	um.On("DownloadUpdate", apiClient.Request(), uri1).Return(source1, int64(len(file1Content)), nil)
+	scm.On("CheckDownloadedObjectSha256sum", uh.Store, uh.Settings.DownloadDir, objectUIDFirst).Return(true, nil).Once()
 
 	// download of file 2 setup
 	file2Content := []byte("content2butbigger") // this matches with the sha256sum in "validUpdateMetadataWithActiveInactive"
@@ -1133,6 +1154,7 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	objectUIDSecond := updateMetadata.Objects[1][1].GetObjectMetadata().Sha256sum
 	uri2 := path.Join(expectedURIPrefix, objectUIDSecond)
 	um.On("DownloadUpdate", apiClient.Request(), uri2).Return(source2, int64(len(file2Content)), nil)
+	scm.On("CheckDownloadedObjectSha256sum", uh.Store, uh.Settings.DownloadDir, objectUIDSecond).Return(true, nil).Once()
 
 	// setup filesystembackend
 	target1Info := &fileinfomock.FileInfoMock{}
@@ -1147,13 +1169,11 @@ func TestUpdateHubDownloadUpdateWithActiveInactive(t *testing.T) {
 	target2.On("Stat").Return(target2Info, nil)
 	target2.On("Close").Return(nil)
 
-	fsm := &filesystemmock.FileSystemBackendMock{}
 	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDFirst), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDFirst), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target1, nil)
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDSecond), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
 	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUIDSecond), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target2, nil)
-	uh.Store = fsm
 
 	// finish setup
 	uh.Updater = um
@@ -1208,6 +1228,73 @@ func TestUpdateHubDownloadUpdateWithActiveInactiveError(t *testing.T) {
 	aim.AssertExpectations(t)
 	um.AssertExpectations(t)
 	om.AssertExpectations(t)
+}
+
+func TestUpdateHubDownloadUpdateWithSha256Error(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	objs := []metadata.Object{om}
+
+	mode := newTestInstallMode(objs)
+	defer mode.Unregister()
+
+	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	uh, _ := newTestUpdateHub(&PollState{}, aim)
+
+	updateMetadata, err := metadata.NewUpdateMetadata([]byte(validUpdateMetadata))
+	assert.NoError(t, err)
+
+	apiClient := client.NewApiClient("address")
+
+	packageUID := utils.DataSha256sum([]byte(validUpdateMetadata))
+	objectUID := updateMetadata.Objects[0][0].GetObjectMetadata().Sha256sum
+
+	uri := path.Join("/products", uh.FirmwareMetadata.ProductUID, "packages", packageUID, "objects", objectUID)
+
+	// setup filesystembackend
+	fsm := &filesystemmock.FileSystemBackendMock{}
+	fsm.On("Open", uh.Settings.DownloadDir).Return((*filemock.FileMock)(nil), fmt.Errorf("open error"))
+	uh.Store = fsm
+
+	source := &filemock.FileMock{}
+	source.On("Close").Return(nil)
+	sourceContent := []byte("content")
+
+	cpm := &copymock.CopyMock{}
+
+	targetInfo := &fileinfomock.FileInfoMock{}
+	targetInfo.On("Size").Return(int64(len(sourceContent)))
+	target := &filemock.FileMock{}
+	target.On("Stat").Return(targetInfo, nil).Once()
+	target.On("Close").Return(nil).Once()
+	cpm.On("Copy", target, source, 30*time.Second, (<-chan bool)(nil), utils.ChunkSize, 0, -1, false).Return(false, nil).Once()
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_RDONLY, os.FileMode(0)).Return((*filemock.FileMock)(nil), fmt.Errorf("not found")).Once()
+	fsm.On("OpenFile", path.Join(uh.Settings.DownloadDir, objectUID), os.O_APPEND|os.O_CREATE|os.O_RDWR, os.FileMode(0666)).Return(target, nil).Once()
+	fsm.On("Remove", path.Join(uh.Settings.DownloadDir, objectUID)).Return(nil)
+	fsm.On("Stat", path.Join(uh.Settings.DownloadDir, objectUID)).Return(targetInfo, nil)
+
+	uh.CopyBackend = cpm
+
+	um := &updatermock.UpdaterMock{}
+	um.On("DownloadUpdate", apiClient.Request(), uri).Return(source, int64(len(sourceContent)), nil).Once()
+	um.On("GetUpdateContentRange", apiClient.Request(), uri, int64(len(sourceContent))).Return(&httptoo.BytesContentRange{}, nil).Once()
+
+	uh.Updater = um
+
+	scm := &statesmock.Sha256CheckerMock{}
+	scm.On("CheckDownloadedObjectSha256sum", uh.Store, uh.Settings.DownloadDir, objectUID).Return(false, nil).Once()
+	uh.Sha256Checker = scm
+
+	progressList, err := startDownloadUpdateInAnotherFunc(apiClient, uh, updateMetadata)
+
+	assert.EqualError(t, err, ErrSha256sum.Error())
+	assert.Equal(t, []int(nil), progressList)
+
+	aim.AssertExpectations(t)
+	um.AssertExpectations(t)
+	om.AssertExpectations(t)
+	scm.AssertExpectations(t)
 }
 
 func TestUpdateHubInstallUpdate(t *testing.T) {
@@ -1268,9 +1355,9 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadataWithThreeObjects" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae").Return(nil)
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(true, nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "b9632efa90820ff35d6cec0946f99bb8a6317b1e2ef877e501a3e12b2d04d0ae").Return(true, nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1342,8 +1429,8 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadataWithActiveInactive" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(true, nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(true, nil)
 
 				return data
 			}(),
@@ -1423,8 +1510,8 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadataWithActiveInactive" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(nil)
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855").Return(true, nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb").Return(true, nil)
 
 				return data
 			}(),
@@ -1457,7 +1544,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1494,7 +1581,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1531,7 +1618,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1568,7 +1655,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),
@@ -1596,12 +1683,40 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(fmt.Errorf("sha256 error"))
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(false, ErrSha256sum)
 
 				return data
 			}(),
 			validUpdateMetadata,
-			fmt.Errorf("sha256 error"),
+			ErrSha256sum,
+			[]int(nil),
+		},
+		{
+			"WithInvalidSha256",
+			func() *testData {
+				data := &testData{}
+
+				data.fm = &metadata.FirmwareMetadata{
+					ProductUID:       "productuid-value",
+					DeviceIdentity:   map[string]string{"id1": "id1-value"},
+					DeviceAttributes: map[string]string{"attr1": "attr1-value"},
+					Hardware:         "",
+					Version:          "version-value",
+				}
+
+				data.aim = &activeinactivemock.ActiveInactiveMock{}
+				data.uh, _ = newTestUpdateHub(&PollState{}, data.aim)
+				data.objs = []metadata.Object{&objectmock.ObjectMock{}}
+				data.iidm = &installifdifferentmock.InstallIfDifferentMock{}
+
+				// these sha256sum's are from "validUpdateMetadata" content
+				data.scm = &statesmock.Sha256CheckerMock{}
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(false, nil)
+
+				return data
+			}(),
+			validUpdateMetadata,
+			ErrSha256sum,
 			[]int(nil),
 		},
 		{
@@ -1632,7 +1747,7 @@ func TestUpdateHubInstallUpdate(t *testing.T) {
 
 				// these sha256sum's are from "validUpdateMetadata" content
 				data.scm = &statesmock.Sha256CheckerMock{}
-				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(nil)
+				data.scm.On("CheckDownloadedObjectSha256sum", data.uh.Store, data.uh.Settings.DownloadDir, "d0b425e00e15a0d36b9b361f02bab63563aed6cb4665083905386c55d5b679fa").Return(true, nil)
 
 				return data
 			}(),

@@ -17,7 +17,7 @@ type Sha256CheckerMock struct {
 	mock.Mock
 }
 
-func (scm *Sha256CheckerMock) CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) error {
+func (scm *Sha256CheckerMock) CheckDownloadedObjectSha256sum(fsBackend afero.Fs, downloadDir string, expectedSha256sum string) (bool, error) {
 	args := scm.Called(fsBackend, downloadDir, expectedSha256sum)
-	return args.Error(0)
+	return args.Bool(0), args.Error(1)
 }

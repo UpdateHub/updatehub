@@ -174,6 +174,44 @@ func TestStateDownloadingTimeout(t *testing.T) {
 	assert.Equal(t, expectedState, nextState)
 }
 
+func TestStateDownloadingSha256Error(t *testing.T) {
+	om := &objectmock.ObjectMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	m, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	memFs := afero.NewMemMapFs()
+
+	apiClient := client.NewApiClient("localhost")
+
+	s := NewDownloadingState(apiClient, m, nil)
+
+	uh, err := newTestUpdateHub(s, nil)
+	assert.NoError(t, err)
+
+	uh.Store = memFs
+
+	cm := &controllermock.ControllerMock{}
+	cm.On("DownloadUpdate", apiClient, m, mock.Anything, mock.AnythingOfType("chan<- int")).Return(ErrSha256sum).Once()
+	cm.On("DownloadUpdate", apiClient, m, mock.Anything, mock.AnythingOfType("chan<- int")).Return(nil).Once()
+
+	uh.Controller = cm
+
+	nextState, _ := s.Handle(uh)
+
+	expectedState := NewDownloadedState(apiClient, m)
+	assert.Equal(t, expectedState, nextState)
+
+	cm.AssertExpectations(t)
+}
+
 func TestStateDownloadingToMap(t *testing.T) {
 	ptm := &progresstrackermock.ProgressTrackerMock{}
 

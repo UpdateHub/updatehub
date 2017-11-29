@@ -70,6 +70,11 @@ func (state *DownloadingState) Handle(uh *UpdateHub) (State, bool) {
 				continue
 			}
 
+			if err == ErrSha256sum {
+				log.Warn("sha256sum's don't match after download update")
+				continue
+			}
+
 			break
 		}
 
