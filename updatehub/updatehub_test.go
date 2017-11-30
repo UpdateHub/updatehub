@@ -275,6 +275,7 @@ func TestProcessCurrentStateIsError(t *testing.T) {
 
 	nextState := uh.ProcessCurrentState()
 
+	assert.IsType(t, &ErrorState{}, uh.previousState)
 	assert.IsType(t, &IdleState{}, nextState)
 
 	aim.AssertExpectations(t)
