@@ -222,10 +222,10 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 
 	var err error
 
+	uh.ReportCurrentState()
+
 	// this must be done after the report, because the report uses it
-	defer func() {
-		uh.previousState = uh.state
-	}()
+	uh.previousState = uh.state
 
 	es, isErrorState := uh.state.(*ErrorState)
 	if isErrorState {
@@ -233,8 +233,6 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 		if err != nil {
 			log.Warn(err)
 		}
-
-		uh.ReportCurrentState()
 
 		state, _ := uh.state.Handle(uh)
 		uh.state = state
@@ -250,8 +248,6 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 			uh.state = flow
 			return uh.state
 		}
-
-		uh.ReportCurrentState()
 
 		state, cancel := uh.state.Handle(uh)
 
