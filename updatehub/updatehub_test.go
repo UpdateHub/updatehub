@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/updatehub/updatehub/activeinactive"
 	"github.com/updatehub/updatehub/client"
@@ -167,23 +168,40 @@ func startInstallUpdateInAnotherFunc(uh *UpdateHub, um *metadata.UpdateMetadata)
 
 func TestProcessCurrentState(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
+	rm := &reportermock.ReporterMock{}
 	cm := &cmdlinemock.CmdLineExecuterMock{}
 	fs := afero.NewMemMapFs()
 
 	afero.WriteFile(fs, "/usr/share/updatehub/state-change-callback", []byte("a"), 0755)
 
-	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter idle").Return([]byte(""), nil).Once()
-	cm.On("Execute", "/usr/share/updatehub/state-change-callback leave idle").Return([]byte(""), nil).Once()
+	expectedCallOrder := []string{"enter", "report", "leave"}
+	callOrder := []string{}
 
-	uh, _ := newTestUpdateHub(NewIdleState(), aim)
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter downloaded").Run(func(args mock.Arguments) {
+		callOrder = append(callOrder, "enter")
+	}).Return([]byte(""), nil).Once()
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback leave downloaded").Run(func(args mock.Arguments) {
+		callOrder = append(callOrder, "leave")
+	}).Return([]byte(""), nil).Once()
+
+	apiClient := client.NewApiClient("address")
+
+	uh, _ := newTestUpdateHub(NewDownloadedState(apiClient, nil), aim)
 	uh.CmdLineExecuter = cm
 	uh.Store = fs
+	uh.Reporter = rm
+
+	rm.On("ReportState", apiClient.Request(), "", "", "downloaded", "", uh.FirmwareMetadata).Run(func(args mock.Arguments) {
+		callOrder = append(callOrder, "report")
+	}).Return(nil).Once()
 
 	nextState := uh.ProcessCurrentState()
 
-	assert.IsType(t, &PollState{}, nextState)
+	assert.IsType(t, &InstallingState{}, nextState)
+	assert.Equal(t, expectedCallOrder, callOrder)
 
 	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 }
 
@@ -275,6 +293,7 @@ func TestProcessCurrentStateIsError(t *testing.T) {
 
 	nextState := uh.ProcessCurrentState()
 
+	assert.IsType(t, &ErrorState{}, uh.previousState)
 	assert.IsType(t, &IdleState{}, nextState)
 
 	aim.AssertExpectations(t)

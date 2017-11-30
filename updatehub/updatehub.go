@@ -222,13 +222,12 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 
 	var err error
 
-	uh.ReportCurrentState()
-
-	// this must be done after the report, because the report uses it
-	uh.previousState = uh.state
-
 	es, isErrorState := uh.state.(*ErrorState)
 	if isErrorState {
+		uh.ReportCurrentState()
+		// this must be done after the report, because the report uses it
+		uh.previousState = uh.state
+
 		err = uh.errorCallback(es.cause.Error())
 		if err != nil {
 			log.Warn(err)
@@ -238,6 +237,11 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 		uh.state = state
 	} else {
 		flow, err := uh.stateChangeCallback(uh.state, "enter")
+
+		uh.ReportCurrentState()
+		// this must be done after the report, because the report uses it
+		uh.previousState = uh.state
+
 		if err != nil {
 			log.Error(err)
 			uh.state = NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
