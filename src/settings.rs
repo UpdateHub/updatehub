@@ -154,7 +154,7 @@ pub struct Update {
 impl Default for Update {
     fn default() -> Self {
         Update {
-            download_dir: "/tmp".to_string(),
+            download_dir: "/tmp/updatehub".to_string(),
             install_modes: [
                 "dry-run",
                 "copy",
@@ -358,5 +358,38 @@ ServerAddress=localhost
 MetadataPath=/tmp/metadata
 ";
         assert!(Settings::new().parse(&ini).is_err());
+    }
+
+    #[test]
+    fn default() {
+        let settings = Settings::default();
+        let expected = Settings {
+            polling: Polling {
+                interval: Duration::new(86_400, 0),
+                enabled: true,
+            },
+            storage: Storage {
+                read_only: false,
+                runtime_settings: "/var/lib/updatehub.conf".to_string(),
+            },
+            update: Update {
+                download_dir: "/tmp/updatehub".to_string(),
+                install_modes: [
+                    "dry-run",
+                    "copy",
+                    "flash",
+                    "imxkobs",
+                    "raw",
+                    "tarball",
+                    "ubifs",
+                ].iter()
+                    .map(|i| i.to_string())
+                    .collect(),
+            },
+            network: Network { server_address: "https://api.updatehub.io".to_string() },
+            firmware: Firmware { metadata_path: "/usr/share/updatehub".to_string() },
+        };
+
+        assert!(Some(settings) == Some(expected));
     }
 }
