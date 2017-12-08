@@ -20,6 +20,7 @@ extern crate parse_duration;
 mod de_helpers;
 
 mod settings;
+mod persistent_settings;
 mod cmdline;
 
 use cmdline::CmdLine;
