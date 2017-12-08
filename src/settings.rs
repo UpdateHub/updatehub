@@ -297,7 +297,7 @@ MetadataPath=/tmp/metadata
 
     #[test]
     fn default() {
-        let settings = Settings::default();
+        let settings = Settings::new();
         let expected = Settings {
             polling: Polling {
                 interval: Duration::new(86_400, 0),
