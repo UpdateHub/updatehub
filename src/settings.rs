@@ -229,39 +229,6 @@ where
     )
 }
 
-/*
-extern crate chrono;
-use self::chrono::{DateTime, Utc};
-
-#[derive(Deserialize)]
-struct PersistentSettings {
-    polling: PersistentPolling,
-}
-
-struct PersistentPolling {
-    last: DateTime<Utc>,
-    first: DateTime<Utc>,
-    extra_interval: usize,
-    retries: usize,
-    now: bool,
-}
-
-struct PersistentUpdate {
-    upgrading_to: i8,
-}
-impl Default for PersistentPolling {
-    fn default() -> Self {
-        PersistentPolling {
-            last: Utc::now(),
-            first: Utc::now(),
-            extra_interval: 0,
-            retries: 0,
-            now: false,
-        }
-    }
-}
-*/
-
 #[cfg(test)]
 mod de_ini {
     use super::*;
