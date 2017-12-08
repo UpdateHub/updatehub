@@ -221,12 +221,12 @@ fn ini_de_vec_from_str<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let v: Vec<String> = String::deserialize(deserializer)?
-        .split(",")
-        .map(|s| s.to_string())
-        .collect();
-
-    Ok(v)
+    Ok(
+        String::deserialize(deserializer)?
+            .split(",")
+            .map(|s| s.to_string())
+            .collect(),
+    )
 }
 
 /*
