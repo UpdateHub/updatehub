@@ -13,11 +13,17 @@ use self::chrono::{DateTime, Utc};
 
 use de_helpers::bool_from_str;
 
-#[derive(Deserialize, PartialEq, Serialize)]
+#[derive(Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct PersistentSettings {
     pub polling: PersistentPolling,
     pub update: PersistentUpdate,
+}
+
+impl PersistentSettings {
+    pub fn new() -> Self {
+        PersistentSettings::default()
+    }
 }
 
 #[derive(Deserialize, PartialEq, Serialize)]
@@ -92,5 +98,22 @@ UpgradeToInstallation=1
                 .map_err(|e| println!("{}", e))
                 .ok() == Some(expected)
         );
+    }
+
+    #[test]
+    fn default() {
+        let settings = PersistentSettings::new();
+        let expected = PersistentSettings {
+            polling: PersistentPolling {
+                last: settings.polling.last,
+                first: settings.polling.first,
+                extra_interval: 0,
+                retries: 0,
+                now: false,
+            },
+            update: PersistentUpdate { upgrading_to: -1 },
+        };
+
+        assert!(Some(settings) == Some(expected));
     }
 }
