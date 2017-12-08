@@ -62,9 +62,17 @@ impl Settings {
             server.starts_with("http://") || server.starts_with("https://")
         }
 
+        fn has_valid_polling_interval(interval: &Duration) -> bool {
+            if *interval < Duration::new(60, 0) {
+                false
+            } else {
+                true
+            }
+        }
+
         let settings = serde_ini::from_str::<Settings>(&content)?;
 
-        if settings.polling.interval.as_secs() < 60 {
+        if !has_valid_polling_interval(&settings.polling.interval) {
             error!("Invalid setting for polling interval. The interval cannot be less than 60 seconds");
             return Err(SettingsError::InvalidInterval);
         }
