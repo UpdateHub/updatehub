@@ -7,11 +7,12 @@
  */
 
 
-use serde::{Deserialize, Deserializer, de};
 use serde_ini;
 
 use std::io;
 use std::time::Duration;
+
+use de_helpers::{bool_from_str, duration_from_str, vec_from_str};
 
 const SYSTEM_SETTINGS_PATH: &'static str = "/etc/updatehub.conf";
 
@@ -109,9 +110,9 @@ impl From<serde_ini::de::Error> for SettingsError {
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Polling {
-    #[serde(deserialize_with = "ini_de_duration_from_str")]
+    #[serde(deserialize_with = "duration_from_str")]
     pub interval: Duration,
-    #[serde(deserialize_with = "ini_de_bool_from_str")]
+    #[serde(deserialize_with = "bool_from_str")]
     pub enabled: bool,
 }
 
@@ -127,7 +128,7 @@ impl Default for Polling {
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
-    #[serde(deserialize_with = "ini_de_bool_from_str")]
+    #[serde(deserialize_with = "bool_from_str")]
     pub read_only: bool,
     pub runtime_settings: String,
 }
@@ -147,7 +148,7 @@ impl Default for Storage {
 pub struct Update {
     pub download_dir: String,
     #[serde(rename = "SupportedInstallModes")]
-    #[serde(deserialize_with = "ini_de_vec_from_str")]
+    #[serde(deserialize_with = "vec_from_str")]
     pub install_modes: Vec<String>,
 }
 
@@ -194,39 +195,6 @@ impl Default for Firmware {
     fn default() -> Self {
         Firmware { metadata_path: "/usr/share/updatehub".to_string() }
     }
-}
-
-
-fn ini_de_duration_from_str<'de, D>(deserializer: D) -> Result<Duration, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use parse_duration::parse;
-
-    let s = String::deserialize(deserializer)?;
-    parse(&s).map_err(de::Error::custom)
-}
-
-fn ini_de_bool_from_str<'de, D>(deserializer: D) -> Result<bool, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use std::str::FromStr;
-
-    let s = String::deserialize(deserializer)?;
-    bool::from_str(&s).map_err(de::Error::custom)
-}
-
-fn ini_de_vec_from_str<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Ok(
-        String::deserialize(deserializer)?
-            .split(",")
-            .map(|s| s.to_string())
-            .collect(),
-    )
 }
 
 #[cfg(test)]

@@ -17,6 +17,8 @@ extern crate serde;
 
 extern crate parse_duration;
 
+mod de_helpers;
+
 mod settings;
 mod cmdline;
 
