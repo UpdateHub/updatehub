@@ -36,5 +36,5 @@ fn main() {
         .init()
         .expect("Failed to initialize the logger.");
 
-    let settings = Settings::new().load().expect("Failed to load settings.");
+    let _settings = Settings::new().load().expect("Failed to load settings.");
 }
