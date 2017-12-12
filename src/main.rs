@@ -32,8 +32,7 @@ fn main() {
 
     stderrlog::new()
         .quiet(cmdline.quiet)
-        .verbosity(if cmdline.debug { 3 } else { 1 })
-        .verbosity(4)
+        .verbosity(if cmdline.debug { 3 } else { 2 })
         .init()
         .expect("Failed to initialize the logger.");
 
