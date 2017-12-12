@@ -25,6 +25,7 @@ mod cmdline;
 
 use cmdline::CmdLine;
 use settings::Settings;
+use persistent_settings::PersistentSettings;
 
 fn main() {
     let cmdline = CmdLine::parse_args();
@@ -36,5 +37,8 @@ fn main() {
         .init()
         .expect("Failed to initialize the logger.");
 
-    let _settings = Settings::new().load().expect("Failed to load settings.");
+    let settings = Settings::new().load().expect("Failed to load settings.");
+    let _persistent_settings = PersistentSettings::new()
+        .load(&settings.storage.runtime_settings)
+        .expect("Failed to load runtime settings.");
 }

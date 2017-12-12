@@ -11,6 +11,8 @@ use serde_ini;
 extern crate chrono;
 use self::chrono::{DateTime, Utc};
 
+use std::io;
+
 use de_helpers::bool_from_str;
 
 #[derive(Default, Deserialize, PartialEq, Serialize)]
@@ -23,6 +25,55 @@ pub struct PersistentSettings {
 impl PersistentSettings {
     pub fn new() -> Self {
         PersistentSettings::default()
+    }
+
+    pub fn load(self, path: &str) -> Result<Self, PersistentSettingsError> {
+        use std::fs::File;
+        use std::io::Read;
+        use std::path::Path;
+
+        let path = Path::new(path);
+
+        if path.exists() {
+            info!(
+                "Loading persistent settings from '{}'...",
+                path.to_string_lossy()
+            );
+
+            let mut content = String::new();
+            File::open(path)?.read_to_string(&mut content)?;
+
+            Ok(self.parse(&content)?)
+        } else {
+            debug!(
+                "Persistent settings file {} does not exists.",
+                path.to_string_lossy()
+            );
+            info!("Using default persistent settings...");
+            Ok(self)
+        }
+    }
+
+    fn parse(self, content: &str) -> Result<Self, PersistentSettingsError> {
+        Ok(serde_ini::from_str::<PersistentSettings>(&content)?)
+    }
+}
+
+#[derive(Debug)]
+pub enum PersistentSettingsError {
+    Io(io::Error),
+    Ini(serde_ini::de::Error),
+}
+
+impl From<io::Error> for PersistentSettingsError {
+    fn from(err: io::Error) -> PersistentSettingsError {
+        PersistentSettingsError::Io(err)
+    }
+}
+
+impl From<serde_ini::de::Error> for PersistentSettingsError {
+    fn from(err: serde_ini::de::Error) -> PersistentSettingsError {
+        PersistentSettingsError::Ini(err)
     }
 }
 
@@ -96,8 +147,10 @@ UpgradeToInstallation=1
         assert!(
             serde_ini::from_str::<PersistentSettings>(&ini)
                 .map_err(|e| println!("{}", e))
-                .ok() == Some(expected)
+                .as_ref()
+                .ok() == Some(&expected)
         );
+        assert!(PersistentSettings::new().parse(&ini).as_ref().ok() == Some(&expected));
     }
 
     #[test]
