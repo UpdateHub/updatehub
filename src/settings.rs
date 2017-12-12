@@ -156,15 +156,8 @@ impl Default for Update {
     fn default() -> Self {
         Update {
             download_dir: "/tmp/updatehub".to_string(),
-            install_modes: [
-                "dry-run",
-                "copy",
-                "flash",
-                "imxkobs",
-                "raw",
-                "tarball",
-                "ubifs",
-            ].iter()
+            install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"]
+                .iter()
                 .map(|i| i.to_string())
                 .collect(),
         }
@@ -309,15 +302,8 @@ MetadataPath=/tmp/metadata
             },
             update: Update {
                 download_dir: "/tmp/updatehub".to_string(),
-                install_modes: [
-                    "dry-run",
-                    "copy",
-                    "flash",
-                    "imxkobs",
-                    "raw",
-                    "tarball",
-                    "ubifs",
-                ].iter()
+                install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"]
+                    .iter()
                     .map(|i| i.to_string())
                     .collect(),
             },

@@ -37,10 +37,9 @@ impl CmdLine {
                 .parse_args()
         };
 
-        config
-            .check()
-            .map_err(|e| helper.help_err_exit(e, 1))
-            .unwrap() // help_err_exit already exits, so unwrap is safe here!
+        config.check()
+              .map_err(|e| helper.help_err_exit(e, 1))
+              .unwrap() // help_err_exit already exits, so unwrap is safe here!
     }
 
     fn check(self) -> Result<Self, String> {

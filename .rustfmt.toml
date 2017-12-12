@@ -1,7 +1,12 @@
-indent_style = "Block"
-reorder_imported_names = true
+array_layout = "Visual"
+chain_indent = "Visual"
+fn_args_layout = "Block"
+fn_call_style = "Block"
 format_strings = true
+generics_indent = "Visual"
+indent_style = "Visual"
 max_width = 160
-tab_spaces = 4
 newline_style = "Unix"
+reorder_imported_names = true
+tab_spaces = 4
 use_try_shorthand = true
