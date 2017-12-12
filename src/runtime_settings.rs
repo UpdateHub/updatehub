@@ -17,17 +17,17 @@ use de_helpers::bool_from_str;
 
 #[derive(Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct PersistentSettings {
-    pub polling: PersistentPolling,
-    pub update: PersistentUpdate,
+pub struct RuntimeSettings {
+    pub polling: RuntimePolling,
+    pub update: RuntimeUpdate,
 }
 
-impl PersistentSettings {
+impl RuntimeSettings {
     pub fn new() -> Self {
-        PersistentSettings::default()
+        RuntimeSettings::default()
     }
 
-    pub fn load(self, path: &str) -> Result<Self, PersistentSettingsError> {
+    pub fn load(self, path: &str) -> Result<Self, RuntimeSettingsError> {
         use std::fs::File;
         use std::io::Read;
         use std::path::Path;
@@ -36,7 +36,7 @@ impl PersistentSettings {
 
         if path.exists() {
             info!(
-                "Loading persistent settings from '{}'...",
+                "Loading runtime settings from '{}'...",
                 path.to_string_lossy()
             );
 
@@ -46,40 +46,40 @@ impl PersistentSettings {
             Ok(self.parse(&content)?)
         } else {
             debug!(
-                "Persistent settings file {} does not exists.",
+                "Runtime settings file {} does not exists.",
                 path.to_string_lossy()
             );
-            info!("Using default persistent settings...");
+            info!("Using default runtime settings...");
             Ok(self)
         }
     }
 
-    fn parse(self, content: &str) -> Result<Self, PersistentSettingsError> {
-        Ok(serde_ini::from_str::<PersistentSettings>(&content)?)
+    fn parse(self, content: &str) -> Result<Self, RuntimeSettingsError> {
+        Ok(serde_ini::from_str::<RuntimeSettings>(&content)?)
     }
 }
 
 #[derive(Debug)]
-pub enum PersistentSettingsError {
+pub enum RuntimeSettingsError {
     Io(io::Error),
     Ini(serde_ini::de::Error),
 }
 
-impl From<io::Error> for PersistentSettingsError {
-    fn from(err: io::Error) -> PersistentSettingsError {
-        PersistentSettingsError::Io(err)
+impl From<io::Error> for RuntimeSettingsError {
+    fn from(err: io::Error) -> RuntimeSettingsError {
+        RuntimeSettingsError::Io(err)
     }
 }
 
-impl From<serde_ini::de::Error> for PersistentSettingsError {
-    fn from(err: serde_ini::de::Error) -> PersistentSettingsError {
-        PersistentSettingsError::Ini(err)
+impl From<serde_ini::de::Error> for RuntimeSettingsError {
+    fn from(err: serde_ini::de::Error) -> RuntimeSettingsError {
+        RuntimeSettingsError::Ini(err)
     }
 }
 
 #[derive(Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct PersistentPolling {
+pub struct RuntimePolling {
     #[serde(rename = "LastPoll")]
     pub last: DateTime<Utc>,
     #[serde(rename = "FirstPoll")]
@@ -91,9 +91,9 @@ pub struct PersistentPolling {
     pub now: bool,
 }
 
-impl Default for PersistentPolling {
+impl Default for RuntimePolling {
     fn default() -> Self {
-        PersistentPolling {
+        RuntimePolling {
             last: Utc::now(),
             first: Utc::now(),
             extra_interval: 0,
@@ -105,14 +105,14 @@ impl Default for PersistentPolling {
 
 #[derive(Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct PersistentUpdate {
+pub struct RuntimeUpdate {
     #[serde(rename = "UpgradeToInstallation")]
     pub upgrading_to: i8,
 }
 
-impl Default for PersistentUpdate {
+impl Default for RuntimeUpdate {
     fn default() -> Self {
-        PersistentUpdate { upgrading_to: -1 }
+        RuntimeUpdate { upgrading_to: -1 }
     }
 }
 
@@ -133,38 +133,38 @@ ProbeASAP=false
 [Update]
 UpgradeToInstallation=1
 ";
-        let expected = PersistentSettings {
-            polling: PersistentPolling {
+        let expected = RuntimeSettings {
+            polling: RuntimePolling {
                 last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
                 first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
                 extra_interval: 4,
                 retries: 5,
                 now: false,
             },
-            update: PersistentUpdate { upgrading_to: 1 },
+            update: RuntimeUpdate { upgrading_to: 1 },
         };
 
         assert!(
-            serde_ini::from_str::<PersistentSettings>(&ini)
+            serde_ini::from_str::<RuntimeSettings>(&ini)
                 .map_err(|e| println!("{}", e))
                 .as_ref()
                 .ok() == Some(&expected)
         );
-        assert!(PersistentSettings::new().parse(&ini).as_ref().ok() == Some(&expected));
+        assert!(RuntimeSettings::new().parse(&ini).as_ref().ok() == Some(&expected));
     }
 
     #[test]
     fn default() {
-        let settings = PersistentSettings::new();
-        let expected = PersistentSettings {
-            polling: PersistentPolling {
+        let settings = RuntimeSettings::new();
+        let expected = RuntimeSettings {
+            polling: RuntimePolling {
                 last: settings.polling.last,
                 first: settings.polling.first,
                 extra_interval: 0,
                 retries: 0,
                 now: false,
             },
-            update: PersistentUpdate { upgrading_to: -1 },
+            update: RuntimeUpdate { upgrading_to: -1 },
         };
 
         assert!(Some(settings) == Some(expected));

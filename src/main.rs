@@ -20,12 +20,12 @@ extern crate parse_duration;
 mod de_helpers;
 
 mod settings;
-mod persistent_settings;
+mod runtime_settings;
 mod cmdline;
 
 use cmdline::CmdLine;
 use settings::Settings;
-use persistent_settings::PersistentSettings;
+use runtime_settings::RuntimeSettings;
 
 fn main() {
     let cmdline = CmdLine::parse_args();
@@ -38,7 +38,7 @@ fn main() {
         .expect("Failed to initialize the logger.");
 
     let settings = Settings::new().load().expect("Failed to load settings.");
-    let _persistent_settings = PersistentSettings::new()
+    let _runtime_settings = RuntimeSettings::new()
         .load(&settings.storage.runtime_settings)
         .expect("Failed to load runtime settings.");
 }
