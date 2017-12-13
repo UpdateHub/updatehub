@@ -17,8 +17,8 @@ impl CmdLine {
 
         let helper = {
             App::new("updatehub")
-                .version(env::var("CARGO_PKG_VERSION").unwrap_or(
-                    "Unknown".to_string(),
+                .version(env::var("CARGO_PKG_VERSION").unwrap_or_else(
+                    |_| "Unknown".to_string(),
                 ))
                 .author("O.S. Systems Software LTDA.", "contact@ossystems.com.br")
                 .desc("A generic and safe Firmware Over-The-Air agent.")

@@ -55,7 +55,7 @@ impl RuntimeSettings {
     }
 
     fn parse(self, content: &str) -> Result<Self, RuntimeSettingsError> {
-        Ok(serde_ini::from_str::<RuntimeSettings>(&content)?)
+        Ok(serde_ini::from_str::<RuntimeSettings>(content)?)
     }
 }
 

@@ -36,7 +36,7 @@ where
 {
     Ok(
         String::deserialize(deserializer)?
-            .split(",")
+            .split(',')
             .map(|s| s.to_string())
             .collect(),
     )

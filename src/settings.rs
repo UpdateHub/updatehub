@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use de_helpers::{bool_from_str, duration_from_str, vec_from_str};
 
-const SYSTEM_SETTINGS_PATH: &'static str = "/etc/updatehub.conf";
+const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 
 #[derive(Default, PartialEq, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -64,14 +64,10 @@ impl Settings {
         }
 
         fn has_valid_polling_interval(interval: &Duration) -> bool {
-            if *interval < Duration::new(60, 0) {
-                false
-            } else {
-                true
-            }
+            (*interval >= Duration::new(60, 0))
         }
 
-        let settings = serde_ini::from_str::<Settings>(&content)?;
+        let settings = serde_ini::from_str::<Settings>(content)?;
 
         if !has_valid_polling_interval(&settings.polling.interval) {
             error!("Invalid setting for polling interval. The interval cannot be less than 60 seconds");
