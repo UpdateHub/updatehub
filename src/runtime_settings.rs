@@ -12,14 +12,19 @@ extern crate chrono;
 use self::chrono::{DateTime, Utc};
 
 use std::io;
+use std::path::Path;
+use std::path::PathBuf;
 
 use de_helpers::bool_from_str;
+use se_helpers::bool_to_string;
 
 #[derive(Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct RuntimeSettings {
     pub polling: RuntimePolling,
     pub update: RuntimeUpdate,
+    #[serde(skip)]
+    path: PathBuf,
 }
 
 impl RuntimeSettings {
@@ -30,7 +35,6 @@ impl RuntimeSettings {
     pub fn load(mut self, path: &str) -> Result<Self, RuntimeSettingsError> {
         use std::fs::File;
         use std::io::Read;
-        use std::path::Path;
 
         let path = Path::new(path);
 
@@ -58,12 +62,31 @@ impl RuntimeSettings {
     fn parse(self, content: &str) -> Result<Self, RuntimeSettingsError> {
         Ok(serde_ini::from_str::<RuntimeSettings>(content)?)
     }
+
+    pub fn save(&self) -> Result<usize, RuntimeSettingsError> {
+        use std::fs::File;
+        use std::io::Write;
+
+        debug!(
+            "Saving runtime settings from '{}'...",
+            &self.path.to_string_lossy()
+        );
+
+        Ok(File::create(&self.path)?.write(
+            &self.serialize()?.as_bytes(),
+        )?)
+    }
+
+    fn serialize(&self) -> Result<String, RuntimeSettingsError> {
+        Ok(serde_ini::to_string(&self)?)
+    }
 }
 
 #[derive(Debug)]
 pub enum RuntimeSettingsError {
     Io(io::Error),
-    Ini(serde_ini::de::Error),
+    IniDeserialize(serde_ini::de::Error),
+    IniSerialize(serde_ini::ser::Error),
 }
 
 impl From<io::Error> for RuntimeSettingsError {
@@ -74,7 +97,13 @@ impl From<io::Error> for RuntimeSettingsError {
 
 impl From<serde_ini::de::Error> for RuntimeSettingsError {
     fn from(err: serde_ini::de::Error) -> RuntimeSettingsError {
-        RuntimeSettingsError::Ini(err)
+        RuntimeSettingsError::IniDeserialize(err)
+    }
+}
+
+impl From<serde_ini::ser::Error> for RuntimeSettingsError {
+    fn from(err: serde_ini::ser::Error) -> RuntimeSettingsError {
+        RuntimeSettingsError::IniSerialize(err)
     }
 }
 
@@ -89,6 +118,7 @@ pub struct RuntimePolling {
     pub retries: usize,
     #[serde(rename = "ProbeASAP")]
     #[serde(deserialize_with = "bool_from_str")]
+    #[serde(serialize_with = "bool_to_string")]
     pub now: bool,
 }
 
@@ -143,6 +173,7 @@ UpgradeToInstallation=1
                 now: false,
             },
             update: RuntimeUpdate { upgrading_to: 1 },
+            ..Default::default()
         };
 
         assert!(
@@ -166,8 +197,61 @@ UpgradeToInstallation=1
                 now: false,
             },
             update: RuntimeUpdate { upgrading_to: -1 },
+            path: PathBuf::new(),
         };
 
         assert!(Some(settings) == Some(expected));
+    }
+}
+
+#[cfg(test)]
+mod ini_se {
+    use super::*;
+
+    #[test]
+    fn ok() {
+        let settings = RuntimeSettings {
+            polling: RuntimePolling {
+                last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
+                first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
+                extra_interval: 4,
+                retries: 5,
+                now: false,
+            },
+            update: RuntimeUpdate { upgrading_to: 1 },
+            ..Default::default()
+        };
+
+
+        assert!(
+            serde_ini::from_str(&settings.serialize().ok().unwrap())
+                .map_err(|e| println!("{}", e))
+                .ok() == Some(settings)
+        );
+    }
+
+    #[test]
+    fn load_and_save() {
+        use mktemp::Temp;
+
+        let settings_file = Temp::new_file().unwrap().to_path_buf();
+
+        let mut settings = RuntimeSettings::new()
+            .load(&settings_file.to_str().unwrap())
+            .unwrap();
+
+        assert!(settings.polling.now == false);
+        settings.polling.now = true;
+
+        assert!(settings.polling.now == true);
+        settings.save().expect(
+            "Failed to save the runtime settings",
+        );
+
+        let new_settings = RuntimeSettings::new()
+            .load(&settings_file.to_str().unwrap())
+            .unwrap();
+
+        assert!(&settings.update == &new_settings.update);
     }
 }

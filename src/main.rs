@@ -17,7 +17,11 @@ extern crate serde;
 
 extern crate parse_duration;
 
+#[cfg(test)]
+extern crate mktemp;
+
 mod de_helpers;
+mod se_helpers;
 
 mod settings;
 mod runtime_settings;

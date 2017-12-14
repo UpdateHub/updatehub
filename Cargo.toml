@@ -15,4 +15,4 @@ serde_ini = "0.1"
 
 [dev-dependencies]
 serde_test = "1.0"
-
+mktemp = "0.3.1"
