@@ -27,7 +27,7 @@ impl RuntimeSettings {
         RuntimeSettings::default()
     }
 
-    pub fn load(self, path: &str) -> Result<Self, RuntimeSettingsError> {
+    pub fn load(mut self, path: &str) -> Result<Self, RuntimeSettingsError> {
         use std::fs::File;
         use std::io::Read;
         use std::path::Path;
@@ -42,16 +42,17 @@ impl RuntimeSettings {
 
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
-
-            Ok(self.parse(&content)?)
+            self = self.parse(&content)?;
         } else {
             debug!(
                 "Runtime settings file {} does not exists.",
                 path.to_string_lossy()
             );
             info!("Using default runtime settings...");
-            Ok(self)
         }
+
+        self.path = path.to_path_buf();
+        Ok(self)
     }
 
     fn parse(self, content: &str) -> Result<Self, RuntimeSettingsError> {
