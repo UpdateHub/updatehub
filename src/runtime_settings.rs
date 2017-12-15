@@ -148,11 +148,11 @@ impl Default for RuntimeUpdate {
 }
 
 #[cfg(test)]
-mod ini_de {
+mod test {
     use super::*;
 
     #[test]
-    fn ok() {
+    fn de() {
         let ini = r"
 [Polling]
 LastPoll=2017-01-01T00:00:00Z
@@ -202,14 +202,9 @@ UpgradeToInstallation=1
 
         assert!(Some(settings) == Some(expected));
     }
-}
-
-#[cfg(test)]
-mod ini_se {
-    use super::*;
 
     #[test]
-    fn ok() {
+    fn ser() {
         let settings = RuntimeSettings {
             polling: RuntimePolling {
                 last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
