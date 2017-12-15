@@ -1,5 +1,5 @@
 hash: df0e6f8410fc5b3c4fe837d054feebe6dcdd8347988c73a58c5f257ceae1bdc1
-updated: 2017-11-13T17:20:21.907599232-02:00
+updated: 2017-12-15T16:57:18.613828965-02:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: 081ada5bb4413ac4f42cf047a8ee485b228778a0
@@ -78,7 +78,7 @@ imports:
   - context
   - publicsuffix
 - name: golang.org/x/sys
-  version: 3e3646d2c706c21b222a5dbcaa6db12b3e0cc765
+  version: e24f485414aeafb646f6fca458b0bf869c0880a1
   subpackages:
   - unix
   - windows
