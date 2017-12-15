@@ -136,7 +136,6 @@ func setup(t *testing.T) (*updatehub.UpdateHub, *AgentBackend, *cmdlinemock.CmdL
 	hardware := "board"
 	firmwareVersion := "1.1"
 	agentVersion := "0.6.90-7-ga456673"
-	buildTime := "2017-06-01 17:24 UTC"
 
 	clm := &cmdlinemock.CmdLineExecuterMock{}
 
@@ -167,7 +166,6 @@ func setup(t *testing.T) (*updatehub.UpdateHub, *AgentBackend, *cmdlinemock.CmdL
 		Settings:         settings,
 		Store:            fs,
 		Version:          agentVersion,
-		BuildTime:        buildTime,
 		Rebooter:         rm,
 		CmdLineExecuter:  clm,
 	}
@@ -188,7 +186,6 @@ func TestInfoRoute(t *testing.T) {
 	jsonMap := map[string]interface{}{}
 
 	jsonMap["version"] = uh.Version
-	jsonMap["build-time"] = uh.BuildTime
 	jsonMap["config"] = uh.Settings
 	jsonMap["firmware"] = uh.FirmwareMetadata
 

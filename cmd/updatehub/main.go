@@ -39,7 +39,6 @@ import (
 
 var (
 	gitversion = "No version provided"
-	buildtime  = "No build time provided"
 )
 
 func main() {
@@ -98,7 +97,6 @@ func main() {
 
 	log.Info("starting UpdateHub Agent")
 	log.Info("    version: ", gitversion)
-	log.Info("    buildtime: ", buildtime)
 	log.Info("    system settings path: ", systemSettingsPath)
 	log.Info("    runtime settings path: ", settings.RuntimeSettingsPath)
 	log.Info("    firmware metadata path: ", settings.FirmwareMetadataPath)
@@ -122,7 +120,7 @@ func main() {
 		log.Fatal(errors.Wrap(err, "failed to read public key"))
 	}
 
-	uh := updatehub.NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, osFs, *fm, pubKey, updatehub.NewIdleState(), settings, client.NewApiClient(settings.ServerAddress))
+	uh := updatehub.NewUpdateHub(gitversion, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, osFs, *fm, pubKey, updatehub.NewIdleState(), settings, client.NewApiClient(settings.ServerAddress))
 
 	backend, err := server.NewAgentBackend(uh)
 	if err != nil {

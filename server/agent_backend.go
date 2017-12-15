@@ -44,7 +44,6 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 	out := map[string]interface{}{}
 
 	out["version"] = ab.UpdateHub.Version
-	out["build-time"] = ab.UpdateHub.BuildTime
 	out["config"] = ab.UpdateHub.Settings
 	out["firmware"] = ab.UpdateHub.FirmwareMetadata
 

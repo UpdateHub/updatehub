@@ -32,7 +32,6 @@ import (
 
 type AgentInfo struct {
 	Version   string                    `json:"version"`
-	BuildTime string                    `json:"build-time"`
 	Config    updatehub.Settings        `json:"config"`
 	Firmware  metadata.FirmwareMetadata `json:"firmware"`
 }

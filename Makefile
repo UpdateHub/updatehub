@@ -92,8 +92,7 @@ format: .GOPATH/.ok bin/goimports
 ##### =====> Internals <===== #####
 
 VERSION          := $(shell git describe --tags --always --dirty="-dirty")
-DATE             := $(shell date -u '+%Y-%m-%d %H:%M UTC')
-VERSION_FLAGS    := -ldflags='-X "main.gitversion=$(VERSION)" -X "main.buildtime=$(DATE)"'
+VERSION_FLAGS    := -ldflags='-X "main.gitversion=$(VERSION)"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \

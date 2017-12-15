@@ -373,7 +373,6 @@ func TestProcessCurrentStateWithLeaveFlow(t *testing.T) {
 
 func TestNewUpdateHub(t *testing.T) {
 	gitversion := "2.1"
-	buildtime := "2017-06-01 17:13 UTC"
 	memFs := afero.NewMemMapFs()
 	initialState := NewIdleState()
 	stateChangeCallbackPath := "/usr/share/updatehub/state-change-callback"
@@ -393,11 +392,10 @@ func TestNewUpdateHub(t *testing.T) {
 
 	pubKey := &testPrivateKey.PublicKey
 
-	uh := NewUpdateHub(gitversion, buildtime, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, memFs, *fm, pubKey, initialState, settings, client.NewApiClient("address"))
+	uh := NewUpdateHub(gitversion, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, memFs, *fm, pubKey, initialState, settings, client.NewApiClient("address"))
 
 	assert.Equal(t, &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}}, uh.ActiveInactiveBackend)
 	assert.Equal(t, gitversion, uh.Version)
-	assert.Equal(t, buildtime, uh.BuildTime)
 	assert.Equal(t, initialState, uh.GetState())
 	assert.Equal(t, client.NewUpdateClient(), uh.Updater)
 	assert.Equal(t, time.Minute, uh.TimeStep)

@@ -76,7 +76,6 @@ type UpdateHub struct {
 	CopyBackend copy.Interface `json:"-"`
 
 	Version                   string
-	BuildTime                 string
 	Settings                  *Settings
 	Store                     afero.Fs
 	FirmwareMetadata          metadata.FirmwareMetadata
@@ -103,7 +102,6 @@ type UpdateHub struct {
 
 func NewUpdateHub(
 	gitversion string,
-	buildtime string,
 	stateChangeCallbackPath string,
 	errorCallbackPath string,
 	validateCallbackPath string,
@@ -118,7 +116,6 @@ func NewUpdateHub(
 	uh := &UpdateHub{
 		ActiveInactiveBackend:     &activeinactive.DefaultImpl{CmdLineExecuter: &utils.CmdLine{}},
 		Version:                   gitversion,
-		BuildTime:                 buildtime,
 		state:                     initialState,
 		previousState:             nil,
 		Updater:                   client.NewUpdateClient(),
