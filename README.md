@@ -1,4 +1,4 @@
-# updatehub [![Build Status](https://travis-ci.org/updatehub/updatehub.svg?branch=master)](https://travis-ci.org/updatehub/updatehub) [![Coverage Status](https://coveralls.io/repos/github/updatehub/updatehub/badge.svg?branch=master)](https://coveralls.io/github/updatehub/updatehub?branch=master)
+# updatehub [![Build Status](https://travis-ci.org/updatehub/updatehub.svg?branch=v1)](https://travis-ci.org/updatehub/updatehub) [![Coverage Status](https://coveralls.io/repos/github/updatehub/updatehub/badge.svg?branch=v1)](https://coveralls.io/github/updatehub/updatehub?branch=v1)
 
 updatehub provides a generic and safe Firmware Over-The-Air agent for Embedded and
 Industrial Linux-based devices.
