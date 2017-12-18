@@ -23,8 +23,7 @@ use se_helpers::bool_to_string;
 pub struct RuntimeSettings {
     pub polling: RuntimePolling,
     pub update: RuntimeUpdate,
-    #[serde(skip)]
-    path: PathBuf,
+    #[serde(skip)] path: PathBuf,
 }
 
 impl RuntimeSettings {
@@ -39,19 +38,15 @@ impl RuntimeSettings {
         let path = Path::new(path);
 
         if path.exists() {
-            info!(
-                "Loading runtime settings from '{}'...",
-                path.to_string_lossy()
-            );
+            info!("Loading runtime settings from '{}'...",
+                  path.to_string_lossy());
 
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
             self = self.parse(&content)?;
         } else {
-            debug!(
-                "Runtime settings file {} does not exists.",
-                path.to_string_lossy()
-            );
+            debug!("Runtime settings file {} does not exists.",
+                   path.to_string_lossy());
             info!("Using default runtime settings...");
         }
 
@@ -67,14 +62,10 @@ impl RuntimeSettings {
         use std::fs::File;
         use std::io::Write;
 
-        debug!(
-            "Saving runtime settings from '{}'...",
-            &self.path.to_string_lossy()
-        );
+        debug!("Saving runtime settings from '{}'...",
+               &self.path.to_string_lossy());
 
-        Ok(File::create(&self.path)?.write(
-            &self.serialize()?.as_bytes(),
-        )?)
+        Ok(File::create(&self.path)?.write(self.serialize()?.as_bytes())?)
     }
 
     fn serialize(&self) -> Result<String, RuntimeSettingsError> {
@@ -110,10 +101,8 @@ impl From<serde_ini::ser::Error> for RuntimeSettingsError {
 #[derive(Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct RuntimePolling {
-    #[serde(rename = "LastPoll")]
-    pub last: DateTime<Utc>,
-    #[serde(rename = "FirstPoll")]
-    pub first: DateTime<Utc>,
+    #[serde(rename = "LastPoll")] pub last: DateTime<Utc>,
+    #[serde(rename = "FirstPoll")] pub first: DateTime<Utc>,
     pub extra_interval: usize,
     pub retries: usize,
     #[serde(rename = "ProbeASAP")]
@@ -124,21 +113,18 @@ pub struct RuntimePolling {
 
 impl Default for RuntimePolling {
     fn default() -> Self {
-        RuntimePolling {
-            last: Utc::now(),
-            first: Utc::now(),
-            extra_interval: 0,
-            retries: 0,
-            now: false,
-        }
+        RuntimePolling { last: Utc::now(),
+                         first: Utc::now(),
+                         extra_interval: 0,
+                         retries: 0,
+                         now: false, }
     }
 }
 
 #[derive(Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct RuntimeUpdate {
-    #[serde(rename = "UpgradeToInstallation")]
-    pub upgrading_to: i8,
+    #[serde(rename = "UpgradeToInstallation")] pub upgrading_to: i8,
 }
 
 impl Default for RuntimeUpdate {
@@ -164,65 +150,52 @@ ProbeASAP=false
 [Update]
 UpgradeToInstallation=1
 ";
-        let expected = RuntimeSettings {
-            polling: RuntimePolling {
-                last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
-                first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
-                extra_interval: 4,
-                retries: 5,
-                now: false,
-            },
-            update: RuntimeUpdate { upgrading_to: 1 },
-            ..Default::default()
-        };
+        let expected =
+            RuntimeSettings { polling: RuntimePolling { last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                    .unwrap(),
+                                                        first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                     .unwrap(),
+                                                        extra_interval: 4,
+                                                        retries: 5,
+                                                        now: false, },
+                              update: RuntimeUpdate { upgrading_to: 1 },
+                              ..Default::default() };
 
-        assert!(
-            serde_ini::from_str::<RuntimeSettings>(&ini)
-                .map_err(|e| println!("{}", e))
-                .as_ref()
-                .ok() == Some(&expected)
-        );
+        assert!(serde_ini::from_str::<RuntimeSettings>(&ini).map_err(|e| println!("{}", e))
+                                                            .as_ref()
+                                                            .ok() == Some(&expected));
         assert!(RuntimeSettings::new().parse(&ini).as_ref().ok() == Some(&expected));
     }
 
     #[test]
     fn default() {
         let settings = RuntimeSettings::new();
-        let expected = RuntimeSettings {
-            polling: RuntimePolling {
-                last: settings.polling.last,
-                first: settings.polling.first,
-                extra_interval: 0,
-                retries: 0,
-                now: false,
-            },
-            update: RuntimeUpdate { upgrading_to: -1 },
-            path: PathBuf::new(),
-        };
+        let expected = RuntimeSettings { polling: RuntimePolling { last: settings.polling.last,
+                                                                   first: settings.polling.first,
+                                                                   extra_interval: 0,
+                                                                   retries: 0,
+                                                                   now: false, },
+                                         update: RuntimeUpdate { upgrading_to: -1 },
+                                         path: PathBuf::new(), };
 
         assert!(Some(settings) == Some(expected));
     }
 
     #[test]
     fn ser() {
-        let settings = RuntimeSettings {
-            polling: RuntimePolling {
-                last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
-                first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>().unwrap(),
-                extra_interval: 4,
-                retries: 5,
-                now: false,
-            },
-            update: RuntimeUpdate { upgrading_to: 1 },
-            ..Default::default()
-        };
+        let settings =
+            RuntimeSettings { polling: RuntimePolling { last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                    .unwrap(),
+                                                        first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                     .unwrap(),
+                                                        extra_interval: 4,
+                                                        retries: 5,
+                                                        now: false, },
+                              update: RuntimeUpdate { upgrading_to: 1 },
+                              ..Default::default() };
 
-
-        assert!(
-            serde_ini::from_str(&settings.serialize().ok().unwrap())
-                .map_err(|e| println!("{}", e))
-                .ok() == Some(settings)
-        );
+        assert!(serde_ini::from_str(&settings.serialize().ok().unwrap()).map_err(|e| println!("{}", e))
+                                                                        .ok() == Some(settings));
     }
 
     #[test]
@@ -231,21 +204,18 @@ UpgradeToInstallation=1
 
         let settings_file = Temp::new_file().unwrap().to_path_buf();
 
-        let mut settings = RuntimeSettings::new()
-            .load(&settings_file.to_str().unwrap())
-            .unwrap();
+        let mut settings = RuntimeSettings::new().load(&settings_file.to_str().unwrap())
+                                                 .unwrap();
 
         assert!(settings.polling.now == false);
         settings.polling.now = true;
 
         assert!(settings.polling.now == true);
-        settings.save().expect(
-            "Failed to save the runtime settings",
-        );
+        settings.save()
+                .expect("Failed to save the runtime settings");
 
-        let new_settings = RuntimeSettings::new()
-            .load(&settings_file.to_str().unwrap())
-            .unwrap();
+        let new_settings = RuntimeSettings::new().load(&settings_file.to_str().unwrap())
+                                                 .unwrap();
 
         assert!(&settings.update == &new_settings.update);
     }

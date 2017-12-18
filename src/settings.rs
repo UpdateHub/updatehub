@@ -6,7 +6,6 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-
 use serde_ini;
 
 use std::io;
@@ -32,27 +31,23 @@ impl Settings {
     }
 
     pub fn load(self) -> Result<Self, SettingsError> {
-        use std::path::Path;
         use std::fs::File;
         use std::io::Read;
+        use std::path::Path;
 
         let path = Path::new(SYSTEM_SETTINGS_PATH);
 
         if path.exists() {
-            info!(
-                "Loading system settings from '{}'...",
-                path.to_string_lossy()
-            );
+            info!("Loading system settings from '{}'...",
+                  path.to_string_lossy());
 
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
 
             Ok(self.parse(&content)?)
         } else {
-            debug!(
-                "System settings file {} does not exists.",
-                path.to_string_lossy()
-            );
+            debug!("System settings file {} does not exists.",
+                   path.to_string_lossy());
             info!("Using default system settings...");
             Ok(self)
         }
@@ -106,38 +101,30 @@ impl From<serde_ini::de::Error> for SettingsError {
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Polling {
-    #[serde(deserialize_with = "duration_from_str")]
-    pub interval: Duration,
-    #[serde(deserialize_with = "bool_from_str")]
-    pub enabled: bool,
+    #[serde(deserialize_with = "duration_from_str")] pub interval: Duration,
+    #[serde(deserialize_with = "bool_from_str")] pub enabled: bool,
 }
 
 impl Default for Polling {
     fn default() -> Self {
-        Polling {
-            interval: Duration::new(86_400, 0), // 1 day
-            enabled: true,
-        }
+        Polling { interval: Duration::new(86_400, 0), // 1 day
+                  enabled: true, }
     }
 }
 
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
-    #[serde(deserialize_with = "bool_from_str")]
-    pub read_only: bool,
+    #[serde(deserialize_with = "bool_from_str")] pub read_only: bool,
     pub runtime_settings: String,
 }
 
 impl Default for Storage {
     fn default() -> Self {
-        Storage {
-            read_only: false,
-            runtime_settings: "/var/lib/updatehub.conf".to_string(),
-        }
+        Storage { read_only: false,
+                  runtime_settings: "/var/lib/updatehub.conf".to_string(), }
     }
 }
-
 
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
@@ -150,16 +137,14 @@ pub struct Update {
 
 impl Default for Update {
     fn default() -> Self {
-        Update {
-            download_dir: "/tmp/updatehub".to_string(),
-            install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"]
-                .iter()
-                .map(|i| i.to_string())
-                .collect(),
-        }
+        Update { download_dir: "/tmp/updatehub".to_string(),
+                 install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"].iter()
+                                                                                                  .map(|i| {
+                                                                                                           i.to_string()
+                                                                                                       })
+                                                                                                  .collect(), }
     }
 }
-
 
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
@@ -169,10 +154,9 @@ pub struct Network {
 
 impl Default for Network {
     fn default() -> Self {
-        Network { server_address: "https://api.updatehub.io".to_string() }
+        Network { server_address: "https://api.updatehub.io".to_string(), }
     }
 }
-
 
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
@@ -182,7 +166,7 @@ pub struct Firmware {
 
 impl Default for Firmware {
     fn default() -> Self {
-        Firmware { metadata_path: "/usr/share/updatehub".to_string() }
+        Firmware { metadata_path: "/usr/share/updatehub".to_string(), }
     }
 }
 
@@ -212,28 +196,18 @@ ServerAddress=http://localhost
 MetadataPath=/tmp/metadata
 ";
 
-        let expected = Settings {
-            polling: Polling {
-                interval: Duration::new(60, 0),
-                enabled: false,
-            },
-            storage: Storage {
-                read_only: true,
-                runtime_settings: "/run/updatehub/state".to_string(),
-            },
-            update: Update {
-                download_dir: "/tmp/download".to_string(),
-                install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(),
-            },
-            network: Network { server_address: "http://localhost".to_string() },
-            firmware: Firmware { metadata_path: "/tmp/metadata".to_string() },
-        };
+        let expected =
+            Settings { polling: Polling { interval: Duration::new(60, 0),
+                                          enabled: false, },
+                       storage: Storage { read_only: true,
+                                          runtime_settings: "/run/updatehub/state".to_string(), },
+                       update: Update { download_dir: "/tmp/download".to_string(),
+                                        install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(), },
+                       network: Network { server_address: "http://localhost".to_string(), },
+                       firmware: Firmware { metadata_path: "/tmp/metadata".to_string(), }, };
 
-        assert!(
-            serde_ini::from_str::<Settings>(&ini)
-                .map_err(|e| println!("{}", e))
-                .ok() == Some(expected)
-        );
+        assert!(serde_ini::from_str::<Settings>(&ini).map_err(|e| println!("{}", e))
+                                                     .ok() == Some(expected));
     }
 
     #[test]
