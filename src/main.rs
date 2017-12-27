@@ -6,6 +6,10 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
+#![feature(entry_and_modify)]
+
+extern crate core;
+
 #[macro_use]
 extern crate log;
 extern crate stderrlog;
@@ -15,7 +19,11 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_ini;
 
+extern crate checked_command;
+extern crate cmdline_words_parser;
 extern crate parse_duration;
+
+extern crate walkdir;
 
 #[cfg(test)]
 extern crate mktemp;
@@ -27,7 +35,11 @@ mod settings;
 mod runtime_settings;
 mod cmdline;
 
+mod process;
+mod firmware;
+
 use cmdline::CmdLine;
+use firmware::Metadata as FirmwareMetadata;
 use runtime_settings::RuntimeSettings;
 use settings::Settings;
 
@@ -40,6 +52,8 @@ fn main() {
                     .expect("Failed to initialize the logger.");
 
     let settings = Settings::new().load().expect("Failed to load settings.");
-    let _runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)
-                                                  .expect("Failed to load runtime settings.");
+    let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)
+                                                 .expect("Failed to load runtime settings.");
+    let firmware_metadata =
+        FirmwareMetadata::new(&settings.firmware.metadata_path).expect("Failed to load the firmware metadata.");
 }
