@@ -122,7 +122,7 @@ pub struct Storage {
 impl Default for Storage {
     fn default() -> Self {
         Storage { read_only: false,
-                  runtime_settings: "/var/lib/updatehub.conf".to_string(), }
+                  runtime_settings: "/var/lib/updatehub.conf".into(), }
     }
 }
 
@@ -137,7 +137,7 @@ pub struct Update {
 
 impl Default for Update {
     fn default() -> Self {
-        Update { download_dir: "/tmp/updatehub".to_string(),
+        Update { download_dir: "/tmp/updatehub".into(),
                  install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"].iter()
                                                                                                   .map(|i| {
                                                                                                            i.to_string()
@@ -154,7 +154,7 @@ pub struct Network {
 
 impl Default for Network {
     fn default() -> Self {
-        Network { server_address: "https://api.updatehub.io".to_string(), }
+        Network { server_address: "https://api.updatehub.io".into(), }
     }
 }
 
@@ -166,7 +166,7 @@ pub struct Firmware {
 
 impl Default for Firmware {
     fn default() -> Self {
-        Firmware { metadata_path: "/usr/share/updatehub".to_string(), }
+        Firmware { metadata_path: "/usr/share/updatehub".into(), }
     }
 }
 
@@ -200,11 +200,11 @@ MetadataPath=/tmp/metadata
             Settings { polling: Polling { interval: Duration::new(60, 0),
                                           enabled: false, },
                        storage: Storage { read_only: true,
-                                          runtime_settings: "/run/updatehub/state".to_string(), },
-                       update: Update { download_dir: "/tmp/download".to_string(),
+                                          runtime_settings: "/run/updatehub/state".into(), },
+                       update: Update { download_dir: "/tmp/download".into(),
                                         install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(), },
-                       network: Network { server_address: "http://localhost".to_string(), },
-                       firmware: Firmware { metadata_path: "/tmp/metadata".to_string(), }, };
+                       network: Network { server_address: "http://localhost".into(), },
+                       firmware: Firmware { metadata_path: "/tmp/metadata".into(), }, };
 
         assert!(serde_ini::from_str::<Settings>(&ini).map_err(|e| println!("{}", e))
                                                      .ok() == Some(expected));
@@ -268,17 +268,17 @@ MetadataPath=/tmp/metadata
             },
             storage: Storage {
                 read_only: false,
-                runtime_settings: "/var/lib/updatehub.conf".to_string(),
+                runtime_settings: "/var/lib/updatehub.conf".into(),
             },
             update: Update {
-                download_dir: "/tmp/updatehub".to_string(),
+                download_dir: "/tmp/updatehub".into(),
                 install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"]
                     .iter()
                     .map(|i| i.to_string())
                     .collect(),
             },
-            network: Network { server_address: "https://api.updatehub.io".to_string() },
-            firmware: Firmware { metadata_path: "/usr/share/updatehub".to_string() },
+            network: Network { server_address: "https://api.updatehub.io".into() },
+            firmware: Firmware { metadata_path: "/usr/share/updatehub".into() },
         };
 
         assert!(Some(settings) == Some(expected));
