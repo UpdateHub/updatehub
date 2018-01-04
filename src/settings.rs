@@ -9,6 +9,7 @@
 use serde_ini;
 
 use std::io;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use de_helpers::{bool_from_str, duration_from_str, vec_from_str};
@@ -161,7 +162,7 @@ impl Default for Network {
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Firmware {
-    pub metadata_path: String,
+    pub metadata_path: PathBuf,
 }
 
 impl Default for Firmware {
