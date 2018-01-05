@@ -1,3 +1,9 @@
+#
+# Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
+#
+# SPDX-License-Identifier: GPL-2.0
+#
+
 [package]
 name = "updatehub"
 version = "0.1.0"

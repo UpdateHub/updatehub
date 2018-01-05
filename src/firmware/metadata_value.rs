@@ -1,10 +1,8 @@
-/*
- * UpdateHub
- * Copyright (C) 2018
- * O.S. Systems Sofware LTDA: contact@ossystems.com.br
- *
- * SPDX-License-Identifier:     GPL-2.0
- */
+//
+// Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
+//
+// SPDX-License-Identifier: GPL-2.0
+//
 
 use core::ops::Index;
 use std::collections::BTreeMap;
