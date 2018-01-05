@@ -26,6 +26,8 @@ extern crate walkdir;
 #[cfg(test)]
 extern crate mktemp;
 
+mod build_info;
+
 mod de_helpers;
 mod se_helpers;
 
@@ -48,6 +50,8 @@ fn main() {
                     .verbosity(if cmdline.debug { 3 } else { 2 })
                     .init()
                     .expect("Failed to initialize the logger.");
+
+    info!("Starting UpdateHub Agent {}", build_info::version());
 
     let settings = Settings::new().load().expect("Failed to load settings.");
     let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)

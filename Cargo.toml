@@ -8,6 +8,7 @@
 name = "updatehub"
 version = "0.1.0"
 authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
+build = "build.rs"
 
 [dependencies]
 log = "0.3.6"
@@ -21,6 +22,9 @@ serde_ini = "0.1"
 cmdline_words_parser = "0.0.2"
 checked_command = "0.2.2"
 walkdir = "2"
+
+[build-dependencies]
+git-version = "0.1.2"
 
 [dev-dependencies]
 serde_test = "1.0"
