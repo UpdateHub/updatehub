@@ -10,7 +10,7 @@ use std::io;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use de_helpers::{bool_from_str, duration_from_str, vec_from_str};
+use serde_helpers::de;
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 
@@ -100,8 +100,8 @@ impl From<serde_ini::de::Error> for SettingsError {
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Polling {
-    #[serde(deserialize_with = "duration_from_str")] pub interval: Duration,
-    #[serde(deserialize_with = "bool_from_str")] pub enabled: bool,
+    #[serde(deserialize_with = "de::duration_from_str")] pub interval: Duration,
+    #[serde(deserialize_with = "de::bool_from_str")] pub enabled: bool,
 }
 
 impl Default for Polling {
@@ -114,7 +114,7 @@ impl Default for Polling {
 #[derive(Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
-    #[serde(deserialize_with = "bool_from_str")] pub read_only: bool,
+    #[serde(deserialize_with = "de::bool_from_str")] pub read_only: bool,
     pub runtime_settings: String,
 }
 
@@ -130,7 +130,7 @@ impl Default for Storage {
 pub struct Update {
     pub download_dir: String,
     #[serde(rename = "SupportedInstallModes")]
-    #[serde(deserialize_with = "vec_from_str")]
+    #[serde(deserialize_with = "de::vec_from_str")]
     pub install_modes: Vec<String>,
 }
 

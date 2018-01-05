@@ -28,8 +28,7 @@ extern crate mktemp;
 
 mod build_info;
 
-mod de_helpers;
-mod se_helpers;
+mod serde_helpers;
 
 mod settings;
 mod runtime_settings;

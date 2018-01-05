@@ -13,8 +13,7 @@ use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
-use de_helpers::bool_from_str;
-use se_helpers::bool_to_string;
+use serde_helpers::{de, ser};
 
 #[derive(Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
@@ -104,8 +103,8 @@ pub struct RuntimePolling {
     pub extra_interval: usize,
     pub retries: usize,
     #[serde(rename = "ProbeASAP")]
-    #[serde(deserialize_with = "bool_from_str")]
-    #[serde(serialize_with = "bool_to_string")]
+    #[serde(deserialize_with = "de::bool_from_str")]
+    #[serde(serialize_with = "ser::bool_to_string")]
     pub now: bool,
 }
 
