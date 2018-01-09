@@ -4,8 +4,6 @@
 // SPDX-License-Identifier: GPL-2.0
 //
 
-#![feature(entry_and_modify)]
-
 extern crate core;
 
 #[macro_use]
