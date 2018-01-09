@@ -11,7 +11,7 @@ authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 build = "build.rs"
 
 [dependencies]
-log = "0.3.6"
+log = "0.4"
 stderrlog = "0.2.3"
 app = "0.6.3"
 parse_duration = "1.0"
