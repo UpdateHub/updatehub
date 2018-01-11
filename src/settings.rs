@@ -169,13 +169,9 @@ impl Default for Firmware {
     }
 }
 
-#[cfg(test)]
-mod de_ini {
-    use super::*;
-
-    #[test]
-    fn ok() {
-        let ini = r"
+#[test]
+fn ok() {
+    let ini = r"
 [Polling]
 Interval=60s
 Enabled=false
@@ -195,23 +191,23 @@ ServerAddress=http://localhost
 MetadataPath=/tmp/metadata
 ";
 
-        let expected =
-            Settings { polling: Polling { interval: Duration::new(60, 0),
-                                          enabled: false, },
-                       storage: Storage { read_only: true,
-                                          runtime_settings: "/run/updatehub/state".into(), },
-                       update: Update { download_dir: "/tmp/download".into(),
-                                        install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(), },
-                       network: Network { server_address: "http://localhost".into(), },
-                       firmware: Firmware { metadata_path: "/tmp/metadata".into(), }, };
+    let expected =
+        Settings { polling: Polling { interval: Duration::new(60, 0),
+                                      enabled: false, },
+                   storage: Storage { read_only: true,
+                                      runtime_settings: "/run/updatehub/state".into(), },
+                   update: Update { download_dir: "/tmp/download".into(),
+                                    install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(), },
+                   network: Network { server_address: "http://localhost".into(), },
+                   firmware: Firmware { metadata_path: "/tmp/metadata".into(), }, };
 
-        assert!(serde_ini::from_str::<Settings>(&ini).map_err(|e| println!("{}", e))
-                                                     .ok() == Some(expected));
-    }
+    assert!(serde_ini::from_str::<Settings>(&ini).map_err(|e| println!("{}", e))
+                                                 .ok() == Some(expected));
+}
 
-    #[test]
-    fn invalid_polling_interval() {
-        let ini = r"
+#[test]
+fn invalid_polling_interval() {
+    let ini = r"
 [Polling]
 Interval=59s
 Enabled=false
@@ -230,12 +226,12 @@ ServerAddress=http://localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
-        assert!(Settings::new().parse(&ini).is_err());
-    }
+    assert!(Settings::new().parse(&ini).is_err());
+}
 
-    #[test]
-    fn invalid_network_server_address() {
-        let ini = r"
+#[test]
+fn invalid_network_server_address() {
+    let ini = r"
 [Polling]
 Interval=60s
 Enabled=false
@@ -254,13 +250,13 @@ ServerAddress=localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
-        assert!(Settings::new().parse(&ini).is_err());
-    }
+    assert!(Settings::new().parse(&ini).is_err());
+}
 
-    #[test]
-    fn default() {
-        let settings = Settings::new();
-        let expected = Settings {
+#[test]
+fn default() {
+    let settings = Settings::new();
+    let expected = Settings {
             polling: Polling {
                 interval: Duration::new(86_400, 0),
                 enabled: true,
@@ -280,6 +276,5 @@ MetadataPath=/tmp/metadata
             firmware: Firmware { metadata_path: "/usr/share/updatehub".into() },
         };
 
-        assert!(Some(settings) == Some(expected));
-    }
+    assert!(Some(settings) == Some(expected));
 }

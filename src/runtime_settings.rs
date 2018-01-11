@@ -130,13 +130,9 @@ impl Default for RuntimeUpdate {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn de() {
-        let ini = r"
+#[test]
+fn de() {
+    let ini = r"
 [Polling]
 LastPoll=2017-01-01T00:00:00Z
 FirstPoll=2017-02-02T00:00:00Z
@@ -147,73 +143,72 @@ ProbeASAP=false
 [Update]
 UpgradeToInstallation=1
 ";
-        let expected =
-            RuntimeSettings { polling: RuntimePolling { last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
-                                                                                    .unwrap(),
-                                                        first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
-                                                                                     .unwrap(),
-                                                        extra_interval: 4,
-                                                        retries: 5,
-                                                        now: false, },
-                              update: RuntimeUpdate { upgrading_to: 1 },
-                              ..Default::default() };
+    let expected =
+        RuntimeSettings { polling: RuntimePolling { last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                .unwrap(),
+                                                    first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                 .unwrap(),
+                                                    extra_interval: 4,
+                                                    retries: 5,
+                                                    now: false, },
+                          update: RuntimeUpdate { upgrading_to: 1 },
+                          ..Default::default() };
 
-        assert!(serde_ini::from_str::<RuntimeSettings>(&ini).map_err(|e| println!("{}", e))
-                                                            .as_ref()
-                                                            .ok() == Some(&expected));
-        assert!(RuntimeSettings::new().parse(&ini).as_ref().ok() == Some(&expected));
-    }
+    assert!(serde_ini::from_str::<RuntimeSettings>(&ini).map_err(|e| println!("{}", e))
+                                                        .as_ref()
+                                                        .ok() == Some(&expected));
+    assert!(RuntimeSettings::new().parse(&ini).as_ref().ok() == Some(&expected));
+}
 
-    #[test]
-    fn default() {
-        let settings = RuntimeSettings::new();
-        let expected = RuntimeSettings { polling: RuntimePolling { last: settings.polling.last,
-                                                                   first: settings.polling.first,
-                                                                   extra_interval: 0,
-                                                                   retries: 0,
-                                                                   now: false, },
-                                         update: RuntimeUpdate { upgrading_to: -1 },
-                                         path: PathBuf::new(), };
+#[test]
+fn default() {
+    let settings = RuntimeSettings::new();
+    let expected = RuntimeSettings { polling: RuntimePolling { last: settings.polling.last,
+                                                               first: settings.polling.first,
+                                                               extra_interval: 0,
+                                                               retries: 0,
+                                                               now: false, },
+                                     update: RuntimeUpdate { upgrading_to: -1 },
+                                     path: PathBuf::new(), };
 
-        assert!(Some(settings) == Some(expected));
-    }
+    assert!(Some(settings) == Some(expected));
+}
 
-    #[test]
-    fn ser() {
-        let settings =
-            RuntimeSettings { polling: RuntimePolling { last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
-                                                                                    .unwrap(),
-                                                        first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
-                                                                                     .unwrap(),
-                                                        extra_interval: 4,
-                                                        retries: 5,
-                                                        now: false, },
-                              update: RuntimeUpdate { upgrading_to: 1 },
-                              ..Default::default() };
+#[test]
+fn ser() {
+    let settings =
+        RuntimeSettings { polling: RuntimePolling { last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                .unwrap(),
+                                                    first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                 .unwrap(),
+                                                    extra_interval: 4,
+                                                    retries: 5,
+                                                    now: false, },
+                          update: RuntimeUpdate { upgrading_to: 1 },
+                          ..Default::default() };
 
-        assert!(serde_ini::from_str(&settings.serialize().ok().unwrap()).map_err(|e| println!("{}", e))
-                                                                        .ok() == Some(settings));
-    }
+    assert!(serde_ini::from_str(&settings.serialize().ok().unwrap()).map_err(|e| println!("{}", e))
+                                                                    .ok() == Some(settings));
+}
 
-    #[test]
-    fn load_and_save() {
-        use mktemp::Temp;
+#[test]
+fn load_and_save() {
+    use mktemp::Temp;
 
-        let settings_file = Temp::new_file().unwrap().to_path_buf();
+    let settings_file = Temp::new_file().unwrap().to_path_buf();
 
-        let mut settings = RuntimeSettings::new().load(&settings_file.to_str().unwrap())
-                                                 .unwrap();
+    let mut settings = RuntimeSettings::new().load(&settings_file.to_str().unwrap())
+                                             .unwrap();
 
-        assert!(settings.polling.now == false);
-        settings.polling.now = true;
+    assert!(settings.polling.now == false);
+    settings.polling.now = true;
 
-        assert!(settings.polling.now == true);
-        settings.save()
-                .expect("Failed to save the runtime settings");
+    assert!(settings.polling.now == true);
+    settings.save()
+            .expect("Failed to save the runtime settings");
 
-        let new_settings = RuntimeSettings::new().load(&settings_file.to_str().unwrap())
-                                                 .unwrap();
+    let new_settings = RuntimeSettings::new().load(&settings_file.to_str().unwrap())
+                                             .unwrap();
 
-        assert!(&settings.update == &new_settings.update);
-    }
+    assert!(&settings.update == &new_settings.update);
 }
