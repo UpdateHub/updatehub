@@ -1,8 +1,7 @@
-//
 // Copyright (C) 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: GPL-2.0
-//
+// 
 
 use serde_ini;
 
@@ -257,24 +256,29 @@ MetadataPath=/tmp/metadata
 fn default() {
     let settings = Settings::new();
     let expected = Settings {
-            polling: Polling {
-                interval: Duration::new(86_400, 0),
-                enabled: true,
-            },
-            storage: Storage {
-                read_only: false,
-                runtime_settings: "/var/lib/updatehub.conf".into(),
-            },
-            update: Update {
-                download_dir: "/tmp/updatehub".into(),
-                install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"]
-                    .iter()
-                    .map(|i| i.to_string())
-                    .collect(),
-            },
-            network: Network { server_address: "https://api.updatehub.io".into() },
-            firmware: Firmware { metadata_path: "/usr/share/updatehub".into() },
-        };
+        polling: Polling {
+            interval: Duration::new(86_400, 0),
+            enabled: true,
+        },
+        storage: Storage {
+            read_only: false,
+            runtime_settings: "/var/lib/updatehub.conf".into(),
+        },
+        update: Update {
+            download_dir: "/tmp/updatehub".into(),
+            install_modes: [
+                "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"
+            ].iter()
+                .map(|i| i.to_string())
+                .collect(),
+        },
+        network: Network {
+            server_address: "https://api.updatehub.io".into(),
+        },
+        firmware: Firmware {
+            metadata_path: "/usr/share/updatehub".into(),
+        },
+    };
 
     assert!(Some(settings) == Some(expected));
 }
