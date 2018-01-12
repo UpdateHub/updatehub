@@ -200,8 +200,8 @@ MetadataPath=/tmp/metadata
                    network: Network { server_address: "http://localhost".into(), },
                    firmware: Firmware { metadata_path: "/tmp/metadata".into(), }, };
 
-    assert!(serde_ini::from_str::<Settings>(&ini).map_err(|e| println!("{}", e))
-                                                 .ok() == Some(expected));
+    assert!(serde_ini::from_str::<Settings>(ini).map_err(|e| println!("{}", e))
+                                                .ok() == Some(expected));
 }
 
 #[test]
@@ -225,7 +225,7 @@ ServerAddress=http://localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
-    assert!(Settings::new().parse(&ini).is_err());
+    assert!(Settings::new().parse(ini).is_err());
 }
 
 #[test]
@@ -249,7 +249,7 @@ ServerAddress=localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
-    assert!(Settings::new().parse(&ini).is_err());
+    assert!(Settings::new().parse(ini).is_err());
 }
 
 #[test]

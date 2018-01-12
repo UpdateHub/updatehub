@@ -153,10 +153,10 @@ UpgradeToInstallation=1
                           update: RuntimeUpdate { upgrading_to: 1 },
                           ..Default::default() };
 
-    assert!(serde_ini::from_str::<RuntimeSettings>(&ini).map_err(|e| println!("{}", e))
-                                                        .as_ref()
-                                                        .ok() == Some(&expected));
-    assert!(RuntimeSettings::new().parse(&ini).as_ref().ok() == Some(&expected));
+    assert!(serde_ini::from_str::<RuntimeSettings>(ini).map_err(|e| println!("{}", e))
+                                                       .as_ref()
+                                                       .ok() == Some(&expected));
+    assert!(RuntimeSettings::new().parse(ini).as_ref().ok() == Some(&expected));
 }
 
 #[test]
@@ -196,18 +196,18 @@ fn load_and_save() {
 
     let settings_file = Temp::new_file().unwrap().to_path_buf();
 
-    let mut settings = RuntimeSettings::new().load(&settings_file.to_str().unwrap())
+    let mut settings = RuntimeSettings::new().load(settings_file.to_str().unwrap())
                                              .unwrap();
 
-    assert!(settings.polling.now == false);
+    assert_eq!(settings.polling.now, false);
     settings.polling.now = true;
 
-    assert!(settings.polling.now == true);
+    assert_eq!(settings.polling.now, true);
     settings.save()
             .expect("Failed to save the runtime settings");
 
-    let new_settings = RuntimeSettings::new().load(&settings_file.to_str().unwrap())
+    let new_settings = RuntimeSettings::new().load(settings_file.to_str().unwrap())
                                              .unwrap();
 
-    assert!(&settings.update == &new_settings.update);
+    assert!(settings.update == new_settings.update);
 }

@@ -143,7 +143,7 @@ mod hooks {
         create_dir_all(path.parent().unwrap()).unwrap();
 
         let mut file = File::create(&path).unwrap();
-        file.write(contents.as_bytes()).unwrap();
+        file.write_all(contents.as_bytes()).unwrap();
 
         let mut permissions = metadata(path).unwrap().permissions();
         permissions.set_mode(mode);
