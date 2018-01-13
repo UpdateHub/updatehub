@@ -42,7 +42,7 @@ impl Settings {
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
 
-            Ok(self.parse(&content)?)
+            Ok(Settings::parse(&content)?)
         } else {
             debug!("System settings file {} does not exists.",
                    path.to_string_lossy());
@@ -51,7 +51,7 @@ impl Settings {
         }
     }
 
-    fn parse(self, content: &str) -> Result<Self, SettingsError> {
+    fn parse(content: &str) -> Result<Self, SettingsError> {
         fn has_protocol_prefix(server: &str) -> bool {
             server.starts_with("http://") || server.starts_with("https://")
         }
@@ -225,7 +225,7 @@ ServerAddress=http://localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
-    assert!(Settings::new().parse(ini).is_err());
+    assert!(Settings::parse(ini).is_err());
 }
 
 #[test]
@@ -249,7 +249,7 @@ ServerAddress=localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
-    assert!(Settings::new().parse(ini).is_err());
+    assert!(Settings::parse(ini).is_err());
 }
 
 #[test]

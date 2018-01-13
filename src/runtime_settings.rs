@@ -39,7 +39,7 @@ impl RuntimeSettings {
 
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
-            self = self.parse(&content)?;
+            self = RuntimeSettings::parse(&content)?;
         } else {
             debug!("Runtime settings file {} does not exists.",
                    path.to_string_lossy());
@@ -50,7 +50,7 @@ impl RuntimeSettings {
         Ok(self)
     }
 
-    fn parse(self, content: &str) -> Result<Self, RuntimeSettingsError> {
+    fn parse(content: &str) -> Result<Self, RuntimeSettingsError> {
         Ok(serde_ini::from_str::<RuntimeSettings>(content)?)
     }
 
@@ -156,7 +156,7 @@ UpgradeToInstallation=1
     assert!(serde_ini::from_str::<RuntimeSettings>(ini).map_err(|e| println!("{}", e))
                                                        .as_ref()
                                                        .ok() == Some(&expected));
-    assert!(RuntimeSettings::new().parse(ini).as_ref().ok() == Some(&expected));
+    assert!(RuntimeSettings::parse(ini).as_ref().ok() == Some(&expected));
 }
 
 #[test]
