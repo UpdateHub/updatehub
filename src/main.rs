@@ -6,41 +6,19 @@
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 
-extern crate core;
+extern crate updatehub;
 
 #[macro_use]
 extern crate log;
 extern crate stderrlog;
 
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_ini;
+use updatehub::build_info;
+use updatehub::firmware::Metadata as FirmwareMetadata;
+use updatehub::runtime_settings::RuntimeSettings;
+use updatehub::settings::Settings;
 
-extern crate checked_command;
-extern crate cmdline_words_parser;
-extern crate parse_duration;
-
-extern crate walkdir;
-
-#[cfg(test)]
-extern crate mktemp;
-
-mod build_info;
-
-mod serde_helpers;
-
-mod settings;
-mod runtime_settings;
 mod cmdline;
-
-mod process;
-mod firmware;
-
 use cmdline::CmdLine;
-use firmware::Metadata as FirmwareMetadata;
-use runtime_settings::RuntimeSettings;
-use settings::Settings;
 
 fn main() {
     let cmdline = CmdLine::parse_args();
