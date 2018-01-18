@@ -1936,6 +1936,21 @@ func TestStart(t *testing.T) {
 		},
 
 		{
+			"FirstPollAfterNow",
+			time.Second,
+			0,
+			now.Add(24 * time.Second),
+			now.Add(-1 * time.Second),
+			&PollState{},
+			func(t *testing.T, uh *UpdateHub, state State) {
+				poll := state.(*PollState)
+				assert.WithinDuration(t, uh.Settings.FirstPoll, now, uh.Settings.PollingInterval)
+				assert.Condition(t, func() bool { return poll.ticksCount >= 0 })
+			},
+			false,
+		},
+
+		{
 			"PendingRegularPoll",
 			time.Second,
 			0,
