@@ -1,0 +1,12 @@
+language: rust
+cache: cargo
+rust:
+  - stable
+  - beta
+  - nightly
+matrix:
+  allow_failures:
+    - rust: nightly
+script:
+  - echo "Build project"  ; cargo build --release
+  - echo "Run unit tests" ; cargo test --release --no-fail-fast -- --nocapture --test

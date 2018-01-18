@@ -1,9 +1,0 @@
-image: rust:1.22.1
-
-pipelines:
-  branches:
-    master:
-      - step:
-          script:
-            - echo "Build project"      ; cargo build --release
-            - echo "Run unit tests"     ; cargo test --release --no-fail-fast -- --nocapture --test
