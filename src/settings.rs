@@ -52,22 +52,16 @@ impl Settings {
     }
 
     fn parse(content: &str) -> Result<Self, SettingsError> {
-        fn has_protocol_prefix(server: &str) -> bool {
-            server.starts_with("http://") || server.starts_with("https://")
-        }
-
-        fn has_valid_polling_interval(interval: &Duration) -> bool {
-            (*interval >= Duration::new(60, 0))
-        }
-
         let settings = serde_ini::from_str::<Settings>(content)?;
 
-        if !has_valid_polling_interval(&settings.polling.interval) {
+        if &settings.polling.interval < &Duration::new(60, 0) {
             error!("Invalid setting for polling interval. The interval cannot be less than 60 seconds");
             return Err(SettingsError::InvalidInterval);
         }
 
-        if !has_protocol_prefix(&settings.network.server_address) {
+        if !&settings.network.server_address.starts_with("http://")
+           && !&settings.network.server_address.starts_with("https://")
+        {
             error!("Invalid setting for server address. The server address must use the protocol prefix");
             return Err(SettingsError::InvalidServerAddress);
         }
