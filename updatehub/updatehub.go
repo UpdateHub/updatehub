@@ -588,6 +588,10 @@ func (uh *UpdateHub) Start() {
 
 	timeZero := (time.Time{}).UTC()
 
+	if uh.Settings.FirstPoll.After(now) && uh.Settings.LastPoll != timeZero {
+		uh.Settings.FirstPoll = timeZero
+	}
+
 	if uh.Settings.FirstPoll == timeZero {
 		// Apply an offset in first poll
 		uh.Settings.FirstPoll = now.Add(time.Duration(rand.Int63n(int64(uh.Settings.PollingInterval))))
