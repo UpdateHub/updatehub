@@ -3,9 +3,29 @@
 // SPDX-License-Identifier: GPL-2.0
 // 
 
+//! Allow running external commands.
+
 use checked_command;
 use cmdline_words_parser::StrExt;
 
+/// Run the given command
+///
+/// # Arguments
+///
+/// `cmd` - A string slice containing the command to be run.
+///
+/// # Example
+/// ```
+/// use updatehub::process;
+///
+/// // stdout
+/// let output = process::run(r#"sh -c 'echo "1 2 3 4"'"#).unwrap();
+/// assert_eq!(String::from_utf8_lossy(&output.stdout), "1 2 3 4\n");
+///
+/// // stderr
+/// let output = process::run(r#"sh -c 'echo "1 2 3 4" >&2'"#).unwrap();
+/// assert_eq!(String::from_utf8_lossy(&output.stderr), "1 2 3 4\n");
+/// ```
 pub fn run(cmd: &str) -> Result<checked_command::Output, checked_command::Error> {
     let mut cmd = cmd.to_string();
     let mut cmd = cmd.parse_cmdline_words();
@@ -16,20 +36,6 @@ pub fn run(cmd: &str) -> Result<checked_command::Output, checked_command::Error>
     }
 
     Ok(p.output()?)
-}
-
-#[test]
-fn stdout() {
-    // stdout
-    let output = run(r#"sh -c 'echo "1 2 3 4"'"#).unwrap();
-    assert_eq!(String::from_utf8_lossy(&output.stdout), "1 2 3 4\n");
-}
-
-#[test]
-fn stderr() {
-    // stderr
-    let output = run(r#"sh -c 'echo "1 2 3 4" >&2'"#).unwrap();
-    assert_eq!(String::from_utf8_lossy(&output.stderr), "1 2 3 4\n");
 }
 
 #[test]
