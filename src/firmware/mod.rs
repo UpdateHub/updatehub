@@ -3,15 +3,13 @@
 // SPDX-License-Identifier: GPL-2.0
 // 
 
-use walkdir::WalkDir;
-
 use std::path::Path;
-use std::str::FromStr;
-
-use process;
 
 mod metadata_value;
 use self::metadata_value::MetadataValue;
+
+mod hook;
+use self::hook::{run_hook, run_hooks_from_dir};
 
 const PRODUCT_UID_HOOK: &str = "product-uid";
 const VERSION_HOOK: &str = "version";
@@ -73,58 +71,16 @@ impl Metadata {
 
 #[derive(Debug)]
 pub enum Error {
-    Process(process::Error),
+    Process(hook::Error),
     InvalidProductUid,
     MissingProductUid,
     MissingDeviceIdentity,
 }
 
-impl From<process::Error> for Error {
-    fn from(err: process::Error) -> Error {
+impl From<hook::Error> for Error {
+    fn from(err: hook::Error) -> Error {
         Error::Process(err)
     }
-}
-
-fn run_hook(path: &Path) -> Result<String, process::Error> {
-    let mut buf: Vec<u8> = Vec::new();
-
-    // check if path exists
-    if !path.exists() {
-        return Ok("".into());
-    }
-
-    let mut output = process::run(path.to_str().unwrap())?;
-
-    buf.append(&mut output.stdout);
-    if !output.stderr.is_empty() {
-        let err = String::from_utf8_lossy(&output.stderr);
-        for line in err.lines() {
-            error!("{} (stderr): {}", path.display(), line);
-        }
-    }
-
-    Ok(String::from_utf8_lossy(&buf[..]).trim().into())
-}
-
-fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, process::Error> {
-    let mut outputs: Vec<String> = Vec::new();
-
-    // check if path exists
-    if !path.exists() {
-        return Ok(MetadataValue::new());
-    }
-
-    for entry in WalkDir::new(path).follow_links(true)
-                                   .min_depth(1)
-                                   .max_depth(1)
-    {
-        let entry = entry?;
-        let r = run_hook(entry.path())?;
-
-        outputs.push(r);
-    }
-
-    Ok(MetadataValue::from_str(&outputs.join("\n"))?)
 }
 
 #[cfg(test)]
