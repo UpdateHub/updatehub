@@ -9,25 +9,24 @@ name = "updatehub"
 version = "0.1.0"
 authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 license = "GPL-2"
-build = "build.rs"
 
 [dependencies]
-log = "0.4"
-stderrlog = "0.2.3"
 app = "0.6.3"
-parse_duration = "1.0"
+checked_command = "0.2.2"
 chrono = { version = "0.4", features = ["serde"] }
+clippy = { version = "*", optional = true }
+cmdline_words_parser = "0.0.2"
+log = "0.4"
+parse_duration = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_ini = "0.1"
-cmdline_words_parser = "0.0.2"
-checked_command = "0.2.2"
+stderrlog = "0.2.3"
 walkdir = "2"
-clippy = { version = "*", optional = true }
 
 [build-dependencies]
 git-version = "0.1.2"
 
 [dev-dependencies]
-serde_test = "1.0"
 mktemp = "0.3.1"
+serde_test = "1.0"
