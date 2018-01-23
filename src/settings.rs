@@ -13,7 +13,7 @@ use serde_helpers::de;
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 
-#[derive(Default, PartialEq, Deserialize)]
+#[derive(Debug, Default, PartialEq, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Settings {
     pub polling: Polling,
@@ -90,11 +90,13 @@ impl From<serde_ini::de::Error> for SettingsError {
     }
 }
 
-#[derive(Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Polling {
-    #[serde(deserialize_with = "de::duration_from_str")] pub interval: Duration,
-    #[serde(deserialize_with = "de::bool_from_str")] pub enabled: bool,
+    #[serde(deserialize_with = "de::duration_from_str")]
+    pub interval: Duration,
+    #[serde(deserialize_with = "de::bool_from_str")]
+    pub enabled: bool,
 }
 
 impl Default for Polling {
@@ -104,10 +106,11 @@ impl Default for Polling {
     }
 }
 
-#[derive(Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
-    #[serde(deserialize_with = "de::bool_from_str")] pub read_only: bool,
+    #[serde(deserialize_with = "de::bool_from_str")]
+    pub read_only: bool,
     pub runtime_settings: String,
 }
 
@@ -118,7 +121,7 @@ impl Default for Storage {
     }
 }
 
-#[derive(Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Update {
     pub download_dir: String,
@@ -138,7 +141,7 @@ impl Default for Update {
     }
 }
 
-#[derive(Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Network {
     pub server_address: String,
@@ -150,7 +153,7 @@ impl Default for Network {
     }
 }
 
-#[derive(Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Firmware {
     pub metadata_path: PathBuf,

@@ -14,12 +14,13 @@ use std::path::PathBuf;
 
 use serde_helpers::{de, ser};
 
-#[derive(Default, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct RuntimeSettings {
     pub polling: RuntimePolling,
     pub update: RuntimeUpdate,
-    #[serde(skip)] path: PathBuf,
+    #[serde(skip)]
+    path: PathBuf,
 }
 
 impl RuntimeSettings {
@@ -94,11 +95,13 @@ impl From<serde_ini::ser::Error> for RuntimeSettingsError {
     }
 }
 
-#[derive(Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct RuntimePolling {
-    #[serde(rename = "LastPoll")] pub last: DateTime<Utc>,
-    #[serde(rename = "FirstPoll")] pub first: DateTime<Utc>,
+    #[serde(rename = "LastPoll")]
+    pub last: DateTime<Utc>,
+    #[serde(rename = "FirstPoll")]
+    pub first: DateTime<Utc>,
     pub extra_interval: usize,
     pub retries: usize,
     #[serde(rename = "ProbeASAP")]
@@ -117,10 +120,11 @@ impl Default for RuntimePolling {
     }
 }
 
-#[derive(Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct RuntimeUpdate {
-    #[serde(rename = "UpgradeToInstallation")] pub upgrading_to: i8,
+    #[serde(rename = "UpgradeToInstallation")]
+    pub upgrading_to: i8,
 }
 
 impl Default for RuntimeUpdate {
