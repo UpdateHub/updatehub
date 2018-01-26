@@ -5,9 +5,9 @@
 
 use serde_ini;
 
+use chrono::Duration;
 use std::io;
 use std::path::PathBuf;
-use std::time::Duration;
 
 use serde_helpers::de;
 
@@ -54,7 +54,7 @@ impl Settings {
     fn parse(content: &str) -> Result<Self, SettingsError> {
         let settings = serde_ini::from_str::<Settings>(content)?;
 
-        if &settings.polling.interval < &Duration::new(60, 0) {
+        if &settings.polling.interval < &Duration::seconds(60) {
             error!("Invalid setting for polling interval. The interval cannot be less than 60 seconds");
             return Err(SettingsError::InvalidInterval);
         }
@@ -99,7 +99,7 @@ pub struct Polling {
 
 impl Default for Polling {
     fn default() -> Self {
-        Polling { interval: Duration::new(86_400, 0), // 1 day
+        Polling { interval: Duration::days(1),
                   enabled: true, }
     }
 }
@@ -185,7 +185,7 @@ MetadataPath=/tmp/metadata
 ";
 
     let expected =
-        Settings { polling: Polling { interval: Duration::new(60, 0),
+        Settings { polling: Polling { interval: Duration::seconds(60),
                                       enabled: false, },
                    storage: Storage { read_only: true,
                                       runtime_settings: "/run/updatehub/state".into(), },
@@ -251,7 +251,7 @@ fn default() {
     let settings = Settings::new();
     let expected = Settings {
         polling: Polling {
-            interval: Duration::new(86_400, 0),
+            interval: Duration::days(1),
             enabled: true,
         },
         storage: Storage {

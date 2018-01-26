@@ -5,7 +5,7 @@
 
 use serde_ini;
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 
 use std::io;
 use std::path::Path;
@@ -98,7 +98,9 @@ impl From<serde_ini::ser::Error> for RuntimeSettingsError {
 pub struct RuntimePolling {
     #[serde(rename = "LastPoll")] pub last: DateTime<Utc>,
     #[serde(rename = "FirstPoll")] pub first: DateTime<Utc>,
-    pub extra_interval: usize,
+    #[serde(deserialize_with = "de::duration_from_int")]
+    #[serde(serialize_with = "ser::duration_to_int")]
+    pub extra_interval: Duration,
     pub retries: usize,
     #[serde(rename = "ProbeASAP")]
     #[serde(deserialize_with = "de::bool_from_str")]
@@ -110,7 +112,7 @@ impl Default for RuntimePolling {
     fn default() -> Self {
         RuntimePolling { last: Utc::now(),
                          first: Utc::now(),
-                         extra_interval: 0,
+                         extra_interval: Duration::seconds(0),
                          retries: 0,
                          now: false, }
     }
@@ -146,7 +148,7 @@ UpgradeToInstallation=1
                                                                                 .unwrap(),
                                                     first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
                                                                                  .unwrap(),
-                                                    extra_interval: 4,
+                                                    extra_interval: Duration::seconds(4),
                                                     retries: 5,
                                                     now: false, },
                           update: RuntimeUpdate { upgrading_to: 1 },
@@ -163,7 +165,7 @@ fn default() {
     let settings = RuntimeSettings::new();
     let expected = RuntimeSettings { polling: RuntimePolling { last: settings.polling.last,
                                                                first: settings.polling.first,
-                                                               extra_interval: 0,
+                                                               extra_interval: Duration::seconds(0),
                                                                retries: 0,
                                                                now: false, },
                                      update: RuntimeUpdate { upgrading_to: -1 },
@@ -179,7 +181,7 @@ fn ser() {
                                                                                 .unwrap(),
                                                     first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
                                                                                  .unwrap(),
-                                                    extra_interval: 4,
+                                                    extra_interval: Duration::seconds(4),
                                                     retries: 5,
                                                     now: false, },
                           update: RuntimeUpdate { upgrading_to: 1 },
