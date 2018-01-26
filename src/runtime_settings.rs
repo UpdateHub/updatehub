@@ -96,7 +96,9 @@ impl From<serde_ini::ser::Error> for RuntimeSettingsError {
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct RuntimePolling {
-    #[serde(rename = "LastPoll")] pub last: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "LastPoll")]
+    pub last: Option<DateTime<Utc>>,
     #[serde(rename = "FirstPoll")] pub first: DateTime<Utc>,
     #[serde(deserialize_with = "de::duration_from_int")]
     #[serde(serialize_with = "ser::duration_to_int")]
@@ -110,7 +112,7 @@ pub struct RuntimePolling {
 
 impl Default for RuntimePolling {
     fn default() -> Self {
-        RuntimePolling { last: Utc::now(),
+        RuntimePolling { last: None,
                          first: Utc::now(),
                          extra_interval: Duration::seconds(0),
                          retries: 0,
@@ -144,8 +146,8 @@ ProbeASAP=false
 UpgradeToInstallation=1
 ";
     let expected =
-        RuntimeSettings { polling: RuntimePolling { last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
-                                                                                .unwrap(),
+        RuntimeSettings { polling: RuntimePolling { last: Some("2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                     .unwrap()),
                                                     first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
                                                                                  .unwrap(),
                                                     extra_interval: Duration::seconds(4),
@@ -177,8 +179,8 @@ fn default() {
 #[test]
 fn ser() {
     let settings =
-        RuntimeSettings { polling: RuntimePolling { last: "2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
-                                                                                .unwrap(),
+        RuntimeSettings { polling: RuntimePolling { last: Some("2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
+                                                                                     .unwrap()),
                                                     first: "2017-02-02T00:00:00Z".parse::<DateTime<Utc>>()
                                                                                  .unwrap(),
                                                     extra_interval: Duration::seconds(4),
@@ -210,5 +212,5 @@ fn load_and_save() {
     let new_settings = RuntimeSettings::new().load(settings_file.to_str().unwrap())
                                              .unwrap();
 
-    assert!(settings.update == new_settings.update);
+    assert_eq!(settings.update, new_settings.update);
 }
