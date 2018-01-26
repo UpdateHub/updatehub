@@ -5,8 +5,7 @@
 
 use serde_ini;
 
-extern crate chrono;
-use self::chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc};
 
 use std::io;
 use std::path::Path;

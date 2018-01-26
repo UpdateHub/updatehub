@@ -3,6 +3,8 @@ extern crate core;
 #[macro_use]
 extern crate log;
 
+extern crate chrono;
+
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
