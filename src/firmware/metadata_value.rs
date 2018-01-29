@@ -9,6 +9,7 @@ use std::collections::btree_map::{Entry, Keys};
 use std::io;
 use std::str::FromStr;
 
+#[derive(Debug, PartialEq)]
 pub struct MetadataValue(BTreeMap<String, Vec<String>>);
 
 impl FromStr for MetadataValue {
