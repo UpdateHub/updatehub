@@ -12,7 +12,7 @@ mod hook;
 use self::hook::{run_hook, run_hooks_from_dir};
 
 #[cfg(test)]
-mod tests;
+pub mod tests;
 
 const PRODUCT_UID_HOOK: &str = "product-uid";
 const VERSION_HOOK: &str = "version";
