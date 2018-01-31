@@ -66,6 +66,10 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 		uh.Settings.PollingRetries = 0
 	}
 
+	if uh.Settings.ProbeASAP {
+		uh.Settings.ProbeASAP = false
+	}
+
 	uh.Settings.LastPoll = time.Now()
 	uh.Settings.ExtraPollingInterval = 0
 	uh.Settings.Save(uh.Store)

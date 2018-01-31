@@ -624,8 +624,6 @@ func (uh *UpdateHub) Start() {
 
 	if uh.Settings.ProbeASAP {
 		uh.state = NewProbeState(uh.DefaultApiClient)
-		uh.Settings.ProbeASAP = false
-		uh.Settings.Save(uh.Store)
 	}
 }
 

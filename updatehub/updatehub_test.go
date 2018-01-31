@@ -1983,11 +1983,11 @@ func TestStart(t *testing.T) {
 			(time.Time{}).UTC(),
 			&ProbeState{},
 			func(t *testing.T, uh *UpdateHub, state State) {
-				assert.Equal(t, false, uh.Settings.ProbeASAP)
+				assert.Equal(t, true, uh.Settings.ProbeASAP)
 
 				data, err := afero.ReadFile(uh.Store, uh.Settings.RuntimeSettingsPath)
 				assert.NoError(t, err)
-				assert.True(t, strings.Contains(string(data), "ProbeASAP=false"))
+				assert.True(t, strings.Contains(string(data), "ProbeASAP=true"))
 				assert.True(t, strings.Contains(string(data), "Retries=0"))
 				assert.True(t, strings.Contains(string(data), "ExtraInterval=0"))
 				// timestamps are relative to "Now()" so just test if they were written
