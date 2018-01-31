@@ -286,6 +286,55 @@ func TestStateProbeNotHavePendingDownload(t *testing.T) {
 	cm.AssertExpectations(t)
 }
 
+func TestStateProbeASAP(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	om := &objectmock.ObjectMock{}
+	cm := &controllermock.ControllerMock{}
+
+	mode := installmodes.RegisterInstallMode(installmodes.InstallMode{
+		Name:              "test",
+		CheckRequirements: func() error { return nil },
+		GetObject:         func() interface{} { return om },
+	})
+	defer mode.Unregister()
+
+	um, err := metadata.NewUpdateMetadata([]byte(validJSONMetadata))
+	assert.NoError(t, err)
+
+	apiClient := client.NewApiClient("address")
+
+	uh, err := newTestUpdateHub(NewProbeState(apiClient), aim)
+	assert.NoError(t, err)
+
+	uh.Controller = cm
+
+	uh.Store.Remove(uh.Settings.RuntimeSettingsPath)
+
+	uh.Settings.ProbeASAP = true
+
+	sha256sum := sha256.Sum256([]byte(validJSONMetadata))
+	signature, _ := rsa.SignPKCS1v15(rand.Reader, testPrivateKey, crypto.SHA256, sha256sum[:])
+
+	cm.On("ProbeUpdate", apiClient, 0).Return(um, signature, time.Duration(0), nil)
+
+	next, _ := uh.GetState().Handle(uh)
+
+	assert.Equal(t, NewDownloadingState(apiClient, um, &ProgressTrackerImpl{}), next)
+
+	data, err := afero.ReadFile(uh.Store, uh.Settings.RuntimeSettingsPath)
+	assert.NoError(t, err)
+	assert.True(t, strings.Contains(string(data), "ProbeASAP=false"))
+	assert.True(t, strings.Contains(string(data), "Retries=0"))
+	assert.True(t, strings.Contains(string(data), "ExtraInterval=0"))
+	// timestamps are relative to "Now()" so just test if they were written
+	assert.True(t, strings.Contains(string(data), "FirstPoll="))
+	assert.True(t, strings.Contains(string(data), "LastPoll="))
+
+	aim.AssertExpectations(t)
+	om.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
 func TestStateProbeToMap(t *testing.T) {
 	state := NewProbeState(client.NewApiClient("address"))
 
