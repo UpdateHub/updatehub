@@ -67,12 +67,9 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 	default:
 	}
 
-	// Reset polling retries in case of ProbeUpdate success
+	// Reset polling retries and disable ASAP mode in case of ProbeUpdate success
 	if state.probeExtraPoll != -1 {
 		uh.Settings.PollingRetries = 0
-	}
-
-	if uh.Settings.ProbeASAP {
 		uh.Settings.ProbeASAP = false
 	}
 
