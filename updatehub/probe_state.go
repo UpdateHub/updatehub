@@ -46,9 +46,15 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 	for {
 		state.probeUpdateMetadata, signature, state.probeExtraPoll, err = uh.Controller.ProbeUpdate(state.apiClient, uh.Settings.PollingRetries)
 
-		if neterr, ok := errors.Cause(err).(net.Error); ok && neterr.Timeout() {
-			log.Warn("timeout during download update")
+		if neterr, ok := errors.Cause(err).(net.Error); ok {
+			if neterr.Timeout() {
+				log.Warn("timeout during download update")
+			}
+
 			uh.Settings.PollingRetries++
+
+			time.Sleep(time.Second)
+
 			continue
 		}
 
