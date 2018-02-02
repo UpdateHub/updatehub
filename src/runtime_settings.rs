@@ -101,7 +101,7 @@ pub struct RuntimePolling {
     pub last: Option<DateTime<Utc>>,
     #[serde(deserialize_with = "de::duration_from_int")]
     #[serde(serialize_with = "ser::duration_to_int")]
-    pub extra_interval: Duration,
+    pub extra_interval: Option<Duration>,
     pub retries: usize,
     #[serde(rename = "ProbeASAP")]
     #[serde(deserialize_with = "de::bool_from_str")]
@@ -112,7 +112,7 @@ pub struct RuntimePolling {
 impl Default for RuntimePolling {
     fn default() -> Self {
         RuntimePolling { last: None,
-                         extra_interval: Duration::seconds(0),
+                         extra_interval: None,
                          retries: 0,
                          now: false, }
     }
@@ -145,7 +145,7 @@ UpgradeToInstallation=1
     let expected = RuntimeSettings { polling: RuntimePolling { last:
                                                                    Some("2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
                                                                                               .unwrap()),
-                                                               extra_interval: Duration::seconds(4),
+                                                               extra_interval: Some(Duration::seconds(4)),
                                                                retries: 5,
                                                                now: false, },
                                      update: RuntimeUpdate { upgrading_to: 1 },
@@ -160,8 +160,8 @@ UpgradeToInstallation=1
 #[test]
 fn default() {
     let settings = RuntimeSettings::new();
-    let expected = RuntimeSettings { polling: RuntimePolling { last: settings.polling.last,
-                                                               extra_interval: Duration::seconds(0),
+    let expected = RuntimeSettings { polling: RuntimePolling { last: None,
+                                                               extra_interval: None,
                                                                retries: 0,
                                                                now: false, },
                                      update: RuntimeUpdate { upgrading_to: -1 },
@@ -175,7 +175,7 @@ fn ser() {
     let settings = RuntimeSettings { polling: RuntimePolling { last:
                                                                    Some("2017-01-01T00:00:00Z".parse::<DateTime<Utc>>()
                                                                                               .unwrap()),
-                                                               extra_interval: Duration::seconds(4),
+                                                               extra_interval: Some(Duration::seconds(4)),
                                                                retries: 5,
                                                                now: false, },
                                      update: RuntimeUpdate { upgrading_to: 1 },

@@ -12,9 +12,9 @@ pub mod ser {
         Ok(serializer.serialize_str(if *v { "true" } else { "false" })?)
     }
 
-    pub fn duration_to_int<S>(v: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn duration_to_int<S>(v: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
         where S: Serializer {
-        serializer.serialize_i64(v.num_seconds())
+        serializer.serialize_i64(v.unwrap_or(Duration::seconds(0)).num_seconds())
     }
 }
 
@@ -32,10 +32,14 @@ pub mod de {
         Ok(Duration::from_std(parse(&s).map_err(de::Error::custom)?).unwrap())
     }
 
-    pub fn duration_from_int<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    pub fn duration_from_int<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
         where D: Deserializer<'de> {
         let i = i64::deserialize(deserializer)?;
-        Ok(Duration::seconds(i))
+        Ok(if i > 0 {
+            Some(Duration::seconds(i))
+        } else {
+            None
+        })
     }
 
     pub fn bool_from_str<'de, D>(deserializer: D) -> Result<bool, D::Error>
