@@ -93,8 +93,10 @@ impl From<serde_ini::de::Error> for SettingsError {
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Polling {
-    #[serde(deserialize_with = "de::duration_from_str")] pub interval: Duration,
-    #[serde(deserialize_with = "de::bool_from_str")] pub enabled: bool,
+    #[serde(deserialize_with = "de::duration_from_str")]
+    pub interval: Duration,
+    #[serde(deserialize_with = "de::bool_from_str")]
+    pub enabled: bool,
 }
 
 impl Default for Polling {
@@ -107,7 +109,8 @@ impl Default for Polling {
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
-    #[serde(deserialize_with = "de::bool_from_str")] pub read_only: bool,
+    #[serde(deserialize_with = "de::bool_from_str")]
+    pub read_only: bool,
     pub runtime_settings: String,
 }
 
