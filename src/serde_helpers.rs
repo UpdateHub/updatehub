@@ -1,6 +1,6 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-2.0-only
 // 
 
 pub mod ser {

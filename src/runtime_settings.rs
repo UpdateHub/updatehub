@@ -1,6 +1,6 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
-// SPDX-License-Identifier: GPL-2.0
+// SPDX-License-Identifier: GPL-2.0-only
 // 
 
 use serde_ini;
@@ -121,8 +121,7 @@ impl Default for RuntimePolling {
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct RuntimeUpdate {
-    #[serde(rename = "UpgradeToInstallation")]
-    pub upgrading_to: i8,
+    #[serde(rename = "UpgradeToInstallation")] pub upgrading_to: i8,
 }
 
 impl Default for RuntimeUpdate {
