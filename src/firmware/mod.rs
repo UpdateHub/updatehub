@@ -3,13 +3,15 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // 
 
+use failure::Error;
+
 use std::path::Path;
 
 mod metadata_value;
 use self::metadata_value::MetadataValue;
 
 mod hook;
-use self::hook::{run_hook, run_hooks_from_dir};
+use self::hook::{run_hook, run_hooks_from_dir, HookError};
 
 #[cfg(test)]
 pub mod tests;
@@ -19,6 +21,18 @@ const VERSION_HOOK: &str = "version";
 const HARDWARE_HOOK: &str = "hardware";
 const DEVICE_IDENTITY_DIR: &str = "device-identity.d";
 const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
+
+#[derive(Fail, Debug)]
+pub enum FirmwareError {
+    #[fail(display = "Failed to execute the hook: {}", _0)]
+    Process(HookError),
+    #[fail(display = "Invalid product UID")]
+    InvalidProductUid,
+    #[fail(display = "Product UID is missing")]
+    MissingProductUid,
+    #[fail(display = "Device Identity is missing")]
+    MissingDeviceIdentity,
+}
 
 /// Metadata stores the firmware metadata information. It is
 /// organized in multiple fields.
@@ -58,31 +72,17 @@ impl Metadata {
                                   device_attributes: run_hooks_from_dir(&device_attributes_dir)?, };
 
         if metadata.product_uid.is_empty() {
-            return Err(Error::MissingProductUid);
+            return Err(FirmwareError::MissingProductUid.into());
         }
 
         if metadata.product_uid.len() != 64 {
-            return Err(Error::InvalidProductUid);
+            return Err(FirmwareError::InvalidProductUid.into());
         }
 
         if metadata.device_identity.is_empty() {
-            return Err(Error::MissingDeviceIdentity);
+            return Err(FirmwareError::MissingDeviceIdentity.into());
         }
 
         Ok(metadata)
-    }
-}
-
-#[derive(Debug)]
-pub enum Error {
-    Process(hook::Error),
-    InvalidProductUid,
-    MissingProductUid,
-    MissingDeviceIdentity,
-}
-
-impl From<hook::Error> for Error {
-    fn from(err: hook::Error) -> Error {
-        Error::Process(err)
     }
 }

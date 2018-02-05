@@ -8,35 +8,21 @@ use std::path::Path;
 use std::str::FromStr;
 
 use checked_command;
+use failure::Error;
 use walkdir;
 use walkdir::WalkDir;
 
 use firmware::metadata_value::MetadataValue;
 use process;
 
-#[derive(Debug)]
-pub enum Error {
-    CheckedCommand(checked_command::Error),
-    WalkDir(walkdir::Error),
-    Io(io::Error),
-}
-
-impl From<checked_command::Error> for Error {
-    fn from(err: checked_command::Error) -> Error {
-        Error::CheckedCommand(err)
-    }
-}
-
-impl From<walkdir::Error> for Error {
-    fn from(err: walkdir::Error) -> Error {
-        Error::WalkDir(err)
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        Error::Io(err)
-    }
+#[derive(Fail, Debug)]
+pub enum HookError {
+    #[fail(display = "Failed executing the command {}", _0)]
+    CheckedCommand(#[cause] checked_command::Error),
+    #[fail(display = "Failed to process the directory {}", _0)]
+    WalkDir(#[cause] walkdir::Error),
+    #[fail(display = "Failed to write/read {}", _0)]
+    Io(#[cause] io::Error),
 }
 
 pub fn run_hook(path: &Path) -> Result<String, Error> {
