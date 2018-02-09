@@ -39,7 +39,7 @@ pub enum FirmwareError {
 ///
 /// The Metadata is created loading its information from the running
 /// firmware. It uses the `load` method for that.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct Metadata {
     /// Product UID which identifies the firmware on the management system
     pub product_uid: String,
