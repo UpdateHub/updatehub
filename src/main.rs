@@ -13,7 +13,7 @@ extern crate log;
 extern crate stderrlog;
 
 use updatehub::build_info;
-use updatehub::firmware::Metadata as FirmwareMetadata;
+use updatehub::firmware::Metadata;
 use updatehub::runtime_settings::RuntimeSettings;
 use updatehub::settings::Settings;
 
@@ -33,6 +33,5 @@ fn main() {
     let settings = Settings::new().load().expect("Failed to load settings.");
     let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)
                                                  .expect("Failed to load runtime settings.");
-    let firmware_metadata =
-        FirmwareMetadata::new(&settings.firmware.metadata_path).expect("Failed to load the firmware metadata.");
+    let firmware = Metadata::new(&settings.firmware.metadata_path).expect("Failed to load the firmware metadata.");
 }
