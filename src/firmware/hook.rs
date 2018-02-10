@@ -1,6 +1,6 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: MPL-2.0
 // 
 
 use std::io;
