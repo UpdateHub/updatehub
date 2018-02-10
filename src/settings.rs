@@ -13,6 +13,16 @@ use serde_helpers::de;
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 
+#[cfg(not(test))]
+const SERVER_URL: &str = "https://api.updatehub.io";
+
+// When running inside a test environment we default to the mock
+// server
+#[cfg(test)]
+use mockito;
+#[cfg(test)]
+const SERVER_URL: &str = mockito::SERVER_URL;
+
 #[derive(Debug, Default, PartialEq, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Settings {
@@ -162,7 +172,7 @@ pub struct Network {
 impl Default for Network {
     fn default() -> Self {
         Network {
-            server_address: "https://api.updatehub.io".into(),
+            server_address: SERVER_URL.into(),
         }
     }
 }
@@ -300,7 +310,7 @@ fn default() {
                 .collect(),
         },
         network: Network {
-            server_address: "https://api.updatehub.io".into(),
+            server_address: SERVER_URL.into(),
         },
         firmware: Firmware {
             metadata_path: "/usr/share/updatehub".into(),

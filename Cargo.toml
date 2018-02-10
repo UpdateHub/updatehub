@@ -19,8 +19,10 @@ cmdline_words_parser = "0.0.2"
 crypto-hash = "0.3.0"
 failure = "0.1.1"
 failure_derive = "0.1.1"
+hyper = "0.11.16"
 log = "0.4"
 parse_duration = "1.0"
+reqwest = "0.8.4"
 serde = "1.0"
 serde_derive = "1.0"
 serde_ini = "0.1"
@@ -33,4 +35,4 @@ git-version = "0.1.2"
 
 [dev-dependencies]
 mktemp = "0.3.1"
-
+mockito = "0.9.0"

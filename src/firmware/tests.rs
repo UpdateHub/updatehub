@@ -40,7 +40,13 @@ pub fn device_attributes_dir(path: &Path) -> PathBuf {
     path.join(DEVICE_ATTRIBUTES_DIR).join("attributes")
 }
 
-pub fn create_fake_metadata() -> PathBuf {
+pub enum FakeDevice {
+    NoUpdate,
+    HasUpdate,
+    ExtraPoll,
+}
+
+pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
     let tmpdir = Temp::new_dir().unwrap().to_path_buf();
 
     // create fake hooks to be used to validate the load
@@ -53,7 +59,14 @@ pub fn create_fake_metadata() -> PathBuf {
     create_hook(hardware_hook(&tmpdir), "#!/bin/sh\necho board", 0o755);
     create_hook(
         device_identity_dir(&tmpdir),
-        "#!/bin/sh\necho id1=value1\necho id2=value2",
+        &format!(
+            "#!/bin/sh\necho id1=value{}\necho id2=value2",
+            match device {
+                FakeDevice::NoUpdate => 1,
+                FakeDevice::HasUpdate => 2,
+                FakeDevice::ExtraPoll => 3,
+            }
+        ),
         0o755,
     );
     create_hook(
@@ -94,7 +107,7 @@ fn check_load_metadata() {
     use std::fs::remove_file;
 
     {
-        let metadata_dir = create_fake_metadata();
+        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         // check error with a invalid product uid
         create_hook(
             product_uid_hook(&metadata_dir),
@@ -107,7 +120,7 @@ fn check_load_metadata() {
 
     {
         // check error when lacks product uid
-        let metadata_dir = create_fake_metadata();
+        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         remove_file(product_uid_hook(&metadata_dir)).unwrap();
         let metadata = Metadata::new(&metadata_dir);
         assert!(metadata.is_err());
@@ -115,7 +128,7 @@ fn check_load_metadata() {
 
     {
         // check error when lacks device identity
-        let metadata_dir = create_fake_metadata();
+        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         remove_file(device_identity_dir(&metadata_dir)).unwrap();
         let metadata = Metadata::new(&metadata_dir);
         assert!(metadata.is_err());
@@ -123,7 +136,7 @@ fn check_load_metadata() {
 
     {
         // check if is still valid without device attributes
-        let metadata_dir = create_fake_metadata();
+        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         remove_file(device_attributes_dir(&metadata_dir)).unwrap();
         let metadata = Metadata::new(&metadata_dir).unwrap();
         assert_eq!(
@@ -138,7 +151,7 @@ fn check_load_metadata() {
 
     {
         // complete metadata
-        let metadata_dir = create_fake_metadata();
+        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         let metadata = Metadata::new(&metadata_dir).unwrap();
         assert_eq!(
             "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
