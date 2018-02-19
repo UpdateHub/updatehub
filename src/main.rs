@@ -23,15 +23,18 @@ use cmdline::CmdLine;
 fn main() {
     let cmdline = CmdLine::parse_args();
 
-    stderrlog::new().quiet(cmdline.quiet)
-                    .verbosity(if cmdline.debug { 3 } else { 2 })
-                    .init()
-                    .expect("Failed to initialize the logger.");
+    stderrlog::new()
+        .quiet(cmdline.quiet)
+        .verbosity(if cmdline.debug { 3 } else { 2 })
+        .init()
+        .expect("Failed to initialize the logger.");
 
     info!("Starting UpdateHub Agent {}", build_info::version());
 
     let settings = Settings::new().load().expect("Failed to load settings.");
-    let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)
-                                                 .expect("Failed to load runtime settings.");
-    let firmware = Metadata::new(&settings.firmware.metadata_path).expect("Failed to load the firmware metadata.");
+    let runtime_settings = RuntimeSettings::new()
+        .load(&settings.storage.runtime_settings)
+        .expect("Failed to load runtime settings.");
+    let firmware = Metadata::new(&settings.firmware.metadata_path)
+        .expect("Failed to load the firmware metadata.");
 }

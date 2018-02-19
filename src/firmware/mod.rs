@@ -65,11 +65,13 @@ impl Metadata {
         let device_identity_dir = path.join(DEVICE_IDENTITY_DIR);
         let device_attributes_dir = path.join(DEVICE_ATTRIBUTES_DIR);
 
-        let metadata = Metadata { product_uid: run_hook(&product_uid_hook)?,
-                                  version: run_hook(&version_hook)?,
-                                  hardware: run_hook(&hardware_hook)?,
-                                  device_identity: run_hooks_from_dir(&device_identity_dir)?,
-                                  device_attributes: run_hooks_from_dir(&device_attributes_dir)?, };
+        let metadata = Metadata {
+            product_uid: run_hook(&product_uid_hook)?,
+            version: run_hook(&version_hook)?,
+            hardware: run_hook(&hardware_hook)?,
+            device_identity: run_hooks_from_dir(&device_identity_dir)?,
+            device_attributes: run_hooks_from_dir(&device_attributes_dir)?,
+        };
 
         if metadata.product_uid.is_empty() {
             return Err(FirmwareError::MissingProductUid.into());

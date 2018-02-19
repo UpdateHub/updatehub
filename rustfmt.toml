@@ -1,9 +1,5 @@
-brace_style = "PreferSameLine"
-comment_width = 100
 condense_wildcard_suffixes = true
-force_multiline_blocks = true
-indent_style = "Visual"
-max_width = 120
+error_on_line_overflow = false
 normalize_comments = true
 reorder_imports = true
 reorder_imports_in_group = true

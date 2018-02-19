@@ -22,11 +22,15 @@ impl FromStr for MetadataValue {
         for line in buf.lines() {
             let v: Vec<_> = line.splitn(2, '=').map(|v| v.trim().to_string()).collect();
             if v.len() != 2 {
-                return Err(io::Error::new(io::ErrorKind::InvalidInput,
-                                          format!("Invalid format for value '{:?}'. \
-                                                   An <key>=<value> output is \
-                                                   expected",
-                                                  v)));
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!(
+                        "Invalid format for value '{:?}'. \
+                         An <key>=<value> output is \
+                         expected",
+                        v
+                    ),
+                ));
             }
 
             values.push((v[0].clone(), v[1].clone()));

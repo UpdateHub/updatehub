@@ -54,9 +54,10 @@ pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, Error> {
         return Ok(MetadataValue::new());
     }
 
-    for entry in WalkDir::new(path).follow_links(true)
-                                   .min_depth(1)
-                                   .max_depth(1)
+    for entry in WalkDir::new(path)
+        .follow_links(true)
+        .min_depth(1)
+        .max_depth(1)
     {
         let entry = entry?;
         let r = run_hook(entry.path())?;

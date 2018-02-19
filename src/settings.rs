@@ -36,16 +36,20 @@ impl Settings {
         let path = Path::new(SYSTEM_SETTINGS_PATH);
 
         if path.exists() {
-            info!("Loading system settings from '{}'...",
-                  path.to_string_lossy());
+            info!(
+                "Loading system settings from '{}'...",
+                path.to_string_lossy()
+            );
 
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
 
             Ok(Settings::parse(&content)?)
         } else {
-            debug!("System settings file {} does not exists.",
-                   path.to_string_lossy());
+            debug!(
+                "System settings file {} does not exists.",
+                path.to_string_lossy()
+            );
             info!("Using default system settings...");
             Ok(self)
         }
@@ -55,12 +59,14 @@ impl Settings {
         let settings = serde_ini::from_str::<Settings>(content)?;
 
         if &settings.polling.interval < &Duration::seconds(60) {
-            error!("Invalid setting for polling interval. The interval cannot be less than 60 seconds");
+            error!(
+                "Invalid setting for polling interval. The interval cannot be less than 60 seconds"
+            );
             return Err(SettingsError::InvalidInterval);
         }
 
         if !&settings.network.server_address.starts_with("http://")
-           && !&settings.network.server_address.starts_with("https://")
+            && !&settings.network.server_address.starts_with("https://")
         {
             error!("Invalid setting for server address. The server address must use the protocol prefix");
             return Err(SettingsError::InvalidServerAddress);
@@ -101,8 +107,10 @@ pub struct Polling {
 
 impl Default for Polling {
     fn default() -> Self {
-        Polling { interval: Duration::days(1),
-                  enabled: true, }
+        Polling {
+            interval: Duration::days(1),
+            enabled: true,
+        }
     }
 }
 
@@ -116,8 +124,10 @@ pub struct Storage {
 
 impl Default for Storage {
     fn default() -> Self {
-        Storage { read_only: false,
-                  runtime_settings: "/var/lib/updatehub.conf".into(), }
+        Storage {
+            read_only: false,
+            runtime_settings: "/var/lib/updatehub.conf".into(),
+        }
     }
 }
 
@@ -132,12 +142,14 @@ pub struct Update {
 
 impl Default for Update {
     fn default() -> Self {
-        Update { download_dir: "/tmp/updatehub".into(),
-                 install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"].iter()
-                                                                                                  .map(|i| {
-                                                                                                           i.to_string()
-                                                                                                       })
-                                                                                                  .collect(), }
+        Update {
+            download_dir: "/tmp/updatehub".into(),
+            install_modes: [
+                "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"
+            ].iter()
+                .map(|i| i.to_string())
+                .collect(),
+        }
     }
 }
 
@@ -149,7 +161,9 @@ pub struct Network {
 
 impl Default for Network {
     fn default() -> Self {
-        Network { server_address: "https://api.updatehub.io".into(), }
+        Network {
+            server_address: "https://api.updatehub.io".into(),
+        }
     }
 }
 
@@ -161,7 +175,9 @@ pub struct Firmware {
 
 impl Default for Firmware {
     fn default() -> Self {
-        Firmware { metadata_path: "/usr/share/updatehub".into(), }
+        Firmware {
+            metadata_path: "/usr/share/updatehub".into(),
+        }
     }
 }
 
@@ -187,18 +203,32 @@ ServerAddress=http://localhost
 MetadataPath=/tmp/metadata
 ";
 
-    let expected =
-        Settings { polling: Polling { interval: Duration::seconds(60),
-                                      enabled: false, },
-                   storage: Storage { read_only: true,
-                                      runtime_settings: "/run/updatehub/state".into(), },
-                   update: Update { download_dir: "/tmp/download".into(),
-                                    install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(), },
-                   network: Network { server_address: "http://localhost".into(), },
-                   firmware: Firmware { metadata_path: "/tmp/metadata".into(), }, };
+    let expected = Settings {
+        polling: Polling {
+            interval: Duration::seconds(60),
+            enabled: false,
+        },
+        storage: Storage {
+            read_only: true,
+            runtime_settings: "/run/updatehub/state".into(),
+        },
+        update: Update {
+            download_dir: "/tmp/download".into(),
+            install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(),
+        },
+        network: Network {
+            server_address: "http://localhost".into(),
+        },
+        firmware: Firmware {
+            metadata_path: "/tmp/metadata".into(),
+        },
+    };
 
-    assert!(serde_ini::from_str::<Settings>(ini).map_err(|e| println!("{}", e))
-                                                .ok() == Some(expected));
+    assert!(
+        serde_ini::from_str::<Settings>(ini)
+            .map_err(|e| println!("{}", e))
+            .ok() == Some(expected)
+    );
 }
 
 #[test]
