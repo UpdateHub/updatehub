@@ -134,7 +134,7 @@ impl Default for Storage {
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Update {
-    pub download_dir: String,
+    pub download_dir: PathBuf,
     #[serde(rename = "SupportedInstallModes")]
     #[serde(deserialize_with = "de::vec_from_str")]
     pub install_modes: Vec<String>,
