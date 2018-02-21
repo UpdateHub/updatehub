@@ -16,6 +16,7 @@ use updatehub::build_info;
 use updatehub::firmware::Metadata;
 use updatehub::runtime_settings::RuntimeSettings;
 use updatehub::settings::Settings;
+use updatehub::states::StateMachine;
 
 mod cmdline;
 use cmdline::CmdLine;
@@ -37,4 +38,6 @@ fn main() {
         .expect("Failed to load runtime settings.");
     let firmware = Metadata::new(&settings.firmware.metadata_path)
         .expect("Failed to load the firmware metadata.");
+
+    StateMachine::new(settings, runtime_settings, firmware).start();
 }

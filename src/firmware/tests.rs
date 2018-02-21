@@ -44,6 +44,7 @@ pub enum FakeDevice {
     NoUpdate,
     HasUpdate,
     ExtraPoll,
+    InvalidHardware,
 }
 
 pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
@@ -56,7 +57,17 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
         0o755,
     );
     create_hook(version_hook(&tmpdir), "#!/bin/sh\necho 1.1", 0o755);
-    create_hook(hardware_hook(&tmpdir), "#!/bin/sh\necho board", 0o755);
+    create_hook(
+        hardware_hook(&tmpdir),
+        &format!(
+            "#!/bin/sh\necho {}",
+            match device {
+                FakeDevice::InvalidHardware => "invalid",
+                _ => "board",
+            }
+        ),
+        0o755,
+    );
     create_hook(
         device_identity_dir(&tmpdir),
         &format!(
@@ -65,6 +76,7 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
                 FakeDevice::NoUpdate => 1,
                 FakeDevice::HasUpdate => 2,
                 FakeDevice::ExtraPoll => 3,
+                FakeDevice::InvalidHardware => 4,
             }
         ),
         0o755,

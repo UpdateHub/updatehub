@@ -27,6 +27,8 @@ extern crate checked_command;
 extern crate cmdline_words_parser;
 extern crate parse_duration;
 
+extern crate rand;
+
 #[macro_use]
 extern crate hyper;
 extern crate reqwest;
@@ -51,3 +53,5 @@ pub mod client;
 
 pub mod process;
 pub mod firmware;
+
+pub mod states;
