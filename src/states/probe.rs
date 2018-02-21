@@ -66,16 +66,20 @@ impl StateChangeImpl for State<Probe> {
                 }
 
                 if u.package_uid() == self.applied_package_uid {
-                    info!("Not applying the update package. Same package has already been installed.");
+                    info!(
+                        "Not applying the update package. Same package has already been installed."
+                    );
                     debug!("Moving to Idle state as this update package is already installed.");
                     StateMachine::Idle(self.into())
                 } else {
                     debug!("Moving to Download state to process the update package.");
-                    StateMachine::Download(State { settings: self.settings,
-                                                   runtime_settings: self.runtime_settings,
-                                                   firmware: self.firmware,
-                                                   applied_package_uid: None,
-                                                   state: Download { update_package: u }, })
+                    StateMachine::Download(State {
+                        settings: self.settings,
+                        runtime_settings: self.runtime_settings,
+                        firmware: self.firmware,
+                        applied_package_uid: None,
+                        state: Download { update_package: u },
+                    })
                 }
             }
 
@@ -95,11 +99,13 @@ fn update_not_available() {
 
     let mock = create_mock_server(FakeServer::NoUpdate);
 
-    let machine = StateMachine::Probe(State { settings: Settings::default(),
-                                              runtime_settings: RuntimeSettings::default(),
-                                              firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-                                              applied_package_uid: None,
-                                              state: Probe {}, }).step();
+    let machine = StateMachine::Probe(State {
+        settings: Settings::default(),
+        runtime_settings: RuntimeSettings::default(),
+        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+        applied_package_uid: None,
+        state: Probe {},
+    }).step();
 
     mock.assert();
 
@@ -114,11 +120,13 @@ fn update_available() {
 
     let mock = create_mock_server(FakeServer::HasUpdate);
 
-    let machine = StateMachine::Probe(State { settings: Settings::default(),
-                                              runtime_settings: RuntimeSettings::default(),
-                                              firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-                                              applied_package_uid: None,
-                                              state: Probe {}, }).step();
+    let machine = StateMachine::Probe(State {
+        settings: Settings::default(),
+        runtime_settings: RuntimeSettings::default(),
+        firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        applied_package_uid: None,
+        state: Probe {},
+    }).step();
 
     mock.assert();
 
@@ -133,11 +141,13 @@ fn invalid_hardware() {
 
     let mock = create_mock_server(FakeServer::InvalidHardware);
 
-    let machine = StateMachine::Probe(State { settings: Settings::default(),
-                                              runtime_settings: RuntimeSettings::default(),
-                                              firmware: Metadata::new(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap(),
-                                              applied_package_uid: None,
-                                              state: Probe {}, }).step();
+    let machine = StateMachine::Probe(State {
+        settings: Settings::default(),
+        runtime_settings: RuntimeSettings::default(),
+        firmware: Metadata::new(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap(),
+        applied_package_uid: None,
+        state: Probe {},
+    }).step();
 
     mock.assert();
 
@@ -152,11 +162,13 @@ fn extra_poll_interval() {
 
     let mock = create_mock_server(FakeServer::ExtraPoll);
 
-    let machine = StateMachine::Probe(State { settings: Settings::default(),
-                                              runtime_settings: RuntimeSettings::default(),
-                                              firmware: Metadata::new(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap(),
-                                              applied_package_uid: None,
-                                              state: Probe {}, }).step();
+    let machine = StateMachine::Probe(State {
+        settings: Settings::default(),
+        runtime_settings: RuntimeSettings::default(),
+        firmware: Metadata::new(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap(),
+        applied_package_uid: None,
+        state: Probe {},
+    }).step();
 
     mock.assert();
 
@@ -178,9 +190,12 @@ fn skip_same_package_uid() {
     // This has been done so we don't need to manually update it every
     // time we change the package payload.
     let package_uid = {
-        let probe = Api::new(&Settings::default(),
-                             &RuntimeSettings::default(),
-                             &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap()).probe().unwrap();
+        let probe = Api::new(
+            &Settings::default(),
+            &RuntimeSettings::default(),
+            &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        ).probe()
+            .unwrap();
 
         if let ProbeResponse::Update(u) = probe {
             u.package_uid()
@@ -189,11 +204,13 @@ fn skip_same_package_uid() {
         }
     };
 
-    let machine = StateMachine::Probe(State { settings: Settings::default(),
-                                              runtime_settings: RuntimeSettings::default(),
-                                              firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-                                              applied_package_uid: package_uid,
-                                              state: Probe {}, }).step();
+    let machine = StateMachine::Probe(State {
+        settings: Settings::default(),
+        runtime_settings: RuntimeSettings::default(),
+        firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        applied_package_uid: package_uid,
+        state: Probe {},
+    }).step();
 
     mock.assert();
 
@@ -210,11 +227,13 @@ fn error() {
     // retries to succeed.
     let mock = create_mock_server(FakeServer::ErrorOnce);
 
-    let machine = StateMachine::Probe(State { settings: Settings::default(),
-                                              runtime_settings: RuntimeSettings::default(),
-                                              firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-                                              applied_package_uid: None,
-                                              state: Probe {}, }).step();
+    let machine = StateMachine::Probe(State {
+        settings: Settings::default(),
+        runtime_settings: RuntimeSettings::default(),
+        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+        applied_package_uid: None,
+        state: Probe {},
+    }).step();
 
     mock.assert();
 

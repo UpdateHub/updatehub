@@ -9,7 +9,7 @@ use std::collections::btree_map::{Entry, Keys};
 use std::io;
 use std::str::FromStr;
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Default)]
 pub struct MetadataValue(BTreeMap<String, Vec<String>>);
 
 impl FromStr for MetadataValue {
@@ -37,7 +37,7 @@ impl FromStr for MetadataValue {
         }
         values.sort();
 
-        let mut mv = MetadataValue::new();
+        let mut mv = MetadataValue::default();
         for (k, v) in values {
             // replace to use .and_modify once #44733 is closed. Code
             // is below:
@@ -59,10 +59,6 @@ impl FromStr for MetadataValue {
 }
 
 impl MetadataValue {
-    pub fn new() -> MetadataValue {
-        MetadataValue { 0: BTreeMap::new() }
-    }
-
     pub fn entry(&mut self, key: String) -> Entry<String, Vec<String>> {
         self.0.entry(key)
     }

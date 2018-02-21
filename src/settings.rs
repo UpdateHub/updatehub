@@ -68,7 +68,7 @@ impl Settings {
     fn parse(content: &str) -> Result<Self, SettingsError> {
         let settings = serde_ini::from_str::<Settings>(content)?;
 
-        if &settings.polling.interval < &Duration::seconds(60) {
+        if settings.polling.interval < Duration::seconds(60) {
             error!(
                 "Invalid setting for polling interval. The interval cannot be less than 60 seconds"
             );

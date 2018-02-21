@@ -51,7 +51,7 @@ pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, Error> {
 
     // check if path exists
     if !path.exists() {
-        return Ok(MetadataValue::new());
+        return Ok(MetadataValue::default());
     }
 
     for entry in WalkDir::new(path)
