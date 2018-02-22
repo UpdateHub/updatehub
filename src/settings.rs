@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: MPL-2.0
 // 
 
+use chrono::Duration;
+use failure::Error;
 use serde_ini;
 
-use chrono::Duration;
 use std::io;
 use std::path::PathBuf;
 
@@ -38,7 +39,7 @@ impl Settings {
         Settings::default()
     }
 
-    pub fn load(self) -> Result<Self, SettingsError> {
+    pub fn load(self) -> Result<Self, Error> {
         use std::fs::File;
         use std::io::Read;
         use std::path::Path;
@@ -65,45 +66,39 @@ impl Settings {
         }
     }
 
-    fn parse(content: &str) -> Result<Self, SettingsError> {
+    fn parse(content: &str) -> Result<Self, Error> {
         let settings = serde_ini::from_str::<Settings>(content)?;
 
         if settings.polling.interval < Duration::seconds(60) {
             error!(
                 "Invalid setting for polling interval. The interval cannot be less than 60 seconds"
             );
-            return Err(SettingsError::InvalidInterval);
+            return Err(SettingsError::InvalidInterval.into());
         }
 
         if !&settings.network.server_address.starts_with("http://")
             && !&settings.network.server_address.starts_with("https://")
         {
             error!("Invalid setting for server address. The server address must use the protocol prefix");
-            return Err(SettingsError::InvalidServerAddress);
+            return Err(SettingsError::InvalidServerAddress.into());
         }
 
         Ok(settings)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Fail)]
 pub enum SettingsError {
+    #[cause]
+    #[fail(display = "IO error")]
     Io(io::Error),
+    #[cause]
+    #[fail(display = "Invalid INI fail")]
     Ini(serde_ini::de::Error),
+    #[fail(display = "Invalid interval")]
     InvalidInterval,
+    #[fail(display = "Invalid server address")]
     InvalidServerAddress,
-}
-
-impl From<io::Error> for SettingsError {
-    fn from(err: io::Error) -> SettingsError {
-        SettingsError::Io(err)
-    }
-}
-
-impl From<serde_ini::de::Error> for SettingsError {
-    fn from(err: serde_ini::de::Error) -> SettingsError {
-        SettingsError::Ini(err)
-    }
 }
 
 #[derive(Debug, Deserialize, PartialEq)]

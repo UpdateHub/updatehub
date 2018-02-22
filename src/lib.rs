@@ -55,3 +55,5 @@ pub mod process;
 pub mod firmware;
 
 pub mod states;
+
+pub use failure::Error;

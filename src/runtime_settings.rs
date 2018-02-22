@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 // 
 
-use serde_ini;
-
 use chrono::{DateTime, Duration, Utc};
+use failure::Error;
+use serde_ini;
 
 use std::io;
 use std::path::Path;
@@ -27,7 +27,7 @@ impl RuntimeSettings {
         RuntimeSettings::default()
     }
 
-    pub fn load(mut self, path: &str) -> Result<Self, RuntimeSettingsError> {
+    pub fn load(mut self, path: &str) -> Result<Self, Error> {
         use std::fs::File;
         use std::io::Read;
 
@@ -54,11 +54,11 @@ impl RuntimeSettings {
         Ok(self)
     }
 
-    fn parse(content: &str) -> Result<Self, RuntimeSettingsError> {
+    fn parse(content: &str) -> Result<Self, Error> {
         Ok(serde_ini::from_str::<RuntimeSettings>(content)?)
     }
 
-    pub fn save(&self) -> Result<usize, RuntimeSettingsError> {
+    pub fn save(&self) -> Result<usize, Error> {
         use std::fs::File;
         use std::io::Write;
 
@@ -70,34 +70,22 @@ impl RuntimeSettings {
         Ok(File::create(&self.path)?.write(self.serialize()?.as_bytes())?)
     }
 
-    fn serialize(&self) -> Result<String, RuntimeSettingsError> {
+    fn serialize(&self) -> Result<String, Error> {
         Ok(serde_ini::to_string(&self)?)
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Fail)]
 pub enum RuntimeSettingsError {
+    #[cause]
+    #[fail(display = "IO error")]
     Io(io::Error),
+    #[cause]
+    #[fail(display = "Fail reading the INI file")]
     IniDeserialize(serde_ini::de::Error),
+    #[cause]
+    #[fail(display = "Fail generating the INI file")]
     IniSerialize(serde_ini::ser::Error),
-}
-
-impl From<io::Error> for RuntimeSettingsError {
-    fn from(err: io::Error) -> RuntimeSettingsError {
-        RuntimeSettingsError::Io(err)
-    }
-}
-
-impl From<serde_ini::de::Error> for RuntimeSettingsError {
-    fn from(err: serde_ini::de::Error) -> RuntimeSettingsError {
-        RuntimeSettingsError::IniDeserialize(err)
-    }
-}
-
-impl From<serde_ini::ser::Error> for RuntimeSettingsError {
-    fn from(err: serde_ini::ser::Error) -> RuntimeSettingsError {
-        RuntimeSettingsError::IniSerialize(err)
-    }
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]

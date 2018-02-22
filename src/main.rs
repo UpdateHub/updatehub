@@ -8,10 +8,12 @@
 
 extern crate updatehub;
 
+extern crate failure;
 #[macro_use]
 extern crate log;
 extern crate stderrlog;
 
+use updatehub::Error;
 use updatehub::build_info;
 use updatehub::firmware::Metadata;
 use updatehub::runtime_settings::RuntimeSettings;
@@ -21,23 +23,32 @@ use updatehub::states::StateMachine;
 mod cmdline;
 use cmdline::CmdLine;
 
-fn main() {
+fn run() -> Result<(), Error> {
     let cmdline = CmdLine::parse_args();
 
     stderrlog::new()
         .quiet(cmdline.quiet)
         .verbosity(if cmdline.debug { 3 } else { 2 })
-        .init()
-        .expect("Failed to initialize the logger.");
+        .init()?;
 
     info!("Starting UpdateHub Agent {}", build_info::version());
 
-    let settings = Settings::new().load().expect("Failed to load settings.");
-    let runtime_settings = RuntimeSettings::new()
-        .load(&settings.storage.runtime_settings)
-        .expect("Failed to load runtime settings.");
-    let firmware = Metadata::new(&settings.firmware.metadata_path)
-        .expect("Failed to load the firmware metadata.");
+    let settings = Settings::new().load()?;
+    let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
+    let firmware = Metadata::new(&settings.firmware.metadata_path)?;
 
     StateMachine::new(settings, runtime_settings, firmware).start();
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(ref e) = run() {
+        error!("{}", e);
+        e.causes()
+            .skip(1)
+            .for_each(|e| error!(" caused by: {}\n", e));
+
+        std::process::exit(1);
+    }
 }
