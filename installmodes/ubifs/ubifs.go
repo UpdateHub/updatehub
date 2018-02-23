@@ -20,6 +20,7 @@ import (
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/libarchive"
 	"github.com/updatehub/updatehub/metadata"
+	"github.com/updatehub/updatehub/mtd"
 	"github.com/updatehub/updatehub/utils"
 )
 
@@ -50,7 +51,7 @@ func getObject() interface{} {
 		CopyBackend:       &copy.ExtendedIO{},
 		LibArchiveBackend: &libarchive.LibArchive{},
 		FileSystemBackend: afero.NewOsFs(),
-		UbifsUtils: &utils.UbifsUtilsImpl{
+		UbifsUtils: &mtd.UbifsUtilsImpl{
 			CmdLineExecuter: cle,
 		},
 	}
@@ -61,7 +62,7 @@ type UbifsObject struct {
 	metadata.ObjectMetadata
 	metadata.CompressedObject
 	utils.CmdLineExecuter
-	utils.UbifsUtils
+	mtd.UbifsUtils
 	CopyBackend       copy.Interface `json:"-"`
 	LibArchiveBackend libarchive.API `json:"-"`
 	FileSystemBackend afero.Fs

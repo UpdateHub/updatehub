@@ -19,6 +19,7 @@ import (
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/libarchive"
 	"github.com/updatehub/updatehub/metadata"
+	"github.com/updatehub/updatehub/mtd"
 	"github.com/updatehub/updatehub/utils"
 )
 
@@ -35,8 +36,8 @@ func init() {
 				LibArchiveBackend: &libarchive.LibArchive{},
 				FileSystemBackend: afero.NewOsFs(),
 				CopyBackend:       &copy.ExtendedIO{},
-				MtdUtils:          &utils.MtdUtilsImpl{},
-				UbifsUtils: &utils.UbifsUtilsImpl{
+				MtdUtils:          &mtd.MtdUtilsImpl{},
+				UbifsUtils: &mtd.UbifsUtilsImpl{
 					CmdLineExecuter: cmdline,
 				},
 			}
@@ -52,8 +53,8 @@ type TarballObject struct {
 	LibArchiveBackend      libarchive.API `json:"-"`
 	FileSystemBackend      afero.Fs
 	CopyBackend            copy.Interface `json:"-"`
-	utils.MtdUtils
-	utils.UbifsUtils
+	mtd.MtdUtils
+	mtd.UbifsUtils
 
 	Target        string `json:"target"`
 	TargetType    string `json:"target-type"`

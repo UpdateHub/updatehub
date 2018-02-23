@@ -18,6 +18,7 @@ import (
 	"github.com/updatehub/updatehub/copy"
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/libarchive"
+	"github.com/updatehub/updatehub/mtd"
 	"github.com/updatehub/updatehub/testsmocks/copymock"
 	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
 	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
@@ -44,8 +45,8 @@ func TestTarballInit(t *testing.T) {
 		LibArchiveBackend: &libarchive.LibArchive{},
 		FileSystemBackend: osFs,
 		CopyBackend:       &copy.ExtendedIO{},
-		MtdUtils:          &utils.MtdUtilsImpl{},
-		UbifsUtils: &utils.UbifsUtilsImpl{
+		MtdUtils:          &mtd.MtdUtilsImpl{},
+		UbifsUtils: &mtd.UbifsUtilsImpl{
 			CmdLineExecuter: cmdline,
 		},
 	}

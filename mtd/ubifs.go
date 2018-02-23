@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package utils
+package mtd
 
 import (
 	"bufio"
@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/spf13/afero"
+	"github.com/updatehub/updatehub/utils"
 )
 
 type UbifsUtils interface {
@@ -22,7 +23,7 @@ type UbifsUtils interface {
 }
 
 type UbifsUtilsImpl struct {
-	CmdLineExecuter
+	utils.CmdLineExecuter
 }
 
 func (uui *UbifsUtilsImpl) GetTargetDeviceFromUbiVolumeName(fsBackend afero.Fs, volume string) (string, error) {

@@ -19,6 +19,7 @@ import (
 	"github.com/updatehub/updatehub/installifdifferent"
 	"github.com/updatehub/updatehub/installmodes"
 	"github.com/updatehub/updatehub/metadata"
+	"github.com/updatehub/updatehub/mtd"
 	"github.com/updatehub/updatehub/utils"
 )
 
@@ -45,7 +46,7 @@ func getObject() interface{} {
 	return &FlashObject{
 		CmdLineExecuter:   &utils.CmdLine{},
 		FileSystemBackend: afero.NewOsFs(),
-		MtdUtils:          &utils.MtdUtilsImpl{},
+		MtdUtils:          &mtd.MtdUtilsImpl{},
 	}
 }
 
@@ -54,7 +55,7 @@ type FlashObject struct {
 	metadata.ObjectMetadata
 	utils.CmdLineExecuter
 	FileSystemBackend afero.Fs
-	utils.MtdUtils
+	mtd.MtdUtils
 	installifdifferent.TargetProvider
 
 	Target     string `json:"target"`
