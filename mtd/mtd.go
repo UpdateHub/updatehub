@@ -6,7 +6,7 @@
  * SPDX-License-Identifier:     GPL-2.0
  */
 
-package utils
+package mtd
 
 /*
 #include <stdlib.h>
