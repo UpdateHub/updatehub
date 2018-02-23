@@ -20,7 +20,7 @@ import (
 const UpdateMetadataFilename = "updatemetadata.json"
 
 type UpdateMetadata struct {
-	ProductUID        string      `json:"product-uid"`
+	ProductUID        string      `json:"product"`
 	Version           string      `json:"version"`
 	Objects           [][]Object  `json:"-"`
 	SupportedHardware interface{} `json:"supported-hardware"`

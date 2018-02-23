@@ -256,7 +256,7 @@ func TestProbeUpdateWithUpdateAvailable(t *testing.T) {
 	_ = &imxkobs.ImxKobsObject{}
 
 	expectedBody := `{
-	  "product-uid": "0123456789",
+	  "product": "0123456789",
 	  "objects": [
 	    [
 	      {
