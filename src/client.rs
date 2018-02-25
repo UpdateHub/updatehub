@@ -115,17 +115,14 @@ pub mod tests {
         use mockito::{mock, Matcher};
         use update_package::tests::get_update_json;
 
-        match server {
-            FakeServer::NoUpdate => mock("POST", "/upgrades")
-                .match_header("Content-Type", "application/json")
-                .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-                .match_body(Matcher::JSON(json!(
+        fn fake_device_reply_body(identity: usize, hardware: &str) -> Matcher {
+            Matcher::JSON(json!(
                         {
                             "product_uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
                             "version": "1.1",
-                            "hardware": "board",
+                            "hardware": hardware,
                             "device_identity": {
-                                "id1":["value1"],
+                                "id1":[format!("value{}", identity)],
                                 "id2":["value2"]
                             },
                             "device_attributes": {
@@ -133,28 +130,21 @@ pub mod tests {
                                 "attr2":["attrvalue2"]
                             }
                         }
-                    )))
+            ))
+        }
+
+        match server {
+            FakeServer::NoUpdate => mock("POST", "/upgrades")
+                .match_header("Content-Type", "application/json")
+                .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+                .match_body(fake_device_reply_body(1, "board"))
                 .with_status(404)
                 .create(),
 
             FakeServer::HasUpdate => mock("POST", "/upgrades")
                 .match_header("Content-Type", "application/json")
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-                .match_body(Matcher::JSON(json!(
-                        {
-                            "product_uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-                            "version": "1.1",
-                            "hardware": "board",
-                            "device_identity": {
-                                "id1":["value2"],
-                                "id2":["value2"]
-                            },
-                            "device_attributes": {
-                                "attr1":["attrvalue1"],
-                                "attr2":["attrvalue2"]
-                            }
-                        }
-                    )))
+                .match_body(fake_device_reply_body(2, "board"))
                 .with_status(200)
                 .with_body(&get_update_json().to_string())
                 .create(),
@@ -162,21 +152,7 @@ pub mod tests {
             FakeServer::ExtraPoll => mock("POST", "/upgrades")
                 .match_header("Content-Type", "application/json")
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-                .match_body(Matcher::JSON(json!(
-                                             {
-                                                 "product_uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-                                                 "version": "1.1",
-                                                 "hardware": "board",
-                                                 "device_identity": {
-                                                     "id1":["value3"],
-                                                     "id2":["value2"]
-                                                 },
-                                                 "device_attributes": {
-                                                     "attr1":["attrvalue1"],
-                                                     "attr2":["attrvalue2"]
-                                                 }
-                                             }
-                                         )))
+                .match_body(fake_device_reply_body(3, "board"))
                 .with_status(200)
                 .with_header("Add-Extra-Poll", "10")
                 .create(),
@@ -185,41 +161,13 @@ pub mod tests {
                 .match_header("Content-Type", "application/json")
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
                 .match_header("Api-Retries", "1")
-                .match_body(Matcher::JSON(json!(
-                                             {
-                                                 "product_uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-                                                 "version": "1.1",
-                                                 "hardware": "board",
-                                                 "device_identity": {
-                                                     "id1":["value1"],
-                                                     "id2":["value2"]
-                                                 },
-                                                 "device_attributes": {
-                                                     "attr1":["attrvalue1"],
-                                                     "attr2":["attrvalue2"]
-                                                 },
-                                             }
-                                         )))
+                .match_body(fake_device_reply_body(1, "board"))
                 .with_status(404)
                 .create(),
             FakeServer::InvalidHardware => mock("POST", "/upgrades")
                 .match_header("Content-Type", "application/json")
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-                .match_body(Matcher::JSON(json!(
-                                             {
-                                                 "product_uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-                                                 "version": "1.1",
-                                                 "hardware": "invalid",
-                                                 "device_identity": {
-                                                     "id1":["value4"],
-                                                     "id2":["value2"]
-                                                 },
-                                                 "device_attributes": {
-                                                     "attr1":["attrvalue1"],
-                                                     "attr2":["attrvalue2"]
-                                                 }
-                                             }
-                                         )))
+                .match_body(fake_device_reply_body(4, "invalid"))
                 .with_status(200)
                 .with_body(&get_update_json().to_string())
                 .create(),
