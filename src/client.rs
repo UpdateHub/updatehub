@@ -4,8 +4,8 @@
 // 
 
 use failure::Error;
-use reqwest::Client;
-use reqwest::header::{ContentType, Headers, UserAgent};
+use reqwest::{Client, StatusCode};
+use reqwest::header::{ByteRangeSpec, ContentType, Headers, Range, UserAgent};
 
 use std::time::Duration;
 
@@ -59,8 +59,6 @@ impl<'a> Api<'a> {
     }
 
     pub fn probe(&self) -> Result<ProbeResponse, Error> {
-        use reqwest::StatusCode;
-
         let mut response = self.client()?
             .post(&format!(
                 "{}/upgrades",
@@ -86,22 +84,43 @@ impl<'a> Api<'a> {
     }
 
     pub fn download_object(&self, package_uid: &str, object: &str) -> Result<(), Error> {
+        use std::fs::{create_dir_all, OpenOptions};
+
         // FIXME: Discuss the need of packages inside the route
         let mut client = self.client()?.get(&format!(
             "{}/products/{}/packages/{}/objects/{}",
             &self.settings.network.server_address, &self.firmware.product_uid, package_uid, object
         ));
 
-        let _ = client.send()?;
+        let path = &self.settings.update.download_dir;
+        if !&path.exists() {
+            debug!("Creating directory to store the downloads.");
+            create_dir_all(&path)?;
+        }
 
-        Ok(())
+        let file = path.join(object);
+        if file.exists() {
+            client.header(Range::Bytes(vec![
+                ByteRangeSpec::AllFrom(file.metadata()?.len() - 1),
+            ]));
+        }
+
+        let mut file = OpenOptions::new().create(true).append(true).open(&file)?;
+        let mut response = client.send()?;
+        if response.status().is_success() {
+            response.copy_to(&mut file)?;
+            return Ok(());
+        }
+
+        bail!("Couldn't download the object {}", object)
     }
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use mockito::Mock;
+    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use mockito::{mock, Mock};
 
     pub enum FakeServer {
         NoUpdate,
@@ -112,7 +131,7 @@ pub mod tests {
     }
 
     pub fn create_mock_server(server: FakeServer) -> Mock {
-        use mockito::{mock, Matcher};
+        use mockito::Matcher;
         use update_package::tests::get_update_json;
 
         fn fake_device_reply_body(identity: usize, hardware: &str) -> Matcher {
@@ -189,12 +208,12 @@ pub mod tests {
 
     #[test]
     fn download_object() {
-        use firmware::tests::{create_fake_metadata, FakeDevice};
-        use mockito::mock;
-
         let metadata = Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        use mktemp::Temp;
+        use std::fs::File;
+        use std::io::Read;
 
-        let m = mock(
+        let m1 = mock(
             "GET",
             format!(
                 "/products/{}/packages/{}/objects/{}",
@@ -203,12 +222,53 @@ pub mod tests {
         ).match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .with_status(200)
+            .with_body("1234")
             .create();
 
-        let _ = Api::new(&Settings::default(), &RuntimeSettings::default(), &metadata)
-            .download_object("package_id", "object")
-            .unwrap();
+        let m2 = mock(
+            "GET",
+            format!(
+                "/products/{}/packages/{}/objects/{}",
+                metadata.product_uid, "package_id", "object"
+            ).as_str(),
+        ).match_header("Content-Type", "application/json")
+            .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+            .match_header("Range", "bytes=3-")
+            .with_status(200)
+            .with_body("567890")
+            .create();
 
-        m.assert();
+        let mut settings = Settings::default();
+        settings.update.download_dir = Temp::new_dir().unwrap().to_path_buf();
+
+        // Download the object.
+        let _ = Api::new(&settings, &RuntimeSettings::default(), &metadata)
+            .download_object("package_id", "object")
+            .expect("Failed to download the object.");
+
+        // Verify it has been downloaded successfully.
+        let mut downloaded = String::new();
+        let _ = File::open(&settings.update.download_dir.join("object"))
+            .expect("Failed to open destination object.")
+            .read_to_string(&mut downloaded);
+
+        m1.assert();
+
+        assert_eq!(downloaded, "1234".to_string());
+
+        // Download the remaining bytes of the object.
+        let _ = Api::new(&settings, &RuntimeSettings::default(), &metadata)
+            .download_object("package_id", "object")
+            .expect("Failed to download the object.");
+
+        // Verify it has been downloaded successfully.
+        let mut downloaded = String::new();
+        let _ = File::open(&settings.update.download_dir.join("object"))
+            .expect("Failed to open destination object.")
+            .read_to_string(&mut downloaded);
+
+        m2.assert();
+
+        assert_eq!(downloaded, "1234567890".to_string());
     }
 }
