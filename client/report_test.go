@@ -94,6 +94,7 @@ func TestReportState(t *testing.T) {
 	expectedBody["hardware"] = "board"
 	expectedBody["product-uid"] = "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381"
 	expectedBody["device-identity"] = map[string]interface{}{"id1": "value1"}
+	expectedBody["device-attributes"] = map[string]interface{}{"attr1": "value1", "attr2": "value2"}
 	expectedBody["previous-state"] = "previous_state"
 
 	assert.Equal(t, expectedBody, body)
