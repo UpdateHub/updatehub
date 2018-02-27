@@ -45,7 +45,7 @@ func (u *ReportClient) ReportState(api ApiRequester, packageUID string, previous
 	data["previous-state"] = previousState
 	data["package-uid"] = packageUID
 	data["error-message"] = errorMessage
-
+	data["device-attributes"] = fm.DeviceAttributes
 	data["product-uid"] = fm.ProductUID
 	data["device-identity"] = fm.DeviceIdentity
 	data["version"] = fm.Version
