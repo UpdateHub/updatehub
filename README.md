@@ -47,7 +47,7 @@ Features
     interact. This includes: trigger downloads, trigger installations,
     query status, query firmware metadata, query device information, etc.
 
-  * Togethet with the HTTP API the agent supports several callback
+  * Together with the HTTP API the agent supports several callback
     types: state change, error, validate, rollback. They are better
     explained below.
 
