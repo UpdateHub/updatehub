@@ -21,6 +21,7 @@ import (
 type Interface interface {
 	Active() (int, error)
 	SetActive(active int) error
+	SetValidate() error
 }
 
 // DefaultImpl is the default implementation for Interface
@@ -58,6 +59,21 @@ func (i *DefaultImpl) SetActive(active int) error {
 	_, err := i.Execute(fmt.Sprintf("updatehub-active-set %d", active))
 	if err != nil {
 		finalErr := fmt.Errorf("failed to execute 'updatehub-active-set': %s", err)
+		log.Error(finalErr)
+		return finalErr
+	}
+
+	return nil
+}
+
+// SetValidate validate the current update
+// by calling 'updatehub-active-validated'
+func (i *DefaultImpl) SetValidate() error {
+	log.Debug("Running 'updatehub-active-validated'")
+
+	_, err := i.Execute(fmt.Sprintf("updatehub-active-validated"))
+	if err != nil {
+		finalErr := fmt.Errorf("failed to execute 'updatehub-active-validated': %s", err)
 		log.Error(finalErr)
 		return finalErr
 	}

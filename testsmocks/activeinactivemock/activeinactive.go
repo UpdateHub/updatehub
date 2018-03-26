@@ -23,3 +23,8 @@ func (aim *ActiveInactiveMock) SetActive(active int) error {
 	args := aim.Called(active)
 	return args.Error(0)
 }
+
+func (aim *ActiveInactiveMock) SetValidate() error {
+	args := aim.Called()
+	return args.Error(0)
+}
