@@ -41,3 +41,16 @@ func TestDownloadUpdate(t *testing.T) {
 
 	aim.AssertExpectations(t)
 }
+
+func TestValidateUpdate(t *testing.T) {
+	expectedError := fmt.Errorf("some error")
+
+	aim := &ActiveInactiveMock{}
+	aim.On("SetValidate").Return(expectedError)
+
+	err := aim.SetValidate()
+
+	assert.Equal(t, expectedError, err)
+
+	aim.AssertExpectations(t)
+}
