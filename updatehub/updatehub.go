@@ -632,9 +632,10 @@ func (uh *UpdateHub) rollbackProcedure() error {
 }
 
 func (uh *UpdateHub) validateProcedure() error {
+	aii := uh.ActiveInactiveBackend
+
 	err := uh.validateCallback()
 	if err != nil {
-		aii := uh.ActiveInactiveBackend
 
 		active, activeErr := aii.Active()
 		if activeErr != nil {
@@ -643,14 +644,24 @@ func (uh *UpdateHub) validateProcedure() error {
 
 		newActive := (active - 1) * -1
 
+		// Switch the active partion
 		setActiveErr := aii.SetActive(newActive)
 		if setActiveErr != nil {
 			return setActiveErr
 		}
 
+		// Force reboot
 		uh.Rebooter.Reboot()
 
 		return err
+	}
+
+	// We can Validate the update by setting
+	// 'upgrade_available' to 0, and then go
+	// back to the state machine.
+	setValidateErr := aii.SetValidate()
+	if setValidateErr != nil {
+		return setValidateErr
 	}
 
 	return nil
