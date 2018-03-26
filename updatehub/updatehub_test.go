@@ -2035,6 +2035,8 @@ func TestStartWithSuccessfulInstallationValidation(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 	aim.On("Active").Return(0, nil).Once()
 
+	aim.On("SetValidate").Return(nil)
+
 	uh, _ := newTestUpdateHub(nil, aim)
 
 	uh.Settings.ProbeASAP = true
@@ -2213,6 +2215,8 @@ func newTestUpdateHub(state State, aii activeinactive.Interface) (*UpdateHub, er
 func TestValidateProcedureWithNonExistantCallback(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
 
+	aim.On("SetValidate").Return(nil)
+
 	uh, err := newTestUpdateHub(nil, aim)
 	assert.NoError(t, err)
 
@@ -2233,6 +2237,8 @@ func TestValidateProcedureWithNonExistantCallback(t *testing.T) {
 
 func TestValidateProcedureWithCallbackSuccess(t *testing.T) {
 	aim := &activeinactivemock.ActiveInactiveMock{}
+
+	aim.On("SetValidate").Return(nil)
 
 	uh, err := newTestUpdateHub(nil, aim)
 	assert.NoError(t, err)
