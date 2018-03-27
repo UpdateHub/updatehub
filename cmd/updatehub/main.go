@@ -94,6 +94,7 @@ func main() {
 	}
 
 	settings.PersistentPollingSettings = runtimeSettings.PersistentPollingSettings
+	settings.PersistentUpdateSettings = runtimeSettings.PersistentUpdateSettings
 
 	log.Info("starting UpdateHub Agent")
 	log.Info("    version: ", gitversion)
