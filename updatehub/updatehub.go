@@ -496,6 +496,7 @@ func (uh *UpdateHub) InstallUpdate(updateMetadata *metadata.UpdateMetadata, prog
 		}
 
 		log.Info("ActiveInactive activated: ", indexToInstall)
+		uh.Settings.UpgradeToInstallation = indexToInstall
 	}
 
 	log.Info("update installed successfully")
