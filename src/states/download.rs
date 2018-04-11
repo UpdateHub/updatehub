@@ -23,7 +23,7 @@ create_state_step!(Download => Install(update_package));
 impl StateChangeImpl for State<Download> {
     fn to_next_state(self) -> Result<StateMachine, Error> {
         // Prune left over from previous installations
-        WalkDir::new(&self.settings.update.download_dir)
+        for entry in WalkDir::new(&self.settings.update.download_dir)
             .follow_links(true)
             .min_depth(1)
             .into_iter()
@@ -37,26 +37,21 @@ impl StateChangeImpl for State<Download> {
                     .map(|o| o.sha256sum())
                     .collect::<Vec<_>>()
                     .contains(&e.file_name().to_str().unwrap_or(""))
-            })
-            .for_each(|e| {
-                remove_file(e.path()).unwrap_or_else(|err| {
-                    error!("Fail to remove file: {} (err: {})", e.path().display(), err)
-                })
-            });
+            }) {
+            remove_file(entry.path())?;
+        }
 
         // Prune corrupted files
-        self.state
+        for object in self.state
             .update_package
             .filter_objects(&self.settings, ObjectStatus::Corrupted)
             .into_iter()
-            .for_each(|o| {
-                remove_file(&self.settings.update.download_dir.join(o.sha256sum())).unwrap_or_else(
-                    |err| error!("Fail to remove file: {} (err: {})", o.sha256sum(), err),
-                )
-            });
+        {
+            remove_file(&self.settings.update.download_dir.join(object.sha256sum()))?;
+        }
 
         // Download the missing or incomplete objects
-        self.state
+        for object in self.state
             .update_package
             .filter_objects(&self.settings, ObjectStatus::Missing)
             .into_iter()
@@ -64,20 +59,23 @@ impl StateChangeImpl for State<Download> {
                 self.state
                     .update_package
                     .filter_objects(&self.settings, ObjectStatus::Incomplete),
-            )
-            .for_each(|o| {
-                Api::new(&self.settings, &self.runtime_settings, &self.firmware)
-                    .download_object(
-                        &self.state.update_package.package_uid().unwrap(),
-                        o.sha256sum(),
-                    )
-                    .unwrap_or_else(|err| {
-                        error!("Fail to download object: {} (err: {})", o.sha256sum(), err);
-                    });
-            });
+            ) {
+            Api::new(&self.settings, &self.runtime_settings, &self.firmware).download_object(
+                &self.state.update_package.package_uid().unwrap(),
+                object.sha256sum(),
+            )?;
+        }
 
-        // FIXME: Must return error when failing to download
-        Ok(StateMachine::Install(self.into()))
+        if self.state
+            .update_package
+            .objects()
+            .iter()
+            .all(|o| o.status(&self.settings.update.download_dir).ok() == Some(ObjectStatus::Ready))
+        {
+            Ok(StateMachine::Install(self.into()))
+        } else {
+            bail!("Not all objects are ready for use")
+        }
     }
 }
 
@@ -103,6 +101,8 @@ fn skip_download_if_ready() {
         },
     }).step();
 
+    assert_state!(machine, Install);
+
     assert_eq!(
         WalkDir::new(&tmpdir)
             .follow_links(true)
@@ -114,8 +114,6 @@ fn skip_download_if_ready() {
         1,
         "Number of objects is wrong"
     );
-
-    assert_state!(machine, Install);
 }
 
 #[test]
@@ -164,6 +162,8 @@ fn download_objects() {
 
     mock.assert();
 
+    assert_state!(machine, Install);
+
     assert_eq!(
         WalkDir::new(&tmpdir)
             .follow_links(true)
@@ -186,6 +186,4 @@ fn download_objects() {
         &sha256sum,
         "Checksum mismatch"
     );
-
-    assert_state!(machine, Install);
 }
