@@ -4,6 +4,7 @@
 //
 
 use chrono::{DateTime, Duration, Utc};
+use failure::Error;
 use rand::{self, Rng};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
@@ -21,13 +22,13 @@ create_state_step!(Poll => Probe);
 ///
 /// This state is used to control when to go to the `State<Probe>`.
 impl StateChangeImpl for State<Poll> {
-    fn to_next_state(self) -> StateMachine {
+    fn to_next_state(self) -> Result<StateMachine, Error> {
         let current_time: DateTime<Utc> = Utc::now();
 
         let probe_now = self.runtime_settings.polling.now;
         if probe_now {
             debug!("Moving to Probe state as soon as possible.");
-            return StateMachine::Probe(self.into());
+            return Ok(StateMachine::Probe(self.into()));
         }
 
         let last_poll = self.runtime_settings.polling.last.unwrap_or_else(|| {
@@ -43,13 +44,13 @@ impl StateChangeImpl for State<Poll> {
 
         if last_poll > current_time {
             info!("Forcing to Probe state as last polling seems to happened in future.");
-            return StateMachine::Probe(self.into());
+            return Ok(StateMachine::Probe(self.into()));
         }
 
         let extra_interval = self.runtime_settings.polling.extra_interval;
         if last_poll + extra_interval.unwrap_or(Duration::seconds(0)) < current_time {
             debug!("Moving to Probe state as the polling's due extra interval.");
-            return StateMachine::Probe(self.into());
+            return Ok(StateMachine::Probe(self.into()));
         }
 
         let probe = Arc::new((Mutex::new(()), Condvar::new()));
@@ -65,7 +66,7 @@ impl StateChangeImpl for State<Poll> {
         let _ = cvar.wait(lock.lock().unwrap());
 
         debug!("Moving to Probe state.");
-        StateMachine::Probe(self.into())
+        Ok(StateMachine::Probe(self.into()))
     }
 }
 

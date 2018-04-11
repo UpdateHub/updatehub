@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-use std::fs::remove_file;
-use walkdir::WalkDir;
-
 use client::Api;
+use failure::Error;
 use states::idle::Idle;
 use states::install::Install;
 use states::{State, StateChangeImpl, StateMachine};
+use std::fs::remove_file;
 use update_package::{ObjectStatus, UpdatePackage};
+use walkdir::WalkDir;
 
 #[derive(Debug, PartialEq)]
 pub struct Download {
@@ -21,7 +21,7 @@ create_state_step!(Download => Idle);
 create_state_step!(Download => Install(update_package));
 
 impl StateChangeImpl for State<Download> {
-    fn to_next_state(self) -> StateMachine {
+    fn to_next_state(self) -> Result<StateMachine, Error> {
         // Prune left over from previous installations
         WalkDir::new(&self.settings.update.download_dir)
             .follow_links(true)
@@ -77,7 +77,7 @@ impl StateChangeImpl for State<Download> {
             });
 
         // FIXME: Must return error when failing to download
-        StateMachine::Install(self.into())
+        Ok(StateMachine::Install(self.into()))
     }
 }
 

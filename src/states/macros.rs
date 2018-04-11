@@ -37,7 +37,7 @@ macro_rules! create_state_step {
 #[cfg(test)]
 macro_rules! assert_state {
     ($machine:ident, $state:ident) => {
-        assert!(if let StateMachine::$state(_) = $machine {
+        assert!(if let Ok(StateMachine::$state(_)) = $machine {
             true
         } else {
             false

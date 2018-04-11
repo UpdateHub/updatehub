@@ -4,12 +4,11 @@
 //
 
 use client::Api;
-
-use states::{State, StateChangeImpl, StateMachine};
-
+use failure::Error;
 use states::download::Download;
 use states::idle::Idle;
 use states::poll::Poll;
+use states::{State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
 pub struct Probe {}
@@ -19,7 +18,7 @@ create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
 impl StateChangeImpl for State<Probe> {
-    fn to_next_state(mut self) -> StateMachine {
+    fn to_next_state(mut self) -> Result<StateMachine, Error> {
         use chrono::Duration;
         use client::ProbeResponse;
         use std::thread;
@@ -55,14 +54,14 @@ impl StateChangeImpl for State<Probe> {
         match r {
             ProbeResponse::ExtraPoll(_) => {
                 debug!("Moving to Poll state due the extra polling interval.");
-                StateMachine::Poll(self.into())
+                Ok(StateMachine::Poll(self.into()))
             }
 
             ProbeResponse::Update(u) => {
                 if !u.compatible_with(&self.firmware) {
                     debug!("Moving to Idle state as the update package is not compatible.");
                     // FIXME: Must report error
-                    return StateMachine::Idle(self.into());
+                    return Ok(StateMachine::Idle(self.into()));
                 }
 
                 if u.package_uid() == self.applied_package_uid {
@@ -70,22 +69,22 @@ impl StateChangeImpl for State<Probe> {
                         "Not applying the update package. Same package has already been installed."
                     );
                     debug!("Moving to Idle state as this update package is already installed.");
-                    StateMachine::Idle(self.into())
+                    Ok(StateMachine::Idle(self.into()))
                 } else {
                     debug!("Moving to Download state to process the update package.");
-                    StateMachine::Download(State {
+                    Ok(StateMachine::Download(State {
                         settings: self.settings,
                         runtime_settings: self.runtime_settings,
                         firmware: self.firmware,
                         applied_package_uid: None,
                         state: Download { update_package: u },
-                    })
+                    }))
                 }
             }
 
             ProbeResponse::NoUpdate => {
                 debug!("Moving to Idle state as no update is available.");
-                StateMachine::Idle(self.into())
+                Ok(StateMachine::Idle(self.into()))
             }
         }
     }

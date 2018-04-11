@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-use states::{State, StateChangeImpl, StateMachine};
-
+use failure::Error;
 use states::idle::Idle;
+use states::{State, StateChangeImpl, StateMachine};
 use update_package::UpdatePackage;
 
 #[derive(Debug, PartialEq)]
@@ -16,7 +16,7 @@ pub struct Install {
 create_state_step!(Install => Idle);
 
 impl StateChangeImpl for State<Install> {
-    fn to_next_state(self) -> StateMachine {
-        StateMachine::Idle(self.into())
+    fn to_next_state(self) -> Result<StateMachine, Error> {
+        Ok(StateMachine::Idle(self.into()))
     }
 }

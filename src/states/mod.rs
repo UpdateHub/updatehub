@@ -20,6 +20,7 @@
 //!   `-------------------------------------'
 //! ```
 
+use failure::Error;
 use firmware::Metadata;
 use runtime_settings::RuntimeSettings;
 use settings::Settings;
@@ -43,7 +44,7 @@ mod install;
 use self::install::Install;
 
 pub trait StateChangeImpl {
-    fn to_next_state(self) -> StateMachine;
+    fn to_next_state(self) -> Result<StateMachine, Error>;
 }
 
 /// Holds the `State` type and common data, which is available for
@@ -100,16 +101,17 @@ impl StateMachine {
     }
 
     pub fn start(self) {
-        self.step();
+        // FIXME: Handle errors
+        self.step().unwrap();
     }
 
-    fn step(self) -> StateMachine {
+    fn step(self) -> Result<StateMachine, Error> {
         match self {
-            StateMachine::Idle(s) => s.to_next_state(),
-            StateMachine::Poll(s) => s.to_next_state(),
-            StateMachine::Probe(s) => s.to_next_state(),
-            StateMachine::Download(s) => s.to_next_state(),
-            StateMachine::Install(s) => s.to_next_state(),
+            StateMachine::Idle(s) => Ok(s.to_next_state()?),
+            StateMachine::Poll(s) => Ok(s.to_next_state()?),
+            StateMachine::Probe(s) => Ok(s.to_next_state()?),
+            StateMachine::Download(s) => Ok(s.to_next_state()?),
+            StateMachine::Install(s) => Ok(s.to_next_state()?),
         }
     }
 }
