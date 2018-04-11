@@ -1,5 +1,5 @@
-hash: df0e6f8410fc5b3c4fe837d054feebe6dcdd8347988c73a58c5f257ceae1bdc1
-updated: 2018-04-11T11:23:39.393743087-03:00
+hash: af2fb91f22b1c00ec46be82ebce508bcd0b0b35ad7956d408ecb14092cf9a5de
+updated: 2018-04-11T11:27:38.017153472-03:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: f32f2dc367fb4fc0167b83145459f567abd59c49
@@ -67,6 +67,8 @@ imports:
   subpackages:
   - assert
   - mock
+- name: github.com/updatehub/agent-sdk-go
+  version: 9310ff84528cb8228f70c2a19289c4b24d86b784
 - name: golang.org/x/crypto
   version: f70185d77e8278766928032ee1355e3da47e7181
   subpackages:
