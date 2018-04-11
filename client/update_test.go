@@ -599,7 +599,7 @@ func (thh *testHttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		thh.LastRequestHeader = r.Header
 
 		if r.Method == http.MethodGet && r.Header.Get("Range") != "" {
-			rr, err := httputils.ParseRange(r.Header.Get("Range"), int64(len(thh.ResponseBody)))
+			rr, _, err := httputils.ParseRange(r.Header.Get("Range"), int64(len(thh.ResponseBody)))
 			if err != nil {
 				panic(err)
 			}
