@@ -8,9 +8,9 @@ use mktemp::Temp;
 use std::path::PathBuf;
 
 pub fn create_hook(path: PathBuf, contents: &str, mode: u32) {
-    use std::fs::File;
     use std::fs::create_dir_all;
     use std::fs::metadata;
+    use std::fs::File;
     use std::io::Write;
     use std::os::unix::fs::PermissionsExt;
 

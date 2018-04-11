@@ -1,7 +1,7 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 use chrono::{DateTime, Duration, Utc};
 use failure::Error;

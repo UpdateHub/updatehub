@@ -1,7 +1,7 @@
 // Copyright (C) 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 use chrono::Duration;
 use failure::Error;
@@ -150,7 +150,7 @@ impl Default for Update {
         Update {
             download_dir: "/tmp/updatehub".into(),
             install_modes: [
-                "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"
+                "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
             ].iter()
                 .map(|i| i.to_string())
                 .collect(),
@@ -299,7 +299,7 @@ fn default() {
         update: Update {
             download_dir: "/tmp/updatehub".into(),
             install_modes: [
-                "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"
+                "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
             ].iter()
                 .map(|i| i.to_string())
                 .collect(),

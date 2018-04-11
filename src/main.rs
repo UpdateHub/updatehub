@@ -1,7 +1,7 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
@@ -13,12 +13,12 @@ extern crate failure;
 extern crate log;
 extern crate stderrlog;
 
-use updatehub::Error;
 use updatehub::build_info;
 use updatehub::firmware::Metadata;
 use updatehub::runtime_settings::RuntimeSettings;
 use updatehub::settings::Settings;
 use updatehub::states::StateMachine;
+use updatehub::Error;
 
 mod cmdline;
 use cmdline::CmdLine;

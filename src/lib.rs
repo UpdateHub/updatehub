@@ -47,13 +47,13 @@ pub mod build_info;
 mod serde_helpers;
 mod update_package;
 
-pub mod settings;
 pub mod runtime_settings;
+pub mod settings;
 
 pub mod client;
 
-pub mod process;
 pub mod firmware;
+pub mod process;
 
 pub mod states;
 

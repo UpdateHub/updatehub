@@ -1,7 +1,7 @@
 // Copyright (C) 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 use super::*;
 use firmware::tests::{create_fake_metadata, FakeDevice};

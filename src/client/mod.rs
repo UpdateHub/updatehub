@@ -1,11 +1,11 @@
 // Copyright (C) 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 use failure::Error;
-use reqwest::{Client, StatusCode};
 use reqwest::header::{ByteRangeSpec, ContentType, Headers, Range, UserAgent};
+use reqwest::{Client, StatusCode};
 
 use std::time::Duration;
 
@@ -103,9 +103,9 @@ impl<'a> Api<'a> {
 
         let file = path.join(object);
         if file.exists() {
-            client.header(Range::Bytes(vec![
-                ByteRangeSpec::AllFrom(file.metadata()?.len() - 1),
-            ]));
+            client.header(Range::Bytes(vec![ByteRangeSpec::AllFrom(
+                file.metadata()?.len() - 1,
+            )]));
         }
 
         let mut file = OpenOptions::new().create(true).append(true).open(&file)?;

@@ -1,7 +1,7 @@
 // Copyright (C) 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 //! Controls the state machine of the system
 //!
@@ -50,7 +50,9 @@ pub trait StateChangeImpl {
 /// every state transition.
 #[derive(Debug, PartialEq)]
 pub struct State<S>
-    where State<S>: StateChangeImpl {
+where
+    State<S>: StateChangeImpl,
+{
     /// System settings.
     settings: Settings,
 
@@ -88,11 +90,13 @@ pub enum StateMachine {
 
 impl StateMachine {
     pub fn new(settings: Settings, runtime_settings: RuntimeSettings, firmware: Metadata) -> Self {
-        StateMachine::Idle(State { settings,
-                                   runtime_settings,
-                                   firmware,
-                                   applied_package_uid: None,
-                                   state: Idle {}, })
+        StateMachine::Idle(State {
+            settings,
+            runtime_settings,
+            firmware,
+            applied_package_uid: None,
+            state: Idle {},
+        })
     }
 
     pub fn start(self) {

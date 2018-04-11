@@ -1,7 +1,7 @@
 // Copyright (C) 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 use client::Api;
 
@@ -178,8 +178,8 @@ fn extra_poll_interval() {
 #[test]
 fn skip_same_package_uid() {
     use super::*;
-    use client::ProbeResponse;
     use client::tests::{create_mock_server, FakeServer};
+    use client::ProbeResponse;
     use firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mock = create_mock_server(FakeServer::HasUpdate).expect(2);

@@ -1,11 +1,11 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 use core::ops::Index;
-use std::collections::BTreeMap;
 use std::collections::btree_map::{Entry, Keys};
+use std::collections::BTreeMap;
 use std::io;
 use std::str::FromStr;
 
