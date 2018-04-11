@@ -10,6 +10,7 @@ extern crate log;
 
 extern crate chrono;
 extern crate crypto_hash;
+extern crate hex;
 
 extern crate serde;
 #[macro_use]

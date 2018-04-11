@@ -1,18 +1,23 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: MPL-2.0
-// 
+//
 
 use crypto_hash::{hex_digest, Algorithm};
 use serde_json::{self, Error};
 
 use firmware::Metadata;
+use settings::Settings;
 
 mod supported_hardware;
 use self::supported_hardware::SupportedHardware;
 
+#[macro_use]
+mod macros;
+
 mod object;
 use self::object::Object;
+pub use self::object::ObjectStatus;
 
 #[cfg(test)]
 pub mod tests;
@@ -57,5 +62,24 @@ impl UpdatePackage {
 
     pub fn objects(&self) -> &Vec<Object> {
         &self.objects
+    }
+
+    pub fn filter_objects(&self, settings: &Settings, filter: ObjectStatus) -> Vec<&Object> {
+        self.objects
+            .iter()
+            .filter(|o| {
+                let status = o.status(&settings.update.download_dir)
+                    .map_err(|err| {
+                        error!(
+                            "Fail accessing the object: {} (err: {})",
+                            o.sha256sum(),
+                            err
+                        )
+                    })
+                    .unwrap_or(ObjectStatus::Missing);
+
+                status == filter
+            })
+            .collect()
     }
 }
