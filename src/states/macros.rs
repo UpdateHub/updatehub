@@ -14,7 +14,18 @@ macro_rules! create_state_step {
                         state: $dest {}, }
             }
         }
-    }
+    };
+    ($source:ident => $dest:ident ($field:ident)) => {
+        impl From<State<$source>> for State<$dest> {
+            fn from(from: State<$source>) -> State<$dest> {
+                State { settings: from.settings,
+                        runtime_settings: from.runtime_settings,
+                        firmware: from.firmware,
+                        applied_package_uid: None,
+                        state: $dest { $field: from.state.$field }, }
+            }
+        }
+    };
 }
 
 #[cfg(test)]

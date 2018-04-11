@@ -39,6 +39,9 @@ use self::probe::Probe;
 mod download;
 use self::download::Download;
 
+mod install;
+use self::install::Install;
+
 pub trait StateChangeImpl {
     fn to_next_state(self) -> StateMachine;
 }
@@ -78,6 +81,9 @@ pub enum StateMachine {
 
     /// Download state
     Download(State<Download>),
+
+    /// Install state
+    Install(State<Install>),
 }
 
 impl StateMachine {
@@ -99,6 +105,7 @@ impl StateMachine {
             StateMachine::Poll(s) => s.to_next_state(),
             StateMachine::Probe(s) => s.to_next_state(),
             StateMachine::Download(s) => s.to_next_state(),
+            StateMachine::Install(s) => s.to_next_state(),
         }
     }
 }
