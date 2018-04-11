@@ -1,13 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 
 	"github.com/hokaccha/go-prettyjson"
-	"github.com/parnurzeal/gorequest"
 	"github.com/spf13/cobra"
+	"github.com/updatehub/agent-sdk-go"
 )
 
 var rootCmd = &cobra.Command{
@@ -18,11 +17,13 @@ var rootCmd = &cobra.Command{
 func main() {
 	var probeServerAddress string
 
+	agent := updatehub.NewClient()
+
 	probeCmd := &cobra.Command{
 		Use:   "probe",
 		Short: "Probe the server for update",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return execProbeCmd(probeServerAddress)
+			return execProbeCmd(agent, probeServerAddress)
 		},
 	}
 
@@ -30,7 +31,7 @@ func main() {
 		Use:   "info",
 		Short: "Print general information",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return execInfoCmd()
+			return execInfoCmd(agent)
 		},
 	}
 
@@ -38,7 +39,7 @@ func main() {
 		Use:   "logs",
 		Short: "Print agent log entries",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return execLogsCmd()
+			return execLogsCmd(agent)
 		},
 	}
 
@@ -53,17 +54,10 @@ func main() {
 	}
 }
 
-func execProbeCmd(serverAddress string) error {
-	var probe ProbeResponse
-
-	var req struct {
-		ServerAddress string `json:"server-address"`
-	}
-	req.ServerAddress = serverAddress
-
-	_, _, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
-	if len(errs) > 0 {
-		return errs[0]
+func execProbeCmd(agent *updatehub.Client, serverAddress string) error {
+	probe, err := agent.ProbeCustomServer(serverAddress)
+	if err != nil {
+		return err
 	}
 
 	output, _ := prettyjson.Marshal(probe)
@@ -72,12 +66,10 @@ func execProbeCmd(serverAddress string) error {
 	return nil
 }
 
-func execInfoCmd() error {
-	var info AgentInfo
-
-	_, _, errs := gorequest.New().Get(buildURL("/info")).EndStruct(&info)
-	if len(errs) > 0 {
-		return errs[0]
+func execInfoCmd(agent *updatehub.Client) error {
+	info, err := agent.GetInfo()
+	if err != nil {
+		return err
 	}
 
 	output, _ := prettyjson.Marshal(info)
@@ -86,15 +78,8 @@ func execInfoCmd() error {
 	return nil
 }
 
-func execLogsCmd() error {
-	_, body, errs := gorequest.New().Get(buildURL("/log")).End()
-	if len(errs) > 0 {
-		return errs[0]
-	}
-
-	var entries []LogEntry
-
-	err := json.Unmarshal([]byte(body), &entries)
+func execLogsCmd(agent *updatehub.Client) error {
+	entries, err := agent.GetLogs()
 	if err != nil {
 		return err
 	}
