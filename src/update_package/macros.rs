@@ -7,26 +7,26 @@ macro_rules! impl_object_for_object_types {
     ( $( $objtype:ident ),* ) => {
         impl Object {
             pub fn status(&self, download_dir: &Path) -> Result<ObjectStatus, Error> {
-                match self {
-                    $( &Object::$objtype(ref o) => Ok(o.status(download_dir)?), )*
+                match *self {
+                    $( Object::$objtype(ref o) => Ok(o.status(download_dir)?), )*
                 }
             }
 
             pub fn filename(&self) -> &str {
-                match self {
-                    $( &Object::$objtype(ref o) => o.filename(), )*
+                match *self {
+                    $( Object::$objtype(ref o) => o.filename(), )*
                 }
             }
 
             pub fn len(&self) -> u64 {
-                match self {
-                    $( &Object::$objtype(ref o) => o.len(), )*
+                match *self {
+                    $( Object::$objtype(ref o) => o.len(), )*
                 }
             }
 
             pub fn sha256sum(&self) -> &str {
-                match self {
-                    $( &Object::$objtype(ref o) => o.sha256sum(), )*
+                match *self {
+                    $( Object::$objtype(ref o) => o.sha256sum(), )*
                 }
             }
         }

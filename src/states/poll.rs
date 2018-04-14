@@ -48,7 +48,7 @@ impl StateChangeImpl for State<Poll> {
         }
 
         let extra_interval = self.runtime_settings.polling.extra_interval;
-        if last_poll + extra_interval.unwrap_or(Duration::seconds(0)) < current_time {
+        if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) < current_time {
             debug!("Moving to Probe state as the polling's due extra interval.");
             return Ok(StateMachine::Probe(self.into()));
         }

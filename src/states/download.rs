@@ -44,8 +44,7 @@ impl StateChangeImpl for State<Download> {
         // Prune corrupted files
         for object in self.state
             .update_package
-            .filter_objects(&self.settings, ObjectStatus::Corrupted)
-            .into_iter()
+            .filter_objects(&self.settings, &ObjectStatus::Corrupted)
         {
             remove_file(&self.settings.update.download_dir.join(object.sha256sum()))?;
         }
@@ -53,12 +52,12 @@ impl StateChangeImpl for State<Download> {
         // Download the missing or incomplete objects
         for object in self.state
             .update_package
-            .filter_objects(&self.settings, ObjectStatus::Missing)
+            .filter_objects(&self.settings, &ObjectStatus::Missing)
             .into_iter()
             .chain(
                 self.state
                     .update_package
-                    .filter_objects(&self.settings, ObjectStatus::Incomplete),
+                    .filter_objects(&self.settings, &ObjectStatus::Incomplete),
             ) {
             Api::new(&self.settings, &self.runtime_settings, &self.firmware).download_object(
                 &self.state.update_package.package_uid().unwrap(),

@@ -64,7 +64,7 @@ impl UpdatePackage {
         &self.objects
     }
 
-    pub fn filter_objects(&self, settings: &Settings, filter: ObjectStatus) -> Vec<&Object> {
+    pub fn filter_objects(&self, settings: &Settings, filter: &ObjectStatus) -> Vec<&Object> {
         self.objects
             .iter()
             .filter(|o| {
@@ -78,7 +78,7 @@ impl UpdatePackage {
                     })
                     .unwrap_or(ObjectStatus::Missing);
 
-                status == filter
+                status == *filter
             })
             .collect()
     }

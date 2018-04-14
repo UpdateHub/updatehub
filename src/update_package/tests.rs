@@ -60,7 +60,7 @@ fn missing_object_file() {
     let u = get_update_package();
     let settings = create_fake_settings();
 
-    assert_eq!(u.filter_objects(&settings, ObjectStatus::Missing).len(), 1);
+    assert_eq!(u.filter_objects(&settings, &ObjectStatus::Missing).len(), 1);
 }
 
 #[test]
@@ -71,22 +71,22 @@ fn complete_object_file() {
     create_fake_object(&settings);
 
     assert!(
-        u.filter_objects(&settings, ObjectStatus::Missing)
+        u.filter_objects(&settings, &ObjectStatus::Missing)
             .is_empty()
     );
 
     assert!(
-        u.filter_objects(&settings, ObjectStatus::Incomplete)
+        u.filter_objects(&settings, &ObjectStatus::Incomplete)
             .is_empty()
     );
 
     assert!(
-        u.filter_objects(&settings, ObjectStatus::Corrupted)
+        u.filter_objects(&settings, &ObjectStatus::Corrupted)
             .is_empty()
     );
 
     assert_eq!(
-        u.filter_objects(&settings, ObjectStatus::Ready)
+        u.filter_objects(&settings, &ObjectStatus::Ready)
             .iter()
             .count(),
         1
