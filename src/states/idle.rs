@@ -39,14 +39,10 @@ fn polling_disable() {
     let mut settings = Settings::default();
     settings.polling.enabled = false;
 
-    let runtime_settings = RuntimeSettings::default();
-
-    let firmware = Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-
     let machine = StateMachine::Idle(State {
         settings: settings,
-        runtime_settings: runtime_settings,
-        firmware: firmware,
+        runtime_settings: RuntimeSettings::default(),
+        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         applied_package_uid: None,
         state: Idle {},
     }).step();
@@ -62,14 +58,10 @@ fn polling_enabled() {
     let mut settings = Settings::default();
     settings.polling.enabled = true;
 
-    let runtime_settings = RuntimeSettings::default();
-
-    let firmware = Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-
     let machine = StateMachine::Idle(State {
         settings: settings,
-        runtime_settings: runtime_settings,
-        firmware: firmware,
+        runtime_settings: RuntimeSettings::default(),
+        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         applied_package_uid: None,
         state: Idle {},
     }).step();

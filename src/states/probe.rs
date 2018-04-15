@@ -31,7 +31,7 @@ impl StateChangeImpl for State<Probe> {
                 thread::sleep(Duration::seconds(1).to_std().unwrap());
             } else {
                 self.runtime_settings.polling.retries = 0;
-                break probe.unwrap();
+                break probe?;
             }
         };
 
