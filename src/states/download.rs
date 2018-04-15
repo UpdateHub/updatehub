@@ -8,7 +8,7 @@ use failure::Error;
 use states::idle::Idle;
 use states::install::Install;
 use states::{State, StateChangeImpl, StateMachine};
-use std::fs::remove_file;
+use std::fs;
 use update_package::{ObjectStatus, UpdatePackage};
 use walkdir::WalkDir;
 
@@ -38,7 +38,7 @@ impl StateChangeImpl for State<Download> {
                     .collect::<Vec<_>>()
                     .contains(&e.file_name().to_str().unwrap_or(""))
             }) {
-            remove_file(entry.path())?;
+            fs::remove_file(entry.path())?;
         }
 
         // Prune corrupted files
@@ -46,7 +46,7 @@ impl StateChangeImpl for State<Download> {
             .update_package
             .filter_objects(&self.settings, &ObjectStatus::Corrupted)
         {
-            remove_file(&self.settings.update.download_dir.join(object.sha256sum()))?;
+            fs::remove_file(&self.settings.update.download_dir.join(object.sha256sum()))?;
         }
 
         // Download the missing or incomplete objects
