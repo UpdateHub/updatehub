@@ -59,10 +59,8 @@ impl StateChangeImpl for State<Download> {
                     .update_package
                     .filter_objects(&self.settings, &ObjectStatus::Incomplete),
             ) {
-            Api::new(&self.settings, &self.runtime_settings, &self.firmware).download_object(
-                &self.state.update_package.package_uid().unwrap(),
-                object.sha256sum(),
-            )?;
+            Api::new(&self.settings, &self.runtime_settings, &self.firmware)
+                .download_object(&self.state.update_package.package_uid(), object.sha256sum())?;
         }
 
         if self.state
@@ -140,7 +138,7 @@ fn download_objects() {
         format!(
             "/products/{}/packages/{}/objects/{}",
             "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-            &update_package.package_uid().unwrap(),
+            &update_package.package_uid(),
             &sha256sum
         ).as_str(),
     ).match_header("Content-Type", "application/json")

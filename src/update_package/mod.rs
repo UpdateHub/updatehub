@@ -48,8 +48,8 @@ impl UpdatePackage {
         Ok(update_package)
     }
 
-    pub fn package_uid(&self) -> Option<String> {
-        Some(hex_digest(Algorithm::SHA256, self.raw.as_bytes()))
+    pub fn package_uid(&self) -> String {
+        hex_digest(Algorithm::SHA256, self.raw.as_bytes())
     }
 
     pub fn compatible_with(&self, firmware: &Metadata) -> bool {

@@ -64,7 +64,7 @@ impl StateChangeImpl for State<Probe> {
                     return Ok(StateMachine::Idle(self.into()));
                 }
 
-                if u.package_uid() == self.applied_package_uid {
+                if Some(u.package_uid()) == self.applied_package_uid {
                     info!(
                         "Not applying the update package. Same package has already been installed."
                     );
@@ -197,7 +197,7 @@ fn skip_same_package_uid() {
             .unwrap();
 
         if let ProbeResponse::Update(u) = probe {
-            u.package_uid()
+            Some(u.package_uid())
         } else {
             None
         }
