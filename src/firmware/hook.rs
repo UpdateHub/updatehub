@@ -47,22 +47,17 @@ pub fn run_hook(path: &Path) -> Result<String, Error> {
 }
 
 pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, Error> {
-    let mut outputs: Vec<String> = Vec::new();
-
-    // check if path exists
     if !path.exists() {
         return Ok(MetadataValue::default());
     }
 
+    let mut outputs: Vec<String> = Vec::new();
     for entry in WalkDir::new(path)
         .follow_links(true)
         .min_depth(1)
         .max_depth(1)
     {
-        let entry = entry?;
-        let r = run_hook(entry.path())?;
-
-        outputs.push(r);
+        outputs.push(run_hook(entry?.path())?);
     }
 
     Ok(MetadataValue::from_str(&outputs.join("\n"))?)
