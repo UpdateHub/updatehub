@@ -3,38 +3,32 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-extern crate updatehub;
-
-extern crate failure;
 #[macro_use]
 extern crate log;
 extern crate stderrlog;
-
-use updatehub::build_info;
-use updatehub::firmware::Metadata;
-use updatehub::runtime_settings::RuntimeSettings;
-use updatehub::settings::Settings;
-use updatehub::states::StateMachine;
-use updatehub::Error;
+extern crate updatehub;
 
 mod cmdline;
-use cmdline::CmdLine;
 
-fn run() -> Result<(), Error> {
-    let cmdline = CmdLine::parse_args();
+fn run() -> updatehub::Result<()> {
+    let cmdline = cmdline::CmdLine::parse_args();
 
     stderrlog::new()
         .quiet(cmdline.quiet)
         .verbosity(if cmdline.debug { 3 } else { 2 })
         .init()?;
 
-    info!("Starting UpdateHub Agent {}", build_info::version());
+    info!(
+        "Starting UpdateHub Agent {}",
+        updatehub::build_info::version()
+    );
 
-    let settings = Settings::new().load()?;
-    let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
-    let firmware = Metadata::new(&settings.firmware.metadata_path)?;
+    let settings = updatehub::settings::Settings::new().load()?;
+    let runtime_settings = updatehub::runtime_settings::RuntimeSettings::new()
+        .load(&settings.storage.runtime_settings)?;
+    let firmware = updatehub::firmware::Metadata::new(&settings.firmware.metadata_path)?;
 
-    StateMachine::new(settings, runtime_settings, firmware).start();
+    updatehub::states::StateMachine::new(settings, runtime_settings, firmware).start();
 
     Ok(())
 }
