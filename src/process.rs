@@ -41,8 +41,7 @@ pub fn run(cmd: &str) -> Result<checked_command::Output, checked_command::Error>
 #[test]
 fn failing_command() {
     // failing command with exit status 1
-    let r = run(r#"sh -c 'echo "error" >&2; exit 1'"#);
-    match r {
+    match run(r#"sh -c 'echo "error" >&2; exit 1'"#) {
         Ok(_) => panic!("call should have failed"),
         Err(checked_command::Error::Io(io_err)) => panic!("unexpected I/O Error: {:?}", io_err),
         Err(checked_command::Error::Failure(ex, output)) => {
