@@ -3,9 +3,6 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
-
 extern crate updatehub;
 
 extern crate failure;
