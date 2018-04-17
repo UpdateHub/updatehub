@@ -26,31 +26,20 @@ pub enum HookError {
 }
 
 pub fn run_hook(path: &Path) -> Result<String, Error> {
-    let mut buf: Vec<u8> = Vec::new();
-
-    // check if path exists
     if !path.exists() {
         return Ok("".into());
     }
 
-    let mut output = process::run(path.to_str().unwrap())?;
-
-    buf.append(&mut output.stdout);
+    let output = process::run(path.to_str().unwrap())?;
     if !output.stderr.is_empty() {
-        let err = String::from_utf8_lossy(&output.stderr);
-        for line in err.lines() {
-            error!("{} (stderr): {}", path.display(), line);
-        }
+        String::from_utf8_lossy(&output.stderr)
+            .lines()
+            .for_each(|err| error!("{} (stderr): {}", path.display(), err))
     }
-
-    Ok(String::from_utf8_lossy(&buf[..]).trim().into())
+    Ok(String::from_utf8_lossy(&output.stdout[..]).trim().into())
 }
 
 pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, Error> {
-    if !path.exists() {
-        return Ok(MetadataValue::default());
-    }
-
     let mut outputs: Vec<String> = Vec::new();
     for entry in WalkDir::new(path)
         .follow_links(true)
