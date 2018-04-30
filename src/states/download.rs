@@ -106,7 +106,6 @@ fn skip_download_if_ready() {
             .min_depth(1)
             .into_iter()
             .filter_entry(|e| e.file_type().is_file())
-            .filter_map(|e| e.ok())
             .count(),
         1,
         "Number of objects is wrong"
@@ -167,7 +166,6 @@ fn download_objects() {
             .min_depth(1)
             .into_iter()
             .filter_entry(|e| e.file_type().is_file())
-            .filter_map(|e| e.ok())
             .count(),
         1,
         "Failed to remove the corrupted object"
@@ -175,7 +173,7 @@ fn download_objects() {
 
     let mut object_content = String::new();
     let _ = File::open(&tmpdir.join(&sha256sum))
-        .unwrap()
+        .expect("Fail to open the temporary directory.")
         .read_to_string(&mut object_content);
 
     assert_eq!(
