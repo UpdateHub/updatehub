@@ -16,7 +16,6 @@ import:
   - log
 - package: github.com/hokaccha/go-prettyjson
 - package: github.com/parnurzeal/gorequest
-  version: ^0.2.15
 - package: github.com/anacrolix/missinggo
 - package: github.com/koofr/go-httputils
 - package: github.com/updatehub/agent-sdk-go
