@@ -20,3 +20,6 @@ import:
 - package: github.com/koofr/go-httputils
 - package: github.com/updatehub/agent-sdk-go
   version: v1
+- package: github.com/c9s/goprocinfo
+  subpackages:
+  - linux

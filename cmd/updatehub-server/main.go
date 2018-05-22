@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"syscall"
 	"time"
 
 	"github.com/OSSystems/pkg/log"
+	linuxproc "github.com/c9s/goprocinfo/linux"
 	"github.com/parnurzeal/gorequest"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -61,6 +63,8 @@ func main() {
 	isQuiet := cmd.PersistentFlags().Bool("quiet", false, "sets the log level to 'error'")
 	isDebug := cmd.PersistentFlags().Bool("debug", false, "sets the log level to 'debug'")
 	wait := cmd.PersistentFlags().Bool("wait", false, "wait for UpdateHub Agent")
+	mount := cmd.PersistentFlags().StringP("mount", "m", "", "device to mount")
+	fstype := cmd.PersistentFlags().StringP("fstype", "f", "", "filesystem type of device to mount")
 
 	err := cmd.Execute()
 	if err != nil {
@@ -92,6 +96,26 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
+	}
+
+	if *mount != "" {
+		mounts, err := linuxproc.ReadMounts("/proc/mounts")
+		if err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
+
+		for _, mount := range mounts.Mounts {
+			if mount.MountPoint == path {
+				log.Fatalf("%s: already mounted", path)
+				os.Exit(1)
+			}
+		}
+
+		if err = syscall.Mount(*mount, path, *fstype, syscall.MS_RDONLY, ""); err != nil {
+			log.Fatal(err)
+			os.Exit(1)
+		}
 	}
 
 	err = backend.ProcessDirectory()
