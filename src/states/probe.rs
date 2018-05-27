@@ -104,7 +104,7 @@ fn update_not_available() {
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
-    }).step();
+    }).move_to_next_state();
 
     mock.assert();
 
@@ -125,7 +125,7 @@ fn update_available() {
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
-    }).step();
+    }).move_to_next_state();
 
     mock.assert();
 
@@ -146,7 +146,7 @@ fn invalid_hardware() {
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
-    }).step();
+    }).move_to_next_state();
 
     mock.assert();
 
@@ -167,7 +167,7 @@ fn extra_poll_interval() {
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
-    }).step();
+    }).move_to_next_state();
 
     mock.assert();
 
@@ -209,7 +209,7 @@ fn skip_same_package_uid() {
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         applied_package_uid: package_uid,
         state: Probe {},
-    }).step();
+    }).move_to_next_state();
 
     mock.assert();
 
@@ -232,7 +232,7 @@ fn error() {
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
-    }).step();
+    }).move_to_next_state();
 
     mock.assert();
 

@@ -4,6 +4,7 @@
 //
 
 use failure::Error;
+use states::park::Park;
 use states::poll::Poll;
 use states::{State, StateChangeImpl, StateMachine};
 
@@ -21,7 +22,7 @@ impl StateChangeImpl for State<Idle> {
     fn to_next_state(self) -> Result<StateMachine, Error> {
         if !self.settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
-            return Ok(StateMachine::Idle(self));
+            return Ok(StateMachine::Park(self.into()));
         }
 
         debug!("Polling is enabled, moving to Poll state.");
@@ -29,6 +30,7 @@ impl StateChangeImpl for State<Idle> {
     }
 }
 
+create_state_step!(Idle => Park);
 create_state_step!(Idle => Poll);
 
 #[test]
@@ -45,9 +47,9 @@ fn polling_disable() {
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         applied_package_uid: None,
         state: Idle {},
-    }).step();
+    }).move_to_next_state();
 
-    assert_state!(machine, Idle);
+    assert_state!(machine, Park);
 }
 
 #[test]
@@ -64,7 +66,7 @@ fn polling_enabled() {
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         applied_package_uid: None,
         state: Idle {},
-    }).step();
+    }).move_to_next_state();
 
     assert_state!(machine, Poll);
 }

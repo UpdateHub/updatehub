@@ -42,7 +42,8 @@ impl StateChangeImpl for State<Download> {
         }
 
         // Prune corrupted files
-        for object in self.state
+        for object in self
+            .state
             .update_package
             .filter_objects(&self.settings, &ObjectStatus::Corrupted)
         {
@@ -96,7 +97,7 @@ fn skip_download_if_ready() {
         state: Download {
             update_package: get_update_package(),
         },
-    }).step();
+    }).move_to_next_state();
 
     assert_state!(machine, Install);
 
@@ -154,7 +155,7 @@ fn download_objects() {
         state: Download {
             update_package: update_package,
         },
-    }).step();
+    }).move_to_next_state();
 
     mock.assert();
 

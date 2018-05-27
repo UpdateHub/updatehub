@@ -28,7 +28,7 @@ fn run() -> updatehub::Result<()> {
         .load(&settings.storage.runtime_settings)?;
     let firmware = updatehub::firmware::Metadata::new(&settings.firmware.metadata_path)?;
 
-    updatehub::states::StateMachine::new(settings, runtime_settings, firmware).start();
+    updatehub::states::StateMachine::new(settings, runtime_settings, firmware).run();
 
     Ok(())
 }

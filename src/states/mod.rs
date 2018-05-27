@@ -9,16 +9,15 @@
 //! below diagram:
 //!
 //! ```text
-//!   .--------------.   .---------.----> Error ------------.
-//!   |              v  /         /         ^               '
-//! Idle -> Poll -> Probe -> Download -> Install -> Reboot  |
-//!   ^      ^        '          '          '               |
-//!   '      '        '          '          '               |
-//!   '      `--------'          '          '               |
-//!   `---------------'          '          '               |
-//!   `--------------------------'          '               |
-//!   `-------------------------------------'               |
-//!   `-----------------------------------------------------'
+//!           .--------------.
+//!           |              v
+//! Park <- Idle -> Poll -> Probe -> Download -> Install -> Reboot
+//!           ^      ^        '          '          '
+//!           '      '        '          '          '
+//!           '      `--------'          '          '
+//!           `---------------'          '          '
+//!           `--------------------------'          '
+//!           `-------------------------------------'
 //! ```
 
 use failure::Error;
@@ -28,6 +27,9 @@ use settings::Settings;
 
 #[macro_use]
 mod macros;
+
+mod park;
+use self::park::Park;
 
 mod idle;
 use self::idle::Idle;
@@ -74,6 +76,9 @@ where
 /// The struct representing the state machine.
 #[derive(Debug, PartialEq)]
 pub enum StateMachine {
+    /// Park state
+    Park(State<Park>),
+
     /// Idle state
     Idle(State<Idle>),
 
@@ -101,13 +106,24 @@ impl StateMachine {
         })
     }
 
-    pub fn start(self) {
-        // FIXME: Handle errors
-        self.step().unwrap();
+    pub fn run(self) {
+        self.step()
     }
 
-    fn step(self) -> Result<StateMachine, Error> {
+    fn step(self) {
+        match self.move_to_next_state() {
+            Ok(StateMachine::Park(_)) => {
+                debug!("Parking state machine.");
+                return;
+            }
+            Ok(s) => s.run(),
+            Err(e) => error!("{}", e),
+        }
+    }
+
+    fn move_to_next_state(self) -> Result<StateMachine, Error> {
         match self {
+            StateMachine::Park(s) => Ok(s.to_next_state()?),
             StateMachine::Idle(s) => Ok(s.to_next_state()?),
             StateMachine::Poll(s) => Ok(s.to_next_state()?),
             StateMachine::Probe(s) => Ok(s.to_next_state()?),
