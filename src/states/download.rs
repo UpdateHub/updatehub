@@ -30,7 +30,8 @@ impl StateChangeImpl for State<Download> {
             .filter_entry(|e| e.file_type().is_file())
             .filter_map(|e| e.ok())
             .filter(|e| {
-                !self.state
+                !self
+                    .state
                     .update_package
                     .objects()
                     .iter()
@@ -51,7 +52,8 @@ impl StateChangeImpl for State<Download> {
         }
 
         // Download the missing or incomplete objects
-        for object in self.state
+        for object in self
+            .state
             .update_package
             .filter_objects(&self.settings, &ObjectStatus::Missing)
             .into_iter()
@@ -64,7 +66,8 @@ impl StateChangeImpl for State<Download> {
                 .download_object(&self.state.update_package.package_uid(), object.sha256sum())?;
         }
 
-        if self.state
+        if self
+            .state
             .update_package
             .objects()
             .iter()

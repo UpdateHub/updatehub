@@ -62,7 +62,8 @@ impl<'a> Api<'a> {
     }
 
     pub fn probe(&self) -> Result<ProbeResponse, Error> {
-        let mut response = self.client()?
+        let mut response = self
+            .client()?
             .post(&format!(
                 "{}/upgrades",
                 &self.settings.network.server_address
@@ -78,9 +79,9 @@ impl<'a> Api<'a> {
                     return Ok(ProbeResponse::ExtraPoll(extra_poll.0));
                 }
 
-                Ok(ProbeResponse::Update(
-                    UpdatePackage::parse(&response.text()?)?,
-                ))
+                Ok(ProbeResponse::Update(UpdatePackage::parse(
+                    &response.text()?,
+                )?))
             }
             _ => bail!("Invalid response. Status: {}", response.status()),
         }

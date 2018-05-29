@@ -40,9 +40,9 @@ pub fn create_fake_object(settings: &Settings) {
     // ensure path exists
     create_dir_all(&dir).unwrap();
 
-    let _ = File::create(&dir.join(
-        "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646",
-    )).unwrap()
+    let _ = File::create(
+        &dir.join("c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646"),
+    ).unwrap()
         .write_all(b"1234567890")
         .unwrap();
 }
