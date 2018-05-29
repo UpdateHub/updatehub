@@ -5,10 +5,7 @@
 
 use client::Api;
 use failure::Error;
-use states::download::Download;
-use states::idle::Idle;
-use states::poll::Poll;
-use states::{State, StateChangeImpl, StateMachine};
+use states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
 pub struct Probe {}

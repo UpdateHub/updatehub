@@ -4,8 +4,7 @@
 //
 
 use failure::Error;
-use states::idle::Idle;
-use states::{State, StateChangeImpl, StateMachine};
+use states::{Idle, State, StateChangeImpl, StateMachine};
 use update_package::UpdatePackage;
 
 #[derive(Debug, PartialEq)]

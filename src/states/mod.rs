@@ -20,31 +20,23 @@
 //!           `-------------------------------------'
 //! ```
 
+#[macro_use]
+mod macros;
+mod download;
+mod idle;
+mod install;
+mod park;
+mod poll;
+mod probe;
+
+pub use self::{
+    download::Download, idle::Idle, install::Install, park::Park, poll::Poll, probe::Probe,
+};
+
 use failure::Error;
 use firmware::Metadata;
 use runtime_settings::RuntimeSettings;
 use settings::Settings;
-
-#[macro_use]
-mod macros;
-
-mod park;
-use self::park::Park;
-
-mod idle;
-use self::idle::Idle;
-
-mod poll;
-use self::poll::Poll;
-
-mod probe;
-use self::probe::Probe;
-
-mod download;
-use self::download::Download;
-
-mod install;
-use self::install::Install;
 
 pub trait StateChangeImpl {
     fn to_next_state(self) -> Result<StateMachine, Error>;

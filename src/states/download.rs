@@ -5,9 +5,7 @@
 
 use client::Api;
 use failure::Error;
-use states::idle::Idle;
-use states::install::Install;
-use states::{State, StateChangeImpl, StateMachine};
+use states::{Idle, Install, State, StateChangeImpl, StateMachine};
 use std::fs;
 use update_package::{ObjectStatus, UpdatePackage};
 use walkdir::WalkDir;

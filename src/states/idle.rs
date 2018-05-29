@@ -4,9 +4,7 @@
 //
 
 use failure::Error;
-use states::park::Park;
-use states::poll::Poll;
-use states::{State, StateChangeImpl, StateMachine};
+use states::{Park, Poll, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
 pub struct Idle {}

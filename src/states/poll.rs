@@ -6,12 +6,9 @@
 use chrono::{DateTime, Duration, Utc};
 use failure::Error;
 use rand::{self, Rng};
+use states::{Probe, State, StateChangeImpl, StateMachine};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
-
-use states::{State, StateChangeImpl, StateMachine};
-
-use states::probe::Probe;
 
 #[derive(Debug, PartialEq)]
 pub struct Poll {}
