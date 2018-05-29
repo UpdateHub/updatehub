@@ -4,7 +4,8 @@
 //
 
 use crypto_hash::{hex_digest, Algorithm};
-use serde_json::{self, Error};
+use failure::Error;
+use serde_json;
 
 use firmware::Metadata;
 use settings::Settings;
@@ -40,6 +41,12 @@ pub struct UpdatePackage {
     raw: String,
 }
 
+#[derive(Fail, Debug)]
+pub enum UpdatePackageError {
+    #[fail(display = "Incompatible with hardware: {}", _0)]
+    IncompatibleHardware(String),
+}
+
 impl UpdatePackage {
     pub fn parse(content: &str) -> Result<Self, Error> {
         let mut update_package = serde_json::from_str::<UpdatePackage>(content)?;
@@ -52,12 +59,18 @@ impl UpdatePackage {
         hex_digest(Algorithm::SHA256, self.raw.as_bytes())
     }
 
-    pub fn compatible_with(&self, firmware: &Metadata) -> bool {
-        match self.supported_hardware {
+    pub fn compatible_with(&self, firmware: &Metadata) -> Result<(), Error> {
+        let compatible = match self.supported_hardware {
             SupportedHardware::Any => true,
             SupportedHardware::Hardware(ref s) => s == &firmware.hardware,
             SupportedHardware::HardwareList(ref l) => l.contains(&firmware.hardware),
+        };
+
+        if !compatible {
+            return Err(UpdatePackageError::IncompatibleHardware(firmware.hardware.clone()).into());
         }
+
+        Ok(())
     }
 
     pub fn objects(&self) -> &Vec<Object> {
@@ -68,7 +81,8 @@ impl UpdatePackage {
         self.objects
             .iter()
             .filter(|o| {
-                let status = o.status(&settings.update.download_dir)
+                let status = o
+                    .status(&settings.update.download_dir)
                     .map_err(|err| {
                         error!(
                             "Fail accessing the object: {} (err: {})",

@@ -58,11 +58,8 @@ impl StateChangeImpl for State<Probe> {
             }
 
             ProbeResponse::Update(u) => {
-                if !u.compatible_with(&self.firmware) {
-                    debug!("Moving to Idle state as the update package is not compatible.");
-                    // FIXME: Must report error
-                    return Ok(StateMachine::Idle(self.into()));
-                }
+                // Ensure the package is compatible
+                u.compatible_with(&self.firmware)?;
 
                 if Some(u.package_uid()) == self.applied_package_uid {
                     info!(
@@ -150,7 +147,7 @@ fn invalid_hardware() {
 
     mock.assert();
 
-    assert_state!(machine, Idle);
+    assert!(machine.is_err(), "Did not catch an incompatible hardware");
 }
 
 #[test]
