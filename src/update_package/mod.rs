@@ -81,18 +81,11 @@ impl UpdatePackage {
         self.objects
             .iter()
             .filter(|o| {
-                let status = o
-                    .status(&settings.update.download_dir)
-                    .map_err(|err| {
-                        error!(
-                            "Fail accessing the object: {} (err: {})",
-                            o.sha256sum(),
-                            err
-                        )
+                o.status(&settings.update.download_dir)
+                    .map_err(|e| {
+                        error!("Fail accessing the object: {} (err: {})", o.sha256sum(), e)
                     })
-                    .unwrap_or(ObjectStatus::Missing);
-
-                status == *filter
+                    .unwrap_or(ObjectStatus::Missing) == *filter
             })
             .collect()
     }
