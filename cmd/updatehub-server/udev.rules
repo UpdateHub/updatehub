@@ -3,7 +3,6 @@ ENV{ID_FS_LABEL}=="updatehub|UPDATEHUB", \
   ACTION=="add", \
   SUBSYSTEM=="block", \
   RUN+="/bin/mkdir -p /mnt/updatehub", \
-  RUN+="/bin/mount -o ro /dev/%k /mnt/updatehub", \
   RUN+="/bin/sh -c '/bin/echo /usr/bin/updatehub-server --mount /dev/%k --fstype $env{ID_FS_TYPE} --wait /mnt/updatehub | at -M now'"
 
 ENV{ID_FS_LABEL}=="updatehub|UPDATEHUB", \
