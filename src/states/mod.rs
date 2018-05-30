@@ -28,9 +28,11 @@ mod install;
 mod park;
 mod poll;
 mod probe;
+mod reboot;
 
 pub use self::{
     download::Download, idle::Idle, install::Install, park::Park, poll::Poll, probe::Probe,
+    reboot::Reboot,
 };
 
 use failure::Error;
@@ -85,6 +87,9 @@ pub enum StateMachine {
 
     /// Install state
     Install(State<Install>),
+
+    /// Reboot state
+    Reboot(State<Reboot>),
 }
 
 impl StateMachine {
@@ -121,6 +126,7 @@ impl StateMachine {
             StateMachine::Probe(s) => Ok(s.to_next_state()?),
             StateMachine::Download(s) => Ok(s.to_next_state()?),
             StateMachine::Install(s) => Ok(s.to_next_state()?),
+            StateMachine::Reboot(s) => Ok(s.to_next_state()?),
         }
     }
 }

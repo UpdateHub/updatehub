@@ -4,7 +4,7 @@
 //
 
 use failure::Error;
-use states::{Idle, State, StateChangeImpl, StateMachine};
+use states::{Idle, Reboot, State, StateChangeImpl, StateMachine};
 use update_package::UpdatePackage;
 
 #[derive(Debug, PartialEq)]
@@ -13,9 +13,12 @@ pub struct Install {
 }
 
 create_state_step!(Install => Idle);
+create_state_step!(Install => Reboot);
 
 impl StateChangeImpl for State<Install> {
+    // FIXME: When adding state-chance hooks, we need to go to Idle if
+    // cancelled.
     fn to_next_state(self) -> Result<StateMachine, Error> {
-        Ok(StateMachine::Idle(self.into()))
+        Ok(StateMachine::Reboot(self.into()))
     }
 }
