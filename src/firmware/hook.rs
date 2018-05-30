@@ -32,11 +32,13 @@ pub fn run_hook(path: &Path) -> Result<String, Error> {
 
     let output = process::run(path.to_str().unwrap())?;
     if !output.stderr.is_empty() {
-        String::from_utf8_lossy(&output.stderr)
+        output
+            .stderr
             .lines()
             .for_each(|err| error!("{} (stderr): {}", path.display(), err))
     }
-    Ok(String::from_utf8_lossy(&output.stdout[..]).trim().into())
+
+    Ok(output.stdout.trim().into())
 }
 
 pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, Error> {
