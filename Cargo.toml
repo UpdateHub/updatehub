@@ -12,10 +12,9 @@ license = "MPL-2.0"
 
 [dependencies]
 app = "0.6.5"
-checked_command = "0.2.2"
 chrono = { version = "0.4.2", features = ["serde"] }
-cmdline_words_parser = "0.0.2"
 crypto-hash = "0.3.1"
+easy_process = "0.1.0"
 failure = "0.1.1"
 failure_derive = "0.1.1"
 hex = "0.3.2"

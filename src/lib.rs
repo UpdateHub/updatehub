@@ -1,5 +1,7 @@
 extern crate core;
 
+extern crate easy_process;
+
 #[macro_use]
 extern crate failure;
 #[macro_use]
@@ -24,8 +26,6 @@ extern crate serde_json;
 #[cfg(not(test))]
 extern crate serde_json;
 
-extern crate checked_command;
-extern crate cmdline_words_parser;
 extern crate parse_duration;
 
 extern crate rand;
@@ -53,7 +53,6 @@ pub mod settings;
 pub mod client;
 
 pub mod firmware;
-pub mod process;
 
 pub mod states;
 

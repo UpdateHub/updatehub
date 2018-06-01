@@ -7,18 +7,17 @@ use std::io;
 use std::path::Path;
 use std::str::FromStr;
 
-use checked_command;
 use failure::Error;
 use walkdir;
 use walkdir::WalkDir;
 
+use easy_process;
 use firmware::metadata_value::MetadataValue;
-use process;
 
 #[derive(Fail, Debug)]
 pub enum HookError {
     #[fail(display = "Failed executing the command {}", _0)]
-    CheckedCommand(#[cause] checked_command::Error),
+    EasyProcess(#[cause] easy_process::Error),
     #[fail(display = "Failed to process the directory {}", _0)]
     WalkDir(#[cause] walkdir::Error),
     #[fail(display = "Failed to write/read {}", _0)]
@@ -30,7 +29,7 @@ pub fn run_hook(path: &Path) -> Result<String, Error> {
         return Ok("".into());
     }
 
-    let output = process::run(path.to_str().unwrap())?;
+    let output = easy_process::run(path.to_str().unwrap())?;
     if !output.stderr.is_empty() {
         output
             .stderr
