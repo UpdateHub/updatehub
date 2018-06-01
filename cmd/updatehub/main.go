@@ -14,6 +14,7 @@ import (
 	"encoding/pem"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"syscall"
@@ -43,6 +44,37 @@ var (
 )
 
 func main() {
+	if !isReexeced() {
+		/* Reexec updatehub binary to enter in a new mount NS
+		for isolating changes to the mount table */
+		if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil {
+			log.Fatalf("failed to enter private mount NS: %s", err)
+			os.Exit(1)
+		}
+
+		cmd := exec.Command("/proc/self/exe", os.Args...)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Setpgid:    true,
+			Pdeathsig:  syscall.SIGTERM,
+			Cloneflags: syscall.CLONE_NEWNS,
+		}
+		cmd.Env = append(os.Environ(), []string{"UPDATEHUB_REEXEC=true"}...)
+		cmd.Stdin = os.Stdin
+		cmd.Stderr = os.Stderr
+		cmd.Stdout = os.Stdout
+
+		if err := cmd.Run(); err != nil {
+			if exitError, ok := err.(*exec.ExitError); ok {
+				ws := exitError.Sys().(syscall.WaitStatus)
+				os.Exit(ws.ExitStatus())
+			}
+
+			os.Exit(1)
+		}
+
+		os.Exit(0)
+	}
+
 	log.SetLevel(logrus.InfoLevel)
 
 	cmd := &cobra.Command{
@@ -76,18 +108,6 @@ func main() {
 
 	if *isDebug {
 		log.SetLevel(logrus.DebugLevel)
-	}
-
-	// enter in a new mount NS for isolating changes to the mount table
-	if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil {
-		log.Fatalf("failed to enter private mount NS: %s", err)
-		os.Exit(1)
-	}
-
-	err = syscall.Mount("", "/", "updatehub", syscall.MS_REC|syscall.MS_SLAVE, "")
-	if err != nil {
-		log.Fatalf("failed to mark rootfs as rslave: %s", err)
-		os.Exit(1)
 	}
 
 	osFs := afero.NewOsFs()
@@ -200,4 +220,8 @@ func readPublicKey(fs afero.Fs, settings *updatehub.Settings) (*rsa.PublicKey, e
 	}
 
 	return key.(*rsa.PublicKey), nil
+}
+
+func isReexeced() bool {
+	return os.Getenv("UPDATEHUB_REEXEC") == "true"
 }
