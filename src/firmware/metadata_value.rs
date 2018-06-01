@@ -37,19 +37,9 @@ impl FromStr for MetadataValue {
 
         let mut mv = MetadataValue::default();
         for (k, v) in values {
-            // replace to use .and_modify once #44733 is closed. Code
-            // is below:
-            //   mv.entry(k)
-            //     .and_modify(|e| e.push(v.clone()))
-            //     .or_insert(vec![v]);
-            match mv.entry(k) {
-                Entry::Occupied(entry) => {
-                    entry.into_mut().push(v.clone());
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(vec![v]);
-                }
-            }
+            mv.entry(k)
+                .and_modify(|e| e.push(v.clone()))
+                .or_insert(vec![v]);
         }
 
         Ok(mv)
