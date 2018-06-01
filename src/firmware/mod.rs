@@ -11,7 +11,7 @@ mod metadata_value;
 use self::metadata_value::MetadataValue;
 
 mod hook;
-use self::hook::{run_hook, run_hooks_from_dir, HookError};
+use self::hook::{run_hook, run_hooks_from_dir};
 
 #[cfg(test)]
 pub mod tests;
@@ -24,8 +24,6 @@ const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
 
 #[derive(Fail, Debug)]
 pub enum FirmwareError {
-    #[fail(display = "Failed to execute the hook: {}", _0)]
-    Process(HookError),
     #[fail(display = "Invalid product UID")]
     InvalidProductUid,
     #[fail(display = "Product UID is missing")]
