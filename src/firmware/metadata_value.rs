@@ -16,10 +16,8 @@ impl FromStr for MetadataValue {
     type Err = io::Error;
 
     fn from_str(s: &str) -> Result<MetadataValue, io::Error> {
-        let buf = s.to_string();
-
         let mut values = Vec::new();
-        for line in buf.lines() {
+        for line in s.lines() {
             let v: Vec<_> = line.splitn(2, '=').map(|v| v.trim().to_string()).collect();
             if v.len() != 2 {
                 return Err(io::Error::new(
