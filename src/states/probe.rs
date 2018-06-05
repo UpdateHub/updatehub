@@ -51,6 +51,11 @@ impl StateChangeImpl for State<Probe> {
         }
 
         match r {
+            ProbeResponse::NoUpdate => {
+                debug!("Moving to Idle state as no update is available.");
+                Ok(StateMachine::Idle(self.into()))
+            }
+
             ProbeResponse::ExtraPoll(_) => {
                 debug!("Moving to Poll state due the extra polling interval.");
                 Ok(StateMachine::Poll(self.into()))
@@ -76,11 +81,6 @@ impl StateChangeImpl for State<Probe> {
                         state: Download { update_package: u },
                     }))
                 }
-            }
-
-            ProbeResponse::NoUpdate => {
-                debug!("Moving to Idle state as no update is available.");
-                Ok(StateMachine::Idle(self.into()))
             }
         }
     }
