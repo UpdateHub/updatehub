@@ -4,7 +4,7 @@
 //
 
 use client::Api;
-use failure::Error;
+use failure::{Error, ResultExt};
 use states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
@@ -43,7 +43,9 @@ impl StateChangeImpl for State<Probe> {
         // Save any changes we due the probing
         if !self.settings.storage.read_only {
             debug!("Saving runtime settings.");
-            let _ = self.runtime_settings.save().map_err(|e| error!("{:?}", e));
+            self.runtime_settings
+                .save()
+                .context("Saving runtime due probe changes")?;
         } else {
             debug!("Skipping runtime settings save, read-only mode enabled.");
         }
@@ -89,12 +91,16 @@ fn update_not_available() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
+    use mktemp::Temp;
 
     let mock = create_mock_server(FakeServer::NoUpdate);
+    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
-        runtime_settings: RuntimeSettings::default(),
+        runtime_settings: RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
@@ -110,12 +116,16 @@ fn update_available() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
+    use mktemp::Temp;
 
     let mock = create_mock_server(FakeServer::HasUpdate);
+    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
-        runtime_settings: RuntimeSettings::default(),
+        runtime_settings: RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
@@ -131,12 +141,16 @@ fn invalid_hardware() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
+    use mktemp::Temp;
 
     let mock = create_mock_server(FakeServer::InvalidHardware);
+    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
-        runtime_settings: RuntimeSettings::default(),
+        runtime_settings: RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
@@ -152,12 +166,16 @@ fn extra_poll_interval() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
+    use mktemp::Temp;
 
     let mock = create_mock_server(FakeServer::ExtraPoll);
+    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
-        runtime_settings: RuntimeSettings::default(),
+        runtime_settings: RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
@@ -174,8 +192,10 @@ fn skip_same_package_uid() {
     use client::tests::{create_mock_server, FakeServer};
     use client::ProbeResponse;
     use firmware::tests::{create_fake_metadata, FakeDevice};
+    use mktemp::Temp;
 
     let mock = create_mock_server(FakeServer::HasUpdate).expect(2);
+    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     // We first get the package_uid that will be returned so we can
     // use it for the upcoming test.
@@ -199,7 +219,9 @@ fn skip_same_package_uid() {
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
-        runtime_settings: RuntimeSettings::default(),
+        runtime_settings: RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         applied_package_uid: package_uid,
         state: Probe {},
@@ -215,14 +237,18 @@ fn error() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
+    use mktemp::Temp;
 
     // The server here waits for the second request which includes the
     // retries to succeed.
     let mock = create_mock_server(FakeServer::ErrorOnce);
+    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
-        runtime_settings: RuntimeSettings::default(),
+        runtime_settings: RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         applied_package_uid: None,
         state: Probe {},
