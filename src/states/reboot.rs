@@ -15,7 +15,7 @@ create_state_step!(Reboot => Idle);
 impl StateChangeImpl for State<Reboot> {
     // FIXME: When adding state-chance hooks, we need to go to Idle if
     // cancelled.
-    fn to_next_state(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine, Error> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {

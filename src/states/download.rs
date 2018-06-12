@@ -19,7 +19,7 @@ create_state_step!(Download => Idle);
 create_state_step!(Download => Install(update_package));
 
 impl StateChangeImpl for State<Download> {
-    fn to_next_state(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine, Error> {
         // Prune left over from previous installations
         for entry in WalkDir::new(&self.settings.update.download_dir)
             .follow_links(true)

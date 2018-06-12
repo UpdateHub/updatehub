@@ -12,7 +12,7 @@ pub struct Park {}
 /// Implements the state change for `State<Park>`. It stays in
 /// `State<Park>` state.
 impl StateChangeImpl for State<Park> {
-    fn to_next_state(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine, Error> {
         debug!("Staying on Park state.");
         Ok(StateMachine::Park(self))
     }

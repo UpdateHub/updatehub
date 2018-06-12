@@ -41,7 +41,7 @@ use runtime_settings::RuntimeSettings;
 use settings::Settings;
 
 pub trait StateChangeImpl {
-    fn to_next_state(self) -> Result<StateMachine, Error>;
+    fn handle(self) -> Result<StateMachine, Error>;
 }
 
 /// Holds the `State` type and common data, which is available for
@@ -120,13 +120,13 @@ impl StateMachine {
 
     fn move_to_next_state(self) -> Result<StateMachine, Error> {
         match self {
-            StateMachine::Park(s) => Ok(s.to_next_state()?),
-            StateMachine::Idle(s) => Ok(s.to_next_state()?),
-            StateMachine::Poll(s) => Ok(s.to_next_state()?),
-            StateMachine::Probe(s) => Ok(s.to_next_state()?),
-            StateMachine::Download(s) => Ok(s.to_next_state()?),
-            StateMachine::Install(s) => Ok(s.to_next_state()?),
-            StateMachine::Reboot(s) => Ok(s.to_next_state()?),
+            StateMachine::Park(s) => Ok(s.handle()?),
+            StateMachine::Idle(s) => Ok(s.handle()?),
+            StateMachine::Poll(s) => Ok(s.handle()?),
+            StateMachine::Probe(s) => Ok(s.handle()?),
+            StateMachine::Download(s) => Ok(s.handle()?),
+            StateMachine::Install(s) => Ok(s.handle()?),
+            StateMachine::Reboot(s) => Ok(s.handle()?),
         }
     }
 }

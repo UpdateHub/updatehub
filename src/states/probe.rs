@@ -15,7 +15,7 @@ create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
 impl StateChangeImpl for State<Probe> {
-    fn to_next_state(mut self) -> Result<StateMachine, Error> {
+    fn handle(mut self) -> Result<StateMachine, Error> {
         use chrono::Duration;
         use client::ProbeResponse;
         use std::thread;

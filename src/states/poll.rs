@@ -19,7 +19,7 @@ create_state_step!(Poll => Probe);
 ///
 /// This state is used to control when to go to the `State<Probe>`.
 impl StateChangeImpl for State<Poll> {
-    fn to_next_state(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine, Error> {
         let current_time: DateTime<Utc> = Utc::now();
 
         let probe_now = self.runtime_settings.polling.now;

@@ -17,7 +17,7 @@ pub struct Idle {}
 impl StateChangeImpl for State<Idle> {
     // FIXME: when supporting the HTTP API we need allow going to
     // State<Probe>.
-    fn to_next_state(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine, Error> {
         if !self.settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
             return Ok(StateMachine::Park(self.into()));
