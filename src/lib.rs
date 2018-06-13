@@ -36,6 +36,7 @@ extern crate serde_json;
 pub mod build_info;
 pub mod client;
 pub mod firmware;
+mod hook;
 pub mod runtime_settings;
 mod serde_helpers;
 pub mod settings;
