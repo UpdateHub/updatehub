@@ -1,8 +1,8 @@
 hash: 9b2b1b64484f556344c27b0e1a39f2118d019d1815a53d03c3c83f0014ab2843
-updated: 2018-05-28T11:17:38.978878911-03:00
+updated: 2018-06-20T17:28:42.31249881-03:00
 imports:
 - name: github.com/anacrolix/missinggo
-  version: f32f2dc367fb4fc0167b83145459f567abd59c49
+  version: f9a329340c5303f1977dcb9efb0918b34437a003
   subpackages:
   - httptoo
   - mime
@@ -19,17 +19,19 @@ imports:
   subpackages:
   - spew
 - name: github.com/fatih/color
-  version: 507f6050b8568533fb3f5504de8e5205fa62a114
+  version: 2d684516a8861da43017284349b7e303e809ac21
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/go-ini/ini
-  version: 5e9692864e22d02ac79e2fa499cffb00520b4fea
+  version: cec2bdc49009247305a260b082a18e802d0fe292
 - name: github.com/hokaccha/go-prettyjson
-  version: e6b9231a2b1cc5798b336fdbf99c16cd8ad1e0c9
+  version: d229c224a219dcf41e9d2af4684b9782f33f5eb7
+- name: github.com/huandu/xstrings
+  version: 7bb0250b58e5c15670406e6f93ffda43281305b1
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/julienschmidt/httprouter
-  version: d1898390779332322e6b5ca5011da4bf249bb056
+  version: adbc77eec0d91467376ca515bc3a14b8434d0f18
 - name: github.com/koofr/go-httputils
   version: 966567c98232b97cb39a4a2a0b516a412b90e9a4
 - name: github.com/mattn/go-colorable
@@ -37,7 +39,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
 - name: github.com/mattn/go-shellwords
-  version: 39dbbfa24bbc39559b61cae9b20b0e8db0e55525
+  version: f8471b0a71ded0ab910825ee2cf230f25de000f1
 - name: github.com/moul/http2curl
   version: 9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d
 - name: github.com/OSSystems/pkg
@@ -53,47 +55,47 @@ imports:
   subpackages:
   - difflib
 - name: github.com/sirupsen/logrus
-  version: 778f2e774c725116edbc3d039dc0dfc1cc62aae8
+  version: 75068beb13ada9c0ddde611f678523fda7352650
   subpackages:
   - hooks/test
 - name: github.com/spf13/afero
-  version: 63644898a8da0bc22138abf860edaf5277b6102e
+  version: 787d034dfe70e44075ccc060d346146ef53270ad
   subpackages:
   - mem
 - name: github.com/spf13/cobra
-  version: cd30c2a7e91a1d63fd9a0027accf18a681e9d50b
+  version: 1e58aa3361fd650121dceeedc399e7189c05674a
 - name: github.com/spf13/pflag
-  version: 329ebf1e04800d11a25047832495199d366580f3
+  version: 3ebe029320b2676d667ae88da602a5f854788a8a
 - name: github.com/stretchr/objx
-  version: 8a3f7159479fbc75b30357fbc48f380b7320f08e
+  version: 0ab728f62c7f6fcd754334f7931c2dd659dce1d1
 - name: github.com/stretchr/testify
-  version: c679ae2cc0cb27ec3293fea7e254e47386f05d69
+  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
   subpackages:
   - assert
   - mock
 - name: github.com/updatehub/agent-sdk-go
   version: c1625cfa5668acd6156fd3e30967f5060672ec79
 - name: golang.org/x/crypto
-  version: f70185d77e8278766928032ee1355e3da47e7181
+  version: 7f39a6fea4fe9364fb61e1def6a268a51b4f3a06
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
-  version: 61147c48b25b599e5b561d2e9c4f3e1ef489ca41
+  version: db08ff08e8622530d9ed3a0e8ac279f6d4c02196
   subpackages:
   - publicsuffix
 - name: golang.org/x/sys
-  version: 3b87a42e500a6dc65dae1a55d0b641295971163e
+  version: ad87a3a340fa7f3bed189293fbfa7a9b7e021ae1
   subpackages:
   - unix
   - windows
 - name: golang.org/x/text
-  version: 7922cc490dd5a7dbaa7fd5d6196b49db59ac042f
+  version: 5cec4b58c438bd98288aeb248bab2c1840713d21
   subpackages:
   - transform
   - unicode/norm
 testImports:
 - name: github.com/AllenDang/w32
-  version: 9a4ee0f7d224efbff75947fa7060daadccc4741c
+  version: ad0a36d80adcd081d5c0dded8e97a009b486d1db
 - name: github.com/koofr/go-cryptoutils
   version: fe224388747f833c92925c933f6e3dbf2765e983
   subpackages:
