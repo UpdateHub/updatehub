@@ -16,7 +16,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"syscall"
 
 	"github.com/pkg/errors"
 
@@ -76,18 +75,6 @@ func main() {
 
 	if *isDebug {
 		log.SetLevel(logrus.DebugLevel)
-	}
-
-	// enter in a new mount NS for isolating changes to the mount table
-	if err := syscall.Unshare(syscall.CLONE_NEWNS); err != nil {
-		log.Fatalf("failed to enter private mount NS: %s", err)
-		os.Exit(1)
-	}
-
-	err = syscall.Mount("", "/", "updatehub", syscall.MS_REC|syscall.MS_SLAVE, "")
-	if err != nil {
-		log.Fatalf("failed to mark rootfs as rslave: %s", err)
-		os.Exit(1)
 	}
 
 	osFs := afero.NewOsFs()
