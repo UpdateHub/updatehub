@@ -77,12 +77,11 @@ Loop:
 		case err, ok := <-readErrChan:
 			if ok {
 				close(readErrChan)
-				return false, err
 			}
-		case _, ok := <-cancel:
-			if ok {
-				return true, nil
-			}
+			
+			return false, err
+		case <-cancel:
+			return true, nil
 		case <-time.After(timeout):
 			finalErr := fmt.Errorf("copy error: timeout")
 			log.Error(finalErr)
