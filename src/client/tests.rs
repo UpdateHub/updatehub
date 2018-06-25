@@ -20,7 +20,7 @@ pub fn create_mock_server(server: FakeServer) -> Mock {
     use update_package::tests::get_update_json;
 
     fn fake_device_reply_body(identity: usize, hardware: &str) -> Matcher {
-        Matcher::JSON(json!(
+        Matcher::Json(json!(
             {
                 "product_uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
                 "version": "1.1",
