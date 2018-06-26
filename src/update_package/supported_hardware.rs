@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use failure::Error;
 use serde::{self, Deserialize, Deserializer};
+use update_package::UpdatePackageError;
 
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(untagged)]
@@ -11,6 +13,21 @@ pub enum SupportedHardware {
     #[serde(deserialize_with = "any")]
     Any,
     HardwareList(Vec<String>),
+}
+
+impl SupportedHardware {
+    pub fn compatible_with(&self, hardware: &String) -> Result<(), Error> {
+        let compatible = match self {
+            SupportedHardware::Any => true,
+            SupportedHardware::HardwareList(l) => l.contains(hardware),
+        };
+
+        if !compatible {
+            return Err(UpdatePackageError::IncompatibleHardware(hardware.to_string()).into());
+        }
+
+        Ok(())
+    }
 }
 
 fn any<'de, D>(deserializer: D) -> Result<(), D::Error>

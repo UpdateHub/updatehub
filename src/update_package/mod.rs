@@ -60,16 +60,7 @@ impl UpdatePackage {
     }
 
     pub fn compatible_with(&self, firmware: &Metadata) -> Result<(), Error> {
-        let compatible = match self.supported_hardware {
-            SupportedHardware::Any => true,
-            SupportedHardware::HardwareList(ref l) => l.contains(&firmware.hardware),
-        };
-
-        if !compatible {
-            return Err(UpdatePackageError::IncompatibleHardware(firmware.hardware.clone()).into());
-        }
-
-        Ok(())
+        self.supported_hardware.compatible_with(&firmware.hardware)
     }
 
     pub fn objects(&self) -> &Vec<Object> {
