@@ -10,7 +10,6 @@ use serde::{self, Deserialize, Deserializer};
 pub enum SupportedHardware {
     #[serde(deserialize_with = "any")]
     Any,
-    Hardware(String),
     HardwareList(Vec<String>),
 }
 
@@ -40,6 +39,11 @@ mod tests {
     struct Test(SupportedHardware);
 
     #[test]
+    fn no_hardware() {
+        assert!(serde_json::from_str::<Test>("").is_err());
+    }
+
+    #[test]
     fn any_hardware() {
         assert_eq!(
             Test(SupportedHardware::Any),
@@ -50,8 +54,8 @@ mod tests {
     #[test]
     fn one_hardware() {
         assert_eq!(
-            Test(SupportedHardware::Hardware("hw".into())),
-            serde_json::from_str::<Test>(&json!("hw").to_string()).unwrap()
+            Test(SupportedHardware::HardwareList(vec!["hw".to_string()])),
+            serde_json::from_str::<Test>(&json!(["hw"]).to_string()).unwrap()
         );
     }
 

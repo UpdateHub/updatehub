@@ -62,7 +62,6 @@ impl UpdatePackage {
     pub fn compatible_with(&self, firmware: &Metadata) -> Result<(), Error> {
         let compatible = match self.supported_hardware {
             SupportedHardware::Any => true,
-            SupportedHardware::Hardware(ref s) => s == &firmware.hardware,
             SupportedHardware::HardwareList(ref l) => l.contains(&firmware.hardware),
         };
 

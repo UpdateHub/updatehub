@@ -11,7 +11,7 @@ pub fn get_update_json() -> serde_json::Value {
         {
             "product-uid": "0123456789",
             "version": "1.0",
-            "supported-hardware": "board",
+            "supported-hardware": ["board"],
             "objects":
             [
                 {
