@@ -13,6 +13,7 @@ pub fn create_hook(path: PathBuf, contents: &str, mode: u32) {
     use std::fs::File;
     use std::io::Write;
     use std::os::unix::fs::PermissionsExt;
+    use std::{thread, time};
 
     // ensure path exists
     create_dir_all(path.parent().unwrap()).unwrap();
@@ -23,6 +24,10 @@ pub fn create_hook(path: PathBuf, contents: &str, mode: u32) {
     let mut permissions = metadata(path).unwrap().permissions();
     permissions.set_mode(mode);
     file.set_permissions(permissions).unwrap();
+
+    // This is needed because the filesystem may report it is complete
+    // before it finishes writing it.
+    thread::sleep(time::Duration::from_millis(50));
 }
 
 pub fn product_uid_hook(path: &Path) -> PathBuf {
