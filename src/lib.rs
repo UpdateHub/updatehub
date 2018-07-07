@@ -26,9 +26,9 @@ extern crate serde_derive;
 extern crate serde_json;
 
 #[cfg(test)]
-extern crate mktemp;
-#[cfg(test)]
 extern crate mockito;
+#[cfg(test)]
+extern crate tempfile;
 #[cfg(test)]
 #[macro_use]
 extern crate serde_json;

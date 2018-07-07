@@ -199,9 +199,12 @@ fn ser() {
 
 #[test]
 fn load_and_save() {
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
 
-    let settings_file = Temp::new_file().unwrap().to_path_buf();
+    let tempfile = NamedTempFile::new().unwrap();
+    let settings_file = tempfile.path();
+    fs::remove_file(&settings_file).unwrap();
 
     let mut settings = RuntimeSettings::new()
         .load(settings_file.to_str().unwrap())

@@ -4,8 +4,8 @@
 //
 
 use super::*;
-use mktemp::Temp;
 use std::path::PathBuf;
+use tempfile::tempdir;
 
 pub fn create_hook(path: PathBuf, contents: &str, mode: u32) {
     use std::fs::create_dir_all;
@@ -58,7 +58,7 @@ pub enum FakeDevice {
 }
 
 pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
-    let tmpdir = Temp::new_dir().unwrap().to_path_buf();
+    let tmpdir = tempdir().unwrap().path().to_path_buf();
 
     // create fake hooks to be used to validate the load
     create_hook(
@@ -102,21 +102,21 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
 
 #[test]
 fn run_multiple_hooks_in_a_dir() {
-    let tmpdir = Temp::new_dir().unwrap();
+    let tmpdir = tempdir().unwrap().path().to_path_buf();
 
     // create two scripts so we can test the parsing of output
     create_hook(
-        tmpdir.to_path_buf().join("hook1"),
+        tmpdir.join("hook1"),
         "#!/bin/sh\necho key2=val2\necho key1=val1",
         0o755,
     );
     create_hook(
-        tmpdir.to_path_buf().join("hook2"),
+        tmpdir.join("hook2"),
         "#!/bin/sh\necho key2=val4\necho key1=val3",
         0o755,
     );
 
-    let fv = run_hooks_from_dir(&tmpdir.to_path_buf()).unwrap();
+    let fv = run_hooks_from_dir(&tmpdir).unwrap();
 
     assert_eq!(fv.keys().len(), 2);
     assert_eq!(fv.keys().collect::<Vec<_>>(), ["key1", "key2"]);

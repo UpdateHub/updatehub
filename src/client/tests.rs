@@ -94,9 +94,9 @@ fn probe_requirements() {
 #[test]
 fn download_object() {
     let metadata = Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    use mktemp::Temp;
     use std::fs::File;
     use std::io::Read;
+    use tempfile::tempdir;
 
     let m1 = mock(
         "GET",
@@ -124,7 +124,9 @@ fn download_object() {
         .create();
 
     let mut settings = Settings::default();
-    settings.update.download_dir = Temp::new_dir().unwrap().to_path_buf();
+    let tempdir = tempdir().unwrap();
+
+    settings.update.download_dir = tempdir.path().to_path_buf();
 
     // Download the object.
     let _ = Api::new(&settings, &RuntimeSettings::default(), &metadata)
@@ -155,4 +157,6 @@ fn download_object() {
     m2.assert();
 
     assert_eq!(downloaded, "1234567890".to_string());
+
+    tempdir.close().expect("Fail to cleanup the tempdir");
 }

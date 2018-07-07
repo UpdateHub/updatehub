@@ -48,10 +48,10 @@ pub fn create_fake_object(settings: &Settings) {
 }
 
 pub fn create_fake_settings() -> Settings {
-    use mktemp::Temp;
+    use tempfile::tempdir;
 
     let mut settings = Settings::default();
-    settings.update.download_dir = Temp::new_dir().unwrap().to_path_buf();
+    settings.update.download_dir = tempdir().unwrap().path().to_path_buf();
     settings
 }
 

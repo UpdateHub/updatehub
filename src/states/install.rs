@@ -52,10 +52,13 @@ impl StateChangeImpl for State<Install> {
 fn has_package_uid_if_succeed() {
     use super::*;
     use firmware::tests::{create_fake_metadata, FakeDevice};
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
     use update_package::tests::get_update_package;
 
-    let tmpfile = Temp::new_file().unwrap().to_path_buf();
+    let tmpfile = NamedTempFile::new().unwrap();
+    let tmpfile = tmpfile.path();
+    fs::remove_file(&tmpfile).unwrap();
 
     let machine = StateMachine::Install(State {
         settings: Settings::default(),
@@ -83,10 +86,13 @@ fn has_package_uid_if_succeed() {
 fn polling_now_if_succeed() {
     use super::*;
     use firmware::tests::{create_fake_metadata, FakeDevice};
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
     use update_package::tests::get_update_package;
 
-    let tmpfile = Temp::new_file().unwrap().to_path_buf();
+    let tmpfile = NamedTempFile::new().unwrap();
+    let tmpfile = tmpfile.path();
+    fs::remove_file(&tmpfile).unwrap();
 
     let machine = StateMachine::Install(State {
         settings: Settings::default(),

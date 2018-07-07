@@ -91,10 +91,14 @@ fn update_not_available() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
+
+    let tmpfile = NamedTempFile::new().unwrap();
+    let tmpfile = tmpfile.path();
+    fs::remove_file(&tmpfile).unwrap();
 
     let mock = create_mock_server(FakeServer::NoUpdate);
-    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
@@ -116,10 +120,14 @@ fn update_available() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
+
+    let tmpfile = NamedTempFile::new().unwrap();
+    let tmpfile = tmpfile.path();
+    fs::remove_file(&tmpfile).unwrap();
 
     let mock = create_mock_server(FakeServer::HasUpdate);
-    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
@@ -141,10 +149,14 @@ fn invalid_hardware() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
+
+    let tmpfile = NamedTempFile::new().unwrap();
+    let tmpfile = tmpfile.path();
+    fs::remove_file(&tmpfile).unwrap();
 
     let mock = create_mock_server(FakeServer::InvalidHardware);
-    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
@@ -166,10 +178,14 @@ fn extra_poll_interval() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
+
+    let tmpfile = NamedTempFile::new().unwrap();
+    let tmpfile = tmpfile.path();
+    fs::remove_file(&tmpfile).unwrap();
 
     let mock = create_mock_server(FakeServer::ExtraPoll);
-    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
@@ -192,10 +208,14 @@ fn skip_same_package_uid() {
     use client::tests::{create_mock_server, FakeServer};
     use client::ProbeResponse;
     use firmware::tests::{create_fake_metadata, FakeDevice};
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
+
+    let tmpfile = NamedTempFile::new().unwrap();
+    let tmpfile = tmpfile.path();
+    fs::remove_file(&tmpfile).unwrap();
 
     let mock = create_mock_server(FakeServer::HasUpdate).expect(2);
-    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     // We first get the package_uid that will be returned so we can
     // use it for the upcoming test.
@@ -237,12 +257,16 @@ fn error() {
     use super::*;
     use client::tests::{create_mock_server, FakeServer};
     use firmware::tests::{create_fake_metadata, FakeDevice};
-    use mktemp::Temp;
+    use std::fs;
+    use tempfile::NamedTempFile;
+
+    let tmpfile = NamedTempFile::new().unwrap();
+    let tmpfile = tmpfile.path();
+    fs::remove_file(&tmpfile).unwrap();
 
     // The server here waits for the second request which includes the
     // retries to succeed.
     let mock = create_mock_server(FakeServer::ErrorOnce);
-    let tmpfile = Temp::new_file().unwrap().to_path_buf();
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),

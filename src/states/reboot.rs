@@ -31,7 +31,6 @@ impl StateChangeImpl for State<Reboot> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use mktemp::Temp;
     use std::path::Path;
 
     fn create_reboot(path: &Path) {
@@ -59,15 +58,17 @@ mod test {
         use runtime_settings::RuntimeSettings;
         use settings::Settings;
         use std::env;
+        use tempfile::tempdir;
 
         // create the fake reboot command
-        let tmpdir = Temp::new_dir().unwrap().to_path_buf();
+        let tmpdir = tempdir().unwrap();
+        let tmpdir = tmpdir.path();
         create_reboot(&tmpdir);
         env::set_var(
             "PATH",
             format!(
                 "{}:{}",
-                tmpdir.as_path().to_string_lossy(),
+                &tmpdir.to_string_lossy(),
                 env::var("PATH").unwrap_or_default()
             ),
         );
