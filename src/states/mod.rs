@@ -114,7 +114,7 @@ impl StateMachine {
                 return;
             }
             Ok(s) => s.run(),
-            Err(e) => error!("{}", e),
+            Err(e) => panic!("{}", e),
         }
     }
 
