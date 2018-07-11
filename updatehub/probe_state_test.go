@@ -236,6 +236,8 @@ func TestStateProbeTimeout(t *testing.T) {
 	cm.On("ProbeUpdate", apiClient, 1).Return(um, signature, time.Duration(0), nil).Once()
 
 	next, _ := uh.GetState().Handle(uh)
+	assert.IsType(t, &ProbeState{}, next)
+	next, _ = uh.GetState().Handle(uh)
 
 	assert.True(t, timeoutReached)
 
