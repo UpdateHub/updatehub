@@ -21,6 +21,7 @@ import (
 // ProbeState is the State interface implementation for the UpdateHubStateProbe
 type ProbeState struct {
 	BaseState
+	CancellableState
 
 	ProbeResponseReady  chan bool
 	probeUpdateMetadata *metadata.UpdateMetadata
@@ -36,6 +37,12 @@ func (state *ProbeState) ID() UpdateHubState {
 	return state.id
 }
 
+// Cancel cancels a state if it is cancellable
+func (state *ProbeState) Cancel(ok bool, nextState State) bool {
+	state.CancellableState.Cancel(ok, nextState)
+	return ok
+}
+
 // Handle for ProbeState executes a ProbeUpdate procedure and
 // proceed to download the update if there is one. It goes back to the
 // polling state otherwise.
@@ -43,23 +50,36 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 	var signature []byte
 	var err error
 
-	for {
-		state.probeUpdateMetadata, signature, state.probeExtraPoll, err = uh.Controller.ProbeUpdate(state.apiClient, uh.Settings.PollingRetries)
+	var nextState State
+	nextState = state
 
-		if neterr, ok := errors.Cause(err).(net.Error); ok {
-			if neterr.Timeout() {
-				log.Warn("timeout during download update")
+	pollingRetries := uh.Settings.PollingRetries
+
+	go func() {
+	loop:
+		for {
+			select {
+			case <-time.After(time.Second):
+				state.probeUpdateMetadata, signature, state.probeExtraPoll, err = uh.Controller.ProbeUpdate(state.apiClient, pollingRetries)
+
+				if neterr, ok := errors.Cause(err).(net.Error); ok {
+					if neterr.Timeout() {
+						log.Warn("timeout during download update")
+					}
+
+					nextState = NewProbeState(uh.DefaultApiClient)
+				}
+
+				break loop
+			case <-state.cancel:
+				break loop
 			}
-
-			uh.Settings.PollingRetries++
-
-			time.Sleep(time.Second)
-
-			continue
 		}
 
-		break
-	}
+		state.Cancel(true, nextState)
+	}()
+
+	state.Wait()
 
 	// "non-blocking" write to channel
 	select {
@@ -67,17 +87,30 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 	default:
 	}
 
-	// Reset polling retries and disable ASAP mode in case of ProbeUpdate success
-	if state.probeExtraPoll != -1 {
+	// Increment the number of polling retries
+	uh.Settings.PollingRetries++
+
+	defer uh.Settings.Save(uh.Store)
+
+	// state cancelled
+	if state.NextState() != state {
+		return state.NextState(), true
+	}
+
+	// Reset polling retries and disable ASAP mode in case of extra polling
+	if state.probeExtraPoll > 0 {
 		uh.Settings.PollingRetries = 0
 		uh.Settings.ProbeASAP = false
 	}
 
 	uh.Settings.LastPoll = time.Now()
 	uh.Settings.ExtraPollingInterval = 0
-	uh.Settings.Save(uh.Store)
 
 	if state.probeUpdateMetadata != nil {
+		// Reset polling retries and disable ASAP mode in case of ProbeUpdate success
+		uh.Settings.PollingRetries = 0
+		uh.Settings.ProbeASAP = false
+
 		packageUID := state.probeUpdateMetadata.PackageUID()
 		if packageUID == uh.lastInstalledPackageUID {
 			return NewIdleState(), false
@@ -107,7 +140,6 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 
 		if probeExtraPollTime.Before(nextPoll) {
 			uh.Settings.ExtraPollingInterval = state.probeExtraPoll
-			uh.Settings.Save(uh.Store)
 
 			poll := NewPollState(uh.Settings.PollingInterval)
 			poll.interval = state.probeExtraPoll
@@ -116,17 +148,14 @@ func (state *ProbeState) Handle(uh *UpdateHub) (State, bool) {
 		}
 	}
 
-	// Increment the number of polling retries in case of ProbeUpdate failure
-	uh.Settings.PollingRetries++
-	uh.Settings.Save(uh.Store)
-
 	return NewIdleState(), false
 }
 
 // NewProbeState creates a new ProbeState
 func NewProbeState(apiClient *client.ApiClient) *ProbeState {
 	state := &ProbeState{
-		BaseState: BaseState{id: UpdateHubStateProbe},
+		BaseState:        BaseState{id: UpdateHubStateProbe},
+		CancellableState: CancellableState{cancel: make(chan bool, 1)},
 	}
 
 	state.apiClient = apiClient
