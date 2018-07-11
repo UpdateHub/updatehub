@@ -84,7 +84,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprout
 	out := map[string]interface{}{}
 
 	switch state := ab.UpdateHub.GetState().(type) {
-	case *updatehub.IdleState, *updatehub.PollState:
+	case *updatehub.IdleState, *updatehub.PollState, *updatehub.ProbeState:
 		s := updatehub.NewProbeState(apiClient)
 
 		ab.UpdateHub.Cancel(s)
