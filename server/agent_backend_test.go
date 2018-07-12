@@ -254,14 +254,14 @@ func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 func TestProbeRouteIsBusy(t *testing.T) {
 	out := map[string]interface{}{}
 	out["busy"] = true
-	out["current-state"] = "probe"
+	out["current-state"] = "rebooting"
 
 	expectedResponse, _ := json.MarshalIndent(out, "", "    ")
 
 	uh, ab, _, _ := setup(t)
 	defer teardown(t)
 
-	s := updatehub.NewProbeState(uh.DefaultApiClient)
+	s := updatehub.NewRebootingState(uh.DefaultApiClient, nil)
 	uh.SetState(s)
 
 	rwm := &responsewritermock.ResponseWriterMock{}
