@@ -145,9 +145,6 @@ func (uh *UpdateHub) Cancel(nextState State) {
 }
 
 func (uh *UpdateHub) GetState() State {
-	uh.stateMutex.Lock()
-	defer uh.stateMutex.Unlock()
-
 	return uh.state
 }
 
