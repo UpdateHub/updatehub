@@ -61,7 +61,7 @@ func (u *UpdateClient) ProbeUpdate(api ApiRequester, uri string, data interface{
 	res, err := api.Do(req)
 	if err != nil {
 		finalErr := errors.Wrap(err, "probe update request failed")
-		log.Error(finalErr)
+		log.Debug(finalErr)
 		return nil, nil, 0, finalErr
 	}
 
