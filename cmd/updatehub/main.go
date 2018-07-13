@@ -12,6 +12,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"io/ioutil"
+	"log/syslog"
 	"net/http"
 	"os"
 	"path"
@@ -24,6 +26,7 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
+	syslog_hook "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/updatehub/updatehub/client"
 	_ "github.com/updatehub/updatehub/installmodes/copy"
 	_ "github.com/updatehub/updatehub/installmodes/flash"
@@ -42,6 +45,12 @@ var (
 )
 
 func main() {
+	hook, err := syslog_hook.NewSyslogHook("", "", syslog.LOG_INFO, "updatehub")
+	if err == nil {
+		logrus.StandardLogger().Hooks.Add(hook)
+		log.SetOutput(ioutil.Discard)
+	}
+
 	log.SetLevel(logrus.InfoLevel)
 
 	cmd := &cobra.Command{
@@ -53,7 +62,7 @@ func main() {
 	isQuiet := cmd.PersistentFlags().Bool("quiet", false, "sets the log level to 'error'")
 	isDebug := cmd.PersistentFlags().Bool("debug", false, "sets the log level to 'debug'")
 
-	err := cmd.Execute()
+	err = cmd.Execute()
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
