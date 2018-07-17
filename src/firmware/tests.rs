@@ -7,7 +7,7 @@ use super::*;
 use std::path::PathBuf;
 use tempfile::tempdir;
 
-pub fn create_hook(path: PathBuf, contents: &str, mode: u32) {
+pub fn create_hook(path: PathBuf, contents: &str) {
     use std::fs::create_dir_all;
     use std::fs::metadata;
     use std::fs::File;
@@ -22,7 +22,7 @@ pub fn create_hook(path: PathBuf, contents: &str, mode: u32) {
     file.write_all(contents.as_bytes()).unwrap();
 
     let mut permissions = metadata(path).unwrap().permissions();
-    permissions.set_mode(mode);
+    permissions.set_mode(0o755);
     file.set_permissions(permissions).unwrap();
 
     // This is needed because the filesystem may report it is complete
@@ -64,9 +64,8 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
     create_hook(
         product_uid_hook(&tmpdir),
         "#!/bin/sh\necho 229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-        0o755,
     );
-    create_hook(version_hook(&tmpdir), "#!/bin/sh\necho 1.1", 0o755);
+    create_hook(version_hook(&tmpdir), "#!/bin/sh\necho 1.1");
     create_hook(
         hardware_hook(&tmpdir),
         &format!(
@@ -76,7 +75,6 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
                 _ => "board",
             }
         ),
-        0o755,
     );
     create_hook(
         device_identity_dir(&tmpdir),
@@ -89,12 +87,10 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
                 FakeDevice::InvalidHardware => 4,
             }
         ),
-        0o755,
     );
     create_hook(
         device_attributes_dir(&tmpdir),
         "#!/bin/sh\necho attr1=attrvalue1\necho attr2=attrvalue2",
-        0o755,
     );
 
     tmpdir
@@ -108,12 +104,10 @@ fn run_multiple_hooks_in_a_dir() {
     create_hook(
         tmpdir.join("hook1"),
         "#!/bin/sh\necho key2=val2\necho key1=val1",
-        0o755,
     );
     create_hook(
         tmpdir.join("hook2"),
         "#!/bin/sh\necho key2=val4\necho key1=val3",
-        0o755,
     );
 
     let fv = run_hooks_from_dir(&tmpdir).unwrap();
@@ -131,11 +125,7 @@ fn check_load_metadata() {
     {
         let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         // check error with a invalid product uid
-        create_hook(
-            product_uid_hook(&metadata_dir),
-            "#!/bin/sh\necho 123",
-            0o755,
-        );
+        create_hook(product_uid_hook(&metadata_dir), "#!/bin/sh\necho 123");
         let metadata = Metadata::new(&metadata_dir);
         assert!(metadata.is_err());
     }
