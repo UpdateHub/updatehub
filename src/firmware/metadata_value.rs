@@ -39,7 +39,7 @@ impl FromStr for MetadataValue {
         for (k, v) in values {
             mv.entry(k)
                 .and_modify(|e| e.push(v.clone()))
-                .or_insert(vec![v]);
+                .or_insert_with(|| vec![v]);
         }
 
         Ok(mv)

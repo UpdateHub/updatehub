@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+#![allow(trivially_copy_pass_by_ref)]
 pub mod ser {
     use chrono::Duration;
     use serde::Serializer;

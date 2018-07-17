@@ -16,14 +16,15 @@ pub enum SupportedHardware {
 }
 
 impl SupportedHardware {
-    pub fn compatible_with(&self, hardware: &String) -> Result<(), Error> {
+    pub fn compatible_with(&self, hardware: &str) -> Result<(), Error> {
+        let hardware = hardware.to_string();
         let compatible = match self {
             SupportedHardware::Any => true,
-            SupportedHardware::HardwareList(l) => l.contains(hardware),
+            SupportedHardware::HardwareList(l) => l.contains(&hardware),
         };
 
         if !compatible {
-            return Err(UpdatePackageError::IncompatibleHardware(hardware.to_string()).into());
+            return Err(UpdatePackageError::IncompatibleHardware(hardware).into());
         }
 
         Ok(())

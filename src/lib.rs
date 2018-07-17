@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "clippy"), allow(unknown_lints))]
+
 extern crate chrono;
 extern crate core;
 extern crate crypto_hash;
