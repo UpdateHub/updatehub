@@ -359,10 +359,10 @@ func (uh *UpdateHub) DownloadUpdate(apiClient *client.ApiClient, updateMetadata 
 		if stat.Size() > 0 {
 			cr, err = uh.Updater.GetUpdateContentRange(apiClient.Request(), uri, stat.Size())
 			if err != nil {
-				return err
+				log.Warn(err)
+			} else {
+				log.Debug(fmt.Sprintf("first_bytes=%d last_bytes=%d length=%d", cr.First, cr.Last, cr.Length))
 			}
-
-			log.Debug(fmt.Sprintf("first_bytes=%d last_bytes=%d length=%d", cr.First, cr.Last, cr.Length))
 		}
 
 		rd, _, err := uh.Updater.DownloadUpdate(apiClient.Request(), uri, cr)
