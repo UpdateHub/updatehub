@@ -55,6 +55,7 @@ type TarballObject struct {
 	CopyBackend            copy.Interface `json:"-"`
 	mtd.MtdUtils
 	mtd.UbifsUtils
+	tempDirPath string
 
 	Target        string `json:"target"`
 	TargetType    string `json:"target-type"`
@@ -108,7 +109,8 @@ func (tb *TarballObject) Install(downloadDir string) error {
 		}
 	}
 
-	tempDirPath, err := tb.TempDir(tb.FileSystemBackend, "tarball-handler")
+	var err error
+	tb.tempDirPath, err = tb.TempDir(tb.FileSystemBackend, "tarball-handler")
 	if err != nil {
 		return err
 	}
@@ -116,13 +118,13 @@ func (tb *TarballObject) Install(downloadDir string) error {
 	// could happen an "Umount" error and then the mounted dir
 	// contents would be removed as well
 
-	err = tb.Mount(tb.Target, tempDirPath, tb.FSType, tb.MountOptions)
+	err = tb.Mount(tb.Target, tb.tempDirPath, tb.FSType, tb.MountOptions)
 	if err != nil {
-		tb.FileSystemBackend.RemoveAll(tempDirPath)
+		tb.FileSystemBackend.RemoveAll(tb.tempDirPath)
 		return err
 	}
 
-	targetPath := path.Join(tempDirPath, tb.TargetPath)
+	targetPath := path.Join(tb.tempDirPath, tb.TargetPath)
 
 	errorList := []error{}
 
@@ -132,11 +134,11 @@ func (tb *TarballObject) Install(downloadDir string) error {
 		errorList = append(errorList, err)
 	}
 
-	umountErr := tb.Umount(tempDirPath)
+	umountErr := tb.Umount(tb.tempDirPath)
 	if umountErr != nil {
 		errorList = append(errorList, umountErr)
 	} else {
-		tb.FileSystemBackend.RemoveAll(tempDirPath)
+		tb.FileSystemBackend.RemoveAll(tb.tempDirPath)
 	}
 
 	return utils.MergeErrorList(errorList)
@@ -145,5 +147,17 @@ func (tb *TarballObject) Install(downloadDir string) error {
 // Cleanup implementation for the "tarball" handler
 func (tb *TarballObject) Cleanup() error {
 	log.Debug("'tarball' handler Cleanup")
+
+	err := tb.Umount(tb.tempDirPath)
+	if err != nil {
+		return err
+	}
+
+	// make sure there is NO umount error when calling
+	// "os.RemoveAll(tb.tempDirPath)" here. because in this case the
+	// mounted dir contents would be removed too
+	tb.FileSystemBackend.RemoveAll(tb.tempDirPath)
+	tb.tempDirPath = ""
+
 	return nil
 }
