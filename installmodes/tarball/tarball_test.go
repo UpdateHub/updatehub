@@ -454,6 +454,27 @@ func TestTarballInstallWithSuccess(t *testing.T) {
 }
 
 func TestTarballCleanupNil(t *testing.T) {
-	tb := TarballObject{}
+	memFs := afero.NewMemMapFs()
+
+	tempDirPath, err := afero.TempDir(memFs, "", "tarball-handler")
+	assert.NoError(t, err)
+
+	fsm := &filesystemmock.FileSystemHelperMock{}
+	fsm.On("Umount", tempDirPath).Return(nil)
+
+	tb := TarballObject{FileSystemHelper: fsm, FileSystemBackend: memFs, tempDirPath: tempDirPath}
 	assert.Nil(t, tb.Cleanup())
+}
+
+func TestTarballCleanupWithUmountError(t *testing.T) {
+	memFs := afero.NewMemMapFs()
+
+	tempDirPath, err := afero.TempDir(memFs, "", "tarball-handler")
+	assert.NoError(t, err)
+
+	fsm := &filesystemmock.FileSystemHelperMock{}
+	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
+
+	tb := TarballObject{FileSystemHelper: fsm, FileSystemBackend: memFs, tempDirPath: tempDirPath}
+	assert.EqualError(t, tb.Cleanup(), "umount error")
 }
