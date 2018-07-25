@@ -134,13 +134,6 @@ func (tb *TarballObject) Install(downloadDir string) error {
 		errorList = append(errorList, err)
 	}
 
-	umountErr := tb.Umount(tb.tempDirPath)
-	if umountErr != nil {
-		errorList = append(errorList, umountErr)
-	} else {
-		tb.FileSystemBackend.RemoveAll(tb.tempDirPath)
-	}
-
 	return utils.MergeErrorList(errorList)
 }
 
