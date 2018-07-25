@@ -243,10 +243,6 @@ func TestTarballInstallWithMountError(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
-
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.False(t, tempDirExists)
-	assert.NoError(t, err)
 }
 
 func TestTarballInstallWithExtractError(t *testing.T) {
@@ -267,7 +263,6 @@ func TestTarballInstallWithExtractError(t *testing.T) {
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
-	fsm.On("Umount", tempDirPath).Return(nil)
 
 	cm := &copymock.CopyMock{}
 
@@ -294,112 +289,6 @@ func TestTarballInstallWithExtractError(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
-
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.False(t, tempDirExists)
-	assert.NoError(t, err)
-}
-
-func TestTarballInstallWithUmountError(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	tempDirPath, err := afero.TempDir(memFs, "", "tarball-handler")
-	assert.NoError(t, err)
-
-	targetDevice := "/dev/xx1"
-	targetPath := "/inner-path"
-	fsType := "ext4"
-	mountOptions := "-o rw"
-	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
-	compressed := true
-	downloadDir := "/dummy-download-dir"
-	sourcePath := path.Join(downloadDir, sha256sum)
-
-	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
-	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
-	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
-
-	cm := &copymock.CopyMock{}
-
-	lam := &libarchivemock.LibArchiveMock{}
-	lam.On("Unpack", sourcePath, path.Join(tempDirPath, targetPath), false).Return(nil)
-
-	tb := TarballObject{
-		FileSystemHelper:  fsm,
-		CopyBackend:       cm,
-		FileSystemBackend: memFs,
-		LibArchiveBackend: lam,
-	}
-
-	tb.Target = targetDevice
-	tb.TargetPath = targetPath
-	tb.FSType = fsType
-	tb.MountOptions = mountOptions
-	tb.Sha256sum = sha256sum
-	tb.Compressed = compressed
-
-	err = tb.Install(downloadDir)
-
-	assert.EqualError(t, err, "umount error")
-	fsm.AssertExpectations(t)
-	cm.AssertExpectations(t)
-	lam.AssertExpectations(t)
-
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.True(t, tempDirExists)
-	assert.NoError(t, err)
-}
-
-func TestTarballInstallWithUnpackANDUmountErrors(t *testing.T) {
-	memFs := afero.NewMemMapFs()
-
-	tempDirPath, err := afero.TempDir(memFs, "", "tarball-handler")
-	assert.NoError(t, err)
-
-	targetDevice := "/dev/xx1"
-	targetPath := "/inner-path"
-	fsType := "ext4"
-	mountOptions := "-o rw"
-	sha256sum := "b5f11b9a8090325b79bc9222d5e8ccc084427aa1d2a2532d80a59ecca2ca6f4e"
-	compressed := true
-	downloadDir := "/dummy-download-dir"
-	sourcePath := path.Join(downloadDir, sha256sum)
-
-	fsm := &filesystemmock.FileSystemHelperMock{}
-	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
-	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
-	fsm.On("Umount", tempDirPath).Return(fmt.Errorf("umount error"))
-
-	cm := &copymock.CopyMock{}
-
-	lam := &libarchivemock.LibArchiveMock{}
-	lam.On("Unpack", sourcePath, path.Join(tempDirPath, targetPath), false).Return(fmt.Errorf("unpack error"))
-
-	tb := TarballObject{
-		FileSystemHelper:  fsm,
-		CopyBackend:       cm,
-		FileSystemBackend: memFs,
-		LibArchiveBackend: lam,
-	}
-
-	tb.Target = targetDevice
-	tb.TargetPath = targetPath
-	tb.FSType = fsType
-	tb.MountOptions = mountOptions
-	tb.Sha256sum = sha256sum
-	tb.Compressed = compressed
-
-	err = tb.Install(downloadDir)
-
-	assert.EqualError(t, err, "(unpack error); (umount error)")
-	fsm.AssertExpectations(t)
-	cm.AssertExpectations(t)
-	lam.AssertExpectations(t)
-
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.True(t, tempDirExists)
-	assert.NoError(t, err)
 }
 
 func TestTarballInstallWithSuccess(t *testing.T) {
@@ -420,7 +309,6 @@ func TestTarballInstallWithSuccess(t *testing.T) {
 	fsm := &filesystemmock.FileSystemHelperMock{}
 	fsm.On("TempDir", memFs, "tarball-handler").Return(tempDirPath, nil)
 	fsm.On("Mount", targetDevice, tempDirPath, fsType, mountOptions).Return(nil)
-	fsm.On("Umount", tempDirPath).Return(nil)
 
 	cm := &copymock.CopyMock{}
 
@@ -447,10 +335,6 @@ func TestTarballInstallWithSuccess(t *testing.T) {
 	fsm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	lam.AssertExpectations(t)
-
-	tempDirExists, err := afero.Exists(memFs, tempDirPath)
-	assert.False(t, tempDirExists)
-	assert.NoError(t, err)
 }
 
 func TestTarballCleanupNil(t *testing.T) {
@@ -464,6 +348,10 @@ func TestTarballCleanupNil(t *testing.T) {
 
 	tb := TarballObject{FileSystemHelper: fsm, FileSystemBackend: memFs, tempDirPath: tempDirPath}
 	assert.Nil(t, tb.Cleanup())
+
+	tempDirExists, err := afero.Exists(memFs, tempDirPath)
+	assert.False(t, tempDirExists)
+	assert.NoError(t, err)
 }
 
 func TestTarballCleanupWithUmountError(t *testing.T) {
