@@ -145,6 +145,9 @@ func (uh *UpdateHub) Cancel(nextState State) {
 }
 
 func (uh *UpdateHub) GetState() State {
+	uh.stateMutex.Lock()
+	defer uh.stateMutex.Unlock()
+
 	return uh.state
 }
 
@@ -214,59 +217,53 @@ func (uh *UpdateHub) rollbackCallback() error {
 }
 
 func (uh *UpdateHub) ProcessCurrentState() State {
-	uh.stateMutex.Lock()
-	defer uh.stateMutex.Unlock()
+	state := uh.GetState()
 
 	var err error
 
-	es, isErrorState := uh.state.(*ErrorState)
+	es, isErrorState := state.(*ErrorState)
 	if isErrorState {
 		uh.ReportCurrentState()
 		// this must be done after the report, because the report uses it
-		uh.previousState = uh.state
+		uh.previousState = state
 
 		err = uh.errorCallback(es.cause.Error())
 		if err != nil {
 			log.Warn(err)
 		}
 
-		state, _ := uh.state.Handle(uh)
-		return state
+		s, _ := state.Handle(uh)
+		return s
 	}
 
-	flow, err := uh.stateChangeCallback(uh.state, "enter")
+	flow, err := uh.stateChangeCallback(state, "enter")
 
 	uh.ReportCurrentState()
 	// this must be done after the report, because the report uses it
-	uh.previousState = uh.state
+	uh.previousState = state
 
 	if err != nil {
 		log.Error(err)
-		return NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
+		return NewErrorState(state.ApiClient(), nil, NewTransientError(err))
 	}
 
 	if flow != nil {
 		return flow
 	}
 
-	state, cancel := uh.state.Handle(uh)
+	s, _ := state.Handle(uh)
 
-	flow, err = uh.stateChangeCallback(uh.state, "leave")
+	flow, err = uh.stateChangeCallback(state, "leave")
 	if err != nil {
 		log.Error(err)
-		return NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
+		return NewErrorState(state.ApiClient(), nil, NewTransientError(err))
 	}
 
 	if flow != nil {
 		return flow
 	}
 
-	cs, ok := state.(*CancellableState)
-	if cancel && ok {
-		return cs.NextState()
-	}
-
-	return state
+	return s
 }
 
 type Controller interface {
