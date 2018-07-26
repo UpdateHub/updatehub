@@ -27,6 +27,8 @@ func (d *Daemon) Run() int {
 	for {
 		nextState := d.uh.ProcessCurrentState()
 
+		d.uh.SetState(nextState)
+
 		if d.stop || nextState.ID() == UpdateHubStateExit {
 			if finalState, _ := nextState.(*ExitState); finalState != nil {
 				return finalState.exitCode

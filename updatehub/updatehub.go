@@ -231,48 +231,42 @@ func (uh *UpdateHub) ProcessCurrentState() State {
 		}
 
 		state, _ := uh.state.Handle(uh)
-		uh.state = state
-	} else {
-		flow, err := uh.stateChangeCallback(uh.state, "enter")
-
-		uh.ReportCurrentState()
-		// this must be done after the report, because the report uses it
-		uh.previousState = uh.state
-
-		if err != nil {
-			log.Error(err)
-			uh.state = NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
-			return uh.state
-		}
-
-		if flow != nil {
-			uh.state = flow
-			return uh.state
-		}
-
-		state, cancel := uh.state.Handle(uh)
-
-		flow, err = uh.stateChangeCallback(uh.state, "leave")
-		if err != nil {
-			log.Error(err)
-			uh.state = NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
-			return uh.state
-		}
-
-		if flow != nil {
-			uh.state = flow
-			return uh.state
-		}
-
-		cs, ok := uh.state.(*CancellableState)
-		if cancel && ok {
-			uh.state = cs.NextState()
-		} else {
-			uh.state = state
-		}
+		return state
 	}
 
-	return uh.state
+	flow, err := uh.stateChangeCallback(uh.state, "enter")
+
+	uh.ReportCurrentState()
+	// this must be done after the report, because the report uses it
+	uh.previousState = uh.state
+
+	if err != nil {
+		log.Error(err)
+		return NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
+	}
+
+	if flow != nil {
+		return flow
+	}
+
+	state, cancel := uh.state.Handle(uh)
+
+	flow, err = uh.stateChangeCallback(uh.state, "leave")
+	if err != nil {
+		log.Error(err)
+		return NewErrorState(uh.state.ApiClient(), nil, NewTransientError(err))
+	}
+
+	if flow != nil {
+		return flow
+	}
+
+	cs, ok := state.(*CancellableState)
+	if cancel && ok {
+		return cs.NextState()
+	}
+
+	return state
 }
 
 type Controller interface {

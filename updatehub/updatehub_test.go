@@ -371,6 +371,45 @@ func TestProcessCurrentStateWithLeaveFlow(t *testing.T) {
 	cm.AssertExpectations(t)
 }
 
+func TestProcessCurrentStateWithCancellable(t *testing.T) {
+	aim := &activeinactivemock.ActiveInactiveMock{}
+	rm := &reportermock.ReporterMock{}
+	cm := &cmdlinemock.CmdLineExecuterMock{}
+	fs := afero.NewMemMapFs()
+
+	afero.WriteFile(fs, "/usr/share/updatehub/state-change-callback", []byte("a"), 0755)
+
+	expectedCallOrder := []string{"enter", "leave"}
+	callOrder := []string{}
+
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback enter poll").Run(func(args mock.Arguments) {
+		callOrder = append(callOrder, "enter")
+	}).Return([]byte(""), nil).Once()
+	cm.On("Execute", "/usr/share/updatehub/state-change-callback leave poll").Run(func(args mock.Arguments) {
+		callOrder = append(callOrder, "leave")
+	}).Return([]byte(""), nil).Once()
+
+	poll := NewPollState(0)
+
+	uh, _ := newTestUpdateHub(poll, aim)
+	uh.CmdLineExecuter = cm
+	uh.Store = fs
+	uh.Reporter = rm
+
+	go func() {
+		assert.True(t, poll.Cancel(true, NewIdleState()))
+	}()
+
+	nextState := uh.ProcessCurrentState()
+
+	assert.IsType(t, &IdleState{}, nextState)
+	assert.Equal(t, expectedCallOrder, callOrder)
+
+	aim.AssertExpectations(t)
+	cm.AssertExpectations(t)
+	cm.AssertExpectations(t)
+}
+
 func TestNewUpdateHub(t *testing.T) {
 	gitversion := "2.1"
 	memFs := afero.NewMemMapFs()
