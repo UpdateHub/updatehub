@@ -62,7 +62,7 @@ func main() {
 
 	isQuiet := cmd.PersistentFlags().Bool("quiet", false, "sets the log level to 'error'")
 	isDebug := cmd.PersistentFlags().Bool("debug", false, "sets the log level to 'debug'")
-	wait := cmd.PersistentFlags().Bool("wait", false, "wait for UpdateHub Agent")
+	probe := cmd.PersistentFlags().Bool("probe", false, "probe the updatehub for update")
 	mount := cmd.PersistentFlags().StringP("mount", "m", "", "device to mount")
 	fstype := cmd.PersistentFlags().StringP("fstype", "f", "", "filesystem type of device to mount")
 
@@ -140,37 +140,36 @@ func main() {
 	var info *AgentInfo
 
 	// Wait and check for UpdateHub Agent is running
-	for ok := true; ok; ok = *wait {
+	for *probe {
 		_, _, errs := gorequest.New().Get(buildURL("/info")).EndStruct(&info)
 		if len(errs) == 0 {
 			log.Info("UpdateHub Agent is running")
-			*wait = false
-		}
 
-		time.Sleep(time.Second)
-	}
+			probe := ProbeResponse{UpdateAvailable: false}
 
-	// UpdateHub Agent is running?
-	if info != nil {
-		probe := ProbeResponse{UpdateAvailable: false}
-
-		var req struct {
-			ServerAddress string `json:"server-address"`
-		}
-		req.ServerAddress = "http://localhost:8088"
-
-		// Probe for update
-		_, _, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
-		if len(errs) == 0 {
-			if probe.UpdateAvailable {
-				log.Info("Update available")
-			} else {
-				log.Info("Update not available")
-				os.Exit(0)
+			var req struct {
+				ServerAddress string `json:"server-address"`
 			}
-		} else {
-			log.Fatal("Invalid response from UpdateHub Agent")
+			req.ServerAddress = "http://localhost:8088"
+
+			// Probe for update
+			_, _, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)
+			if len(errs) == 0 {
+				if probe.UpdateAvailable {
+					log.Info("Update available")
+				} else {
+					log.Info("Update not available")
+					os.Exit(0)
+				}
+			} else {
+				log.Fatal("Invalid response from UpdateHub Agent")
+			}
+
+			break
 		}
+
+		log.Info("Waiting for updatehub")
+		time.Sleep(time.Second)
 	}
 
 	d.Run()
