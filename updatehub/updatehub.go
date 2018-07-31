@@ -141,6 +141,9 @@ func NewUpdateHub(
 }
 
 func (uh *UpdateHub) Cancel(nextState State) {
+	uh.stateMutex.Lock()
+	defer uh.stateMutex.Unlock()
+
 	uh.state.Cancel(true, nextState)
 }
 
