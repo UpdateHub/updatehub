@@ -36,7 +36,7 @@ fn run() -> updatehub::Result<()> {
 fn main() {
     if let Err(ref e) = run() {
         error!("{}", e);
-        e.causes()
+        e.iter_causes()
             .skip(1)
             .for_each(|e| error!(" caused by: {}\n", e));
 
