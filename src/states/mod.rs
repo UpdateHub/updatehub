@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+#![allow(dead_code)]
+
 //! Controls the state machine of the system
 //!
 //! It supports following states, and transitions, as shown in the
@@ -29,6 +31,7 @@ mod park;
 mod poll;
 mod probe;
 mod reboot;
+mod transition;
 
 use Result;
 
