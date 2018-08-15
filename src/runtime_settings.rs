@@ -151,13 +151,14 @@ UpgradeToInstallation=1
         ..Default::default()
     };
 
-    assert!(
+    assert_eq!(
         serde_ini::from_str::<RuntimeSettings>(ini)
             .map_err(|e| println!("{}", e))
             .as_ref()
-            .ok() == Some(&expected)
+            .ok(),
+        Some(&expected)
     );
-    assert!(RuntimeSettings::parse(ini).as_ref().ok() == Some(&expected));
+    assert_eq!(RuntimeSettings::parse(ini).as_ref().ok(), Some(&expected));
 }
 
 #[test]
@@ -174,7 +175,7 @@ fn default() {
         path: PathBuf::new(),
     };
 
-    assert!(Some(settings) == Some(expected));
+    assert_eq!(Some(settings), Some(expected));
 }
 
 #[test]
@@ -190,10 +191,11 @@ fn ser() {
         ..Default::default()
     };
 
-    assert!(
+    assert_eq!(
         serde_ini::from_str(&settings.serialize().ok().unwrap())
             .map_err(|e| println!("{}", e))
-            .ok() == Some(settings)
+            .ok(),
+        Some(settings)
     );
 }
 

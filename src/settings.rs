@@ -151,7 +151,8 @@ impl Default for Update {
             download_dir: "/tmp/updatehub".into(),
             install_modes: [
                 "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
-            ].iter()
+            ]
+                .iter()
                 .map(|i| i.to_string())
                 .collect(),
         }
@@ -229,10 +230,11 @@ MetadataPath=/tmp/metadata
         },
     };
 
-    assert!(
+    assert_eq!(
         serde_ini::from_str::<Settings>(ini)
             .map_err(|e| println!("{}", e))
-            .ok() == Some(expected)
+            .ok(),
+        Some(expected)
     );
 }
 
@@ -300,7 +302,8 @@ fn default() {
             download_dir: "/tmp/updatehub".into(),
             install_modes: [
                 "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
-            ].iter()
+            ]
+                .iter()
                 .map(|i| i.to_string())
                 .collect(),
         },
@@ -312,5 +315,5 @@ fn default() {
         },
     };
 
-    assert!(Some(settings) == Some(expected));
+    assert_eq!(Some(settings), Some(expected));
 }

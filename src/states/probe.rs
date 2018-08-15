@@ -228,7 +228,7 @@ fn skip_same_package_uid() {
             &RuntimeSettings::default(),
             &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         ).probe()
-            .unwrap();
+        .unwrap();
 
         if let ProbeResponse::Update(u) = probe {
             Some(u.package_uid())

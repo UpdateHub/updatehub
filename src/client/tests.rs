@@ -105,10 +105,10 @@ fn download_object() {
             metadata.product_uid, "package_id", "object"
         ).as_str(),
     ).match_header("Content-Type", "application/json")
-        .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-        .with_status(200)
-        .with_body("1234")
-        .create();
+    .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+    .with_status(200)
+    .with_body("1234")
+    .create();
 
     let m2 = mock(
         "GET",
@@ -117,11 +117,11 @@ fn download_object() {
             metadata.product_uid, "package_id", "object"
         ).as_str(),
     ).match_header("Content-Type", "application/json")
-        .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-        .match_header("Range", "bytes=3-")
-        .with_status(200)
-        .with_body("567890")
-        .create();
+    .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+    .match_header("Range", "bytes=3-")
+    .with_status(200)
+    .with_body("567890")
+    .create();
 
     let mut settings = Settings::default();
     let tempdir = tempdir().unwrap();

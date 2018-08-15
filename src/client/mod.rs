@@ -67,8 +67,7 @@ impl<'a> Api<'a> {
             .post(&format!(
                 "{}/upgrades",
                 &self.settings.network.server_address
-            ))
-            .header(ApiRetries(self.runtime_settings.polling.retries))
+            )).header(ApiRetries(self.runtime_settings.polling.retries))
             .json(&self.firmware)
             .send()?;
 

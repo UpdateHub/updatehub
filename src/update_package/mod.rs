@@ -74,9 +74,8 @@ impl UpdatePackage {
                 o.status(&settings.update.download_dir)
                     .map_err(|e| {
                         error!("Fail accessing the object: {} (err: {})", o.sha256sum(), e)
-                    })
-                    .unwrap_or(ObjectStatus::Missing) == *filter
-            })
-            .collect()
+                    }).unwrap_or(ObjectStatus::Missing)
+                    .eq(filter)
+            }).collect()
     }
 }

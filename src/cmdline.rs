@@ -22,14 +22,12 @@ impl CmdLine {
                         .short('d')
                         .long("debug")
                         .help("Enable debug messages"),
-                )
-                .opt(
+                ).opt(
                     Opt::new("quiet", &mut config.quiet)
                         .short('q')
                         .long("quiet")
                         .help("Disable informative message"),
-                )
-                .parse_args()
+                ).parse_args()
         };
 
         config
