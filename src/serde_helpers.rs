@@ -70,4 +70,15 @@ pub mod de {
             .map(|s| s.to_string())
             .collect())
     }
+
+    pub fn supported_hardware_any<'de, D>(deserializer: D) -> Result<(), D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if String::deserialize(deserializer)? == "any" {
+            Ok(())
+        } else {
+            Err(de::Error::custom("expected \"any\""))
+        }
+    }
 }

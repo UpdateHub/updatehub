@@ -4,7 +4,7 @@
 //
 
 use failure::Error;
-use serde::{self, Deserialize, Deserializer};
+use serde_helpers::de::supported_hardware_any as any;
 use update_package::UpdatePackageError;
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -28,17 +28,6 @@ impl SupportedHardware {
         }
 
         Ok(())
-    }
-}
-
-fn any<'de, D>(deserializer: D) -> Result<(), D::Error>
-where
-    D: Deserializer<'de>,
-{
-    if String::deserialize(deserializer)? == "any" {
-        Ok(())
-    } else {
-        Err(serde::de::Error::custom("expected \"any\""))
     }
 }
 
