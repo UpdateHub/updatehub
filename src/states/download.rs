@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use client::Api;
-use failure::Error;
 use states::{Idle, Install, State, StateChangeImpl, StateMachine};
 use std::fs;
 use update_package::{ObjectStatus, UpdatePackage};
@@ -19,7 +20,7 @@ create_state_step!(Download => Idle);
 create_state_step!(Download => Install(update_package));
 
 impl StateChangeImpl for State<Download> {
-    fn handle(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine> {
         // Prune left over from previous installations
         for entry in WalkDir::new(&self.settings.update.download_dir)
             .follow_links(true)

@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-use failure::Error;
+use Result;
+
 use firmware::metadata_value::MetadataValue;
 use hook;
 use std::path::Path;
 use std::str::FromStr;
 use walkdir::WalkDir;
 
-pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, Error> {
+pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
     let mut outputs: Vec<String> = Vec::new();
     for entry in WalkDir::new(path)
         .follow_links(true)

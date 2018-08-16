@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-use failure::Error;
+use Result;
+
 use serde_helpers::de::supported_hardware_any as any;
+
 use update_package::UpdatePackageError;
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -16,7 +18,7 @@ pub enum SupportedHardware {
 }
 
 impl SupportedHardware {
-    pub fn compatible_with(&self, hardware: &str) -> Result<(), Error> {
+    pub fn compatible_with(&self, hardware: &str) -> Result<()> {
         let hardware = hardware.to_string();
         let compatible = match self {
             SupportedHardware::Any => true,

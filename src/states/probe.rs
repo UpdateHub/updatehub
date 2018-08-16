@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use client::Api;
-use failure::{Error, ResultExt};
+use failure::ResultExt;
 use states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
@@ -15,7 +17,7 @@ create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
 impl StateChangeImpl for State<Probe> {
-    fn handle(mut self) -> Result<StateMachine, Error> {
+    fn handle(mut self) -> Result<StateMachine> {
         use chrono::Duration;
         use client::ProbeResponse;
         use std::thread;

@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use easy_process;
-use failure::Error;
 use std::path::Path;
 
-pub(crate) fn run_hook(path: &Path) -> Result<String, Error> {
+pub(crate) fn run_hook(path: &Path) -> Result<String> {
     if !path.exists() {
         return Ok("".into());
     }

@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use crypto_hash::{Algorithm, Hasher};
-use failure::Error;
 use hex;
 use std::fs::File;
 use std::io::BufReader;
@@ -28,7 +29,7 @@ pub enum ObjectStatus {
 }
 
 trait ObjectType {
-    fn status(&self, download_dir: &Path) -> Result<ObjectStatus, Error> {
+    fn status(&self, download_dir: &Path) -> Result<ObjectStatus> {
         let object = download_dir.join(self.sha256sum());
 
         if !object.exists() {

@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-use failure::Error;
+use Result;
+
 use states::{Park, Poll, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
@@ -17,7 +18,7 @@ pub struct Idle {}
 impl StateChangeImpl for State<Idle> {
     // FIXME: when supporting the HTTP API we need allow going to
     // State<Probe>.
-    fn handle(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine> {
         if !self.settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
             return Ok(StateMachine::Park(self.into()));

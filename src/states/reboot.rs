@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use easy_process;
-use failure::Error;
 use states::{Idle, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
@@ -15,7 +16,7 @@ create_state_step!(Reboot => Idle);
 impl StateChangeImpl for State<Reboot> {
     // FIXME: When adding state-chance hooks, we need to go to Idle if
     // cancelled.
-    fn handle(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {

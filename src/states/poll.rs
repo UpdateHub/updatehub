@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use chrono::{DateTime, Duration, Utc};
-use failure::Error;
 use rand::{self, Rng};
 use states::{Probe, State, StateChangeImpl, StateMachine};
 use std::sync::{Arc, Condvar, Mutex};
@@ -19,7 +20,7 @@ create_state_step!(Poll => Probe);
 ///
 /// This state is used to control when to go to the `State<Probe>`.
 impl StateChangeImpl for State<Poll> {
-    fn handle(self) -> Result<StateMachine, Error> {
+    fn handle(self) -> Result<StateMachine> {
         let current_time: DateTime<Utc> = Utc::now();
 
         let probe_now = self.runtime_settings.polling.now;

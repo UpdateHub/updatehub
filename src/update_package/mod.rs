@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use crypto_hash::{hex_digest, Algorithm};
-use failure::Error;
 use serde_json;
 
 use firmware::Metadata;
@@ -48,7 +49,7 @@ pub enum UpdatePackageError {
 }
 
 impl UpdatePackage {
-    pub fn parse(content: &str) -> Result<Self, Error> {
+    pub fn parse(content: &str) -> Result<Self> {
         let mut update_package = serde_json::from_str::<UpdatePackage>(content)?;
         update_package.raw = content.into();
 
@@ -59,7 +60,7 @@ impl UpdatePackage {
         hex_digest(Algorithm::SHA256, self.raw.as_bytes())
     }
 
-    pub fn compatible_with(&self, firmware: &Metadata) -> Result<(), Error> {
+    pub fn compatible_with(&self, firmware: &Metadata) -> Result<()> {
         self.supported_hardware.compatible_with(&firmware.hardware)
     }
 

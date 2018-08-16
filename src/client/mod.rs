@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-use failure::Error;
+use Result;
+
 use reqwest::header::{ByteRangeSpec, ContentType, Headers, Range, UserAgent};
 use reqwest::{Client, StatusCode};
 
@@ -48,7 +49,7 @@ impl<'a> Api<'a> {
         }
     }
 
-    fn client(&self) -> Result<Client, Error> {
+    fn client(&self) -> Result<Client> {
         let mut headers = Headers::new();
 
         headers.set(UserAgent::new("updatehub/next"));
@@ -61,7 +62,7 @@ impl<'a> Api<'a> {
             .build()?)
     }
 
-    pub fn probe(&self) -> Result<ProbeResponse, Error> {
+    pub fn probe(&self) -> Result<ProbeResponse> {
         let mut response = self
             .client()?
             .post(&format!(
@@ -86,7 +87,7 @@ impl<'a> Api<'a> {
         }
     }
 
-    pub fn download_object(&self, package_uid: &str, object: &str) -> Result<(), Error> {
+    pub fn download_object(&self, package_uid: &str, object: &str) -> Result<()> {
         use std::fs::{create_dir_all, OpenOptions};
 
         // FIXME: Discuss the need of packages inside the route

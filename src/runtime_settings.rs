@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use chrono::{DateTime, Duration, Utc};
-use failure::Error;
 use serde_ini;
 
 use std::io;
@@ -27,7 +28,7 @@ impl RuntimeSettings {
         RuntimeSettings::default()
     }
 
-    pub fn load(mut self, path: &str) -> Result<Self, Error> {
+    pub fn load(mut self, path: &str) -> Result<Self> {
         use std::fs::File;
         use std::io::Read;
 
@@ -54,11 +55,11 @@ impl RuntimeSettings {
         Ok(self)
     }
 
-    fn parse(content: &str) -> Result<Self, Error> {
+    fn parse(content: &str) -> Result<Self> {
         Ok(serde_ini::from_str::<RuntimeSettings>(content)?)
     }
 
-    pub fn save(&self) -> Result<usize, Error> {
+    pub fn save(&self) -> Result<usize> {
         use std::fs::File;
         use std::io::Write;
 
@@ -70,7 +71,7 @@ impl RuntimeSettings {
         Ok(File::create(&self.path)?.write(self.serialize()?.as_bytes())?)
     }
 
-    fn serialize(&self) -> Result<String, Error> {
+    fn serialize(&self) -> Result<String> {
         Ok(serde_ini::to_string(&self)?)
     }
 }

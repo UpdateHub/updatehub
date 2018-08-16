@@ -30,18 +30,19 @@ mod poll;
 mod probe;
 mod reboot;
 
+use Result;
+
 pub use self::{
     download::Download, idle::Idle, install::Install, park::Park, poll::Poll, probe::Probe,
     reboot::Reboot,
 };
 
-use failure::Error;
 use firmware::Metadata;
 use runtime_settings::RuntimeSettings;
 use settings::Settings;
 
 pub trait StateChangeImpl {
-    fn handle(self) -> Result<StateMachine, Error>;
+    fn handle(self) -> Result<StateMachine>;
 }
 
 /// Holds the `State` type and common data, which is available for
@@ -118,7 +119,7 @@ impl StateMachine {
         }
     }
 
-    fn move_to_next_state(self) -> Result<StateMachine, Error> {
+    fn move_to_next_state(self) -> Result<StateMachine> {
         match self {
             StateMachine::Park(s) => Ok(s.handle()?),
             StateMachine::Idle(s) => Ok(s.handle()?),

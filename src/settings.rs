@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
+use Result;
+
 use chrono::Duration;
-use failure::Error;
 use serde_ini;
 
 use std::io;
@@ -39,7 +40,7 @@ impl Settings {
         Settings::default()
     }
 
-    pub fn load(self) -> Result<Self, Error> {
+    pub fn load(self) -> Result<Self> {
         use std::fs::File;
         use std::io::Read;
         use std::path::Path;
@@ -66,7 +67,7 @@ impl Settings {
         }
     }
 
-    fn parse(content: &str) -> Result<Self, Error> {
+    fn parse(content: &str) -> Result<Self> {
         let settings = serde_ini::from_str::<Settings>(content)?;
 
         if settings.polling.interval < Duration::seconds(60) {

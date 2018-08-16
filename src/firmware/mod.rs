@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-use failure::Error;
+use Result;
+
 use hook::run_hook;
 use std::path::Path;
 
@@ -56,7 +57,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new(path: &Path) -> Result<Metadata, Error> {
+    pub fn new(path: &Path) -> Result<Metadata> {
         let product_uid_hook = path.join(PRODUCT_UID_HOOK);
         let version_hook = path.join(VERSION_HOOK);
         let hardware_hook = path.join(HARDWARE_HOOK);
