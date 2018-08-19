@@ -95,7 +95,6 @@ fn skip_download_if_ready() {
         settings: settings,
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Download {
             update_package: get_update_package(),
         },
@@ -153,7 +152,6 @@ fn download_objects() {
         settings: settings,
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Download {
             update_package: update_package,
         },

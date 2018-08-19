@@ -78,7 +78,6 @@ mod test {
             settings: Settings::default(),
             runtime_settings: RuntimeSettings::default(),
             firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-            applied_package_uid: None,
             state: Reboot {},
         }).move_to_next_state();
 

@@ -67,7 +67,7 @@ impl StateChangeImpl for State<Probe> {
                 // Ensure the package is compatible
                 u.compatible_with(&self.firmware)?;
 
-                if Some(u.package_uid()) == self.applied_package_uid {
+                if Some(u.package_uid()) == self.runtime_settings.update.applied_package_uid {
                     info!(
                         "Not applying the update package. Same package has already been installed."
                     );
@@ -79,7 +79,6 @@ impl StateChangeImpl for State<Probe> {
                         settings: self.settings,
                         runtime_settings: self.runtime_settings,
                         firmware: self.firmware,
-                        applied_package_uid: None,
                         state: Download { update_package: u },
                     }))
                 }
@@ -108,7 +107,6 @@ fn update_not_available() {
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Probe {},
     }).move_to_next_state();
 
@@ -137,7 +135,6 @@ fn update_available() {
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Probe {},
     }).move_to_next_state();
 
@@ -166,7 +163,6 @@ fn invalid_hardware() {
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap(),
-        applied_package_uid: None,
         state: Probe {},
     }).move_to_next_state();
 
@@ -195,7 +191,6 @@ fn extra_poll_interval() {
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap(),
-        applied_package_uid: None,
         state: Probe {},
     }).move_to_next_state();
 
@@ -239,13 +234,15 @@ fn skip_same_package_uid() {
         }
     };
 
+    let mut runtime_settings = RuntimeSettings::new()
+        .load(tmpfile.to_str().unwrap())
+        .unwrap();
+    runtime_settings.update.applied_package_uid = package_uid;
+
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
-        runtime_settings: RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap(),
+        runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-        applied_package_uid: package_uid,
         state: Probe {},
     }).move_to_next_state();
 
@@ -276,7 +273,6 @@ fn error() {
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Probe {},
     }).move_to_next_state();
 

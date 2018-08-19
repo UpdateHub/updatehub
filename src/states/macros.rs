@@ -11,7 +11,6 @@ macro_rules! create_state_step {
                     settings: from.settings,
                     runtime_settings: from.runtime_settings,
                     firmware: from.firmware,
-                    applied_package_uid: from.applied_package_uid,
                     state: $dest {},
                 }
             }
@@ -24,7 +23,6 @@ macro_rules! create_state_step {
                     settings: from.settings,
                     runtime_settings: from.runtime_settings,
                     firmware: from.firmware,
-                    applied_package_uid: from.applied_package_uid,
                     state: $dest {
                         $field: from.state.$field,
                     },

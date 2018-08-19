@@ -21,10 +21,8 @@ impl StateChangeImpl for State<Install> {
     // FIXME: When adding state-chance hooks, we need to go to Idle if
     // cancelled.
     fn handle(mut self) -> Result<StateMachine> {
-        info!(
-            "Installing update: {}",
-            self.state.update_package.package_uid()
-        );
+        let package_uid = self.state.update_package.package_uid();
+        info!("Installing update: {}", &package_uid);
 
         // FIXME: Check if A/B install
         // FIXME: Check InstallIfDifferent
@@ -34,7 +32,7 @@ impl StateChangeImpl for State<Install> {
         self.runtime_settings.polling.now = true;
 
         // Avoid installing same package twice.
-        self.applied_package_uid = Some(self.state.update_package.package_uid());
+        self.runtime_settings.update.applied_package_uid = Some(package_uid);
 
         if !self.settings.storage.read_only {
             debug!("Saving install settings.");
@@ -68,7 +66,6 @@ fn has_package_uid_if_succeed() {
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Install {
             update_package: get_update_package(),
         },
@@ -76,7 +73,7 @@ fn has_package_uid_if_succeed() {
 
     match machine {
         Ok(StateMachine::Reboot(s)) => assert_eq!(
-            s.applied_package_uid,
+            s.runtime_settings.update.applied_package_uid,
             Some(get_update_package().package_uid())
         ),
         Ok(s) => panic!("Invalid success: {:?}", s),
@@ -102,7 +99,6 @@ fn polling_now_if_succeed() {
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Install {
             update_package: get_update_package(),
         },

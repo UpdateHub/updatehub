@@ -121,11 +121,16 @@ impl Default for RuntimePolling {
 pub struct RuntimeUpdate {
     #[serde(rename = "UpgradeToInstallation")]
     pub upgrading_to: i8,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub applied_package_uid: Option<String>,
 }
 
 impl Default for RuntimeUpdate {
     fn default() -> Self {
-        RuntimeUpdate { upgrading_to: -1 }
+        RuntimeUpdate {
+            upgrading_to: -1,
+            applied_package_uid: None,
+        }
     }
 }
 
@@ -148,7 +153,10 @@ UpgradeToInstallation=1
             retries: 5,
             now: false,
         },
-        update: RuntimeUpdate { upgrading_to: 1 },
+        update: RuntimeUpdate {
+            upgrading_to: 1,
+            applied_package_uid: None,
+        },
         ..Default::default()
     };
 
@@ -172,7 +180,10 @@ fn default() {
             retries: 0,
             now: false,
         },
-        update: RuntimeUpdate { upgrading_to: -1 },
+        update: RuntimeUpdate {
+            upgrading_to: -1,
+            applied_package_uid: None,
+        },
         path: PathBuf::new(),
     };
 
@@ -188,14 +199,15 @@ fn ser() {
             retries: 5,
             now: false,
         },
-        update: RuntimeUpdate { upgrading_to: 1 },
+        update: RuntimeUpdate {
+            upgrading_to: 1,
+            applied_package_uid: Some("package-uid".to_string()),
+        },
         ..Default::default()
     };
 
     assert_eq!(
-        serde_ini::from_str(&settings.serialize().ok().unwrap())
-            .map_err(|e| println!("{}", e))
-            .ok(),
+        serde_ini::from_str(&settings.serialize().unwrap()).ok(),
         Some(settings)
     );
 }

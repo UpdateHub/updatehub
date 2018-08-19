@@ -44,7 +44,6 @@ fn polling_disable() {
         settings: settings,
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Idle {},
     }).move_to_next_state();
 
@@ -63,7 +62,6 @@ fn polling_enabled() {
         settings: settings,
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Idle {},
     }).move_to_next_state();
 

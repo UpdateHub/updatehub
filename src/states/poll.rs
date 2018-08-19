@@ -84,7 +84,6 @@ fn extra_poll_in_past() {
         settings: settings,
         runtime_settings: runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Poll {},
     }).move_to_next_state();
 
@@ -107,7 +106,6 @@ fn probe_now() {
         settings: settings,
         runtime_settings: runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Poll {},
     }).move_to_next_state();
 
@@ -129,7 +127,6 @@ fn last_poll_in_future() {
         settings: settings,
         runtime_settings: runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Poll {},
     }).move_to_next_state();
 
@@ -152,7 +149,6 @@ fn interval_1_second() {
         settings: settings,
         runtime_settings: runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Poll {},
     }).move_to_next_state();
 
@@ -172,7 +168,6 @@ fn never_polled() {
         settings: settings,
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        applied_package_uid: None,
         state: Poll {},
     }).move_to_next_state();
 

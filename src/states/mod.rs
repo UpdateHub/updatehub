@@ -61,9 +61,6 @@ where
     /// Firmware metadata.
     firmware: Metadata,
 
-    /// Package UID applied
-    applied_package_uid: Option<String>,
-
     /// State type with specific data and methods.
     state: S,
 }
@@ -99,7 +96,6 @@ impl StateMachine {
             settings,
             runtime_settings,
             firmware,
-            applied_package_uid: None,
             state: Idle {},
         })
     }
