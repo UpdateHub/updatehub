@@ -81,8 +81,8 @@ fn extra_poll_in_past() {
     runtime_settings.polling.extra_interval = Some(Duration::seconds(10));
 
     let machine = StateMachine::Poll(State {
-        settings: settings,
-        runtime_settings: runtime_settings,
+        settings,
+        runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
     }).move_to_next_state();
@@ -103,8 +103,8 @@ fn probe_now() {
     runtime_settings.polling.now = true;
 
     let machine = StateMachine::Poll(State {
-        settings: settings,
-        runtime_settings: runtime_settings,
+        settings,
+        runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
     }).move_to_next_state();
@@ -124,8 +124,8 @@ fn last_poll_in_future() {
     runtime_settings.polling.last = Some(Utc::now() + Duration::days(1));
 
     let machine = StateMachine::Poll(State {
-        settings: settings,
-        runtime_settings: runtime_settings,
+        settings,
+        runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
     }).move_to_next_state();
@@ -146,8 +146,8 @@ fn interval_1_second() {
     runtime_settings.polling.last = Some(Utc::now());
 
     let machine = StateMachine::Poll(State {
-        settings: settings,
-        runtime_settings: runtime_settings,
+        settings,
+        runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
     }).move_to_next_state();
@@ -165,7 +165,7 @@ fn never_polled() {
     settings.polling.interval = Duration::seconds(1);
 
     let machine = StateMachine::Poll(State {
-        settings: settings,
+        settings,
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},

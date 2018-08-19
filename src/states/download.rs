@@ -92,7 +92,7 @@ fn skip_download_if_ready() {
     let _ = create_fake_object(&settings);
 
     let machine = StateMachine::Download(State {
-        settings: settings,
+        settings,
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Download {
@@ -149,12 +149,10 @@ fn download_objects() {
     .create();
 
     let machine = StateMachine::Download(State {
-        settings: settings,
+        settings,
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Download {
-            update_package: update_package,
-        },
+        state: Download { update_package },
     }).move_to_next_state();
 
     mock.assert();
