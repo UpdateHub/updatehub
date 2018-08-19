@@ -21,7 +21,7 @@ pub(crate) fn run_hook(path: &Path) -> Result<String> {
     Ok(run_script(path.to_str().expect("Invalid path for hook"))?)
 }
 
-pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
+pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
     let mut outputs: Vec<String> = Vec::new();
     for entry in WalkDir::new(path)
         .follow_links(true)
