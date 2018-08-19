@@ -18,15 +18,7 @@ pub(crate) fn run_hook(path: &Path) -> Result<String> {
         return Ok("".into());
     }
 
-    let output = easy_process::run(path.to_str().expect("Invalid path for hook"))?;
-    if !output.stderr.is_empty() {
-        output
-            .stderr
-            .lines()
-            .for_each(|err| error!("{} (stderr): {}", path.display(), err))
-    }
-
-    Ok(output.stdout.trim().into())
+    Ok(run_script(path.to_str().expect("Invalid path for hook"))?)
 }
 
 pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
@@ -40,4 +32,16 @@ pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
     }
 
     Ok(MetadataValue::from_str(&outputs.join("\n"))?)
+}
+
+pub(crate) fn run_script(cmd: &str) -> Result<String> {
+    let output = easy_process::run(cmd)?;
+    if !output.stderr.is_empty() {
+        output
+            .stderr
+            .lines()
+            .for_each(|err| error!("{} (stderr): {}", cmd, err))
+    }
+
+    Ok(output.stdout.trim().into())
 }
