@@ -45,7 +45,7 @@ mod test {
         create_dir_all(path).unwrap();
 
         let mut file = File::create(&path.join("reboot")).unwrap();
-        file.write_all(b"#!/bin/sh\necho reboot").unwrap();
+        writeln!(file, "#!/bin/sh\necho reboot").unwrap();
 
         let mut permissions = metadata(path).unwrap().permissions();
         permissions.set_mode(0o755);
@@ -65,14 +65,7 @@ mod test {
         let tmpdir = tempdir().unwrap();
         let tmpdir = tmpdir.path();
         create_reboot(&tmpdir);
-        env::set_var(
-            "PATH",
-            format!(
-                "{}:{}",
-                &tmpdir.to_string_lossy(),
-                env::var("PATH").unwrap_or_default()
-            ),
-        );
+        env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
         let machine = StateMachine::Reboot(State {
             settings: Settings::default(),
