@@ -5,14 +5,13 @@
 
 use Result;
 
-use hook::run_hook;
 use std::path::Path;
 
 mod metadata_value;
 use self::metadata_value::MetadataValue;
 
 mod hook;
-use self::hook::run_hooks_from_dir;
+use self::hook::{run_hook, run_hooks_from_dir};
 
 #[cfg(test)]
 pub mod tests;

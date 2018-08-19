@@ -5,11 +5,29 @@
 
 use Result;
 
-use firmware::metadata_value::MetadataValue;
-use hook;
+use walkdir::WalkDir;
+
 use std::path::Path;
 use std::str::FromStr;
-use walkdir::WalkDir;
+
+use easy_process;
+use firmware::metadata_value::MetadataValue;
+
+pub(crate) fn run_hook(path: &Path) -> Result<String> {
+    if !path.exists() {
+        return Ok("".into());
+    }
+
+    let output = easy_process::run(path.to_str().expect("Invalid path for hook"))?;
+    if !output.stderr.is_empty() {
+        output
+            .stderr
+            .lines()
+            .for_each(|err| error!("{} (stderr): {}", path.display(), err))
+    }
+
+    Ok(output.stdout.trim().into())
+}
 
 pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
     let mut outputs: Vec<String> = Vec::new();
@@ -18,7 +36,7 @@ pub fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
         .min_depth(1)
         .max_depth(1)
     {
-        outputs.push(hook::run_hook(entry?.path())?);
+        outputs.push(run_hook(entry?.path())?);
     }
 
     Ok(MetadataValue::from_str(&outputs.join("\n"))?)
