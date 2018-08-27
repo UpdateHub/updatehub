@@ -5,62 +5,31 @@
 
 #[macro_use]
 extern crate log;
-extern crate app;
 extern crate stderrlog;
+#[macro_use]
+extern crate structopt;
 extern crate updatehub;
 
-use app::{App, Opt};
-use std::env;
+use structopt::StructOpt;
 
-impl CmdLine {
-    pub fn parse_args() -> Self {
-        let mut config = CmdLine::default();
-
-        let helper = {
-            App::new("updatehub")
-                .version(env::var("CARGO_PKG_VERSION").unwrap_or_else(|_| "Unknown".to_string()))
-                .author("O.S. Systems Software LTDA.", "contact@ossystems.com.br")
-                .desc("A generic and safe Firmware Over-The-Air agent.")
-                .opt(
-                    Opt::new("debug", &mut config.debug)
-                        .short('d')
-                        .long("debug")
-                        .help("Enable debug messages"),
-                ).opt(
-                    Opt::new("quiet", &mut config.quiet)
-                        .short('q')
-                        .long("quiet")
-                        .help("Disable informative message"),
-                ).parse_args()
-        };
-
-        config
-            .check()
-            .map_err(|e| helper.help_err_exit(e, 1))
-            .unwrap() // help_err_exit already exits, so unwrap is safe here!
-    }
-
-    fn check(self) -> Result<Self, String> {
-        if self.debug && self.quiet {
-            return Err("You cannot enable 'quiet' and 'debug' at same time.".to_string());
-        }
-
-        Ok(self)
-    }
-}
-
-#[derive(Default)]
-pub struct CmdLine {
-    pub debug: bool,
-    pub quiet: bool,
+#[derive(StructOpt, Debug)]
+#[structopt(
+    name = "updatehub",
+    author = "O.S. Systems Software LTDA. <contact@ossystems.com.br>",
+    about = "A generic and safe Firmware Over-The-Air agent."
+)]
+#[structopt(raw(version = "updatehub::build_info::version()"))]
+struct Opt {
+    /// Increase the verboseness level
+    #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
+    verbose: u8,
 }
 
 fn run() -> updatehub::Result<()> {
-    let cmdline = CmdLine::parse_args();
+    let opt = Opt::from_args();
 
     stderrlog::new()
-        .quiet(cmdline.quiet)
-        .verbosity(if cmdline.debug { 3 } else { 2 })
+        .verbosity(opt.verbose as usize + 1)
         .init()?;
 
     info!(
