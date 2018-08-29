@@ -8,7 +8,7 @@ use Result;
 use crypto_hash::{hex_digest, Algorithm};
 use serde_json;
 
-use firmware::Metadata;
+use firmware::{installation_set::Set as InstallationSet, Metadata};
 use settings::Settings;
 
 mod supported_hardware;
@@ -36,7 +36,7 @@ pub struct UpdatePackage {
     #[serde(default)]
     supported_hardware: SupportedHardware,
 
-    objects: Vec<Object>,
+    objects: (Vec<Object>, Vec<Object>),
 
     #[serde(skip_deserializing)]
     raw: String,
@@ -64,12 +64,20 @@ impl UpdatePackage {
         self.supported_hardware.compatible_with(&firmware.hardware)
     }
 
-    pub fn objects(&self) -> &Vec<Object> {
-        &self.objects
+    pub fn objects(&self, installation_set: InstallationSet) -> &Vec<Object> {
+        match installation_set {
+            InstallationSet::A => &self.objects.0,
+            InstallationSet::B => &self.objects.1,
+        }
     }
 
-    pub fn filter_objects(&self, settings: &Settings, filter: &ObjectStatus) -> Vec<&Object> {
-        self.objects
+    pub fn filter_objects(
+        &self,
+        settings: &Settings,
+        installation_set: InstallationSet,
+        filter: &ObjectStatus,
+    ) -> Vec<&Object> {
+        self.objects(installation_set)
             .iter()
             .filter(|o| {
                 o.status(&settings.update.download_dir)

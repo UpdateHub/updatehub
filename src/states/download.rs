@@ -6,6 +6,7 @@
 use Result;
 
 use client::Api;
+use firmware::installation_set;
 use states::{Idle, Install, State, StateChangeImpl, StateMachine};
 use std::fs;
 use update_package::{ObjectStatus, UpdatePackage};
@@ -21,6 +22,8 @@ create_state_step!(Download => Install(update_package));
 
 impl StateChangeImpl for State<Download> {
     fn handle(self) -> Result<StateMachine> {
+        let installation_set = installation_set::inactive()?;
+
         // Prune left over from previous installations
         for entry in WalkDir::new(&self.settings.update.download_dir)
             .follow_links(true)
@@ -32,7 +35,7 @@ impl StateChangeImpl for State<Download> {
                 !self
                     .state
                     .update_package
-                    .objects()
+                    .objects(installation_set)
                     .iter()
                     .map(|o| o.sha256sum())
                     .collect::<Vec<_>>()
@@ -42,11 +45,11 @@ impl StateChangeImpl for State<Download> {
         }
 
         // Prune corrupted files
-        for object in self
-            .state
-            .update_package
-            .filter_objects(&self.settings, &ObjectStatus::Corrupted)
-        {
+        for object in self.state.update_package.filter_objects(
+            &self.settings,
+            installation_set,
+            &ObjectStatus::Corrupted,
+        ) {
             fs::remove_file(&self.settings.update.download_dir.join(object.sha256sum()))?;
         }
 
@@ -54,13 +57,13 @@ impl StateChangeImpl for State<Download> {
         for object in self
             .state
             .update_package
-            .filter_objects(&self.settings, &ObjectStatus::Missing)
+            .filter_objects(&self.settings, installation_set, &ObjectStatus::Missing)
             .into_iter()
-            .chain(
-                self.state
-                    .update_package
-                    .filter_objects(&self.settings, &ObjectStatus::Incomplete),
-            ) {
+            .chain(self.state.update_package.filter_objects(
+                &self.settings,
+                installation_set,
+                &ObjectStatus::Incomplete,
+            )) {
             Api::new(&self.settings, &self.runtime_settings, &self.firmware)
                 .download_object(&self.state.update_package.package_uid(), object.sha256sum())?;
         }
@@ -68,7 +71,7 @@ impl StateChangeImpl for State<Download> {
         if self
             .state
             .update_package
-            .objects()
+            .objects(installation_set)
             .iter()
             .all(|o| o.status(&self.settings.update.download_dir).ok() == Some(ObjectStatus::Ready))
         {
@@ -82,14 +85,16 @@ impl StateChangeImpl for State<Download> {
 #[test]
 fn skip_download_if_ready() {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
-    use std::fs::create_dir_all;
+    use firmware::tests::{create_fake_installation_set, create_fake_metadata, FakeDevice};
+    use std::{env, fs::create_dir_all};
     use update_package::tests::{create_fake_object, create_fake_settings, get_update_package};
 
     let settings = create_fake_settings();
     let tmpdir = settings.update.download_dir.clone();
     let _ = create_dir_all(&tmpdir);
-    let _ = create_fake_object(&settings);
+    create_fake_object(&settings);
+    create_fake_installation_set(&tmpdir, 0);
+    env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
     let machine = StateMachine::Download(State {
         settings,
@@ -118,11 +123,11 @@ fn skip_download_if_ready() {
 fn download_objects() {
     use super::*;
     use crypto_hash::{hex_digest, Algorithm};
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use firmware::tests::{create_fake_installation_set, create_fake_metadata, FakeDevice};
     use mockito::mock;
-    use std::fs::create_dir_all;
     use std::fs::File;
     use std::io::Read;
+    use std::{env, fs::create_dir_all};
     use update_package::tests::{create_fake_settings, get_update_package};
 
     let settings = create_fake_settings();
@@ -130,6 +135,8 @@ fn download_objects() {
     let sha256sum = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
     let tmpdir = settings.update.download_dir.clone();
     let _ = create_dir_all(&tmpdir);
+    create_fake_installation_set(&tmpdir, 0);
+    env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
     // leftover file to ensure it is removed
     let _ = File::create(&tmpdir.join("leftover-file"));

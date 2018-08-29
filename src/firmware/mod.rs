@@ -13,6 +13,8 @@ use self::metadata_value::MetadataValue;
 mod hook;
 use self::hook::{run_hook, run_hooks_from_dir};
 
+pub mod installation_set;
+
 #[cfg(test)]
 pub mod tests;
 

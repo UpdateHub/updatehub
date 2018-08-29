@@ -96,6 +96,32 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
     tmpdir
 }
 
+pub fn create_fake_installation_set(tmpdir: &Path, active: usize) {
+    use std::fs::{create_dir_all, metadata, File};
+    use std::io::Write;
+    use std::os::unix::fs::PermissionsExt;
+
+    const GET_SCRIPT: &str = "updatehub-active-get";
+    const SET_SCRIPT: &str = "updatehub-active-set";
+
+    create_dir_all(&tmpdir).unwrap();
+
+    let mut file = File::create(&tmpdir.join(GET_SCRIPT)).unwrap();
+    writeln!(file, "#!/bin/sh\necho {}", active).unwrap();
+
+    let mut permissions = metadata(tmpdir).unwrap().permissions();
+
+    permissions.set_mode(0o755);
+    file.set_permissions(permissions).unwrap();
+
+    let mut file = File::create(&tmpdir.join(SET_SCRIPT)).unwrap();
+    writeln!(file, "#!/bin/sh\nexit 0").unwrap();
+
+    let mut permissions = metadata(tmpdir).unwrap().permissions();
+    permissions.set_mode(0o755);
+    file.set_permissions(permissions).unwrap();
+}
+
 #[test]
 fn run_multiple_hooks_in_a_dir() {
     let tmpdir = tempdir().unwrap().path().to_path_buf();

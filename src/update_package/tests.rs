@@ -16,13 +16,24 @@ pub fn get_update_json() -> serde_json::Value {
             "supported-hardware": ["board"],
             "objects":
             [
-                {
-                    "mode": "test",
-                    "filename": "testfile",
-                    "target": "/dev/device1",
-                    "sha256sum": SHA256SUM,
-                    "size": 10
-                }
+                [
+                    {
+                        "mode": "test",
+                        "filename": "testfile",
+                        "target": "/dev/device1",
+                        "sha256sum": SHA256SUM,
+                        "size": 10
+                    }
+                ],
+                [
+                    {
+                        "mode": "test",
+                        "filename": "testfile",
+                        "target": "/dev/device2",
+                        "sha256sum": SHA256SUM,
+                        "size": 10
+                    }
+                ]
             ]
         }
     )
@@ -63,7 +74,11 @@ fn missing_object_file() {
     let u = get_update_package();
     let settings = create_fake_settings();
 
-    assert_eq!(u.filter_objects(&settings, &ObjectStatus::Missing).len(), 1);
+    assert_eq!(
+        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Missing)
+            .len(),
+        1
+    );
 }
 
 #[test]
@@ -74,22 +89,22 @@ fn complete_object_file() {
     create_fake_object(&settings);
 
     assert!(
-        u.filter_objects(&settings, &ObjectStatus::Missing)
+        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Missing)
             .is_empty()
     );
 
     assert!(
-        u.filter_objects(&settings, &ObjectStatus::Incomplete)
+        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Incomplete)
             .is_empty()
     );
 
     assert!(
-        u.filter_objects(&settings, &ObjectStatus::Corrupted)
+        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Corrupted)
             .is_empty()
     );
 
     assert_eq!(
-        u.filter_objects(&settings, &ObjectStatus::Ready)
+        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Ready)
             .iter()
             .count(),
         1
