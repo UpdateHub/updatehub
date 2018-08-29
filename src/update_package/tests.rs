@@ -29,7 +29,9 @@ pub fn get_update_json() -> serde_json::Value {
 }
 
 pub fn get_update_package() -> UpdatePackage {
-    serde_json::from_value(get_update_json()).unwrap()
+    serde_json::from_value(get_update_json())
+        .map_err(|e| println!("{:?}", e))
+        .unwrap()
 }
 
 pub fn create_fake_object(settings: &Settings) {
