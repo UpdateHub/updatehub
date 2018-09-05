@@ -22,15 +22,13 @@ use structopt::StructOpt;
 struct Opt {
     /// Increase the verboseness level
     #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
-    verbose: u8,
+    verbose: usize,
 }
 
 fn run() -> updatehub::Result<()> {
     let opt = Opt::from_args();
 
-    stderrlog::new()
-        .verbosity(opt.verbose as usize + 1)
-        .init()?;
+    stderrlog::new().verbosity(opt.verbose + 1).init()?;
 
     info!(
         "Starting UpdateHub Agent {}",
