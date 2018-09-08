@@ -48,65 +48,58 @@ impl StateChangeImpl for State<Install> {
     }
 }
 
-#[test]
-fn has_package_uid_if_succeed() {
+#[cfg(test)]
+mod test {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use firmware::{
+        tests::{create_fake_metadata, FakeDevice},
+        Metadata,
+    };
+    use runtime_settings::RuntimeSettings;
+    use settings::Settings;
     use std::fs;
     use tempfile::NamedTempFile;
     use update_package::tests::get_update_package;
 
-    let tmpfile = NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
+    fn fake_install_state() -> State<Install> {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = tmpfile.path();
+        fs::remove_file(&tmpfile).unwrap();
 
-    let machine = StateMachine::Install(State {
-        settings: Settings::default(),
-        runtime_settings: RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Install {
-            update_package: get_update_package(),
-        },
-    }).move_to_next_state();
-
-    match machine {
-        Ok(StateMachine::Reboot(s)) => assert_eq!(
-            s.runtime_settings.update.applied_package_uid,
-            Some(get_update_package().package_uid())
-        ),
-        Ok(s) => panic!("Invalid success: {:?}", s),
-        Err(e) => panic!("Invalid error: {:?}", e),
+        State {
+            settings: Settings::default(),
+            runtime_settings: RuntimeSettings::new()
+                .load(tmpfile.to_str().unwrap())
+                .unwrap(),
+            firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+            state: Install {
+                update_package: get_update_package(),
+            },
+        }
     }
-}
 
-#[test]
-fn polling_now_if_succeed() {
-    use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
-    use std::fs;
-    use tempfile::NamedTempFile;
-    use update_package::tests::get_update_package;
+    #[test]
+    fn has_package_uid_if_succeed() {
+        let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
-    let tmpfile = NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
+        match machine {
+            Ok(StateMachine::Reboot(s)) => assert_eq!(
+                s.runtime_settings.update.applied_package_uid,
+                Some(get_update_package().package_uid())
+            ),
+            Ok(s) => panic!("Invalid success: {:?}", s),
+            Err(e) => panic!("Invalid error: {:?}", e),
+        }
+    }
 
-    let machine = StateMachine::Install(State {
-        settings: Settings::default(),
-        runtime_settings: RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Install {
-            update_package: get_update_package(),
-        },
-    }).move_to_next_state();
+    #[test]
+    fn polling_now_if_succeed() {
+        let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
-    match machine {
-        Ok(StateMachine::Reboot(s)) => assert_eq!(s.runtime_settings.polling.now, true),
-        Ok(s) => panic!("Invalid success: {:?}", s),
-        Err(e) => panic!("Invalid error: {:?}", e),
+        match machine {
+            Ok(StateMachine::Reboot(s)) => assert_eq!(s.runtime_settings.polling.now, true),
+            Ok(s) => panic!("Invalid success: {:?}", s),
+            Err(e) => panic!("Invalid error: {:?}", e),
+        }
     }
 }

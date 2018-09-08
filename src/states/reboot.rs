@@ -34,6 +34,22 @@ mod test {
     use super::*;
     use std::path::Path;
 
+    fn fake_reboot_state() -> State<Reboot> {
+        use firmware::{
+            tests::{create_fake_metadata, FakeDevice},
+            Metadata,
+        };
+        use runtime_settings::RuntimeSettings;
+        use settings::Settings;
+
+        State {
+            settings: Settings::default(),
+            runtime_settings: RuntimeSettings::default(),
+            firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+            state: Reboot {},
+        }
+    }
+
     fn create_reboot(path: &Path) {
         use std::fs::create_dir_all;
         use std::fs::metadata;
@@ -54,10 +70,6 @@ mod test {
 
     #[test]
     fn runs() {
-        use firmware::tests::{create_fake_metadata, FakeDevice};
-        use firmware::Metadata;
-        use runtime_settings::RuntimeSettings;
-        use settings::Settings;
         use std::env;
         use tempfile::tempdir;
 
@@ -67,12 +79,7 @@ mod test {
         create_reboot(&tmpdir);
         env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
-        let machine = StateMachine::Reboot(State {
-            settings: Settings::default(),
-            runtime_settings: RuntimeSettings::default(),
-            firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-            state: Reboot {},
-        }).move_to_next_state();
+        let machine = StateMachine::Reboot(fake_reboot_state()).move_to_next_state();
 
         assert!(machine.is_ok(), "Error: {:?}", machine);
         assert_state!(machine, Idle);

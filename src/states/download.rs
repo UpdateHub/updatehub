@@ -82,109 +82,112 @@ impl StateChangeImpl for State<Download> {
     }
 }
 
-#[test]
-fn skip_download_if_ready() {
+#[cfg(test)]
+mod test {
     use super::*;
-    use firmware::tests::{create_fake_installation_set, create_fake_metadata, FakeDevice};
-    use std::{env, fs::create_dir_all};
-    use update_package::tests::{create_fake_object, create_fake_settings, get_update_package};
 
-    let settings = create_fake_settings();
-    let tmpdir = settings.update.download_dir.clone();
-    let _ = create_dir_all(&tmpdir);
-    create_fake_object(&settings);
-    create_fake_installation_set(&tmpdir, 0);
-    env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
+    fn fake_download_state() -> State<Download> {
+        use firmware::{
+            tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
+            Metadata,
+        };
+        use runtime_settings::RuntimeSettings;
+        use std::{env, fs::create_dir_all};
+        use update_package::tests::{create_fake_settings, get_update_package};
 
-    let machine = StateMachine::Download(State {
-        settings,
-        runtime_settings: RuntimeSettings::default(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Download {
-            update_package: get_update_package(),
-        },
-    }).move_to_next_state();
+        let settings = create_fake_settings();
+        let tmpdir = settings.update.download_dir.clone();
+        let _ = create_dir_all(&tmpdir);
+        create_fake_installation_set(&tmpdir, 0);
+        env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
-    assert_state!(machine, Install);
+        State {
+            settings,
+            runtime_settings: RuntimeSettings::default(),
+            firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+            state: Download {
+                update_package: get_update_package(),
+            },
+        }
+    }
 
-    assert_eq!(
-        WalkDir::new(&tmpdir)
-            .follow_links(true)
-            .min_depth(1)
-            .into_iter()
-            .filter_entry(|e| e.file_type().is_file())
-            .count(),
-        1,
-        "Number of objects is wrong"
-    );
-}
+    #[test]
+    fn skip_download_if_ready() {
+        use update_package::tests::create_fake_object;
 
-#[test]
-fn download_objects() {
-    use super::*;
-    use crypto_hash::{hex_digest, Algorithm};
-    use firmware::tests::{create_fake_installation_set, create_fake_metadata, FakeDevice};
-    use mockito::mock;
-    use std::fs::File;
-    use std::io::Read;
-    use std::{env, fs::create_dir_all};
-    use update_package::tests::{create_fake_settings, get_update_package};
+        let download_state = fake_download_state();
+        let tmpdir = download_state.settings.update.download_dir.clone();
 
-    let settings = create_fake_settings();
-    let update_package = get_update_package();
-    let sha256sum = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
-    let tmpdir = settings.update.download_dir.clone();
-    let _ = create_dir_all(&tmpdir);
-    create_fake_installation_set(&tmpdir, 0);
-    env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
+        create_fake_object(&download_state.settings);
 
-    // leftover file to ensure it is removed
-    let _ = File::create(&tmpdir.join("leftover-file"));
+        let machine = StateMachine::Download(download_state).move_to_next_state();
+        assert_state!(machine, Install);
 
-    let mock = mock(
-        "GET",
-        format!(
-            "/products/{}/packages/{}/objects/{}",
-            "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-            &update_package.package_uid(),
-            &sha256sum
-        ).as_str(),
-    ).match_header("Content-Type", "application/json")
-    .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-    .with_status(200)
-    .with_body("1234567890")
-    .create();
+        assert_eq!(
+            WalkDir::new(&tmpdir)
+                .follow_links(true)
+                .min_depth(1)
+                .into_iter()
+                .filter_entry(|e| e.file_type().is_file())
+                .count(),
+            1,
+            "Number of objects is wrong"
+        );
+    }
 
-    let machine = StateMachine::Download(State {
-        settings,
-        runtime_settings: RuntimeSettings::default(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Download { update_package },
-    }).move_to_next_state();
+    #[test]
+    fn download_objects() {
+        use crypto_hash::{hex_digest, Algorithm};
+        use mockito::mock;
+        use std::fs::File;
+        use std::io::Read;
 
-    mock.assert();
+        let sha256sum = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
+        let download_state = fake_download_state();
+        let tmpdir = download_state.settings.update.download_dir.clone();
 
-    assert_state!(machine, Install);
+        // leftover file to ensure it is removed
+        let _ = File::create(&tmpdir.join("leftover-file"));
 
-    assert_eq!(
-        WalkDir::new(&tmpdir)
-            .follow_links(true)
-            .min_depth(1)
-            .into_iter()
-            .filter_entry(|e| e.file_type().is_file())
-            .count(),
-        1,
-        "Failed to remove the corrupted object"
-    );
+        let mock = mock(
+            "GET",
+            format!(
+                "/products/{}/packages/{}/objects/{}",
+                "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
+                &download_state.state.update_package.package_uid(),
+                &sha256sum
+            ).as_str(),
+        ).match_header("Content-Type", "application/json")
+        .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+        .with_status(200)
+        .with_body("1234567890")
+        .create();
 
-    let mut object_content = String::new();
-    let _ = File::open(&tmpdir.join(&sha256sum))
-        .expect("Fail to open the temporary directory.")
-        .read_to_string(&mut object_content);
+        let machine = StateMachine::Download(download_state).move_to_next_state();
+        assert_state!(machine, Install);
 
-    assert_eq!(
-        &hex_digest(Algorithm::SHA256, object_content.as_bytes()),
-        &sha256sum,
-        "Checksum mismatch"
-    );
+        mock.assert();
+
+        assert_eq!(
+            WalkDir::new(&tmpdir)
+                .follow_links(true)
+                .min_depth(1)
+                .into_iter()
+                .filter_entry(|e| e.file_type().is_file())
+                .count(),
+            1,
+            "Failed to remove the corrupted object"
+        );
+
+        let mut object_content = String::new();
+        let _ = File::open(&tmpdir.join(&sha256sum))
+            .expect("Fail to open the temporary directory.")
+            .read_to_string(&mut object_content);
+
+        assert_eq!(
+            &hex_digest(Algorithm::SHA256, object_content.as_bytes()),
+            &sha256sum,
+            "Checksum mismatch"
+        );
+    }
 }
