@@ -7,7 +7,7 @@ use Result;
 
 use client::Api;
 use firmware::installation_set;
-use states::{Idle, Install, State, StateChangeImpl, StateMachine};
+use states::{Idle, Install, State, StateChangeImpl, StateMachine, TransitionCallback};
 use std::fs;
 use update_package::{ObjectStatus, UpdatePackage};
 use walkdir::WalkDir;
@@ -19,6 +19,12 @@ pub struct Download {
 
 create_state_step!(Download => Idle);
 create_state_step!(Download => Install(update_package));
+
+impl TransitionCallback for State<Download> {
+    fn callback_state_name(&self) -> &'static str {
+        "download"
+    }
+}
 
 impl StateChangeImpl for State<Download> {
     fn handle(self) -> Result<StateMachine> {
@@ -189,5 +195,11 @@ mod test {
             &sha256sum,
             "Checksum mismatch"
         );
+    }
+
+    #[test]
+    fn download_has_transition_callback_trait() {
+        let download_state = fake_download_state();
+        assert_eq!(download_state.callback_state_name(), "download");
     }
 }

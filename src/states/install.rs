@@ -6,7 +6,7 @@
 use Result;
 
 use failure::ResultExt;
-use states::{Idle, Reboot, State, StateChangeImpl, StateMachine};
+use states::{Idle, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback};
 use update_package::UpdatePackage;
 
 #[derive(Debug, PartialEq)]
@@ -17,9 +17,13 @@ pub struct Install {
 create_state_step!(Install => Idle);
 create_state_step!(Install => Reboot);
 
+impl TransitionCallback for State<Install> {
+    fn callback_state_name(&self) -> &'static str {
+        "install"
+    }
+}
+
 impl StateChangeImpl for State<Install> {
-    // FIXME: When adding state-chance hooks, we need to go to Idle if
-    // cancelled.
     fn handle(mut self) -> Result<StateMachine> {
         let package_uid = self.state.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
@@ -101,5 +105,11 @@ mod test {
             Ok(s) => panic!("Invalid success: {:?}", s),
             Err(e) => panic!("Invalid error: {:?}", e),
         }
+    }
+
+    #[test]
+    fn install_has_transition_callback_trait() {
+        let state = fake_install_state();
+        assert_eq!(state.callback_state_name(), "install");
     }
 }

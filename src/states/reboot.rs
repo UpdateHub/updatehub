@@ -6,16 +6,20 @@
 use Result;
 
 use easy_process;
-use states::{Idle, State, StateChangeImpl, StateMachine};
+use states::{Idle, State, StateChangeImpl, StateMachine, TransitionCallback};
 
 #[derive(Debug, PartialEq)]
 pub struct Reboot {}
 
 create_state_step!(Reboot => Idle);
 
+impl TransitionCallback for State<Reboot> {
+    fn callback_state_name(&self) -> &'static str {
+        "reboot"
+    }
+}
+
 impl StateChangeImpl for State<Reboot> {
-    // FIXME: When adding state-chance hooks, we need to go to Idle if
-    // cancelled.
     fn handle(self) -> Result<StateMachine> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
@@ -83,5 +87,11 @@ mod test {
 
         assert!(machine.is_ok(), "Error: {:?}", machine);
         assert_state!(machine, Idle);
+    }
+
+    #[test]
+    fn reboot_has_transition_callback_trait() {
+        let state = fake_reboot_state();
+        assert_eq!(state.callback_state_name(), "reboot");
     }
 }

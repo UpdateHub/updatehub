@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-#![allow(dead_code)]
-
 //! Controls the state machine of the system
 //!
 //! It supports following states, and transitions, as shown in the
@@ -46,6 +44,10 @@ use settings::Settings;
 
 pub trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine>;
+}
+
+pub trait TransitionCallback: Into<State<Idle>> {
+    fn callback_state_name(&self) -> &'static str;
 }
 
 /// Holds the `State` type and common data, which is available for
@@ -93,6 +95,25 @@ pub enum StateMachine {
     Reboot(State<Reboot>),
 }
 
+impl<S> State<S>
+where
+    State<S>: TransitionCallback + StateChangeImpl,
+{
+    fn handle_with_callback(self) -> Result<StateMachine> {
+        use states::transition::{state_change_callback, Transition};
+
+        let transition = state_change_callback(
+            &self.settings.firmware.metadata_path,
+            self.callback_state_name(),
+        )?;
+
+        match transition {
+            Transition::Continue => Ok(self.handle()?),
+            Transition::Cancel => Ok(StateMachine::Idle(self.into())),
+        }
+    }
+}
+
 impl StateMachine {
     pub fn new(settings: Settings, runtime_settings: RuntimeSettings, firmware: Metadata) -> Self {
         StateMachine::Idle(State {
@@ -124,9 +145,9 @@ impl StateMachine {
             StateMachine::Idle(s) => Ok(s.handle()?),
             StateMachine::Poll(s) => Ok(s.handle()?),
             StateMachine::Probe(s) => Ok(s.handle()?),
-            StateMachine::Download(s) => Ok(s.handle()?),
-            StateMachine::Install(s) => Ok(s.handle()?),
-            StateMachine::Reboot(s) => Ok(s.handle()?),
+            StateMachine::Download(s) => Ok(s.handle_with_callback()?),
+            StateMachine::Install(s) => Ok(s.handle_with_callback()?),
+            StateMachine::Reboot(s) => Ok(s.handle_with_callback()?),
         }
     }
 }
