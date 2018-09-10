@@ -7,7 +7,7 @@ use super::*;
 use firmware::tests::{create_fake_metadata, FakeDevice};
 use mockito::{mock, Mock};
 
-pub enum FakeServer {
+pub(crate) enum FakeServer {
     NoUpdate,
     HasUpdate,
     ExtraPoll,
@@ -15,7 +15,7 @@ pub enum FakeServer {
     InvalidHardware,
 }
 
-pub fn create_mock_server(server: FakeServer) -> Mock {
+pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
     use mockito::Matcher;
     use update_package::tests::get_update_json;
 

@@ -19,23 +19,23 @@ use settings::Settings;
 use update_package::UpdatePackage;
 
 #[cfg(test)]
-pub mod tests;
+pub(crate) mod tests;
 
-pub struct Api<'a> {
+pub(crate) struct Api<'a> {
     settings: &'a Settings,
     firmware: &'a Metadata,
     runtime_settings: &'a RuntimeSettings,
 }
 
 #[derive(Debug)]
-pub enum ProbeResponse {
+pub(crate) enum ProbeResponse {
     NoUpdate,
     Update(UpdatePackage),
     ExtraPoll(i64),
 }
 
 impl<'a> Api<'a> {
-    pub fn new(
+    pub(crate) fn new(
         settings: &'a Settings,
         runtime_settings: &'a RuntimeSettings,
         firmware: &'a Metadata,

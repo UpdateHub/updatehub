@@ -33,8 +33,8 @@ extern crate tempfile;
 #[macro_use]
 extern crate serde_json;
 
-pub mod client;
 mod build_info;
+mod client;
 pub mod firmware;
 pub mod runtime_settings;
 mod serde_helpers;
