@@ -33,8 +33,8 @@ extern crate tempfile;
 #[macro_use]
 extern crate serde_json;
 
-pub mod build_info;
 pub mod client;
+mod build_info;
 pub mod firmware;
 pub mod runtime_settings;
 mod serde_helpers;
@@ -45,3 +45,5 @@ pub use failure::Error;
 
 use std::result;
 pub type Result<T> = result::Result<T, Error>;
+
+pub use build_info::version;

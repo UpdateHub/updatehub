@@ -18,7 +18,7 @@ use structopt::StructOpt;
     author = "O.S. Systems Software LTDA. <contact@ossystems.com.br>",
     about = "A generic and safe Firmware Over-The-Air agent."
 )]
-#[structopt(raw(version = "updatehub::build_info::version()"))]
+#[structopt(raw(version = "updatehub::version()"))]
 struct Opt {
     /// Increase the verboseness level
     #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
@@ -30,10 +30,7 @@ fn run() -> updatehub::Result<()> {
 
     stderrlog::new().verbosity(opt.verbose + 1).init()?;
 
-    info!(
-        "Starting UpdateHub Agent {}",
-        updatehub::build_info::version()
-    );
+    info!("Starting UpdateHub Agent {}", updatehub::version());
 
     let settings = updatehub::settings::Settings::load()?;
     let runtime_settings = updatehub::runtime_settings::RuntimeSettings::new()

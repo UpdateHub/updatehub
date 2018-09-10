@@ -3,10 +3,6 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-//! Build information module
-
-const VERSION: &str = env!("VERSION");
-
 /// Returns the version in use, including the commit and if there is
 /// uncommited modification in the source.
 ///
@@ -15,10 +11,10 @@ const VERSION: &str = env!("VERSION");
 ///
 /// # Example
 /// ```
-/// use updatehub::build_info;
+/// use updatehub;
 ///
-/// println!("Running version: {}", build_info::version());
+/// println!("Running version: {}", updatehub::version());
 /// ```
 pub fn version() -> &'static str {
-    VERSION
+    env!("VERSION")
 }
