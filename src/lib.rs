@@ -42,9 +42,8 @@ pub mod firmware;
 pub mod runtime_settings;
 pub mod settings;
 pub mod states;
-pub use failure::Error;
 
 use std::result;
-pub type Result<T> = result::Result<T, Error>;
+pub type Result<T> = result::Result<T, failure::Error>;
 
 pub use build_info::version;
