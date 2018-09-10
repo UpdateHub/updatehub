@@ -29,7 +29,7 @@ pub(crate) mod tests;
 
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct UpdatePackage {
+pub(crate) struct UpdatePackage {
     product_uid: String,
     version: String,
 

@@ -8,7 +8,7 @@ use Result;
 use states::{Park, Poll, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
-pub struct Idle {}
+pub(super) struct Idle {}
 
 /// Implements the state change for `State<Idle>`. It has two
 /// possibilities:

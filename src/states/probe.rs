@@ -10,7 +10,7 @@ use failure::ResultExt;
 use states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
-pub struct Probe {}
+pub(super) struct Probe {}
 
 create_state_step!(Probe => Idle);
 create_state_step!(Probe => Poll);

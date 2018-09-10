@@ -9,7 +9,7 @@ use easy_process;
 use states::{Idle, State, StateChangeImpl, StateMachine, TransitionCallback};
 
 #[derive(Debug, PartialEq)]
-pub struct Reboot {}
+pub(super) struct Reboot {}
 
 create_state_step!(Reboot => Idle);
 

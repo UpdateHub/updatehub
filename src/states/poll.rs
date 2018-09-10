@@ -12,7 +12,7 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::thread;
 
 #[derive(Debug, PartialEq)]
-pub struct Poll {}
+pub(super) struct Poll {}
 
 create_state_step!(Poll => Probe);
 

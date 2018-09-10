@@ -13,8 +13,8 @@ use update_package::{ObjectStatus, UpdatePackage};
 use walkdir::WalkDir;
 
 #[derive(Debug, PartialEq)]
-pub struct Download {
-    pub update_package: UpdatePackage,
+pub(super) struct Download {
+    pub(super) update_package: UpdatePackage,
 }
 
 create_state_step!(Download => Idle);

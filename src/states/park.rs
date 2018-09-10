@@ -8,7 +8,7 @@ use Result;
 use states::{State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
-pub struct Park {}
+pub(super) struct Park {}
 
 /// Implements the state change for `State<Park>`. It stays in
 /// `State<Park>` state.

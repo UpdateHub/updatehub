@@ -3,23 +3,6 @@
 // SPDX-License-Identifier: MPL-2.0
 //
 
-//! Controls the state machine of the system
-//!
-//! It supports following states, and transitions, as shown in the
-//! below diagram:
-//!
-//! ```text
-//!           .--------------.
-//!           |              v
-//! Park <- Idle -> Poll -> Probe -> Download -> Install -> Reboot
-//!           ^      ^        '          '          '
-//!           '      '        '          '          '
-//!           '      `--------'          '          '
-//!           `---------------'          '          '
-//!           `--------------------------'          '
-//!           `-------------------------------------'
-//! ```
-
 #[macro_use]
 mod macros;
 mod download;
@@ -33,7 +16,7 @@ mod transition;
 
 use Result;
 
-pub use self::{
+use self::{
     download::Download, idle::Idle, install::Install, park::Park, poll::Poll, probe::Probe,
     reboot::Reboot,
 };
@@ -42,56 +25,33 @@ use firmware::Metadata;
 use runtime_settings::RuntimeSettings;
 use settings::Settings;
 
-pub trait StateChangeImpl {
+trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine>;
 }
 
-pub trait TransitionCallback: Into<State<Idle>> {
+trait TransitionCallback: Into<State<Idle>> {
     fn callback_state_name(&self) -> &'static str;
 }
 
-/// Holds the `State` type and common data, which is available for
-/// every state transition.
 #[derive(Debug, PartialEq)]
-pub struct State<S>
+struct State<S>
 where
     State<S>: StateChangeImpl,
 {
-    /// System settings.
     settings: Settings,
-
-    /// Runtime settings.
     runtime_settings: RuntimeSettings,
-
-    /// Firmware metadata.
     firmware: Metadata,
-
-    /// State type with specific data and methods.
     state: S,
 }
 
-/// The struct representing the state machine.
 #[derive(Debug, PartialEq)]
-pub enum StateMachine {
-    /// Park state
+enum StateMachine {
     Park(State<Park>),
-
-    /// Idle state
     Idle(State<Idle>),
-
-    /// Poll state
     Poll(State<Poll>),
-
-    /// Probe state
     Probe(State<Probe>),
-
-    /// Download state
     Download(State<Download>),
-
-    /// Install state
     Install(State<Install>),
-
-    /// Reboot state
     Reboot(State<Reboot>),
 }
 
@@ -115,28 +75,13 @@ where
 }
 
 impl StateMachine {
-    pub fn new(settings: Settings, runtime_settings: RuntimeSettings, firmware: Metadata) -> Self {
+    fn new(settings: Settings, runtime_settings: RuntimeSettings, firmware: Metadata) -> Self {
         StateMachine::Idle(State {
             settings,
             runtime_settings,
             firmware,
             state: Idle {},
         })
-    }
-
-    pub fn run(self) {
-        self.step()
-    }
-
-    fn step(self) {
-        match self.move_to_next_state() {
-            Ok(StateMachine::Park(_)) => {
-                debug!("Parking state machine.");
-                return;
-            }
-            Ok(s) => s.run(),
-            Err(e) => panic!("{}", e),
-        }
     }
 
     fn move_to_next_state(self) -> Result<Self> {
@@ -148,6 +93,53 @@ impl StateMachine {
             StateMachine::Download(s) => Ok(s.handle_with_callback()?),
             StateMachine::Install(s) => Ok(s.handle_with_callback()?),
             StateMachine::Reboot(s) => Ok(s.handle_with_callback()?),
+        }
+    }
+}
+
+/// Runs the state machine up to completion handling all procing
+/// states without extra manual work.
+///
+/// It supports following states, and transitions, as shown in the
+/// below diagram:
+///
+/// ```text
+///           .--------------.
+///           |              v
+/// Park <- Idle -> Poll -> Probe -> Download -> Install -> Reboot
+///           ^      ^        '          '          '
+///           '      '        '          '          '
+///           '      `--------'          '          '
+///           `---------------'          '          '
+///           `--------------------------'          '
+///           `-------------------------------------'
+/// ```
+///
+/// # Example
+/// ```
+/// # extern crate failure;
+/// # extern crate updatehub;
+/// # use failure;
+/// # fn run() -> Result<(), failure::Error> {
+/// use updatehub;
+///
+/// let settings = updatehub::settings::Settings::load()?;
+/// updatehub::run(settings)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn run(settings: Settings) -> Result<()> {
+    let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
+    let firmware = Metadata::new(&settings.firmware.metadata_path)?;
+
+    let mut machine = StateMachine::new(settings, runtime_settings, firmware);
+    loop {
+        machine = match machine.move_to_next_state()? {
+            StateMachine::Park(_) => {
+                debug!("Parking state machine.");
+                return Ok(());
+            }
+            s => s,
         }
     }
 }

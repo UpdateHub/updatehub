@@ -10,8 +10,8 @@ use states::{Idle, Reboot, State, StateChangeImpl, StateMachine, TransitionCallb
 use update_package::UpdatePackage;
 
 #[derive(Debug, PartialEq)]
-pub struct Install {
-    pub update_package: UpdatePackage,
+pub(super) struct Install {
+    pub(super) update_package: UpdatePackage,
 }
 
 create_state_step!(Install => Idle);
