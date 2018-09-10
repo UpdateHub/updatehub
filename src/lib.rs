@@ -35,12 +35,13 @@ extern crate serde_json;
 
 mod build_info;
 mod client;
+mod serde_helpers;
+mod update_package;
+
 pub mod firmware;
 pub mod runtime_settings;
-mod serde_helpers;
 pub mod settings;
 pub mod states;
-mod update_package;
 pub use failure::Error;
 
 use std::result;
