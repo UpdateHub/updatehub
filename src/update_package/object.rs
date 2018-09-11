@@ -16,12 +16,12 @@ use std::path::Path;
 #[derive(Deserialize, PartialEq, Debug)]
 #[serde(tag = "mode")]
 #[serde(rename_all = "lowercase")]
-pub enum Object {
+pub(crate) enum Object {
     Test(Test),
 }
 
 #[derive(PartialEq, Debug)]
-pub enum ObjectStatus {
+pub(crate) enum ObjectStatus {
     Missing,
     Incomplete,
     Corrupted,
@@ -67,7 +67,7 @@ trait ObjectType {
 
 #[derive(Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub struct Test {
+pub(crate) struct Test {
     filename: String,
     sha256sum: String,
     target: String,

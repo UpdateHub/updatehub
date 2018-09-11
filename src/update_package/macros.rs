@@ -6,25 +6,25 @@
 macro_rules! impl_object_for_object_types {
     ( $( $objtype:ident ),* ) => {
         impl Object {
-            pub fn status(&self, download_dir: &Path) -> Result<ObjectStatus> {
+            pub(crate) fn status(&self, download_dir: &Path) -> Result<ObjectStatus> {
                 match *self {
                     $( Object::$objtype(ref o) => Ok(o.status(download_dir)?), )*
                 }
             }
 
-            pub fn filename(&self) -> &str {
+            pub(crate) fn filename(&self) -> &str {
                 match *self {
                     $( Object::$objtype(ref o) => o.filename(), )*
                 }
             }
 
-            pub fn len(&self) -> u64 {
+            pub(crate) fn len(&self) -> u64 {
                 match *self {
                     $( Object::$objtype(ref o) => o.len(), )*
                 }
             }
 
-            pub fn sha256sum(&self) -> &str {
+            pub(crate) fn sha256sum(&self) -> &str {
                 match *self {
                     $( Object::$objtype(ref o) => o.sha256sum(), )*
                 }

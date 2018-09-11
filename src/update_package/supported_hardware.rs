@@ -11,14 +11,14 @@ use update_package::UpdatePackageError;
 
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(untagged)]
-pub enum SupportedHardware {
+pub(crate) enum SupportedHardware {
     #[serde(deserialize_with = "any")]
     Any,
     HardwareList(Vec<String>),
 }
 
 impl SupportedHardware {
-    pub fn compatible_with(&self, hardware: &str) -> Result<()> {
+    pub(crate) fn compatible_with(&self, hardware: &str) -> Result<()> {
         let hardware = hardware.to_string();
         let compatible = match self {
             SupportedHardware::Any => true,

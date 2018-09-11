@@ -19,10 +19,10 @@ mod macros;
 
 mod object;
 use self::object::Object;
-pub use self::object::ObjectStatus;
+pub(crate) use self::object::ObjectStatus;
 
 #[cfg(test)]
-pub mod tests;
+pub(crate) mod tests;
 
 // CHECK: https://play.rust-lang.org/?gist=b7bc6ad2c073692f96007928aac75768&version=stable
 // It does show how to match the different object types
@@ -43,35 +43,35 @@ pub struct UpdatePackage {
 }
 
 #[derive(Fail, Debug)]
-pub enum UpdatePackageError {
+pub(crate) enum UpdatePackageError {
     #[fail(display = "Incompatible with hardware: {}", _0)]
     IncompatibleHardware(String),
 }
 
 impl UpdatePackage {
-    pub fn parse(content: &str) -> Result<Self> {
+    pub(crate) fn parse(content: &str) -> Result<Self> {
         let mut update_package = serde_json::from_str::<Self>(content)?;
         update_package.raw = content.into();
 
         Ok(update_package)
     }
 
-    pub fn package_uid(&self) -> String {
+    pub(crate) fn package_uid(&self) -> String {
         hex_digest(Algorithm::SHA256, self.raw.as_bytes())
     }
 
-    pub fn compatible_with(&self, firmware: &Metadata) -> Result<()> {
+    pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<()> {
         self.supported_hardware.compatible_with(&firmware.hardware)
     }
 
-    pub fn objects(&self, installation_set: InstallationSet) -> &Vec<Object> {
+    pub(crate) fn objects(&self, installation_set: InstallationSet) -> &Vec<Object> {
         match installation_set {
             InstallationSet::A => &self.objects.0,
             InstallationSet::B => &self.objects.1,
         }
     }
 
-    pub fn filter_objects(
+    pub(crate) fn filter_objects(
         &self,
         settings: &Settings,
         installation_set: InstallationSet,

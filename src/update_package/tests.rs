@@ -8,7 +8,7 @@ use serde_json;
 
 const SHA256SUM: &str = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
 
-pub fn get_update_json() -> serde_json::Value {
+pub(crate) fn get_update_json() -> serde_json::Value {
     json!(
         {
             "product-uid": "0123456789",
@@ -39,13 +39,13 @@ pub fn get_update_json() -> serde_json::Value {
     )
 }
 
-pub fn get_update_package() -> UpdatePackage {
+pub(crate) fn get_update_package() -> UpdatePackage {
     serde_json::from_value(get_update_json())
         .map_err(|e| println!("{:?}", e))
         .unwrap()
 }
 
-pub fn create_fake_object(settings: &Settings) {
+pub(crate) fn create_fake_object(settings: &Settings) {
     use std::fs::create_dir_all;
     use std::fs::File;
     use std::io::Write;
@@ -61,7 +61,7 @@ pub fn create_fake_object(settings: &Settings) {
         .unwrap();
 }
 
-pub fn create_fake_settings() -> Settings {
+pub(crate) fn create_fake_settings() -> Settings {
     use tempfile::tempdir;
 
     let mut settings = Settings::default();
