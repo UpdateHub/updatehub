@@ -44,8 +44,7 @@ impl StateChangeImpl for State<Download> {
                     .objects(installation_set)
                     .iter()
                     .map(|o| o.sha256sum())
-                    .collect::<Vec<_>>()
-                    .contains(&e.file_name().to_str().unwrap_or(""))
+                    .any(|x| x == e.file_name())
             }) {
             fs::remove_file(entry.path())?;
         }
