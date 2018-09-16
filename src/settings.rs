@@ -36,11 +36,10 @@ pub struct Settings {
 }
 
 impl Settings {
-    pub fn new() -> Self {
-        Settings::default()
-    }
-
-    pub fn load(self) -> Result<Self> {
+    /// Loads the settings from the filesystem. If
+    /// `/etc/updatehub.conf` does not exists, it uses the default
+    /// settings.
+    pub fn load() -> Result<Self> {
         use std::fs::File;
         use std::io::Read;
         use std::path::Path;
@@ -63,10 +62,13 @@ impl Settings {
                 path.to_string_lossy()
             );
             info!("Using default system settings...");
-            Ok(self)
+            Ok(Settings::default())
         }
     }
 
+    // This parses the configuration file, taking into account the
+    // needed validations for all fields, and returns either `Self` or
+    // `Err`.
     fn parse(content: &str) -> Result<Self> {
         let settings = serde_ini::from_str::<Settings>(content)?;
 
@@ -289,7 +291,7 @@ MetadataPath=/tmp/metadata
 
 #[test]
 fn default() {
-    let settings = Settings::new();
+    let settings = Settings::default();
     let expected = Settings {
         polling: Polling {
             interval: Duration::days(1),

@@ -35,7 +35,7 @@ fn run() -> updatehub::Result<()> {
         updatehub::build_info::version()
     );
 
-    let settings = updatehub::settings::Settings::new().load()?;
+    let settings = updatehub::settings::Settings::load()?;
     let runtime_settings = updatehub::runtime_settings::RuntimeSettings::new()
         .load(&settings.storage.runtime_settings)?;
     let firmware = updatehub::firmware::Metadata::new(&settings.firmware.metadata_path)?;
