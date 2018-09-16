@@ -108,8 +108,12 @@ pub enum SettingsError {
 #[serde(rename_all = "PascalCase")]
 pub struct Polling {
     #[serde(deserialize_with = "de::duration_from_str")]
+    /// Inverval to automatically poll the server for update. By
+    /// default, it uses 1 day of interval.
     pub interval: Duration,
     #[serde(deserialize_with = "de::bool_from_str")]
+    /// Defines if automatic polling is enabled or not. By default it
+    /// is enabled.
     pub enabled: bool,
 }
 
