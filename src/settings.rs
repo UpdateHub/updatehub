@@ -130,7 +130,12 @@ impl Default for Polling {
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
     #[serde(deserialize_with = "de::bool_from_str")]
+    /// Determine if it should run on read-only mode or not. By
+    /// default, read-only mode is disabled.
     pub read_only: bool,
+    /// Define where the runtime settings are stored. By default,
+    /// those are stored in
+    /// `/var/lib/updatehub/runtime_settings.conf`.
     pub runtime_settings: String,
 }
 
