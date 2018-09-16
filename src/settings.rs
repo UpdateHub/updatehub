@@ -134,7 +134,7 @@ impl Default for Storage {
     fn default() -> Self {
         Storage {
             read_only: false,
-            runtime_settings: "/var/lib/updatehub.conf".into(),
+            runtime_settings: "/var/lib/updatehub/runtime_settings.conf".into(),
         }
     }
 }
@@ -299,7 +299,7 @@ fn default() {
         },
         storage: Storage {
             read_only: false,
-            runtime_settings: "/var/lib/updatehub.conf".into(),
+            runtime_settings: "/var/lib/updatehub/runtime_settings.conf".into(),
         },
         update: Update {
             download_dir: "/tmp/updatehub".into(),
