@@ -50,7 +50,7 @@ pub enum UpdatePackageError {
 
 impl UpdatePackage {
     pub fn parse(content: &str) -> Result<Self> {
-        let mut update_package = serde_json::from_str::<UpdatePackage>(content)?;
+        let mut update_package = serde_json::from_str::<Self>(content)?;
         update_package.raw = content.into();
 
         Ok(update_package)

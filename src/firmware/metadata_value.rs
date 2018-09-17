@@ -15,7 +15,7 @@ pub struct MetadataValue(BTreeMap<String, Vec<String>>);
 impl FromStr for MetadataValue {
     type Err = io::Error;
 
-    fn from_str(s: &str) -> Result<MetadataValue, io::Error> {
+    fn from_str(s: &str) -> Result<Self, io::Error> {
         let mut values = Vec::new();
         for line in s.lines() {
             let v: Vec<_> = line.splitn(2, '=').map(|v| v.trim().to_string()).collect();
@@ -35,7 +35,7 @@ impl FromStr for MetadataValue {
         }
         values.sort();
 
-        let mut mv = MetadataValue::default();
+        let mut mv = Self::default();
         for (k, v) in values {
             mv.entry(k)
                 .and_modify(|e| e.push(v.clone()))

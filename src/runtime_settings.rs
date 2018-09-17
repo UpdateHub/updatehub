@@ -25,7 +25,7 @@ pub struct RuntimeSettings {
 
 impl RuntimeSettings {
     pub fn new() -> Self {
-        RuntimeSettings::default()
+        Self::default()
     }
 
     pub fn load(mut self, path: &str) -> Result<Self> {
@@ -42,7 +42,7 @@ impl RuntimeSettings {
 
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
-            self = RuntimeSettings::parse(&content)?;
+            self = Self::parse(&content)?;
         } else {
             debug!(
                 "Runtime settings file {} does not exists.",
@@ -56,7 +56,7 @@ impl RuntimeSettings {
     }
 
     fn parse(content: &str) -> Result<Self> {
-        Ok(serde_ini::from_str::<RuntimeSettings>(content)?)
+        Ok(serde_ini::from_str::<Self>(content)?)
     }
 
     pub fn save(&self) -> Result<usize> {
@@ -77,7 +77,7 @@ impl RuntimeSettings {
 }
 
 #[derive(Debug, Fail)]
-pub enum RuntimeSettingsError {
+pub enum Error {
     #[cause]
     #[fail(display = "IO error")]
     Io(io::Error),
@@ -107,7 +107,7 @@ pub struct RuntimePolling {
 
 impl Default for RuntimePolling {
     fn default() -> Self {
-        RuntimePolling {
+        Self {
             last: None,
             extra_interval: None,
             retries: 0,
@@ -127,7 +127,7 @@ pub struct RuntimeUpdate {
 
 impl Default for RuntimeUpdate {
     fn default() -> Self {
-        RuntimeUpdate {
+        Self {
             upgrading_to: -1,
             applied_package_uid: None,
         }

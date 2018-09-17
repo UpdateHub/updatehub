@@ -55,14 +55,14 @@ impl Settings {
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
 
-            Ok(Settings::parse(&content)?)
+            Ok(Self::parse(&content)?)
         } else {
             debug!(
                 "System settings file {} does not exists.",
                 path.to_string_lossy()
             );
             info!("Using default system settings...");
-            Ok(Settings::default())
+            Ok(Self::default())
         }
     }
 
@@ -70,20 +70,20 @@ impl Settings {
     // needed validations for all fields, and returns either `Self` or
     // `Err`.
     fn parse(content: &str) -> Result<Self> {
-        let settings = serde_ini::from_str::<Settings>(content)?;
+        let settings = serde_ini::from_str::<Self>(content)?;
 
         if settings.polling.interval < Duration::seconds(60) {
             error!(
                 "Invalid setting for polling interval. The interval cannot be less than 60 seconds"
             );
-            return Err(SettingsError::InvalidInterval.into());
+            return Err(Error::InvalidInterval.into());
         }
 
         if !&settings.network.server_address.starts_with("http://")
             && !&settings.network.server_address.starts_with("https://")
         {
             error!("Invalid setting for server address. The server address must use the protocol prefix");
-            return Err(SettingsError::InvalidServerAddress.into());
+            return Err(Error::InvalidServerAddress.into());
         }
 
         Ok(settings)
@@ -91,7 +91,7 @@ impl Settings {
 }
 
 #[derive(Debug, Fail)]
-pub enum SettingsError {
+pub enum Error {
     #[cause]
     #[fail(display = "IO error")]
     Io(io::Error),
@@ -119,7 +119,7 @@ pub struct Polling {
 
 impl Default for Polling {
     fn default() -> Self {
-        Polling {
+        Self {
             interval: Duration::days(1),
             enabled: true,
         }
@@ -141,7 +141,7 @@ pub struct Storage {
 
 impl Default for Storage {
     fn default() -> Self {
-        Storage {
+        Self {
             read_only: false,
             runtime_settings: "/var/lib/updatehub/runtime_settings.conf".into(),
         }
@@ -159,7 +159,7 @@ pub struct Update {
 
 impl Default for Update {
     fn default() -> Self {
-        Update {
+        Self {
             download_dir: "/tmp/updatehub".into(),
             install_modes: [
                 "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
@@ -179,7 +179,7 @@ pub struct Network {
 
 impl Default for Network {
     fn default() -> Self {
-        Network {
+        Self {
             server_address: SERVER_URL.into(),
         }
     }
@@ -193,7 +193,7 @@ pub struct Firmware {
 
 impl Default for Firmware {
     fn default() -> Self {
-        Firmware {
+        Self {
             metadata_path: "/usr/share/updatehub".into(),
         }
     }

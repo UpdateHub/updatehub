@@ -139,7 +139,7 @@ impl StateMachine {
         }
     }
 
-    fn move_to_next_state(self) -> Result<StateMachine> {
+    fn move_to_next_state(self) -> Result<Self> {
         match self {
             StateMachine::Park(s) => Ok(s.handle()?),
             StateMachine::Idle(s) => Ok(s.handle()?),

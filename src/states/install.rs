@@ -38,13 +38,13 @@ impl StateChangeImpl for State<Install> {
         // Avoid installing same package twice.
         self.runtime_settings.update.applied_package_uid = Some(package_uid);
 
-        if !self.settings.storage.read_only {
+        if self.settings.storage.read_only {
+            debug!("Skipping install settings save, read-only mode enabled.");
+        } else {
             debug!("Saving install settings.");
             self.runtime_settings
                 .save()
                 .context("Saving runtime due install changes")?;
-        } else {
-            debug!("Skipping install settings save, read-only mode enabled.");
         }
 
         info!("Update installed successfully");

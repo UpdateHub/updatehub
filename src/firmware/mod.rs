@@ -25,7 +25,7 @@ const DEVICE_IDENTITY_DIR: &str = "device-identity.d";
 const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
 
 #[derive(Fail, Debug)]
-pub enum FirmwareError {
+pub enum Error {
     #[fail(display = "Invalid product UID")]
     InvalidProductUid,
     #[fail(display = "Product UID is missing")]
@@ -58,14 +58,14 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new(path: &Path) -> Result<Metadata> {
+    pub fn new(path: &Path) -> Result<Self> {
         let product_uid_hook = path.join(PRODUCT_UID_HOOK);
         let version_hook = path.join(VERSION_HOOK);
         let hardware_hook = path.join(HARDWARE_HOOK);
         let device_identity_dir = path.join(DEVICE_IDENTITY_DIR);
         let device_attributes_dir = path.join(DEVICE_ATTRIBUTES_DIR);
 
-        let metadata = Metadata {
+        let metadata = Self {
             product_uid: run_hook(&product_uid_hook)?,
             version: run_hook(&version_hook)?,
             hardware: run_hook(&hardware_hook)?,
@@ -74,15 +74,15 @@ impl Metadata {
         };
 
         if metadata.product_uid.is_empty() {
-            return Err(FirmwareError::MissingProductUid.into());
+            return Err(Error::MissingProductUid.into());
         }
 
         if metadata.product_uid.len() != 64 {
-            return Err(FirmwareError::InvalidProductUid.into());
+            return Err(Error::InvalidProductUid.into());
         }
 
         if metadata.device_identity.is_empty() {
-            return Err(FirmwareError::MissingDeviceIdentity.into());
+            return Err(Error::MissingDeviceIdentity.into());
         }
 
         Ok(metadata)

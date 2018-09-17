@@ -43,13 +43,13 @@ impl StateChangeImpl for State<Probe> {
         };
 
         // Save any changes we due the probing
-        if !self.settings.storage.read_only {
+        if self.settings.storage.read_only {
+            debug!("Skipping runtime settings save, read-only mode enabled.");
+        } else {
             debug!("Saving runtime settings.");
             self.runtime_settings
                 .save()
                 .context("Saving runtime due probe changes")?;
-        } else {
-            debug!("Skipping runtime settings save, read-only mode enabled.");
         }
 
         match r {
