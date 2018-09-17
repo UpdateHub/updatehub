@@ -4,9 +4,14 @@ rust:
   - stable
   - beta
   - nightly
+before_script:
+  - rustup component add rustfmt-preview
+  - rustup component add clippy-preview
 matrix:
   allow_failures:
     - rust: nightly
 script:
-  - echo "Build project"  ; cargo build --release
-  - echo "Run unit tests" ; cargo test --release --no-fail-fast -- --nocapture --test
+  - echo "Checking code formatting" ; cargo fmt -- --check
+  - echo "Build project"  ; cargo build
+  - echo "Run unit tests" ; cargo test
+  - echo "Checking code lints" ; cargo clippy -- -D clippy
