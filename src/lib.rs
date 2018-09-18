@@ -36,16 +36,17 @@ extern crate serde_json;
 
 mod build_info;
 mod client;
+mod firmware;
+mod runtime_settings;
 mod serde_helpers;
+mod settings;
 mod states;
 mod update_package;
 
-pub mod firmware;
-pub mod runtime_settings;
-pub mod settings;
-
 use std::result;
 pub type Result<T> = result::Result<T, failure::Error>;
+
+pub use settings::Settings;
 
 pub use build_info::version;
 pub use states::run;

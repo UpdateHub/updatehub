@@ -123,7 +123,7 @@ impl StateMachine {
 /// # fn run() -> Result<(), failure::Error> {
 /// use updatehub;
 ///
-/// let settings = updatehub::settings::Settings::load()?;
+/// let settings = updatehub::Settings::load()?;
 /// updatehub::run(settings)?;
 /// # Ok(())
 /// # }

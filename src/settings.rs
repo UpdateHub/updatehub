@@ -28,11 +28,11 @@ const SERVER_URL: &str = mockito::SERVER_URL;
 #[derive(Debug, Default, PartialEq, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Settings {
-    pub firmware: Firmware,
-    pub network: Network,
-    pub polling: Polling,
-    pub storage: Storage,
-    pub update: Update,
+    pub(crate) firmware: Firmware,
+    pub(crate) network: Network,
+    pub(crate) polling: Polling,
+    pub(crate) storage: Storage,
+    pub(crate) update: Update,
 }
 
 impl Settings {
