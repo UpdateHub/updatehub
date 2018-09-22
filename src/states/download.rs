@@ -144,8 +144,7 @@ mod test {
     fn download_objects() {
         use crypto_hash::{hex_digest, Algorithm};
         use mockito::mock;
-        use std::fs::File;
-        use std::io::Read;
+        use std::{fs::File, io::Read};
 
         let sha256sum = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
         let download_state = fake_download_state();

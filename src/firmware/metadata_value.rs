@@ -4,10 +4,14 @@
 //
 
 use core::ops::Index;
-use std::collections::btree_map::{Entry, Keys};
-use std::collections::BTreeMap;
-use std::io;
-use std::str::FromStr;
+use std::{
+    collections::{
+        btree_map::{Entry, Keys},
+        BTreeMap,
+    },
+    io,
+    str::FromStr,
+};
 
 #[derive(Debug, Serialize, PartialEq, Default)]
 pub struct MetadataValue(BTreeMap<String, Vec<String>>);

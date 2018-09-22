@@ -8,8 +8,7 @@ use Result;
 use chrono::Duration;
 use serde_ini;
 
-use std::io;
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 
 use serde_helpers::de;
 
@@ -40,9 +39,7 @@ impl Settings {
     /// `/etc/updatehub.conf` does not exists, it uses the default
     /// settings.
     pub fn load() -> Result<Self> {
-        use std::fs::File;
-        use std::io::Read;
-        use std::path::Path;
+        use std::{fs::File, io::Read, path::Path};
 
         let path = Path::new(SYSTEM_SETTINGS_PATH);
 

@@ -7,8 +7,7 @@ use Result;
 
 use walkdir::WalkDir;
 
-use std::path::Path;
-use std::str::FromStr;
+use std::{path::Path, str::FromStr};
 
 use easy_process;
 use firmware::metadata_value::MetadataValue;

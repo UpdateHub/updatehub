@@ -5,9 +5,7 @@
 
 use failure;
 use firmware::hook::run_script;
-use std::fmt;
-use std::result;
-use std::str::FromStr;
+use std::{fmt, result, str::FromStr};
 
 use Result;
 
@@ -79,9 +77,11 @@ fn works() {
     env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
     let create_fake_backend = |active: usize| {
-        use std::fs::{create_dir_all, metadata, File};
-        use std::io::Write;
-        use std::os::unix::fs::PermissionsExt;
+        use std::{
+            fs::{create_dir_all, metadata, File},
+            io::Write,
+            os::unix::fs::PermissionsExt,
+        };
 
         create_dir_all(&tmpdir).unwrap();
 

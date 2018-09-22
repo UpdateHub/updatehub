@@ -8,12 +8,12 @@ use std::path::PathBuf;
 use tempfile::tempdir;
 
 pub fn create_hook(path: PathBuf, contents: &str) {
-    use std::fs::create_dir_all;
-    use std::fs::metadata;
-    use std::fs::File;
-    use std::io::Write;
-    use std::os::unix::fs::PermissionsExt;
-    use std::{thread, time};
+    use std::{
+        fs::{create_dir_all, metadata, File},
+        io::Write,
+        os::unix::fs::PermissionsExt,
+        thread, time,
+    };
 
     // ensure path exists
     create_dir_all(path.parent().unwrap()).unwrap();
@@ -97,9 +97,11 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
 }
 
 pub fn create_fake_installation_set(tmpdir: &Path, active: usize) {
-    use std::fs::{create_dir_all, metadata, File};
-    use std::io::Write;
-    use std::os::unix::fs::PermissionsExt;
+    use std::{
+        fs::{create_dir_all, metadata, File},
+        io::Write,
+        os::unix::fs::PermissionsExt,
+    };
 
     const GET_SCRIPT: &str = "updatehub-active-get";
     const SET_SCRIPT: &str = "updatehub-active-set";

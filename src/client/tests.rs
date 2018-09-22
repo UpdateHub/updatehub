@@ -94,8 +94,7 @@ fn probe_requirements() {
 #[test]
 fn download_object() {
     let metadata = Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    use std::fs::File;
-    use std::io::Read;
+    use std::{fs::File, io::Read};
     use tempfile::tempdir;
 
     let m1 = mock(

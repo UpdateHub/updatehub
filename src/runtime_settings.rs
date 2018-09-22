@@ -8,9 +8,10 @@ use Result;
 use chrono::{DateTime, Duration, Utc};
 use serde_ini;
 
-use std::io;
-use std::path::Path;
-use std::path::PathBuf;
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 
 use serde_helpers::{de, ser};
 
@@ -29,8 +30,7 @@ impl RuntimeSettings {
     }
 
     pub fn load(mut self, path: &str) -> Result<Self> {
-        use std::fs::File;
-        use std::io::Read;
+        use std::{fs::File, io::Read};
 
         let path = Path::new(path);
 
@@ -60,8 +60,7 @@ impl RuntimeSettings {
     }
 
     pub fn save(&self) -> Result<usize> {
-        use std::fs::File;
-        use std::io::Write;
+        use std::{fs::File, io::Write};
 
         debug!(
             "Saving runtime settings from '{}'...",
