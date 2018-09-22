@@ -33,7 +33,9 @@ fn run() -> updatehub::Result<()> {
     info!("Starting UpdateHub Agent {}", updatehub::version());
 
     let settings = updatehub::Settings::load()?;
-    Ok(updatehub::run(settings)?)
+    updatehub::run(settings)?;
+
+    Ok(())
 }
 
 fn main() {
