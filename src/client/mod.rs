@@ -5,8 +5,10 @@
 
 use Result;
 
-use reqwest::header::{ByteRangeSpec, ContentType, Headers, Range, UserAgent};
-use reqwest::{Client, StatusCode};
+use reqwest::{
+    header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
+    Client, StatusCode,
+};
 
 use std::time::Duration;
 
@@ -18,10 +20,6 @@ use update_package::UpdatePackage;
 
 #[cfg(test)]
 pub mod tests;
-
-header! { (ApiContentType, "Api-Content-Type") => [String] }
-header! { (ApiRetries, "Api-Retries") => [usize] }
-header! { (AddExtraPoll, "Add-Extra-Poll") => [i64] }
 
 pub struct Api<'a> {
     settings: &'a Settings,
@@ -50,11 +48,14 @@ impl<'a> Api<'a> {
     }
 
     fn client(&self) -> Result<Client> {
-        let mut headers = Headers::new();
+        let mut headers = HeaderMap::new();
 
-        headers.set(UserAgent::new("updatehub/next"));
-        headers.set(ContentType::json());
-        headers.set(ApiContentType("application/vnd.updatehub-v1+json".into()));
+        headers.insert(USER_AGENT, "updatehub/next".parse()?);
+        headers.insert(CONTENT_TYPE, "application/json".parse()?);
+        headers.insert(
+            HeaderName::from_static("api-content-type"),
+            "application/vnd.updatehub-v1+json".parse()?,
+        );
 
         Ok(Client::builder()
             .timeout(Duration::from_secs(10))
@@ -68,15 +69,22 @@ impl<'a> Api<'a> {
             .post(&format!(
                 "{}/upgrades",
                 &self.settings.network.server_address
-            )).header(ApiRetries(self.runtime_settings.polling.retries))
-            .json(&self.firmware)
+            )).header(
+                HeaderName::from_static("api-retries"),
+                self.runtime_settings.polling.retries,
+            ).json(&self.firmware)
             .send()?;
 
         match response.status() {
-            StatusCode::NotFound => Ok(ProbeResponse::NoUpdate),
-            StatusCode::Ok => {
-                if let Some(extra_poll) = response.headers().get::<AddExtraPoll>() {
-                    return Ok(ProbeResponse::ExtraPoll(extra_poll.0));
+            StatusCode::NOT_FOUND => Ok(ProbeResponse::NoUpdate),
+            StatusCode::OK => {
+                if let Some(extra_poll) = response
+                    .headers()
+                    .get("add-extra-poll")
+                    .and_then(|extra_poll| extra_poll.to_str().ok())
+                    .and_then(|extra_poll| extra_poll.parse().ok())
+                {
+                    return Ok(ProbeResponse::ExtraPoll(extra_poll));
                 }
 
                 Ok(ProbeResponse::Update(UpdatePackage::parse(
@@ -104,9 +112,7 @@ impl<'a> Api<'a> {
 
         let file = path.join(object);
         if file.exists() {
-            client.header(Range::Bytes(vec![ByteRangeSpec::AllFrom(
-                file.metadata()?.len() - 1,
-            )]));
+            client = client.header(RANGE, format!("bytes={}-", file.metadata()?.len() - 1));
         }
 
         let mut file = OpenOptions::new().create(true).append(true).open(&file)?;
