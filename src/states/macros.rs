@@ -1,7 +1,6 @@
 // Copyright (C) 2018 O.S. Systems Sofware LTDA
 //
-// SPDX-License-Identifier: MPL-2.0
-//
+// SPDX-License-Identifier: Apache-2.0
 
 macro_rules! create_state_step {
     ($source:ident => $dest:ident) => {

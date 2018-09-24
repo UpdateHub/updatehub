@@ -1,14 +1,12 @@
-#
 # Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 #
-# SPDX-License-Identifier: MPL-2.0
-#
+# SPDX-License-Identifier: Apache-2.0
 
 [package]
 name = "updatehub"
 version = "0.1.0"
 authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
-license = "MPL-2.0"
+license = "Apache-2.0"
 
 [dependencies]
 chrono = { version = "0.4.6", features = ["serde"] }
