@@ -130,8 +130,9 @@ impl StateMachine {
 pub fn run(settings: Settings) -> Result<()> {
     let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
     let firmware = Metadata::new(&settings.firmware.metadata_path)?;
-
     let mut machine = StateMachine::new(settings, runtime_settings, firmware);
+
+    // Iterate over the state machine.
     loop {
         machine = match machine.move_to_next_state()? {
             StateMachine::Park(_) => {
