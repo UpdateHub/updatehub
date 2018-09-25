@@ -70,7 +70,7 @@ impl<'a> Api<'a> {
                 &self.settings.network.server_address
             )).header(
                 HeaderName::from_static("api-retries"),
-                self.runtime_settings.polling.retries,
+                self.runtime_settings.retries(),
             ).json(&self.firmware)
             .send()?;
 

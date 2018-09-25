@@ -4,7 +4,6 @@
 
 use Result;
 
-use failure::ResultExt;
 use states::{Idle, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback};
 use update_package::UpdatePackage;
 
@@ -32,19 +31,11 @@ impl StateChangeImpl for State<Install> {
 
         // Ensure we do a probe as soon as possible so full update
         // cycle can be finished.
-        self.runtime_settings.polling.now = true;
+        self.runtime_settings.force_poll()?;
 
         // Avoid installing same package twice.
-        self.runtime_settings.update.applied_package_uid = Some(package_uid);
-
-        if self.settings.storage.read_only {
-            debug!("Skipping install settings save, read-only mode enabled.");
-        } else {
-            debug!("Saving install settings.");
-            self.runtime_settings
-                .save()
-                .context("Saving runtime due install changes")?;
-        }
+        self.runtime_settings
+            .set_applied_package_uid(&package_uid)?;
 
         info!("Update installed successfully");
         Ok(StateMachine::Reboot(self.into()))
@@ -87,7 +78,7 @@ mod test {
 
         match machine {
             Ok(StateMachine::Reboot(s)) => assert_eq!(
-                s.runtime_settings.update.applied_package_uid,
+                s.runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),
             Ok(s) => panic!("Invalid success: {:?}", s),
@@ -100,7 +91,7 @@ mod test {
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
-            Ok(StateMachine::Reboot(s)) => assert_eq!(s.runtime_settings.polling.now, true),
+            Ok(StateMachine::Reboot(s)) => assert_eq!(s.runtime_settings.is_polling_forced(), true),
             Ok(s) => panic!("Invalid success: {:?}", s),
             Err(e) => panic!("Invalid error: {:?}", e),
         }

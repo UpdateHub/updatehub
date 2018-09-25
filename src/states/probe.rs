@@ -5,7 +5,6 @@
 use Result;
 
 use client::Api;
-use failure::ResultExt;
 use states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine};
 
 #[derive(Debug, PartialEq)]
@@ -17,7 +16,7 @@ create_state_step!(Probe => Poll);
 /// Implements the state change for State<Probe>.
 impl StateChangeImpl for State<Probe> {
     fn handle(mut self) -> Result<StateMachine> {
-        use chrono::Duration;
+        use chrono::{Duration, Utc};
         use client::ProbeResponse;
         use std::thread;
 
@@ -25,35 +24,26 @@ impl StateChangeImpl for State<Probe> {
             let probe = Api::new(&self.settings, &self.runtime_settings, &self.firmware).probe();
             if let Err(e) = probe {
                 error!("{}", e);
-                self.runtime_settings.polling.retries += 1;
+                self.runtime_settings.inc_retries();
                 thread::sleep(Duration::seconds(1).to_std().unwrap());
             } else {
-                self.runtime_settings.polling.retries = 0;
+                self.runtime_settings.clear_retries();
                 break probe?;
             }
         };
 
-        self.runtime_settings.polling.extra_interval = match r {
-            ProbeResponse::ExtraPoll(s) => {
-                info!("Delaying the probing as requested by the server.");
-                Some(Duration::seconds(s))
-            }
-            _ => None,
-        };
-
-        // Save any changes we due the probing
-        if self.settings.storage.read_only {
-            debug!("Skipping runtime settings save, read-only mode enabled.");
-        } else {
-            debug!("Saving runtime settings.");
+        if let ProbeResponse::ExtraPoll(s) = r {
+            info!("Delaying the probing as requested by the server.");
             self.runtime_settings
-                .save()
-                .context("Saving runtime due probe changes")?;
-        }
+                .set_polling_extra_interval(Duration::seconds(s))?;
+        };
 
         match r {
             ProbeResponse::NoUpdate => {
                 debug!("Moving to Idle state as no update is available.");
+
+                // Store timestamp of last polling
+                self.runtime_settings.set_last_polling(Utc::now())?;
                 Ok(StateMachine::Idle(self.into()))
             }
 
@@ -66,7 +56,10 @@ impl StateChangeImpl for State<Probe> {
                 // Ensure the package is compatible
                 u.compatible_with(&self.firmware)?;
 
-                if Some(u.package_uid()) == self.runtime_settings.update.applied_package_uid {
+                // Store timestamp of last polling
+                self.runtime_settings.set_last_polling(Utc::now())?;
+
+                if Some(u.package_uid()) == self.runtime_settings.applied_package_uid() {
                     info!(
                         "Not applying the update package. Same package has already been installed."
                     );
@@ -215,30 +208,27 @@ fn skip_same_package_uid() {
 
     let mock = create_mock_server(FakeServer::HasUpdate).expect(2);
 
+    let mut runtime_settings = RuntimeSettings::new()
+        .load(tmpfile.to_str().unwrap())
+        .unwrap();
+
     // We first get the package_uid that will be returned so we can
     // use it for the upcoming test.
     //
     // This has been done so we don't need to manually update it every
     // time we change the package payload.
-    let package_uid = {
-        let probe = Api::new(
-            &Settings::default(),
-            &RuntimeSettings::default(),
-            &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-        ).probe()
-        .unwrap();
+    let probe = Api::new(
+        &Settings::default(),
+        &RuntimeSettings::default(),
+        &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+    ).probe()
+    .unwrap();
 
-        if let ProbeResponse::Update(u) = probe {
-            Some(u.package_uid())
-        } else {
-            None
-        }
-    };
-
-    let mut runtime_settings = RuntimeSettings::new()
-        .load(tmpfile.to_str().unwrap())
-        .unwrap();
-    runtime_settings.update.applied_package_uid = package_uid;
+    if let ProbeResponse::Update(u) = probe {
+        runtime_settings
+            .set_applied_package_uid(&u.package_uid())
+            .unwrap();
+    }
 
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),

@@ -24,13 +24,12 @@ impl StateChangeImpl for State<Poll> {
     fn handle(self) -> Result<StateMachine> {
         let current_time: DateTime<Utc> = Utc::now();
 
-        let probe_now = self.runtime_settings.polling.now;
-        if probe_now {
+        if self.runtime_settings.is_polling_forced() {
             debug!("Moving to Probe state as soon as possible.");
             return Ok(StateMachine::Probe(self.into()));
         }
 
-        let last_poll = self.runtime_settings.polling.last.unwrap_or_else(|| {
+        let last_poll = self.runtime_settings.last_polling().unwrap_or_else(|| {
             // When no polling has been done before, we choose an
             // offset between current time and the intended polling
             // interval and use it as last_poll
@@ -46,7 +45,7 @@ impl StateChangeImpl for State<Poll> {
             return Ok(StateMachine::Probe(self.into()));
         }
 
-        let extra_interval = self.runtime_settings.polling.extra_interval;
+        let extra_interval = self.runtime_settings.polling_extra_interval();
         if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) < current_time {
             debug!("Moving to Probe state as the polling's due extra interval.");
             return Ok(StateMachine::Probe(self.into()));
@@ -78,8 +77,12 @@ fn extra_poll_in_past() {
     settings.polling.enabled = true;
 
     let mut runtime_settings = RuntimeSettings::default();
-    runtime_settings.polling.last = Some(Utc::now() - Duration::seconds(10));
-    runtime_settings.polling.extra_interval = Some(Duration::seconds(10));
+    runtime_settings
+        .set_last_polling(Utc::now() - Duration::seconds(10))
+        .unwrap();
+    runtime_settings
+        .set_polling_extra_interval(Duration::seconds(10))
+        .unwrap();
 
     let machine = StateMachine::Poll(State {
         settings,
@@ -100,8 +103,10 @@ fn probe_now() {
     settings.polling.enabled = true;
 
     let mut runtime_settings = RuntimeSettings::default();
-    runtime_settings.polling.last = Some(Utc::now());
-    runtime_settings.polling.now = true;
+    runtime_settings.set_last_polling(Utc::now()).unwrap();
+    runtime_settings
+        .force_poll()
+        .expect("failed to force polling");
 
     let machine = StateMachine::Poll(State {
         settings,
@@ -122,7 +127,9 @@ fn last_poll_in_future() {
     settings.polling.enabled = true;
 
     let mut runtime_settings = RuntimeSettings::default();
-    runtime_settings.polling.last = Some(Utc::now() + Duration::days(1));
+    runtime_settings
+        .set_last_polling(Utc::now() + Duration::days(1))
+        .unwrap();
 
     let machine = StateMachine::Poll(State {
         settings,
@@ -144,7 +151,7 @@ fn interval_1_second() {
     settings.polling.interval = Duration::seconds(1);
 
     let mut runtime_settings = RuntimeSettings::default();
-    runtime_settings.polling.last = Some(Utc::now());
+    runtime_settings.set_last_polling(Utc::now()).unwrap();
 
     let machine = StateMachine::Poll(State {
         settings,

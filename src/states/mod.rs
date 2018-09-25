@@ -128,7 +128,11 @@ impl StateMachine {
 /// # }
 /// ```
 pub fn run(settings: Settings) -> Result<()> {
-    let runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
+    let mut runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
+    if !settings.storage.read_only {
+        runtime_settings.enable_persistency();
+    }
+
     let firmware = Metadata::new(&settings.firmware.metadata_path)?;
     let mut machine = StateMachine::new(settings, runtime_settings, firmware);
 
