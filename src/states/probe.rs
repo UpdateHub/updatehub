@@ -201,8 +201,10 @@ fn extra_poll_interval() {
 #[test]
 fn skip_same_package_uid() {
     use super::*;
-    use client::tests::{create_mock_server, FakeServer};
-    use client::ProbeResponse;
+    use client::{
+        tests::{create_mock_server, FakeServer},
+        ProbeResponse,
+    };
     use firmware::tests::{create_fake_metadata, FakeDevice};
     use std::fs;
     use tempfile::NamedTempFile;

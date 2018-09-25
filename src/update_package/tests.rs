@@ -45,9 +45,10 @@ pub(crate) fn get_update_package() -> UpdatePackage {
 }
 
 pub(crate) fn create_fake_object(settings: &Settings) {
-    use std::fs::create_dir_all;
-    use std::fs::File;
-    use std::io::Write;
+    use std::{
+        fs::{create_dir_all, File},
+        io::Write,
+    };
 
     let dir = &settings.update.download_dir;
 

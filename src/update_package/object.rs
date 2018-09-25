@@ -6,11 +6,11 @@ use Result;
 
 use crypto_hash::{Algorithm, Hasher};
 use hex;
-use std::fs::File;
-use std::io::BufReader;
-use std::io::Read;
-use std::io::Write;
-use std::path::Path;
+use std::{
+    fs::File,
+    io::{BufReader, Read, Write},
+    path::Path,
+};
 
 #[derive(Deserialize, PartialEq, Debug)]
 #[serde(tag = "mode")]

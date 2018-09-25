@@ -54,11 +54,11 @@ mod test {
     }
 
     fn create_reboot(path: &Path) {
-        use std::fs::create_dir_all;
-        use std::fs::metadata;
-        use std::fs::File;
-        use std::io::Write;
-        use std::os::unix::fs::PermissionsExt;
+        use std::{
+            fs::{create_dir_all, metadata, File},
+            io::Write,
+            os::unix::fs::PermissionsExt,
+        };
 
         // ensure path exists
         create_dir_all(path).unwrap();

@@ -7,8 +7,10 @@ use Result;
 use chrono::{DateTime, Duration, Utc};
 use rand::{self, Rng};
 use states::{Probe, State, StateChangeImpl, StateMachine};
-use std::sync::{Arc, Condvar, Mutex};
-use std::thread;
+use std::{
+    sync::{Arc, Condvar, Mutex},
+    thread,
+};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Poll {}
