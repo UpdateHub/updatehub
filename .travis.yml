@@ -25,9 +25,12 @@ before_script:
   - cargo install cargo-travis || echo "cargo-travis already installed"
   - cargo install-update -a
 script:
-  - cargo fmt -- --check
-  - cargo build
-  - cargo test
-  - cargo clippy -- -D clippy
+  - |
+    cargo fmt -- --check &&
+    cargo check &&
+    cargo build &&
+    cargo test &&
+    cargo doc &&
+    cargo clippy -- -D clippy
 after_success:
   - cargo coveralls
