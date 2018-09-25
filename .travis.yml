@@ -1,17 +1,33 @@
+sudo: required
 language: rust
 cache: cargo
 rust:
   - stable
   - beta
   - nightly
-before_script:
-  - rustup component add rustfmt-preview
-  - rustup component add clippy-preview
 matrix:
   allow_failures:
     - rust: nightly
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+      - cmake
+    sources:
+      - kalakris-cmake
+before_script:
+  - rustup component add rustfmt-preview
+  - rustup component add clippy-preview
+  - cargo install cargo-update || echo "cargo-update already installed"
+  - cargo install cargo-travis || echo "cargo-travis already installed"
+  - cargo install-update -a
 script:
-  - echo "Checking code formatting" ; cargo fmt -- --check
-  - echo "Build project"  ; cargo build
-  - echo "Run unit tests" ; cargo test
-  - echo "Checking code lints" ; cargo clippy -- -D clippy
+  - cargo fmt -- --check
+  - cargo build
+  - cargo test
+  - cargo clippy -- -D clippy
+after_success:
+  - cargo coveralls
