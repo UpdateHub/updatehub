@@ -38,7 +38,8 @@ pub(super) fn state_change_callback(path: &Path, state: &'static str) -> Result<
                  hook for state '{}'",
                 &state
             ),
-        ).into()),
+        )
+        .into()),
     }
 }
 

@@ -68,10 +68,12 @@ impl<'a> Api<'a> {
             .post(&format!(
                 "{}/upgrades",
                 &self.settings.network.server_address
-            )).header(
+            ))
+            .header(
                 HeaderName::from_static("api-retries"),
                 self.runtime_settings.retries(),
-            ).json(&self.firmware)
+            )
+            .json(&self.firmware)
             .send()?;
 
         match response.status() {

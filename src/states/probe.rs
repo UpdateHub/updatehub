@@ -100,7 +100,8 @@ fn update_not_available() {
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Probe {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     mock.assert();
 
@@ -128,7 +129,8 @@ fn update_available() {
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         state: Probe {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     mock.assert();
 
@@ -156,7 +158,8 @@ fn invalid_hardware() {
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap(),
         state: Probe {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     mock.assert();
 
@@ -184,7 +187,8 @@ fn extra_poll_interval() {
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap(),
         state: Probe {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     mock.assert();
 
@@ -221,7 +225,8 @@ fn skip_same_package_uid() {
         &Settings::default(),
         &RuntimeSettings::default(),
         &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-    ).probe()
+    )
+    .probe()
     .unwrap();
 
     if let ProbeResponse::Update(u) = probe {
@@ -235,7 +240,8 @@ fn skip_same_package_uid() {
         runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         state: Probe {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     mock.assert();
 
@@ -265,7 +271,8 @@ fn error() {
             .unwrap(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Probe {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     mock.assert();
 

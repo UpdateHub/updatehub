@@ -44,7 +44,8 @@ fn polling_disable() {
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Idle {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     assert_state!(machine, Park);
 }
@@ -62,7 +63,8 @@ fn polling_enabled() {
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Idle {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     assert_state!(machine, Poll);
 }

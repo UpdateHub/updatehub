@@ -89,7 +89,8 @@ fn extra_poll_in_past() {
         runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     assert_state!(machine, Probe);
 }
@@ -113,7 +114,8 @@ fn probe_now() {
         runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     assert_state!(machine, Probe);
 }
@@ -136,7 +138,8 @@ fn last_poll_in_future() {
         runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     assert_state!(machine, Probe);
 }
@@ -158,7 +161,8 @@ fn interval_1_second() {
         runtime_settings,
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     assert_state!(machine, Probe);
 }
@@ -177,7 +181,8 @@ fn never_polled() {
         runtime_settings: RuntimeSettings::default(),
         firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Poll {},
-    }).move_to_next_state();
+    })
+    .move_to_next_state();
 
     assert_state!(machine, Probe);
 }

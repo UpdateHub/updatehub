@@ -86,7 +86,8 @@ fn probe_requirements() {
         &Settings::default(),
         &RuntimeSettings::default(),
         &Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-    ).probe();
+    )
+    .probe();
     mock.assert();
 }
 
@@ -101,8 +102,10 @@ fn download_object() {
         format!(
             "/products/{}/packages/{}/objects/{}",
             metadata.product_uid, "package_id", "object"
-        ).as_str(),
-    ).match_header("Content-Type", "application/json")
+        )
+        .as_str(),
+    )
+    .match_header("Content-Type", "application/json")
     .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
     .with_status(200)
     .with_body("1234")
@@ -113,8 +116,10 @@ fn download_object() {
         format!(
             "/products/{}/packages/{}/objects/{}",
             metadata.product_uid, "package_id", "object"
-        ).as_str(),
-    ).match_header("Content-Type", "application/json")
+        )
+        .as_str(),
+    )
+    .match_header("Content-Type", "application/json")
     .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
     .match_header("Range", "bytes=3-")
     .with_status(200)

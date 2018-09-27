@@ -159,8 +159,10 @@ mod test {
                 "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
                 &download_state.state.update_package.package_uid(),
                 &sha256sum
-            ).as_str(),
-        ).match_header("Content-Type", "application/json")
+            )
+            .as_str(),
+        )
+        .match_header("Content-Type", "application/json")
         .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
         .with_status(200)
         .with_body("1234567890")
