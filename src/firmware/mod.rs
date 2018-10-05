@@ -39,6 +39,7 @@ pub enum Error {
 /// The Metadata is created loading its information from the running
 /// firmware. It uses the `load` method for that.
 #[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
 pub struct Metadata {
     /// Product UID which identifies the firmware on the management system
     pub product_uid: String,

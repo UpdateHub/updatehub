@@ -21,14 +21,14 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
     fn fake_device_reply_body(identity: usize, hardware: &str) -> Matcher {
         Matcher::Json(json!(
             {
-                "product_uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
+                "product-uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
                 "version": "1.1",
                 "hardware": hardware,
-                "device_identity": {
+                "device-identity": {
                     "id1":[format!("value{}", identity)],
                     "id2":["value2"]
                 },
-                "device_attributes": {
+                "device-attributes": {
                     "attr1":["attrvalue1"],
                     "attr2":["attrvalue2"]
                 }
