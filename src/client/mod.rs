@@ -2,20 +2,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use std::time::Duration;
 
 use reqwest::{
     header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
     Client, StatusCode,
 };
 
-use std::time::Duration;
-
 use firmware::Metadata;
 use runtime_settings::RuntimeSettings;
 use settings::Settings;
-
 use update_package::UpdatePackage;
+use Result;
 
 #[cfg(test)]
 pub(crate) mod tests;
