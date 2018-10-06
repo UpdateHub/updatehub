@@ -5,6 +5,7 @@
 use super::*;
 use firmware::tests::{create_fake_metadata, FakeDevice};
 use mockito::{mock, Mock};
+use settings::Settings;
 
 pub(crate) enum FakeServer {
     NoUpdate,
@@ -82,12 +83,10 @@ fn probe_requirements() {
     use firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mock = create_mock_server(FakeServer::NoUpdate);
-    let _ = Api::new(
-        &Settings::default(),
+    let _ = Api::new(&Settings::default().network.server_address).probe(
         &RuntimeSettings::default(),
         &Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-    )
-    .probe();
+    );
     mock.assert();
 }
 
@@ -132,8 +131,13 @@ fn download_object() {
     settings.update.download_dir = tempdir.path().to_path_buf();
 
     // Download the object.
-    let _ = Api::new(&settings, &RuntimeSettings::default(), &metadata)
-        .download_object("package_id", "object")
+    let _ = Api::new(&settings.network.server_address)
+        .download_object(
+            &metadata.product_uid,
+            "package_id",
+            &settings.update.download_dir,
+            "object",
+        )
         .expect("Failed to download the object.");
 
     // Verify it has been downloaded successfully.
@@ -147,8 +151,13 @@ fn download_object() {
     assert_eq!(downloaded, "1234".to_string());
 
     // Download the remaining bytes of the object.
-    let _ = Api::new(&settings, &RuntimeSettings::default(), &metadata)
-        .download_object("package_id", "object")
+    let _ = Api::new(&settings.network.server_address)
+        .download_object(
+            &metadata.product_uid,
+            "package_id",
+            &settings.update.download_dir,
+            "object",
+        )
         .expect("Failed to download the object.");
 
     // Verify it has been downloaded successfully.

@@ -68,8 +68,12 @@ impl StateChangeImpl for State<Download> {
                 installation_set,
                 &ObjectStatus::Incomplete,
             )) {
-            Api::new(&self.settings, &self.runtime_settings, &self.firmware)
-                .download_object(&self.state.update_package.package_uid(), object.sha256sum())?;
+            Api::new(&self.settings.network.server_address).download_object(
+                &self.firmware.product_uid,
+                &self.state.update_package.package_uid(),
+                &self.settings.update.download_dir,
+                object.sha256sum(),
+            )?;
         }
 
         if self

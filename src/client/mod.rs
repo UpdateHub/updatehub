@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use std::time::Duration;
+use std::{path::Path, time::Duration};
 
 use reqwest::{
     header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
@@ -11,7 +11,6 @@ use reqwest::{
 
 use firmware::Metadata;
 use runtime_settings::RuntimeSettings;
-use settings::Settings;
 use update_package::UpdatePackage;
 use Result;
 
@@ -19,9 +18,7 @@ use Result;
 pub(crate) mod tests;
 
 pub(crate) struct Api<'a> {
-    settings: &'a Settings,
-    firmware: &'a Metadata,
-    runtime_settings: &'a RuntimeSettings,
+    server: &'a str,
 }
 
 #[derive(Debug)]
@@ -32,16 +29,8 @@ pub(crate) enum ProbeResponse {
 }
 
 impl<'a> Api<'a> {
-    pub(crate) fn new(
-        settings: &'a Settings,
-        runtime_settings: &'a RuntimeSettings,
-        firmware: &'a Metadata,
-    ) -> Api<'a> {
-        Api {
-            settings,
-            runtime_settings,
-            firmware,
-        }
+    pub(crate) fn new(server: &'a str) -> Api<'a> {
+        Api { server }
     }
 
     fn client(&self) -> Result<Client> {
@@ -60,18 +49,19 @@ impl<'a> Api<'a> {
             .build()?)
     }
 
-    pub fn probe(&self) -> Result<ProbeResponse> {
+    pub fn probe(
+        &self,
+        runtime_settings: &RuntimeSettings,
+        firmware: &Metadata,
+    ) -> Result<ProbeResponse> {
         let mut response = self
             .client()?
-            .post(&format!(
-                "{}/upgrades",
-                &self.settings.network.server_address
-            ))
+            .post(&format!("{}/upgrades", &self.server))
             .header(
                 HeaderName::from_static("api-retries"),
-                self.runtime_settings.retries(),
+                runtime_settings.retries(),
             )
-            .json(&self.firmware)
+            .json(firmware)
             .send()?;
 
         match response.status() {
@@ -94,16 +84,22 @@ impl<'a> Api<'a> {
         }
     }
 
-    pub fn download_object(&self, package_uid: &str, object: &str) -> Result<()> {
+    pub fn download_object(
+        &self,
+        product_uid: &str,
+        package_uid: &str,
+        download_dir: &Path,
+        object: &str,
+    ) -> Result<()> {
         use std::fs::{create_dir_all, OpenOptions};
 
         // FIXME: Discuss the need of packages inside the route
         let mut client = self.client()?.get(&format!(
             "{}/products/{}/packages/{}/objects/{}",
-            &self.settings.network.server_address, &self.firmware.product_uid, package_uid, object
+            &self.server, product_uid, package_uid, object
         ));
 
-        let path = &self.settings.update.download_dir;
+        let path = download_dir;
         if !&path.exists() {
             debug!("Creating directory to store the downloads.");
             create_dir_all(&path)?;

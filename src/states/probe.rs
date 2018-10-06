@@ -21,7 +21,8 @@ impl StateChangeImpl for State<Probe> {
         use std::thread;
 
         let r = loop {
-            let probe = Api::new(&self.settings, &self.runtime_settings, &self.firmware).probe();
+            let probe = Api::new(&self.settings.network.server_address)
+                .probe(&self.runtime_settings, &self.firmware);
             if let Err(e) = probe {
                 error!("{}", e);
                 self.runtime_settings.inc_retries();
@@ -221,13 +222,12 @@ fn skip_same_package_uid() {
     //
     // This has been done so we don't need to manually update it every
     // time we change the package payload.
-    let probe = Api::new(
-        &Settings::default(),
-        &RuntimeSettings::default(),
-        &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-    )
-    .probe()
-    .unwrap();
+    let probe = Api::new(&Settings::default().network.server_address)
+        .probe(
+            &RuntimeSettings::default(),
+            &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        )
+        .unwrap();
 
     if let ProbeResponse::Update(u) = probe {
         runtime_settings
