@@ -5,10 +5,14 @@
 use Result;
 
 use easy_process;
+
 use states::{Idle, State, StateChangeImpl, StateMachine, TransitionCallback};
+use update_package::UpdatePackage;
 
 #[derive(Debug, PartialEq)]
-pub(super) struct Reboot {}
+pub(super) struct Reboot {
+    pub(super) update_package: UpdatePackage,
+}
 
 create_state_step!(Reboot => Idle);
 
@@ -44,12 +48,15 @@ mod test {
         };
         use runtime_settings::RuntimeSettings;
         use settings::Settings;
+        use update_package::tests::get_update_package;
 
         State {
             settings: Settings::default(),
             runtime_settings: RuntimeSettings::default(),
             firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-            state: Reboot {},
+            state: Reboot {
+                update_package: get_update_package(),
+            },
         }
     }
 

@@ -13,7 +13,7 @@ pub(super) struct Install {
 }
 
 create_state_step!(Install => Idle);
-create_state_step!(Install => Reboot);
+create_state_step!(Install => Reboot(update_package));
 
 impl TransitionCallback for State<Install> {
     fn callback_state_name(&self) -> &'static str {
