@@ -71,11 +71,12 @@ pub(crate) fn create_fake_settings() -> Settings {
 
 #[test]
 fn missing_object_file() {
-    let u = get_update_package();
+    let update_package = get_update_package();
     let settings = create_fake_settings();
 
     assert_eq!(
-        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Missing)
+        update_package
+            .filter_objects(&settings, InstallationSet::A, &ObjectStatus::Missing)
             .len(),
         1
     );
@@ -83,28 +84,26 @@ fn missing_object_file() {
 
 #[test]
 fn complete_object_file() {
-    let u = get_update_package();
+    let update_package = get_update_package();
     let settings = create_fake_settings();
 
     create_fake_object(&settings);
 
-    assert!(
-        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Missing)
-            .is_empty()
-    );
+    assert!(update_package
+        .filter_objects(&settings, InstallationSet::A, &ObjectStatus::Missing)
+        .is_empty());
 
-    assert!(
-        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Incomplete)
-            .is_empty()
-    );
+    assert!(update_package
+        .filter_objects(&settings, InstallationSet::A, &ObjectStatus::Incomplete)
+        .is_empty());
 
-    assert!(
-        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Corrupted)
-            .is_empty()
-    );
+    assert!(update_package
+        .filter_objects(&settings, InstallationSet::A, &ObjectStatus::Corrupted)
+        .is_empty());
 
     assert_eq!(
-        u.filter_objects(&settings, InstallationSet::A, &ObjectStatus::Ready)
+        update_package
+            .filter_objects(&settings, InstallationSet::A, &ObjectStatus::Ready)
             .iter()
             .count(),
         1

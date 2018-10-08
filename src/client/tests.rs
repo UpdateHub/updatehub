@@ -117,7 +117,7 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
                     },
                     "status": "state",
                     "package-uid": "package-uid",
-	            "error-message": "errorMessage",
+                    "error-message": "errorMessage",
                     "previous-state": "previous-state"
                 }
             )))

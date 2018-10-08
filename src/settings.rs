@@ -160,9 +160,9 @@ impl Default for Update {
             install_modes: [
                 "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
             ]
-                .iter()
-                .map(|i| i.to_string())
-                .collect(),
+            .iter()
+            .map(|i| i.to_string())
+            .collect(),
         }
     }
 }
@@ -311,9 +311,9 @@ fn default() {
             install_modes: [
                 "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
             ]
-                .iter()
-                .map(|i| i.to_string())
-                .collect(),
+            .iter()
+            .map(|i| i.to_string())
+            .collect(),
         },
         network: Network {
             server_address: SERVER_URL.into(),
