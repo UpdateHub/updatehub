@@ -46,7 +46,6 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .match_body(fake_device_reply_body(1, "board"))
             .with_status(404)
             .create(),
-
         FakeServer::HasUpdate => mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
@@ -54,7 +53,6 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .with_status(200)
             .with_body(&get_update_json().to_string())
             .create(),
-
         FakeServer::ExtraPoll => mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
@@ -62,7 +60,6 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .with_status(200)
             .with_header("Add-Extra-Poll", "10")
             .create(),
-
         FakeServer::ErrorOnce => mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
