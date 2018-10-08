@@ -119,4 +119,40 @@ impl<'a> Api<'a> {
 
         bail!("Couldn't download the object {}", object)
     }
+
+    pub fn report(
+        &self,
+        state: &str,
+        firmware: &'a Metadata,
+        package_uid: &str,
+        previous_state: Option<&str>,
+        error_message: Option<String>,
+    ) -> Result<()> {
+        #[derive(Serialize)]
+        #[serde(rename_all = "kebab-case")]
+        struct Payload<'a> {
+            status: &'a str,
+            #[serde(flatten)]
+            firmware: &'a Metadata,
+            package_uid: &'a str,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            previous_state: Option<&'a str>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            error_message: Option<String>,
+        }
+
+        let payload = Payload {
+            status: state,
+            firmware,
+            package_uid,
+            previous_state,
+            error_message,
+        };
+
+        self.client()?
+            .post(&format!("{}/report", &self.server))
+            .json(&payload)
+            .send()?;
+        Ok(())
+    }
 }

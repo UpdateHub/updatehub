@@ -4,7 +4,9 @@
 
 use Result;
 
-use states::{Idle, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback};
+use states::{
+    Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
+};
 use update_package::UpdatePackage;
 
 #[derive(Debug, PartialEq)]
@@ -18,6 +20,20 @@ create_state_step!(Install => Reboot(update_package));
 impl TransitionCallback for State<Install> {
     fn callback_state_name(&self) -> &'static str {
         "install"
+    }
+}
+
+impl ProgressReporter for State<Install> {
+    fn package_uid(&self) -> String {
+        self.state.update_package.package_uid()
+    }
+
+    fn report_enter_state_name(&self) -> &'static str {
+        "installing"
+    }
+
+    fn report_leave_state_name(&self) -> &'static str {
+        "installed"
     }
 }
 

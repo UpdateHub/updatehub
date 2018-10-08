@@ -13,6 +13,8 @@ pub(crate) enum FakeServer {
     ExtraPoll,
     ErrorOnce,
     InvalidHardware,
+    ReportSuccess,
+    ReportError,
 }
 
 pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
@@ -74,6 +76,52 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .match_body(fake_device_reply_body(4, "invalid"))
             .with_status(200)
             .with_body(&get_update_json().to_string())
+            .create(),
+        FakeServer::ReportSuccess => mock("POST", "/report")
+            .match_header("Content-Type", "application/json")
+            .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+            .match_body(Matcher::Json(json!(
+                {
+	            "product-uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
+                    "version": "1.1",
+                    "hardware": "board",
+                    "device-identity": {
+                        "id1": ["value2"],
+                        "id2": ["value2"]
+                    },
+                    "device-attributes": {
+                        "attr1": ["attrvalue1"],
+                        "attr2": ["attrvalue2"]
+                    },
+                    "status": "state",
+                    "package-uid": "package-uid",
+                }
+            )))
+            .with_status(200)
+            .create(),
+        FakeServer::ReportError => mock("POST", "/report")
+            .match_header("Content-Type", "application/json")
+            .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+            .match_body(Matcher::Json(json!(
+                {
+	            "product-uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
+                    "version": "1.1",
+                    "hardware": "board",
+                    "device-identity": {
+                        "id1": ["value2"],
+                        "id2": ["value2"]
+                    },
+                    "device-attributes": {
+                        "attr1": ["attrvalue1"],
+                        "attr2": ["attrvalue2"]
+                    },
+                    "status": "state",
+                    "package-uid": "package-uid",
+	            "error-message": "errorMessage",
+                    "previous-state": "previous-state"
+                }
+            )))
+            .with_status(200)
             .create(),
     }
 }
@@ -171,4 +219,34 @@ fn download_object() {
     assert_eq!(downloaded, "1234567890".to_string());
 
     tempdir.close().expect("Fail to cleanup the tempdir");
+}
+
+#[test]
+fn report_success() {
+    use firmware::tests::{create_fake_metadata, FakeDevice};
+
+    let mock = create_mock_server(FakeServer::ReportSuccess);
+    let _ = Api::new(&Settings::default().network.server_address).report(
+        "state",
+        &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        "package-uid",
+        None,
+        None,
+    );
+    mock.assert();
+}
+
+#[test]
+fn report_error() {
+    use firmware::tests::{create_fake_metadata, FakeDevice};
+
+    let mock = create_mock_server(FakeServer::ReportError);
+    let _ = Api::new(&Settings::default().network.server_address).report(
+        "state",
+        &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        "package-uid",
+        Some("previous-state"),
+        Some("errorMessage".into()),
+    );
+    mock.assert();
 }

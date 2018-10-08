@@ -12,7 +12,7 @@ use std::{
     str::FromStr,
 };
 
-#[derive(Debug, Serialize, PartialEq, Default)]
+#[derive(Debug, Serialize, PartialEq, Default, Clone)]
 pub struct MetadataValue(BTreeMap<String, Vec<String>>);
 
 impl FromStr for MetadataValue {

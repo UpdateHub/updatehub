@@ -6,7 +6,9 @@ use Result;
 
 use client::Api;
 use firmware::installation_set;
-use states::{Idle, Install, State, StateChangeImpl, StateMachine, TransitionCallback};
+use states::{
+    Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
+};
 use std::fs;
 use update_package::{ObjectStatus, UpdatePackage};
 use walkdir::WalkDir;
@@ -22,6 +24,20 @@ create_state_step!(Download => Install(update_package));
 impl TransitionCallback for State<Download> {
     fn callback_state_name(&self) -> &'static str {
         "download"
+    }
+}
+
+impl ProgressReporter for State<Download> {
+    fn package_uid(&self) -> String {
+        self.state.update_package.package_uid()
+    }
+
+    fn report_enter_state_name(&self) -> &'static str {
+        "downloading"
+    }
+
+    fn report_leave_state_name(&self) -> &'static str {
+        "downloaded"
     }
 }
 

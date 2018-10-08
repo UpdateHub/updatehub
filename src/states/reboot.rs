@@ -6,7 +6,7 @@ use Result;
 
 use easy_process;
 
-use states::{Idle, State, StateChangeImpl, StateMachine, TransitionCallback};
+use states::{Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback};
 use update_package::UpdatePackage;
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +19,20 @@ create_state_step!(Reboot => Idle);
 impl TransitionCallback for State<Reboot> {
     fn callback_state_name(&self) -> &'static str {
         "reboot"
+    }
+}
+
+impl ProgressReporter for State<Reboot> {
+    fn package_uid(&self) -> String {
+        self.state.update_package.package_uid()
+    }
+
+    fn report_enter_state_name(&self) -> &'static str {
+        "rebooting"
+    }
+
+    fn report_leave_state_name(&self) -> &'static str {
+        "rebooted"
     }
 }
 

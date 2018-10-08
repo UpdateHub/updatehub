@@ -28,8 +28,14 @@ trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine>;
 }
 
-trait TransitionCallback: Into<State<Idle>> {
+trait TransitionCallback: StateChangeImpl + Into<State<Idle>> {
     fn callback_state_name(&self) -> &'static str;
+}
+
+trait ProgressReporter: TransitionCallback {
+    fn package_uid(&self) -> String;
+    fn report_enter_state_name(&self) -> &'static str;
+    fn report_leave_state_name(&self) -> &'static str;
 }
 
 #[derive(Debug, PartialEq)]
@@ -56,9 +62,9 @@ enum StateMachine {
 
 impl<S> State<S>
 where
-    State<S>: TransitionCallback + StateChangeImpl,
+    State<S>: TransitionCallback + ProgressReporter,
 {
-    fn handle_with_callback(self) -> Result<StateMachine> {
+    fn handle_with_callback_and_report_progress(self) -> Result<StateMachine> {
         use states::transition::{state_change_callback, Transition};
 
         let transition = state_change_callback(
@@ -67,9 +73,43 @@ where
         )?;
 
         match transition {
-            Transition::Continue => Ok(self.handle()?),
+            Transition::Continue => Ok(self.handle_and_report_progress()?),
             Transition::Cancel => Ok(StateMachine::Idle(self.into())),
         }
+    }
+}
+
+impl<S> State<S>
+where
+    State<S>: ProgressReporter,
+{
+    fn handle_and_report_progress(self) -> Result<StateMachine> {
+        let server = self.settings.network.server_address.clone();
+        let firmware = self.firmware.clone();
+        let package_uid = self.package_uid().clone();
+        let enter_state = self.report_enter_state_name();
+        let leave_state = self.report_leave_state_name();
+
+        let report = |state, previous_state, error_message| {
+            ::client::Api::new(&server).report(
+                state,
+                &firmware,
+                &package_uid,
+                previous_state,
+                error_message,
+            )
+        };
+
+        report(enter_state, None, None)?;
+        self.handle()
+            .and_then(|state| {
+                report(leave_state, None, None)?;
+                Ok(state)
+            })
+            .or_else(|e| {
+                report("error", Some(enter_state), Some(e.to_string()))?;
+                Err(e)
+            })
     }
 }
 
@@ -89,9 +129,9 @@ impl StateMachine {
             StateMachine::Idle(s) => Ok(s.handle()?),
             StateMachine::Poll(s) => Ok(s.handle()?),
             StateMachine::Probe(s) => Ok(s.handle()?),
-            StateMachine::Download(s) => Ok(s.handle_with_callback()?),
-            StateMachine::Install(s) => Ok(s.handle_with_callback()?),
-            StateMachine::Reboot(s) => Ok(s.handle_with_callback()?),
+            StateMachine::Download(s) => Ok(s.handle_with_callback_and_report_progress()?),
+            StateMachine::Install(s) => Ok(s.handle_with_callback_and_report_progress()?),
+            StateMachine::Reboot(s) => Ok(s.handle_with_callback_and_report_progress()?),
         }
     }
 }
