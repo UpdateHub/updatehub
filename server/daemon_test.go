@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/metadata"
-	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
 )
 
 func TestNewDaemon(t *testing.T) {

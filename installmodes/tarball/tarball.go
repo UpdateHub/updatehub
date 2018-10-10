@@ -15,12 +15,12 @@ import (
 	"github.com/OSSystems/pkg/log"
 	"github.com/spf13/afero"
 
-	"github.com/updatehub/updatehub/copy"
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/libarchive"
-	"github.com/updatehub/updatehub/metadata"
-	"github.com/updatehub/updatehub/mtd"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/copy"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/mtd"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 func init() {

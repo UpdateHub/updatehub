@@ -9,7 +9,7 @@ go:
   - "1.11"
   - "master"
 
-go_import_path: github.com/updatehub/updatehub
+go_import_path: github.com/UpdateHub/updatehub
 
 matrix:
   allow_failures:

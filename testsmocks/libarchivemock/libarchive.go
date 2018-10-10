@@ -9,7 +9,7 @@
 package libarchivemock
 
 import (
-	"github.com/updatehub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/libarchive"
 
 	"github.com/stretchr/testify/mock"
 )

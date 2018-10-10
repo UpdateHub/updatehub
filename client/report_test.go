@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 func TestReportState(t *testing.T) {

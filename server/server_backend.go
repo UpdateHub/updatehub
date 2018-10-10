@@ -20,9 +20,9 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/julienschmidt/httprouter"
-	"github.com/updatehub/updatehub/libarchive"
-	"github.com/updatehub/updatehub/metadata"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 type SelectedPackage struct {

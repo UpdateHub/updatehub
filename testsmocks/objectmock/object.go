@@ -10,7 +10,7 @@ package objectmock
 
 import (
 	"github.com/stretchr/testify/mock"
-	"github.com/updatehub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 type ObjectMock struct {

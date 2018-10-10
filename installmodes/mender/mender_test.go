@@ -13,9 +13,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/testsmocks/filemock"
-	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/testsmocks/filemock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 )
 
 func TestMenderInit(t *testing.T) {

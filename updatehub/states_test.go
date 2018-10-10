@@ -9,7 +9,7 @@
 package updatehub
 
 import (
-	"github.com/updatehub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 const (

@@ -16,9 +16,9 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/julienschmidt/httprouter"
-	"github.com/updatehub/updatehub/client"
-	"github.com/updatehub/updatehub/updatehub"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/updatehub"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 type AgentBackend struct {

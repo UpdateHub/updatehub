@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/libarchive"
 )
 
 func TestNewRead(t *testing.T) {

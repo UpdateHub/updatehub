@@ -14,7 +14,7 @@ import (
 	"strings"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 // Interface describes the operations related to the Active-Inactive feature

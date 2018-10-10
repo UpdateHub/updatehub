@@ -17,8 +17,8 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 )
 
 func TestNewFirmwareMetadataWithInexistantPath(t *testing.T) {

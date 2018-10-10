@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/installmodes"
 )
 
 type TestObject struct {

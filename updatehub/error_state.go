@@ -12,8 +12,8 @@ import (
 	"errors"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/updatehub/updatehub/client"
-	"github.com/updatehub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 // ErrorState is the State interface implementation for the UpdateHubStateError

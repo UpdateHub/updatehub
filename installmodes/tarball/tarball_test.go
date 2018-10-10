@@ -15,16 +15,16 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/copy"
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/libarchive"
-	"github.com/updatehub/updatehub/mtd"
-	"github.com/updatehub/updatehub/testsmocks/copymock"
-	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
-	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
-	"github.com/updatehub/updatehub/testsmocks/mtdmock"
-	"github.com/updatehub/updatehub/testsmocks/ubifsmock"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/copy"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/mtd"
+	"github.com/UpdateHub/updatehub/testsmocks/copymock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/mtdmock"
+	"github.com/UpdateHub/updatehub/testsmocks/ubifsmock"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 func TestTarballInit(t *testing.T) {

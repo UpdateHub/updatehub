@@ -17,7 +17,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 )
 
 func TestFormat(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/updatehub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/libarchive"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/mock"

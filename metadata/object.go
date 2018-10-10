@@ -14,7 +14,7 @@ import (
 	"reflect"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/updatehub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/installmodes"
 )
 
 // ObjectMetadata contains the common properties of a package's object from JSON metadata

@@ -18,8 +18,8 @@ import (
 	"github.com/OSSystems/pkg/log"
 	shellwords "github.com/mattn/go-shellwords"
 	"github.com/spf13/afero"
-	"github.com/updatehub/updatehub/libarchive"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 type Interface interface {

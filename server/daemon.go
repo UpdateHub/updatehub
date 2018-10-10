@@ -13,7 +13,7 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/fsnotify/fsnotify"
-	"github.com/updatehub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 type Daemon struct {

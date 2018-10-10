@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 )
 
 func TestDefaultImplActive(t *testing.T) {

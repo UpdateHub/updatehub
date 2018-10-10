@@ -14,11 +14,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/installmodes/internal/testsutils"
-	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
-	"github.com/updatehub/updatehub/testsmocks/mtdmock"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/installmodes/internal/testsutils"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/mtdmock"
+	"github.com/UpdateHub/updatehub/utils"
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"

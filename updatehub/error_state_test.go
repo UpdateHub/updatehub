@@ -13,7 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/client"
+	"github.com/UpdateHub/updatehub/client"
 )
 
 func TestNewErrorStateToMap(t *testing.T) {

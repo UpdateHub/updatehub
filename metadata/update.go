@@ -14,7 +14,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 const UpdateMetadataFilename = "updatemetadata.json"

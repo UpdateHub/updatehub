@@ -73,7 +73,7 @@ imports:
   subpackages:
   - assert
   - mock
-- name: github.com/updatehub/agent-sdk-go
+- name: github.com/UpdateHub/agent-sdk-go
   version: c1625cfa5668acd6156fd3e30967f5060672ec79
 - name: golang.org/x/crypto
   version: 7f39a6fea4fe9364fb61e1def6a268a51b4f3a06

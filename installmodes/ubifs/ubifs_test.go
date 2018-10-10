@@ -14,14 +14,14 @@ import (
 	"path"
 	"testing"
 
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/installmodes/internal/testsutils"
-	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
-	"github.com/updatehub/updatehub/testsmocks/copymock"
-	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
-	"github.com/updatehub/updatehub/testsmocks/libarchivemock"
-	"github.com/updatehub/updatehub/testsmocks/ubifsmock"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/installmodes/internal/testsutils"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/copymock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/testsmocks/libarchivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/ubifsmock"
+	"github.com/UpdateHub/updatehub/utils"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -23,10 +23,10 @@ import (
 	"github.com/go-ini/ini"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/testsmocks/activeinactivemock"
-	"github.com/updatehub/updatehub/testsmocks/filemock"
-	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
-	"github.com/updatehub/updatehub/updatehub"
+	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/filemock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/updatehub"
 )
 
 func TestLoadSettings(t *testing.T) {

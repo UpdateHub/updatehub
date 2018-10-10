@@ -16,7 +16,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/testsmocks/filesystemmock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 )
 
 func TestApplyChmod(t *testing.T) {

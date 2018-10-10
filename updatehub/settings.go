@@ -18,7 +18,7 @@ import (
 	"github.com/OSSystems/pkg/log"
 	"github.com/go-ini/ini"
 	"github.com/spf13/afero"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 const (

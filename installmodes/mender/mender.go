@@ -11,8 +11,8 @@ package mender
 import (
 	"github.com/spf13/afero"
 
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 func init() {

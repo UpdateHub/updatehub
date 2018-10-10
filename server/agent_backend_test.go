@@ -21,14 +21,14 @@ import (
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/updatehub/updatehub/client"
-	"github.com/updatehub/updatehub/metadata"
-	"github.com/updatehub/updatehub/testsmocks/cmdlinemock"
-	"github.com/updatehub/updatehub/testsmocks/controllermock"
-	"github.com/updatehub/updatehub/testsmocks/rebootermock"
-	"github.com/updatehub/updatehub/testsmocks/reportermock"
-	"github.com/updatehub/updatehub/testsmocks/responsewritermock"
-	"github.com/updatehub/updatehub/updatehub"
+	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
+	"github.com/UpdateHub/updatehub/testsmocks/rebootermock"
+	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
+	"github.com/UpdateHub/updatehub/testsmocks/responsewritermock"
+	"github.com/UpdateHub/updatehub/updatehub"
 )
 
 const (

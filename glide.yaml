@@ -1,4 +1,4 @@
-package: github.com/updatehub/updatehub
+package: github.com/UpdateHub/updatehub
 import:
 - package: github.com/go-ini/ini
 - package: github.com/julienschmidt/httprouter
@@ -18,7 +18,7 @@ import:
 - package: github.com/parnurzeal/gorequest
 - package: github.com/anacrolix/missinggo
 - package: github.com/koofr/go-httputils
-- package: github.com/updatehub/agent-sdk-go
+- package: github.com/UpdateHub/agent-sdk-go
   version: v1
 - package: github.com/c9s/goprocinfo
   subpackages:

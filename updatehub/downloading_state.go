@@ -14,8 +14,8 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/pkg/errors"
-	"github.com/updatehub/updatehub/client"
-	"github.com/updatehub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/client"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 // DownloadingState is the State interface implementation for the UpdateHubStateDownloading

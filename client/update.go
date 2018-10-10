@@ -24,7 +24,7 @@ import (
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/anacrolix/missinggo/httptoo"
-	"github.com/updatehub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/metadata"
 )
 
 type UpdateClient struct {

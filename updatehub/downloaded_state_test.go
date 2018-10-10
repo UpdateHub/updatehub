@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/updatehub/updatehub/installmodes"
-	"github.com/updatehub/updatehub/metadata"
-	"github.com/updatehub/updatehub/testsmocks/activeinactivemock"
-	"github.com/updatehub/updatehub/testsmocks/objectmock"
+	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
 )
 
 func TestStateDownloaded(t *testing.T) {

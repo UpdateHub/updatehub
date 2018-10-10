@@ -6,7 +6,7 @@ import (
 
 	"github.com/hokaccha/go-prettyjson"
 	"github.com/spf13/cobra"
-	"github.com/updatehub/agent-sdk-go"
+	"github.com/UpdateHub/agent-sdk-go"
 )
 
 var rootCmd = &cobra.Command{

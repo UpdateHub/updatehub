@@ -27,17 +27,17 @@ import (
 	"github.com/spf13/cobra"
 
 	syslog_hook "github.com/sirupsen/logrus/hooks/syslog"
-	"github.com/updatehub/updatehub/client"
-	_ "github.com/updatehub/updatehub/installmodes/copy"
-	_ "github.com/updatehub/updatehub/installmodes/flash"
-	_ "github.com/updatehub/updatehub/installmodes/imxkobs"
-	_ "github.com/updatehub/updatehub/installmodes/raw"
-	_ "github.com/updatehub/updatehub/installmodes/tarball"
-	_ "github.com/updatehub/updatehub/installmodes/ubifs"
-	"github.com/updatehub/updatehub/metadata"
-	"github.com/updatehub/updatehub/server"
-	"github.com/updatehub/updatehub/updatehub"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/client"
+	_ "github.com/UpdateHub/updatehub/installmodes/copy"
+	_ "github.com/UpdateHub/updatehub/installmodes/flash"
+	_ "github.com/UpdateHub/updatehub/installmodes/imxkobs"
+	_ "github.com/UpdateHub/updatehub/installmodes/raw"
+	_ "github.com/UpdateHub/updatehub/installmodes/tarball"
+	_ "github.com/UpdateHub/updatehub/installmodes/ubifs"
+	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/UpdateHub/updatehub/server"
+	"github.com/UpdateHub/updatehub/updatehub"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 var (

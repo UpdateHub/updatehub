@@ -14,7 +14,7 @@ import (
 
 	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/stretchr/testify/mock"
-	"github.com/updatehub/updatehub/client"
+	"github.com/UpdateHub/updatehub/client"
 )
 
 type UpdaterMock struct {

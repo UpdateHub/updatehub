@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/spf13/afero"
-	"github.com/updatehub/updatehub/utils"
+	"github.com/UpdateHub/updatehub/utils"
 )
 
 type UbifsUtils interface {
