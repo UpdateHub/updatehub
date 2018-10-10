@@ -1,5 +1,5 @@
-hash: 9b2b1b64484f556344c27b0e1a39f2118d019d1815a53d03c3c83f0014ab2843
-updated: 2018-06-20T17:28:42.31249881-03:00
+hash: 447124f2c8ebce78cd6f439867b4cc3a410df3d89469dd86dcb31504022fbc85
+updated: 2018-10-10T17:15:45.010787519-03:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: f9a329340c5303f1977dcb9efb0918b34437a003
@@ -57,6 +57,7 @@ imports:
 - name: github.com/sirupsen/logrus
   version: 75068beb13ada9c0ddde611f678523fda7352650
   subpackages:
+  - hooks/syslog
   - hooks/test
 - name: github.com/spf13/afero
   version: 787d034dfe70e44075ccc060d346146ef53270ad
@@ -74,7 +75,7 @@ imports:
   - assert
   - mock
 - name: github.com/UpdateHub/agent-sdk-go
-  version: c1625cfa5668acd6156fd3e30967f5060672ec79
+  version: 11f9627edc28c9ca52163eb53986560ee500a759
 - name: golang.org/x/crypto
   version: 7f39a6fea4fe9364fb61e1def6a268a51b4f3a06
   subpackages:
