@@ -1,3 +1,7 @@
+// Copyright (C) 2018 O.S. Systems Sofware LTDA
+//
+// SPDX-License-Identifier: Apache-2.0
+
 #![cfg_attr(not(feature = "clippy"), allow(unknown_lints))]
 #![allow(dead_code)]
 
