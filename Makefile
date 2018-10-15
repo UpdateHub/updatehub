@@ -14,6 +14,9 @@ IMPORT_PATH := github.com/UpdateHub/updatehub
 # Space separated patterns of packages to skip in list, test, format.
 IGNORED_PACKAGES := /vendor/
 
+# Cross compile prefix
+CROSS_COMPILE ?= ""
+
 .PHONY: all
 all: build
 
@@ -23,19 +26,19 @@ build: .GOPATH/.ok updatehub updatehub-server updatehub-ctl
 .PHONY: updatehub
 updatehub: .GOPATH/.ok vendor
 	@echo -n "building updatehub… "
-	$Q go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub
+	$Q $(CROSS_COMPILE)go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub
 	@echo "done"
 
 .PHONY: updatehub-server vendor
 updatehub-server: .GOPATH/.ok
 	@echo -n "building updatehub-server… "
-	$Q go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-server
+	$Q $(CROSS_COMPILE)go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-server
 	@echo "done"
 
 .PHONY: updatehub-ctl vendor
 updatehub-ctl: .GOPATH/.ok
 	@echo -n "building updatehub-ctl… "
-	$Q go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-ctl
+	$Q $(CROSS_COMPILE)go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-ctl
 	@echo "done"
 
 ##### =====> Utility targets <===== #####
@@ -51,14 +54,14 @@ ifneq ($(MACHINE_ARCH),i686)
 endif
 
 test: .GOPATH/.ok
-	$Q go test $(if $V,-v) -i $(TEST_RACE) $(allpackages) # install -race libs to speed up next run
+	$Q $(CROSS_COMPILE)go test $(if $V,-v) -i $(TEST_RACE) $(allpackages) # install -race libs to speed up next run
 ifndef CI
-	$Q go vet $(allpackages)
-	$Q GODEBUG=cgocheck=2 go test $(TEST_RACE) $(allpackages)
+	$Q $(CROSS_COMPILE)go vet $(allpackages)
+	$Q GODEBUG=cgocheck=2 $(CROSS_COMPILE)go test $(TEST_RACE) $(allpackages)
 else
-	$Q ( go vet $(allpackages); echo $$? ) | \
+	$Q ( $(CROSS_COMPILE)go vet $(allpackages); echo $$? ) | \
 	    tee .GOPATH/test/vet.txt | sed '$$ d'; exit $$(tail -1 .GOPATH/test/vet.txt)
-	$Q ( GODEBUG=cgocheck=2 go test -v $(TEST_RACE) $(allpackages); echo $$? ) | \
+	$Q ( GODEBUG=cgocheck=2 $(CROSS_COMPILE)go test -v $(TEST_RACE) $(allpackages); echo $$? ) | \
 	    tee .GOPATH/test/output.txt | sed '$$ d'; exit $$(tail -1 .GOPATH/test/output.txt)
 endif
 
@@ -68,7 +71,7 @@ list: .GOPATH/.ok
 coverage: .GOPATH/.ok bin/gocovmerge vendor
 	@echo "NOTE: make coverage does not exit 1 on failure, don't use it to check for tests success!"
 	$Q rm -f .GOPATH/coverage/*.out .GOPATH/coverage/all.merged
-	$(if $V,@echo "-- go test -coverpkg=./... -coverprofile=.GOPATH/coverage/... ./...")
+	$(if $V,@echo "-- $(CROSS_COMPILE)go test -coverpkg=./... -coverprofile=.GOPATH/coverage/... ./...")
 	@for MOD in $(allpackages); do \
 		go test -coverpkg=`echo $(allpackages)|tr " " ","` \
 			-coverprofile=.GOPATH/coverage/unit-`echo $$MOD|tr "/" "_"`.out \
@@ -76,14 +79,14 @@ coverage: .GOPATH/.ok bin/gocovmerge vendor
 	done
 	$Q ./bin/gocovmerge .GOPATH/coverage/*.out > .GOPATH/coverage/all.merged
 ifndef CI
-	$Q go tool cover -html .GOPATH/coverage/all.merged
+	$Q $(CROSS_COMPILE)go tool cover -html .GOPATH/coverage/all.merged
 else
-	$Q go tool cover -html .GOPATH/coverage/all.merged -o .GOPATH/coverage/all.html
+	$Q $(CROSS_COMPILE)go tool cover -html .GOPATH/coverage/all.merged -o .GOPATH/coverage/all.html
 endif
 	@echo ""
 	@echo "=====> Total test coverage: <====="
 	@echo ""
-	$Q go tool cover -func .GOPATH/coverage/all.merged
+	$Q $(CROSS_COMPILE)go tool cover -func .GOPATH/coverage/all.merged
 
 format: .GOPATH/.ok bin/goimports
 	$Q find .GOPATH/src/$(IMPORT_PATH)/ -iname \*.go | grep -v \
@@ -96,7 +99,7 @@ VERSION_FLAGS    := -ldflags='-X "main.gitversion=$(VERSION)"'
 
 # cd into the GOPATH to workaround ./... not following symlinks
 _allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \
-    GOPATH=$(CURDIR)/.GOPATH go list ./... 2>&1 1>&3 | \
+    GOPATH=$(CURDIR)/.GOPATH $(CROSS_COMPILE)go list ./... 2>&1 1>&3 | \
     grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)) 1>&2 ) 3>&1 | \
     grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)))
 
@@ -117,11 +120,11 @@ Q := $(if $V,,@)
 	$Q touch $@
 
 bin/gocovmerge: .GOPATH/.ok
-	$Q go get github.com/wadey/gocovmerge
+	$Q $(CROSS_COMPILE)go get github.com/wadey/gocovmerge
 bin/goimports: .GOPATH/.ok
-	$Q go get golang.org/x/tools/cmd/goimports
+	$Q $(CROSS_COMPILE)go get golang.org/x/tools/cmd/goimports
 bin/gometalinter: .GOPATH/.ok
-	$Q go get github.com/alecthomas/gometalinter
+	$Q $(CROSS_COMPILE)go get github.com/alecthomas/gometalinter
 	$Q ./bin/gometalinter --install
 
 .PHONY: vendor lint
