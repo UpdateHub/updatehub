@@ -120,17 +120,14 @@ bin/gocovmerge: .GOPATH/.ok
 	$Q go get github.com/wadey/gocovmerge
 bin/goimports: .GOPATH/.ok
 	$Q go get golang.org/x/tools/cmd/goimports
-bin/glide: .GOPATH/.ok
-	$Q go get github.com/Masterminds/glide
 bin/gometalinter: .GOPATH/.ok
 	$Q go get github.com/alecthomas/gometalinter
 	$Q ./bin/gometalinter --install
 
 .PHONY: vendor lint
 
-vendor: .GOPATH/.ok bin/glide
-	@test -d ./vendor/ || \
-		{ ./bin/glide install; }
+vendor: .GOPATH/.ok
+	@test -d ./vendor/ || { glide install; }
 
 lint: .GOPATH/.ok bin/gometalinter
 	@for MOD in $(allpackages); do \
