@@ -60,7 +60,8 @@ impl StateChangeImpl for State<Download> {
                     .iter()
                     .map(|o| o.sha256sum())
                     .any(|x| x == e.file_name())
-            }) {
+            })
+        {
             fs::remove_file(entry.path())?;
         }
 
@@ -83,7 +84,8 @@ impl StateChangeImpl for State<Download> {
                 &self.settings,
                 installation_set,
                 &ObjectStatus::Incomplete,
-            )) {
+            ))
+        {
             Api::new(&self.settings.network.server_address).download_object(
                 &self.firmware.product_uid,
                 &self.state.update_package.package_uid(),
