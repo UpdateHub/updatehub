@@ -6,11 +6,10 @@ use Result;
 
 use std::path::Path;
 
-mod metadata_value;
-use self::metadata_value::MetadataValue;
+use self::hook::{run_hook, run_hooks_from_dir};
 
 mod hook;
-use self::hook::{run_hook, run_hooks_from_dir};
+mod metadata_value;
 
 pub mod installation_set;
 
@@ -51,10 +50,10 @@ pub struct Metadata {
     pub hardware: String,
 
     /// Device Identity
-    pub device_identity: MetadataValue,
+    pub device_identity: metadata_value::MetadataValue,
 
     /// Device Attributes
-    pub device_attributes: MetadataValue,
+    pub device_attributes: metadata_value::MetadataValue,
 }
 
 impl Metadata {
