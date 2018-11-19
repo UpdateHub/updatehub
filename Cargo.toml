@@ -32,4 +32,4 @@ git-version = "0.2.1"
 
 [dev-dependencies]
 tempfile = "3.0.4"
-mockito = "0.13.0"
+mockito = "0.14.0"
