@@ -104,7 +104,7 @@ fn update_not_available() {
         runtime_settings: RuntimeSettings::new()
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Probe {},
     })
     .move_to_next_state();
@@ -135,7 +135,7 @@ fn update_available() {
         runtime_settings: RuntimeSettings::new()
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         state: Probe {},
     })
     .move_to_next_state();
@@ -166,7 +166,7 @@ fn invalid_hardware() {
         runtime_settings: RuntimeSettings::new()
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap(),
+        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap(),
         state: Probe {},
     })
     .move_to_next_state();
@@ -197,7 +197,7 @@ fn extra_poll_interval() {
         runtime_settings: RuntimeSettings::new()
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap(),
+        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap(),
         state: Probe {},
     })
     .move_to_next_state();
@@ -238,7 +238,7 @@ fn skip_same_package_uid() {
     let probe = Api::new(&Settings::default().network.server_address)
         .probe(
             &RuntimeSettings::default(),
-            &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+            &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         )
         .unwrap();
 
@@ -251,7 +251,7 @@ fn skip_same_package_uid() {
     let machine = StateMachine::Probe(State {
         settings: Settings::default(),
         runtime_settings,
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         state: Probe {},
     })
     .move_to_next_state();
@@ -284,7 +284,7 @@ fn error() {
         runtime_settings: RuntimeSettings::new()
             .load(tmpfile.to_str().unwrap())
             .unwrap(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Probe {},
     })
     .move_to_next_state();

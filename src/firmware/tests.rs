@@ -154,7 +154,7 @@ fn check_load_metadata() {
         let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         // check error with a invalid product uid
         create_hook(product_uid_hook(&metadata_dir), "#!/bin/sh\necho 123");
-        let metadata = Metadata::new(&metadata_dir);
+        let metadata = Metadata::from_path(&metadata_dir);
         assert!(metadata.is_err());
     }
 
@@ -162,7 +162,7 @@ fn check_load_metadata() {
         // check error when lacks product uid
         let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         remove_file(product_uid_hook(&metadata_dir)).unwrap();
-        let metadata = Metadata::new(&metadata_dir);
+        let metadata = Metadata::from_path(&metadata_dir);
         assert!(metadata.is_err());
     }
 
@@ -170,7 +170,7 @@ fn check_load_metadata() {
         // check error when lacks device identity
         let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         remove_file(device_identity_dir(&metadata_dir)).unwrap();
-        let metadata = Metadata::new(&metadata_dir);
+        let metadata = Metadata::from_path(&metadata_dir);
         assert!(metadata.is_err());
     }
 
@@ -178,7 +178,7 @@ fn check_load_metadata() {
         // check if is still valid without device attributes
         let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
         remove_file(device_attributes_dir(&metadata_dir)).unwrap();
-        let metadata = Metadata::new(&metadata_dir).unwrap();
+        let metadata = Metadata::from_path(&metadata_dir).unwrap();
         assert_eq!(
             "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
             metadata.product_uid
@@ -192,7 +192,7 @@ fn check_load_metadata() {
     {
         // complete metadata
         let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
-        let metadata = Metadata::new(&metadata_dir).unwrap();
+        let metadata = Metadata::from_path(&metadata_dir).unwrap();
         assert_eq!(
             "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
             metadata.product_uid

@@ -71,7 +71,7 @@ mod test {
         State {
             settings: Settings::default(),
             runtime_settings: RuntimeSettings::default(),
-            firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+            firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
             state: Reboot {
                 update_package: get_update_package(),
             },

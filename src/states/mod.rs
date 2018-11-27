@@ -171,7 +171,7 @@ pub fn run(settings: Settings) -> Result<()> {
         runtime_settings.enable_persistency();
     }
 
-    let firmware = Metadata::new(&settings.firmware.metadata_path)?;
+    let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
     let mut machine = StateMachine::new(settings, runtime_settings, firmware);
 
     // Iterate over the state machine.

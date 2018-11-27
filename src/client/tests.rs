@@ -135,14 +135,14 @@ fn probe_requirements() {
     let mock = create_mock_server(FakeServer::NoUpdate);
     let _ = Api::new(&Settings::default().network.server_address).probe(
         &RuntimeSettings::default(),
-        &Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+        &Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
     );
     mock.assert();
 }
 
 #[test]
 fn download_object() {
-    let metadata = Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    let metadata = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
     use std::{fs::File, io::Read};
     use tempfile::tempdir;
 
@@ -230,7 +230,7 @@ fn report_success() {
     let mock = create_mock_server(FakeServer::ReportSuccess);
     let _ = Api::new(&Settings::default().network.server_address).report(
         "state",
-        &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         "package-uid",
         None,
         None,
@@ -245,7 +245,7 @@ fn report_error() {
     let mock = create_mock_server(FakeServer::ReportError);
     let _ = Api::new(&Settings::default().network.server_address).report(
         "state",
-        &Metadata::new(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
         "package-uid",
         Some("previous-state"),
         Some("errorMessage".into()),

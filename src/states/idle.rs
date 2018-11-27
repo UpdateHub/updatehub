@@ -45,7 +45,7 @@ fn polling_disable() {
     let machine = StateMachine::Idle(State {
         settings,
         runtime_settings: RuntimeSettings::default(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Idle {},
     })
     .move_to_next_state();
@@ -64,7 +64,7 @@ fn polling_enabled() {
     let machine = StateMachine::Idle(State {
         settings,
         runtime_settings: RuntimeSettings::default(),
-        firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         state: Idle {},
     })
     .move_to_next_state();

@@ -86,7 +86,7 @@ mod test {
             runtime_settings: RuntimeSettings::new()
                 .load(tmpfile.to_str().unwrap())
                 .unwrap(),
-            firmware: Metadata::new(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+            firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
             state: Install {
                 update_package: get_update_package(),
             },
