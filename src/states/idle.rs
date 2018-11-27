@@ -2,9 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::{
+    states::{Park, Poll, State, StateChangeImpl, StateMachine},
+    Result,
+};
 
-use states::{Park, Poll, State, StateChangeImpl, StateMachine};
+use log::debug;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Idle {}
@@ -34,7 +37,7 @@ create_state_step!(Idle => Poll);
 #[test]
 fn polling_disable() {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mut settings = Settings::default();
     settings.polling.enabled = false;
@@ -53,7 +56,7 @@ fn polling_disable() {
 #[test]
 fn polling_enabled() {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;

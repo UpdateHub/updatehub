@@ -13,16 +13,14 @@ mod probe;
 mod reboot;
 mod transition;
 
-use Result;
-
 use self::{
     download::Download, idle::Idle, install::Install, park::Park, poll::Poll, probe::Probe,
     reboot::Reboot,
 };
 
-use firmware::Metadata;
-use runtime_settings::RuntimeSettings;
-use settings::Settings;
+use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings, Result};
+
+use log::debug;
 
 trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine>;
@@ -65,7 +63,7 @@ where
     State<S>: TransitionCallback + ProgressReporter,
 {
     fn handle_with_callback_and_report_progress(self) -> Result<StateMachine> {
-        use states::transition::{state_change_callback, Transition};
+        use crate::states::transition::{state_change_callback, Transition};
 
         let transition = state_change_callback(
             &self.settings.firmware.metadata_path,
@@ -91,7 +89,7 @@ where
         let leave_state = self.report_leave_state_name();
 
         let report = |state, previous_state, error_message| {
-            ::client::Api::new(&server).report(
+            crate::client::Api::new(&server).report(
                 state,
                 &firmware,
                 &package_uid,

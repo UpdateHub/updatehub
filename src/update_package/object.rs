@@ -2,10 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::Result;
 
 use crypto_hash::{Algorithm, Hasher};
 use hex;
+use serde_derive::Deserialize;
 use std::{
     fs::File,
     io::{BufReader, Read, Write},

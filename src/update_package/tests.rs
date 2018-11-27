@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use serde_json;
+
+use serde_json::json;
 
 const SHA256SUM: &str = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
 

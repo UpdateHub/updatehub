@@ -2,11 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::{
+    states::{Probe, State, StateChangeImpl, StateMachine},
+    Result,
+};
 
 use chrono::{DateTime, Duration, Utc};
-use rand::{self, Rng};
-use states::{Probe, State, StateChangeImpl, StateMachine};
+use log::{debug, info};
+use rand::Rng;
 use std::{
     sync::{Arc, Condvar, Mutex},
     thread,
@@ -71,7 +74,7 @@ impl StateChangeImpl for State<Poll> {
 #[test]
 fn extra_poll_in_past() {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;
@@ -98,7 +101,7 @@ fn extra_poll_in_past() {
 #[test]
 fn probe_now() {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;
@@ -123,7 +126,7 @@ fn probe_now() {
 #[test]
 fn last_poll_in_future() {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;
@@ -147,7 +150,7 @@ fn last_poll_in_future() {
 #[test]
 fn interval_1_second() {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;
@@ -170,7 +173,7 @@ fn interval_1_second() {
 #[test]
 fn never_polled() {
     use super::*;
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;

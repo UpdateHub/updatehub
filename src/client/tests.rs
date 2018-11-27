@@ -3,9 +3,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use firmware::tests::{create_fake_metadata, FakeDevice};
+
+use crate::{
+    firmware::tests::{create_fake_metadata, FakeDevice},
+    settings::Settings,
+};
+
 use mockito::{mock, Mock};
-use settings::Settings;
+use serde_json::json;
 
 pub(crate) enum FakeServer {
     NoUpdate,
@@ -18,8 +23,8 @@ pub(crate) enum FakeServer {
 }
 
 pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
+    use crate::update_package::tests::get_update_json;
     use mockito::Matcher;
-    use update_package::tests::get_update_json;
 
     fn fake_device_reply_body(identity: usize, hardware: &str) -> Matcher {
         Matcher::Json(json!(
@@ -79,7 +84,7 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(Matcher::Json(json!(
                 {
-	            "product-uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
+                    "product-uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
                     "version": "1.1",
                     "hardware": "board",
                     "device-identity": {
@@ -101,7 +106,7 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(Matcher::Json(json!(
                 {
-	            "product-uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
+                    "product-uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
                     "version": "1.1",
                     "hardware": "board",
                     "device-identity": {
@@ -125,7 +130,7 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
 
 #[test]
 fn probe_requirements() {
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mock = create_mock_server(FakeServer::NoUpdate);
     let _ = Api::new(&Settings::default().network.server_address).probe(
@@ -220,7 +225,7 @@ fn download_object() {
 
 #[test]
 fn report_success() {
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mock = create_mock_server(FakeServer::ReportSuccess);
     let _ = Api::new(&Settings::default().network.server_address).report(
@@ -235,7 +240,7 @@ fn report_success() {
 
 #[test]
 fn report_error() {
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mock = create_mock_server(FakeServer::ReportError);
     let _ = Api::new(&Settings::default().network.server_address).report(

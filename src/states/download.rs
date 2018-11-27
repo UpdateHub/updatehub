@@ -2,15 +2,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
-
-use client::Api;
-use firmware::installation_set;
-use states::{
-    Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
+use crate::{
+    client::Api,
+    firmware::installation_set,
+    states::{
+        Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
+    },
+    update_package::{ObjectStatus, UpdatePackage},
+    Result,
 };
+
+use failure::bail;
 use std::fs;
-use update_package::{ObjectStatus, UpdatePackage};
 use walkdir::WalkDir;
 
 #[derive(Debug, PartialEq)]
@@ -113,13 +116,15 @@ mod test {
     use super::*;
 
     fn fake_download_state() -> State<Download> {
-        use firmware::{
-            tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
-            Metadata,
+        use crate::{
+            firmware::{
+                tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
+                Metadata,
+            },
+            runtime_settings::RuntimeSettings,
+            update_package::tests::{create_fake_settings, get_update_package},
         };
-        use runtime_settings::RuntimeSettings;
         use std::{env, fs::create_dir_all};
-        use update_package::tests::{create_fake_settings, get_update_package};
 
         let settings = create_fake_settings();
         let tmpdir = settings.update.download_dir.clone();
@@ -139,7 +144,7 @@ mod test {
 
     #[test]
     fn skip_download_if_ready() {
-        use update_package::tests::create_fake_object;
+        use crate::update_package::tests::create_fake_object;
 
         let download_state = fake_download_state();
         let tmpdir = download_state.settings.update.download_dir.clone();

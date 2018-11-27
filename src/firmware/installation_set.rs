@@ -2,11 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use failure;
-use firmware::hook::run_script;
-use std::{fmt, result, str::FromStr};
+use crate::{firmware::hook::run_script, Result};
 
-use Result;
+use failure::bail;
+use std::{fmt, result, str::FromStr};
 
 const GET_SCRIPT: &str = "updatehub-active-get";
 const SET_SCRIPT: &str = "updatehub-active-set";
@@ -31,7 +30,7 @@ impl FromStr for Set {
 }
 
 impl fmt::Display for Set {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",

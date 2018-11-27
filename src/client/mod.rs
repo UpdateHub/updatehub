@@ -2,17 +2,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{path::Path, time::Duration};
+use crate::{
+    firmware::Metadata, runtime_settings::RuntimeSettings, update_package::UpdatePackage, Result,
+};
 
+use failure::bail;
+use log::debug;
 use reqwest::{
     header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
     Client, StatusCode,
 };
-
-use firmware::Metadata;
-use runtime_settings::RuntimeSettings;
-use update_package::UpdatePackage;
-use Result;
+use serde_derive::Serialize;
+use std::{path::Path, time::Duration};
 
 #[cfg(test)]
 pub(crate) mod tests;

@@ -2,13 +2,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::{
+    firmware::{installation_set::Set as InstallationSet, Metadata},
+    settings::Settings,
+    Result,
+};
 
 use crypto_hash::{hex_digest, Algorithm};
+use failure::Fail;
+use log::error;
+use serde_derive::Deserialize;
 use serde_json;
-
-use firmware::{installation_set::Set as InstallationSet, Metadata};
-use settings::Settings;
 
 mod supported_hardware;
 use self::supported_hardware::SupportedHardware;

@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::{
+    serde_helpers::de::supported_hardware_any as any, update_package::UpdatePackageError, Result,
+};
 
-use serde_helpers::de::supported_hardware_any as any;
-
-use update_package::UpdatePackageError;
+use serde_derive::Deserialize;
 
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(untagged)]
@@ -41,7 +41,7 @@ impl Default for SupportedHardware {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
+    use serde_json::json;
 
     #[derive(Debug, Deserialize, PartialEq)]
     struct Test(SupportedHardware);

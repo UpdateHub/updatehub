@@ -2,13 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#[macro_use]
-extern crate log;
-extern crate stderrlog;
-extern crate structopt;
-extern crate updatehub;
-
+use log::{error, info};
+use stderrlog;
 use structopt::StructOpt;
+use updatehub;
 
 #[derive(StructOpt, Debug)]
 #[structopt(

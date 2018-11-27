@@ -2,12 +2,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
-
-use states::{
-    Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
+use crate::{
+    states::{
+        Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
+    },
+    update_package::UpdatePackage,
+    Result,
 };
-use update_package::UpdatePackage;
+
+use log::info;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Install {
@@ -61,15 +64,17 @@ impl StateChangeImpl for State<Install> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use firmware::{
-        tests::{create_fake_metadata, FakeDevice},
-        Metadata,
+    use crate::{
+        firmware::{
+            tests::{create_fake_metadata, FakeDevice},
+            Metadata,
+        },
+        runtime_settings::RuntimeSettings,
+        settings::Settings,
+        update_package::tests::get_update_package,
     };
-    use runtime_settings::RuntimeSettings;
-    use settings::Settings;
     use std::fs;
     use tempfile::NamedTempFile;
-    use update_package::tests::get_update_package;
 
     fn fake_install_state() -> State<Install> {
         let tmpfile = NamedTempFile::new().unwrap();

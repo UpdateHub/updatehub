@@ -2,10 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::{
+    client::Api,
+    states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine},
+    Result,
+};
 
-use client::Api;
-use states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine};
+use log::{debug, error, info};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Probe {}
@@ -16,8 +19,8 @@ create_state_step!(Probe => Poll);
 /// Implements the state change for State<Probe>.
 impl StateChangeImpl for State<Probe> {
     fn handle(mut self) -> Result<StateMachine> {
+        use crate::client::ProbeResponse;
         use chrono::{Duration, Utc};
-        use client::ProbeResponse;
         use std::thread;
 
         let r = loop {
@@ -83,8 +86,10 @@ impl StateChangeImpl for State<Probe> {
 #[test]
 fn update_not_available() {
     use super::*;
-    use client::tests::{create_mock_server, FakeServer};
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::{
+        client::tests::{create_mock_server, FakeServer},
+        firmware::tests::{create_fake_metadata, FakeDevice},
+    };
     use std::fs;
     use tempfile::NamedTempFile;
 
@@ -112,8 +117,10 @@ fn update_not_available() {
 #[test]
 fn update_available() {
     use super::*;
-    use client::tests::{create_mock_server, FakeServer};
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::{
+        client::tests::{create_mock_server, FakeServer},
+        firmware::tests::{create_fake_metadata, FakeDevice},
+    };
     use std::fs;
     use tempfile::NamedTempFile;
 
@@ -141,8 +148,10 @@ fn update_available() {
 #[test]
 fn invalid_hardware() {
     use super::*;
-    use client::tests::{create_mock_server, FakeServer};
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::{
+        client::tests::{create_mock_server, FakeServer},
+        firmware::tests::{create_fake_metadata, FakeDevice},
+    };
     use std::fs;
     use tempfile::NamedTempFile;
 
@@ -170,8 +179,10 @@ fn invalid_hardware() {
 #[test]
 fn extra_poll_interval() {
     use super::*;
-    use client::tests::{create_mock_server, FakeServer};
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::{
+        client::tests::{create_mock_server, FakeServer},
+        firmware::tests::{create_fake_metadata, FakeDevice},
+    };
     use std::fs;
     use tempfile::NamedTempFile;
 
@@ -199,11 +210,13 @@ fn extra_poll_interval() {
 #[test]
 fn skip_same_package_uid() {
     use super::*;
-    use client::{
-        tests::{create_mock_server, FakeServer},
-        ProbeResponse,
+    use crate::{
+        client::{
+            tests::{create_mock_server, FakeServer},
+            ProbeResponse,
+        },
+        firmware::tests::{create_fake_metadata, FakeDevice},
     };
-    use firmware::tests::{create_fake_metadata, FakeDevice};
     use std::fs;
     use tempfile::NamedTempFile;
 
@@ -251,8 +264,10 @@ fn skip_same_package_uid() {
 #[test]
 fn error() {
     use super::*;
-    use client::tests::{create_mock_server, FakeServer};
-    use firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::{
+        client::tests::{create_mock_server, FakeServer},
+        firmware::tests::{create_fake_metadata, FakeDevice},
+    };
     use std::fs;
     use tempfile::NamedTempFile;
 

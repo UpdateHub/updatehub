@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::{serde_helpers::de, Result};
 
 use chrono::Duration;
+use failure::Fail;
+use log::{debug, error, info};
+use serde_derive::Deserialize;
 use serde_ini;
-
 use std::{io, path::PathBuf};
-
-use serde_helpers::de;
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 

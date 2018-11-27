@@ -2,12 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::{
+    states::{Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback},
+    update_package::UpdatePackage,
+    Result,
+};
 
 use easy_process;
-
-use states::{Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback};
-use update_package::UpdatePackage;
+use log::info;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Reboot {
@@ -56,13 +58,15 @@ mod test {
     use std::path::Path;
 
     fn fake_reboot_state() -> State<Reboot> {
-        use firmware::{
-            tests::{create_fake_metadata, FakeDevice},
-            Metadata,
+        use crate::{
+            firmware::{
+                tests::{create_fake_metadata, FakeDevice},
+                Metadata,
+            },
+            runtime_settings::RuntimeSettings,
+            settings::Settings,
+            update_package::tests::get_update_package,
         };
-        use runtime_settings::RuntimeSettings;
-        use settings::Settings;
-        use update_package::tests::get_update_package;
 
         State {
             settings: Settings::default(),

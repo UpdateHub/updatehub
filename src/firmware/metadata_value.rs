@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use core::ops::Index;
+use serde_derive::Serialize;
 use std::{
     collections::{
         btree_map::{Entry, Keys},
@@ -50,11 +51,11 @@ impl FromStr for MetadataValue {
 }
 
 impl MetadataValue {
-    pub fn entry(&mut self, key: String) -> Entry<String, Vec<String>> {
+    pub fn entry(&mut self, key: String) -> Entry<'_, String, Vec<String>> {
         self.0.entry(key)
     }
 
-    pub fn keys(&self) -> Keys<String, Vec<String>> {
+    pub fn keys(&self) -> Keys<'_, String, Vec<String>> {
         self.0.keys()
     }
 

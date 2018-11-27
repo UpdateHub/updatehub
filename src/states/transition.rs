@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
+use crate::Result;
 
+use log::error;
 use std::path::Path;
 
 const STATE_CHANGE_CALLBACK: &str = "state-change-callback";
@@ -51,7 +52,7 @@ mod test {
     const CALLBACK_STATE_NAME: &'static str = "test_state";
 
     fn create_state_change_callback_hook(content: &str) -> tempfile::TempDir {
-        use firmware::tests::create_hook;
+        use crate::firmware::tests::create_hook;
 
         let tmpdir = tempfile::tempdir().unwrap();
         let tmpdir = tmpdir;

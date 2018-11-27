@@ -2,11 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
-
-use std::path::Path;
-
 use self::hook::{run_hook, run_hooks_from_dir};
+
+use crate::Result;
+
+use failure::Fail;
+use serde_derive::Serialize;
+use std::path::Path;
 
 mod hook;
 mod metadata_value;

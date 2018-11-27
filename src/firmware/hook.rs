@@ -2,14 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use Result;
-
-use walkdir::WalkDir;
-
-use std::{path::Path, str::FromStr};
+use crate::{firmware::metadata_value::MetadataValue, Result};
 
 use easy_process;
-use firmware::metadata_value::MetadataValue;
+use log::error;
+use std::{path::Path, str::FromStr};
+use walkdir::WalkDir;
 
 pub(crate) fn run_hook(path: &Path) -> Result<String> {
     if !path.exists() {
