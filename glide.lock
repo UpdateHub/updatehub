@@ -1,5 +1,5 @@
-hash: 447124f2c8ebce78cd6f439867b4cc3a410df3d89469dd86dcb31504022fbc85
-updated: 2018-10-10T17:15:45.010787519-03:00
+hash: 6bdb572bd693c4d95fc77f7bee01d4d79749aff310b83b1049f92623e36cdb6b
+updated: 2018-11-29T08:16:11.11883768-02:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: f9a329340c5303f1977dcb9efb0918b34437a003
@@ -7,7 +7,7 @@ imports:
   - httptoo
   - mime
 - name: github.com/bouk/monkey
-  version: 5df1f207ff77e025801505ae4d903133a0b4353f
+  version: bdf6dea004c6fd1cdf4b25da8ad45a606c09409a
 - name: github.com/bradfitz/iter
   version: 454541ec3da2a73fc34fd049b19ee5777bf19345
 - name: github.com/c9s/goprocinfo
@@ -23,7 +23,7 @@ imports:
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/go-ini/ini
-  version: cec2bdc49009247305a260b082a18e802d0fe292
+  version: 9c8236e659b76e87bf02044d06fde8683008ff3e
 - name: github.com/hokaccha/go-prettyjson
   version: d229c224a219dcf41e9d2af4684b9782f33f5eb7
 - name: github.com/huandu/xstrings
@@ -31,7 +31,9 @@ imports:
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
 - name: github.com/julienschmidt/httprouter
-  version: adbc77eec0d91467376ca515bc3a14b8434d0f18
+  version: 348b672cd90d8190f8240323e372ecd1e66b59dc
+- name: github.com/konsorten/go-windows-terminal-sequences
+  version: b729f2633dfe35f4d1d8a32385f6685610ce1cb5
 - name: github.com/koofr/go-httputils
   version: 966567c98232b97cb39a4a2a0b516a412b90e9a4
 - name: github.com/mattn/go-colorable
@@ -39,7 +41,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
 - name: github.com/mattn/go-shellwords
-  version: f8471b0a71ded0ab910825ee2cf230f25de000f1
+  version: 02e3cf038dcea8290e44424da473dd12be796a8a
 - name: github.com/moul/http2curl
   version: 9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d
 - name: github.com/OSSystems/pkg
@@ -49,22 +51,22 @@ imports:
 - name: github.com/parnurzeal/gorequest
   version: a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3
 - name: github.com/pkg/errors
-  version: 816c9085562cd7ee03e7f8188a1cfd942858cded
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/sirupsen/logrus
-  version: 75068beb13ada9c0ddde611f678523fda7352650
+  version: bcd833dfe83d3cebad139e4a29ed79cb2318bf95
   subpackages:
   - hooks/syslog
   - hooks/test
 - name: github.com/spf13/afero
-  version: 787d034dfe70e44075ccc060d346146ef53270ad
+  version: d40851caa0d747393da1ffb28f7f9d8b4eeffebd
   subpackages:
   - mem
 - name: github.com/spf13/cobra
-  version: 1e58aa3361fd650121dceeedc399e7189c05674a
+  version: ef82de70bb3f60c65fb8eebacbb2d122ef517385
 - name: github.com/spf13/pflag
   version: 3ebe029320b2676d667ae88da602a5f854788a8a
 - name: github.com/stretchr/objx

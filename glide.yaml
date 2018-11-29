@@ -1,21 +1,31 @@
 package: github.com/UpdateHub/updatehub
 import:
 - package: github.com/go-ini/ini
+  version: ^1.39.0
 - package: github.com/julienschmidt/httprouter
+  version: ^1.2.0
 - package: github.com/pkg/errors
+  version: ^0.8.0
 - package: github.com/spf13/afero
+  version: ^1.1.2
 - package: github.com/stretchr/testify
+  version: ^1.2.2
   subpackages:
   - mock
 - package: github.com/bouk/monkey
+  version: ^1.0.1
 - package: github.com/sirupsen/logrus
+  version: ^1.2.0
 - package: github.com/fsnotify/fsnotify
+  version: ^1.4.7
 - package: github.com/spf13/cobra
+  version: ^0.0.3
 - package: github.com/OSSystems/pkg
   subpackages:
   - log
 - package: github.com/hokaccha/go-prettyjson
 - package: github.com/parnurzeal/gorequest
+  version: ^0.2.15
 - package: github.com/anacrolix/missinggo
 - package: github.com/koofr/go-httputils
 - package: github.com/UpdateHub/agent-sdk-go
