@@ -6,7 +6,7 @@ use crate::{serde_helpers::de, Result};
 
 use chrono::Duration;
 use failure::Fail;
-use log::{debug, error, info};
+use log::{debug, error};
 use serde_derive::Deserialize;
 use serde_ini;
 use std::{io, path::PathBuf};
@@ -43,7 +43,7 @@ impl Settings {
         let path = Path::new(SYSTEM_SETTINGS_PATH);
 
         if path.exists() {
-            info!(
+            debug!(
                 "Loading system settings from '{}'...",
                 path.to_string_lossy()
             );
@@ -54,10 +54,9 @@ impl Settings {
             Ok(Self::parse(&content)?)
         } else {
             debug!(
-                "System settings file {} does not exists.",
+                "System settings file {} does not exists. Using default system settings...",
                 path.to_string_lossy()
             );
-            info!("Using default system settings...");
             Ok(Self::default())
         }
     }

@@ -9,7 +9,7 @@ use crate::{
 
 use chrono::{DateTime, Duration, Utc};
 use failure::Fail;
-use log::{debug, info};
+use log::debug;
 use serde_derive::{Deserialize, Serialize};
 use serde_ini;
 use std::{
@@ -39,7 +39,7 @@ impl RuntimeSettings {
         let path = Path::new(path);
 
         if path.exists() {
-            info!(
+            debug!(
                 "Loading runtime settings from '{}'...",
                 path.to_string_lossy()
             );
@@ -49,10 +49,9 @@ impl RuntimeSettings {
             self = Self::parse(&content)?;
         } else {
             debug!(
-                "Runtime settings file {} does not exists.",
+                "Runtime settings file {} does not exists. Using default runtime settings...",
                 path.to_string_lossy()
             );
-            info!("Using default runtime settings...");
         }
 
         self.path = path.to_path_buf();
