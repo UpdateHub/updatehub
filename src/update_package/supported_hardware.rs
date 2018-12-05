@@ -2,9 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    serde_helpers::de::supported_hardware_any as any, update_package::UpdatePackageError, Result,
-};
+use crate::{serde_helpers::de::supported_hardware_any as any, update_package::UpdatePackageError};
 
 use serde_derive::Deserialize;
 
@@ -17,7 +15,7 @@ pub(crate) enum SupportedHardware {
 }
 
 impl SupportedHardware {
-    pub(crate) fn compatible_with(&self, hardware: &str) -> Result<()> {
+    pub(crate) fn compatible_with(&self, hardware: &str) -> Result<(), failure::Error> {
         let hardware = hardware.to_string();
         let compatible = match self {
             SupportedHardware::Any => true,

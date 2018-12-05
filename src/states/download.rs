@@ -9,7 +9,6 @@ use crate::{
         Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
     },
     update_package::{ObjectStatus, UpdatePackage},
-    Result,
 };
 
 use failure::bail;
@@ -45,7 +44,7 @@ impl ProgressReporter for State<Download> {
 }
 
 impl StateChangeImpl for State<Download> {
-    fn handle(self) -> Result<StateMachine> {
+    fn handle(self) -> Result<StateMachine, failure::Error> {
         let installation_set = installation_set::inactive()?;
 
         // Prune left over from previous installations

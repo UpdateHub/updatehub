@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    states::{Park, Poll, State, StateChangeImpl, StateMachine},
-    Result,
-};
+use crate::states::{Park, Poll, State, StateChangeImpl, StateMachine};
 
 use log::debug;
 
@@ -20,7 +17,7 @@ pub(super) struct Idle {}
 impl StateChangeImpl for State<Idle> {
     // FIXME: when supporting the HTTP API we need allow going to
     // State<Probe>.
-    fn handle(self) -> Result<StateMachine> {
+    fn handle(self) -> Result<StateMachine, failure::Error> {
         if !self.settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
             return Ok(StateMachine::Park(self.into()));

@@ -2,9 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    firmware::Metadata, runtime_settings::RuntimeSettings, update_package::UpdatePackage, Result,
-};
+use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, update_package::UpdatePackage};
 
 use failure::bail;
 use log::debug;
@@ -34,7 +32,7 @@ impl<'a> Api<'a> {
         Api { server }
     }
 
-    fn client(&self) -> Result<Client> {
+    fn client(&self) -> Result<Client, failure::Error> {
         let mut headers = HeaderMap::new();
 
         headers.insert(USER_AGENT, "updatehub/next".parse()?);
@@ -54,7 +52,7 @@ impl<'a> Api<'a> {
         &self,
         runtime_settings: &RuntimeSettings,
         firmware: &Metadata,
-    ) -> Result<ProbeResponse> {
+    ) -> Result<ProbeResponse, failure::Error> {
         let mut response = self
             .client()?
             .post(&format!("{}/upgrades", &self.server))
@@ -91,7 +89,7 @@ impl<'a> Api<'a> {
         package_uid: &str,
         download_dir: &Path,
         object: &str,
-    ) -> Result<()> {
+    ) -> Result<(), failure::Error> {
         use std::fs::{create_dir_all, OpenOptions};
 
         // FIXME: Discuss the need of packages inside the route
@@ -128,7 +126,7 @@ impl<'a> Api<'a> {
         package_uid: &str,
         previous_state: Option<&str>,
         error_message: Option<String>,
-    ) -> Result<()> {
+    ) -> Result<(), failure::Error> {
         #[derive(Serialize)]
         #[serde(rename_all = "kebab-case")]
         struct Payload<'a> {

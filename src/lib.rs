@@ -13,5 +13,4 @@ mod settings;
 mod states;
 mod update_package;
 
-pub type Result<T> = std::result::Result<T, failure::Error>;
 pub use crate::{build_info::version, settings::Settings, states::run};

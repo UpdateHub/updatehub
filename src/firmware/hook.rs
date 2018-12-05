@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{firmware::metadata_value::MetadataValue, Result};
+use crate::firmware::metadata_value::MetadataValue;
 
 use easy_process;
 use log::error;
 use std::{path::Path, str::FromStr};
 use walkdir::WalkDir;
 
-pub(crate) fn run_hook(path: &Path) -> Result<String> {
+pub(crate) fn run_hook(path: &Path) -> Result<String, failure::Error> {
     if !path.exists() {
         return Ok("".into());
     }
@@ -17,7 +17,7 @@ pub(crate) fn run_hook(path: &Path) -> Result<String> {
     Ok(run_script(path.to_str().expect("Invalid path for hook"))?)
 }
 
-pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
+pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, failure::Error> {
     let mut outputs: Vec<String> = Vec::new();
     for entry in WalkDir::new(path)
         .follow_links(true)
@@ -30,7 +30,7 @@ pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
     Ok(MetadataValue::from_str(&outputs.join("\n"))?)
 }
 
-pub(crate) fn run_script(cmd: &str) -> Result<String> {
+pub(crate) fn run_script(cmd: &str) -> Result<String, failure::Error> {
     let output = easy_process::run(cmd)?;
     if !output.stderr.is_empty() {
         output

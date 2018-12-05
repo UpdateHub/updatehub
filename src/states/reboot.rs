@@ -5,7 +5,6 @@
 use crate::{
     states::{Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback},
     update_package::UpdatePackage,
-    Result,
 };
 
 use easy_process;
@@ -39,7 +38,7 @@ impl ProgressReporter for State<Reboot> {
 }
 
 impl StateChangeImpl for State<Reboot> {
-    fn handle(self) -> Result<StateMachine> {
+    fn handle(self) -> Result<StateMachine, failure::Error> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {

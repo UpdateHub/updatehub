@@ -7,7 +7,6 @@ use crate::{
         Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
     },
     update_package::UpdatePackage,
-    Result,
 };
 
 use log::info;
@@ -41,7 +40,7 @@ impl ProgressReporter for State<Install> {
 }
 
 impl StateChangeImpl for State<Install> {
-    fn handle(mut self) -> Result<StateMachine> {
+    fn handle(mut self) -> Result<StateMachine, failure::Error> {
         let package_uid = self.state.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 

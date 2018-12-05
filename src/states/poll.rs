@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    states::{Probe, State, StateChangeImpl, StateMachine},
-    Result,
-};
+use crate::states::{Probe, State, StateChangeImpl, StateMachine};
 
 use chrono::{DateTime, Duration, Utc};
 use log::{debug, info};
@@ -24,7 +21,7 @@ create_state_step!(Poll => Probe);
 ///
 /// This state is used to control when to go to the `State<Probe>`.
 impl StateChangeImpl for State<Poll> {
-    fn handle(self) -> Result<StateMachine> {
+    fn handle(self) -> Result<StateMachine, failure::Error> {
         let current_time: DateTime<Utc> = Utc::now();
 
         if self.runtime_settings.is_polling_forced() {

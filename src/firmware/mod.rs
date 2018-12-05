@@ -4,8 +4,6 @@
 
 use self::hook::{run_hook, run_hooks_from_dir};
 
-use crate::Result;
-
 use failure::Fail;
 use serde_derive::Serialize;
 use std::path::Path;
@@ -59,7 +57,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn from_path(path: &Path) -> Result<Self> {
+    pub fn from_path(path: &Path) -> Result<Self, failure::Error> {
         let product_uid_hook = path.join(PRODUCT_UID_HOOK);
         let version_hook = path.join(VERSION_HOOK);
         let hardware_hook = path.join(HARDWARE_HOOK);

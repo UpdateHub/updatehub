@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::Result;
-
 use log::error;
 use std::path::Path;
 
@@ -15,7 +13,10 @@ pub(super) enum Transition {
     Cancel,
 }
 
-pub(super) fn state_change_callback(path: &Path, state: &'static str) -> Result<Transition> {
+pub(super) fn state_change_callback(
+    path: &Path,
+    state: &'static str,
+) -> Result<Transition, failure::Error> {
     use easy_process;
     use std::io;
 

@@ -18,12 +18,12 @@ use self::{
     reboot::Reboot,
 };
 
-use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings, Result};
+use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings};
 
 use log::debug;
 
 trait StateChangeImpl {
-    fn handle(self) -> Result<StateMachine>;
+    fn handle(self) -> Result<StateMachine, failure::Error>;
 }
 
 trait TransitionCallback: StateChangeImpl + Into<State<Idle>> {
@@ -62,7 +62,7 @@ impl<S> State<S>
 where
     State<S>: TransitionCallback + ProgressReporter,
 {
-    fn handle_with_callback_and_report_progress(self) -> Result<StateMachine> {
+    fn handle_with_callback_and_report_progress(self) -> Result<StateMachine, failure::Error> {
         use crate::states::transition::{state_change_callback, Transition};
 
         let transition = state_change_callback(
@@ -81,7 +81,7 @@ impl<S> State<S>
 where
     State<S>: ProgressReporter,
 {
-    fn handle_and_report_progress(self) -> Result<StateMachine> {
+    fn handle_and_report_progress(self) -> Result<StateMachine, failure::Error> {
         let server = self.settings.network.server_address.clone();
         let firmware = self.firmware.clone();
         let package_uid = self.package_uid().clone();
@@ -121,7 +121,7 @@ impl StateMachine {
         })
     }
 
-    fn move_to_next_state(self) -> Result<Self> {
+    fn move_to_next_state(self) -> Result<Self, failure::Error> {
         match self {
             StateMachine::Park(s) => Ok(s.handle()?),
             StateMachine::Idle(s) => Ok(s.handle()?),
@@ -165,7 +165,7 @@ impl StateMachine {
 /// # Ok(())
 /// # }
 /// ```
-pub fn run(settings: Settings) -> Result<()> {
+pub fn run(settings: Settings) -> Result<(), failure::Error> {
     let mut runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
     if !settings.storage.read_only {
         runtime_settings.enable_persistency();

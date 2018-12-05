@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{firmware::hook::run_script, Result};
+use crate::firmware::hook::run_script;
 
 use failure::bail;
 use std::{fmt, result, str::FromStr};
@@ -42,18 +42,18 @@ impl fmt::Display for Set {
     }
 }
 
-pub fn active() -> Result<Set> {
+pub fn active() -> Result<Set, failure::Error> {
     Ok(run_script(GET_SCRIPT)?.parse()?)
 }
 
-pub fn inactive() -> Result<Set> {
+pub fn inactive() -> Result<Set, failure::Error> {
     match active()? {
         Set::A => Ok(Set::B),
         Set::B => Ok(Set::A),
     }
 }
 
-pub fn swap_active() -> Result<()> {
+pub fn swap_active() -> Result<(), failure::Error> {
     let _ = run_script(&format!("{} {}", SET_SCRIPT, inactive()?))?;
     Ok(())
 }

@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::Result;
-
 use crypto_hash::{Algorithm, Hasher};
 use hex;
 use serde_derive::Deserialize;
@@ -29,7 +27,7 @@ pub(crate) enum ObjectStatus {
 }
 
 trait ObjectType {
-    fn status(&self, download_dir: &Path) -> Result<ObjectStatus> {
+    fn status(&self, download_dir: &Path) -> Result<ObjectStatus, failure::Error> {
         let object = download_dir.join(self.sha256sum());
 
         if !object.exists() {

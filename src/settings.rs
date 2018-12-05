@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{serde_helpers::de, Result};
+use crate::serde_helpers::de;
 
 use chrono::Duration;
 use failure::Fail;
@@ -37,7 +37,7 @@ impl Settings {
     /// Loads the settings from the filesystem. If
     /// `/etc/updatehub.conf` does not exists, it uses the default
     /// settings.
-    pub fn load() -> Result<Self> {
+    pub fn load() -> Result<Self, failure::Error> {
         use std::{fs::File, io::Read, path::Path};
 
         let path = Path::new(SYSTEM_SETTINGS_PATH);
@@ -64,7 +64,7 @@ impl Settings {
     // This parses the configuration file, taking into account the
     // needed validations for all fields, and returns either `Self` or
     // `Err`.
-    fn parse(content: &str) -> Result<Self> {
+    fn parse(content: &str) -> Result<Self, failure::Error> {
         let settings = serde_ini::from_str::<Self>(content)?;
 
         if settings.polling.interval < Duration::seconds(60) {

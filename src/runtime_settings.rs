@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    serde_helpers::{de, ser},
-    Result,
-};
+use crate::serde_helpers::{de, ser};
 
 use chrono::{DateTime, Duration, Utc};
 use failure::Fail;
@@ -33,7 +30,7 @@ impl RuntimeSettings {
         Self::default()
     }
 
-    pub(crate) fn load(mut self, path: &str) -> Result<Self> {
+    pub(crate) fn load(mut self, path: &str) -> Result<Self, failure::Error> {
         use std::{fs::File, io::Read};
 
         let path = Path::new(path);
@@ -58,11 +55,11 @@ impl RuntimeSettings {
         Ok(self)
     }
 
-    fn parse(content: &str) -> Result<Self> {
+    fn parse(content: &str) -> Result<Self, failure::Error> {
         Ok(serde_ini::from_str::<Self>(content)?)
     }
 
-    fn save(&self) -> Result<()> {
+    fn save(&self) -> Result<(), failure::Error> {
         use std::{fs::File, io::Write};
 
         if !self.persistent {
@@ -79,7 +76,7 @@ impl RuntimeSettings {
         Ok(())
     }
 
-    fn serialize(&self) -> Result<String> {
+    fn serialize(&self) -> Result<String, failure::Error> {
         Ok(serde_ini::to_string(&self)?)
     }
 
@@ -91,7 +88,7 @@ impl RuntimeSettings {
         self.polling.now
     }
 
-    pub(crate) fn force_poll(&mut self) -> Result<()> {
+    pub(crate) fn force_poll(&mut self) -> Result<(), failure::Error> {
         self.polling.now = true;
         self.save()
     }
@@ -112,7 +109,10 @@ impl RuntimeSettings {
         self.polling.extra_interval
     }
 
-    pub(crate) fn set_polling_extra_interval(&mut self, extra_interval: Duration) -> Result<()> {
+    pub(crate) fn set_polling_extra_interval(
+        &mut self,
+        extra_interval: Duration,
+    ) -> Result<(), failure::Error> {
         self.polling.extra_interval = Some(extra_interval);
         self.save()
     }
@@ -121,7 +121,10 @@ impl RuntimeSettings {
         self.polling.last
     }
 
-    pub(crate) fn set_last_polling(&mut self, last_polling: DateTime<Utc>) -> Result<()> {
+    pub(crate) fn set_last_polling(
+        &mut self,
+        last_polling: DateTime<Utc>,
+    ) -> Result<(), failure::Error> {
         self.polling.last = Some(last_polling);
         self.save()
     }
@@ -130,7 +133,10 @@ impl RuntimeSettings {
         self.update.applied_package_uid.clone()
     }
 
-    pub(crate) fn set_applied_package_uid(&mut self, applied_package_uid: &str) -> Result<()> {
+    pub(crate) fn set_applied_package_uid(
+        &mut self,
+        applied_package_uid: &str,
+    ) -> Result<(), failure::Error> {
         self.update.applied_package_uid = Some(applied_package_uid.to_string());
         self.save()
     }

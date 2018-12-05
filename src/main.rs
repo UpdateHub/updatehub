@@ -20,7 +20,7 @@ struct Opt {
     verbose: usize,
 }
 
-fn run() -> updatehub::Result<()> {
+fn run() -> Result<(), failure::Error> {
     let opt = Opt::from_args();
 
     stderrlog::new().verbosity(opt.verbose + 1).init()?;

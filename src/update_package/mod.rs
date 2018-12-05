@@ -5,7 +5,6 @@
 use crate::{
     firmware::{installation_set::Set as InstallationSet, Metadata},
     settings::Settings,
-    Result,
 };
 
 use crypto_hash::{hex_digest, Algorithm};
@@ -52,7 +51,7 @@ pub(crate) enum UpdatePackageError {
 }
 
 impl UpdatePackage {
-    pub(crate) fn parse(content: &str) -> Result<Self> {
+    pub(crate) fn parse(content: &str) -> Result<Self, failure::Error> {
         let mut update_package = serde_json::from_str::<Self>(content)?;
         update_package.raw = content.into();
 
@@ -63,7 +62,7 @@ impl UpdatePackage {
         hex_digest(Algorithm::SHA256, self.raw.as_bytes())
     }
 
-    pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<()> {
+    pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<(), failure::Error> {
         self.supported_hardware.compatible_with(&firmware.hardware)
     }
 

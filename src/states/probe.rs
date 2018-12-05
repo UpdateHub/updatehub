@@ -5,7 +5,6 @@
 use crate::{
     client::Api,
     states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine},
-    Result,
 };
 
 use log::{debug, error, info};
@@ -18,7 +17,7 @@ create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
 impl StateChangeImpl for State<Probe> {
-    fn handle(mut self) -> Result<StateMachine> {
+    fn handle(mut self) -> Result<StateMachine, failure::Error> {
         use crate::client::ProbeResponse;
         use chrono::{Duration, Utc};
         use std::thread;
