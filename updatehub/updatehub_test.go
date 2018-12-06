@@ -279,7 +279,7 @@ func TestProcessCurrentStateIsError(t *testing.T) {
 
 	expectedError := fmt.Errorf("some error")
 
-	cm.On("Execute", "/usr/share/updatehub/error-callback 'transient error: some error'").Return([]byte(""), nil).Once()
+	cm.On("Execute", "/usr/share/updatehub/error-callback \"transient error: some error\"").Return([]byte(""), nil).Once()
 
 	apiClient := client.NewApiClient("address")
 

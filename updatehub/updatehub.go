@@ -192,7 +192,7 @@ func (uh *UpdateHub) errorCallback(message string) error {
 		return nil
 	}
 
-	_, err := uh.CmdLineExecuter.Execute(fmt.Sprintf("%s '%s'", uh.ErrorCallbackPath, message))
+	_, err := uh.CmdLineExecuter.Execute(fmt.Sprintf("%s \"%s\"", uh.ErrorCallbackPath, message))
 
 	return err
 }
