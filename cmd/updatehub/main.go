@@ -26,7 +26,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
-	syslog_hook "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/UpdateHub/updatehub/client"
 	_ "github.com/UpdateHub/updatehub/installmodes/copy"
 	_ "github.com/UpdateHub/updatehub/installmodes/flash"
@@ -38,6 +37,7 @@ import (
 	"github.com/UpdateHub/updatehub/server"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/UpdateHub/updatehub/utils"
+	syslog_hook "github.com/sirupsen/logrus/hooks/syslog"
 )
 
 var (

@@ -19,16 +19,16 @@ import (
 	"testing"
 	"time"
 
-	errs "github.com/pkg/errors"
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
+	errs "github.com/pkg/errors"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestStateProbeWithUpdateAvailable(t *testing.T) {

@@ -16,10 +16,10 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	shellwords "github.com/mattn/go-shellwords"
-	"github.com/spf13/afero"
 	"github.com/UpdateHub/updatehub/libarchive"
 	"github.com/UpdateHub/updatehub/utils"
+	shellwords "github.com/mattn/go-shellwords"
+	"github.com/spf13/afero"
 )
 
 type Interface interface {
@@ -78,7 +78,7 @@ Loop:
 			if ok {
 				close(readErrChan)
 			}
-			
+
 			return false, err
 		case <-cancel:
 			return true, nil

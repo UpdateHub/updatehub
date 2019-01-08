@@ -12,10 +12,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMenderInit(t *testing.T) {

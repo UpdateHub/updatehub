@@ -12,13 +12,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
 	"github.com/UpdateHub/updatehub/testsmocks/objectmock"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestStateInstalled(t *testing.T) {

@@ -12,9 +12,9 @@ import (
 	"io"
 	"time"
 
+	"github.com/UpdateHub/updatehub/client"
 	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/stretchr/testify/mock"
-	"github.com/UpdateHub/updatehub/client"
 )
 
 type UpdaterMock struct {

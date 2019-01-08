@@ -13,8 +13,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/copy"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/libarchive"
@@ -25,6 +23,8 @@ import (
 	"github.com/UpdateHub/updatehub/testsmocks/mtdmock"
 	"github.com/UpdateHub/updatehub/testsmocks/ubifsmock"
 	"github.com/UpdateHub/updatehub/utils"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTarballInit(t *testing.T) {

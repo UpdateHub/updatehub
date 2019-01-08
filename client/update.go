@@ -23,8 +23,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/anacrolix/missinggo/httptoo"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/anacrolix/missinggo/httptoo"
 )
 
 type UpdateClient struct {

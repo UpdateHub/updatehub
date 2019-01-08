@@ -11,9 +11,9 @@ package updatehub
 import (
 	"sync"
 
-	"github.com/spf13/afero"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/spf13/afero"
 )
 
 // InstallingState is the State interface implementation for the UpdateHubStateInstalling

@@ -14,11 +14,11 @@ import (
 	"strconv"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/spf13/afero"
 	"github.com/UpdateHub/updatehub/installifdifferent"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
+	"github.com/spf13/afero"
 )
 
 func init() {

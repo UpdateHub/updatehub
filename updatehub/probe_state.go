@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/pkg/errors"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/pkg/errors"
 )
 
 // ProbeState is the State interface implementation for the UpdateHubStateProbe

@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultImplActive(t *testing.T) {

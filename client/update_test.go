@@ -18,11 +18,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
+	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/anacrolix/missinggo/httptoo"
 	httputils "github.com/koofr/go-httputils"
 	"github.com/stretchr/testify/assert"
-	"github.com/UpdateHub/updatehub/installmodes/imxkobs"
-	"github.com/UpdateHub/updatehub/metadata"
 )
 
 func TestProbeUpdateWithInvalidApiRequester(t *testing.T) {

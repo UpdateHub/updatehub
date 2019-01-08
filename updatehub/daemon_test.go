@@ -13,13 +13,13 @@ import (
 	"testing"
 
 	"github.com/OSSystems/pkg/log"
+	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
+	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
-	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
-	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
 )
 
 func TestNewDaemon(t *testing.T) {

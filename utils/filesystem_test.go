@@ -15,9 +15,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
-	"github.com/UpdateHub/updatehub/testsmocks/cmdlinemock"
 )
 
 func TestFormat(t *testing.T) {

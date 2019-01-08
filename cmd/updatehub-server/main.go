@@ -16,10 +16,6 @@ import (
 	"time"
 
 	"github.com/OSSystems/pkg/log"
-	linuxproc "github.com/c9s/goprocinfo/linux"
-	"github.com/parnurzeal/gorequest"
-	"github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	_ "github.com/UpdateHub/updatehub/installmodes/copy"
 	_ "github.com/UpdateHub/updatehub/installmodes/flash"
 	_ "github.com/UpdateHub/updatehub/installmodes/imxkobs"
@@ -30,6 +26,10 @@ import (
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/server"
 	"github.com/UpdateHub/updatehub/updatehub"
+	linuxproc "github.com/c9s/goprocinfo/linux"
+	"github.com/parnurzeal/gorequest"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 type AgentInfo struct {
