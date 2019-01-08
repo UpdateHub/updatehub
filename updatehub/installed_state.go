@@ -30,7 +30,10 @@ func (state *InstalledState) ID() UpdateHubState {
 func (state *InstalledState) Handle(uh *UpdateHub) (State, bool) {
 	uh.lastInstalledPackageUID = state.updateMetadata.PackageUID()
 
-	uh.Settings.ProbeASAP = true
+	if !uh.IgnoreProbeASAP {
+		uh.Settings.ProbeASAP = true
+	}
+
 	uh.Settings.Save(uh.Store)
 
 	return NewRebootingState(state.apiClient, state.updateMetadata), false

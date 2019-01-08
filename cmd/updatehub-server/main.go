@@ -33,9 +33,9 @@ import (
 )
 
 type AgentInfo struct {
-	Version   string                    `json:"version"`
-	Config    updatehub.Settings        `json:"config"`
-	Firmware  metadata.FirmwareMetadata `json:"firmware"`
+	Version  string                    `json:"version"`
+	Config   updatehub.Settings        `json:"config"`
+	Firmware metadata.FirmwareMetadata `json:"firmware"`
 }
 
 type ProbeResponse struct {
@@ -63,6 +63,7 @@ func main() {
 	isQuiet := cmd.PersistentFlags().Bool("quiet", false, "sets the log level to 'error'")
 	isDebug := cmd.PersistentFlags().Bool("debug", false, "sets the log level to 'debug'")
 	probe := cmd.PersistentFlags().Bool("probe", false, "probe the updatehub for update")
+	ignoreProbeASAP := cmd.PersistentFlags().Bool("ignore-probe-asap", false, "ignore probe asap")
 	mount := cmd.PersistentFlags().StringP("mount", "m", "", "device to mount")
 	fstype := cmd.PersistentFlags().StringP("fstype", "f", "", "filesystem type of device to mount")
 
@@ -148,9 +149,11 @@ func main() {
 			probe := ProbeResponse{UpdateAvailable: false}
 
 			var req struct {
-				ServerAddress string `json:"server-address"`
+				ServerAddress   string `json:"server-address"`
+				IgnoreProbeASAP bool   `json:"ignore-probe-asap"`
 			}
 			req.ServerAddress = "http://localhost:8088"
+			req.IgnoreProbeASAP = *ignoreProbeASAP
 
 			// Probe for update
 			_, _, errs := gorequest.New().Post(buildURL("/probe")).Send(req).EndStruct(&probe)

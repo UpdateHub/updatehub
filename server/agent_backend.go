@@ -59,19 +59,23 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	apiClient := ab.UpdateHub.DefaultApiClient
 
+	var in struct {
+		ServerAddress   string `json:"server-address"`
+		IgnoreProbeASAP bool   `json:"ignore-probe-asap"`
+	}
+
 	if r != nil {
 		buffer := new(bytes.Buffer)
 		buffer.ReadFrom(r.Body)
 		body := buffer.Bytes()
 
-		in := map[string]string{}
 		err := json.Unmarshal(body, &in)
 		if err != nil {
 			log.Warn("failed to parse a /probe request: ", err)
 		}
 
-		if address, ok := in["server-address"]; ok && address != "" {
-			sanitizedAddress, err := utils.SanitizeServerAddress(address)
+		if in.ServerAddress != "" {
+			sanitizedAddress, err := utils.SanitizeServerAddress(in.ServerAddress)
 
 			if err != nil {
 				log.Warn("failed to sanitize a server address from /probe request: ", err)
@@ -85,6 +89,8 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprout
 
 	switch state := ab.UpdateHub.GetState().(type) {
 	case *updatehub.IdleState, *updatehub.PollState, *updatehub.ProbeState:
+		ab.UpdateHub.IgnoreProbeASAP = in.IgnoreProbeASAP
+
 		s := updatehub.NewProbeState(apiClient)
 
 		ab.UpdateHub.Cancel(s)
