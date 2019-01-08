@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestProbeUpdate(t *testing.T) {

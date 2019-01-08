@@ -9,9 +9,9 @@
 package reportermock
 
 import (
-	"github.com/stretchr/testify/mock"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/stretchr/testify/mock"
 )
 
 type ReporterMock struct {

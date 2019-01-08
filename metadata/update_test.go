@@ -16,9 +16,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 type TestObjectCompressed struct {

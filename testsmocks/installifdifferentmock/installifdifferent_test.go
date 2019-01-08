@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/installmodes/copy"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/client"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewErrorStateToMap(t *testing.T) {

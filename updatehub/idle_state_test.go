@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/testsmocks/activeinactivemock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewIdleState(t *testing.T) {

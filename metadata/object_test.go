@@ -11,8 +11,8 @@ package metadata
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/installmodes"
+	"github.com/stretchr/testify/assert"
 )
 
 type TestObject struct {

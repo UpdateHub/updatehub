@@ -14,8 +14,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/spf13/afero"
 	"github.com/UpdateHub/updatehub/utils"
+	"github.com/spf13/afero"
 )
 
 type UbifsUtils interface {

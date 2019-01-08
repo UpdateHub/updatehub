@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/libarchive"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewRead(t *testing.T) {

@@ -15,11 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anacrolix/missinggo/httptoo"
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/installmodes/copy"
 	"github.com/UpdateHub/updatehub/metadata"
+	"github.com/anacrolix/missinggo/httptoo"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

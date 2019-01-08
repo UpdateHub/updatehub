@@ -13,11 +13,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/UpdateHub/updatehub/testsmocks/filemock"
+	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/UpdateHub/updatehub/testsmocks/filemock"
-	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
 )
 
 func TestNewKernelFileInfo(t *testing.T) {

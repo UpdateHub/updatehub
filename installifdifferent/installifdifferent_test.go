@@ -14,12 +14,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/spf13/afero"
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/installmodes"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/testsmocks/filemock"
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/spf13/afero"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

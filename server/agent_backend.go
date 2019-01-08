@@ -15,10 +15,10 @@ import (
 	"net/http"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/julienschmidt/httprouter"
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/UpdateHub/updatehub/utils"
+	"github.com/julienschmidt/httprouter"
 )
 
 type AgentBackend struct {

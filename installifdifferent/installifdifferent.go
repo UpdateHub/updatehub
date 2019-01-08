@@ -14,9 +14,9 @@ import (
 	"os"
 
 	"github.com/OSSystems/pkg/log"
-	"github.com/spf13/afero"
 	"github.com/UpdateHub/updatehub/metadata"
 	"github.com/UpdateHub/updatehub/utils"
+	"github.com/spf13/afero"
 )
 
 type Interface interface {

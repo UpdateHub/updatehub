@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/UpdateHub/updatehub/testsmocks/filesystemmock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCopyFile(t *testing.T) {
