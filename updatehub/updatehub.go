@@ -83,6 +83,7 @@ type UpdateHub struct {
 	TimeStep                  time.Duration
 	Updater                   client.Updater
 	Reporter                  client.Reporter
+	IgnoreProbeASAP           bool
 	lastInstalledPackageUID   string
 	ActiveInactiveBackend     activeinactive.Interface
 	lastReportedState         string
@@ -135,6 +136,7 @@ func NewUpdateHub(
 		ValidateCallbackPath:      validateCallbackPath,
 		RollbackCallbackPath:      rollbackCallbackPath,
 		DefaultApiClient:          DefaultApiClient,
+		IgnoreProbeASAP:           false,
 	}
 
 	return uh

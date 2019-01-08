@@ -37,6 +37,8 @@ func (state *IdleState) Handle(uh *UpdateHub) (State, bool) {
 		return state.NextState(), false
 	}
 
+	uh.IgnoreProbeASAP = false
+
 	now := time.Now()
 
 	if uh.Settings.ExtraPollingInterval > 0 {

@@ -81,6 +81,8 @@ func TestStateIdle(t *testing.T) {
 
 			aim.AssertExpectations(t)
 
+			assert.False(t, uh.IgnoreProbeASAP)
+
 			expectedMap := map[string]interface{}{}
 			expectedMap["status"] = "idle"
 
