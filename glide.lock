@@ -1,5 +1,5 @@
-hash: 6bdb572bd693c4d95fc77f7bee01d4d79749aff310b83b1049f92623e36cdb6b
-updated: 2018-11-29T08:16:11.11883768-02:00
+hash: 50c75ccfdc5cd616c5b1929df38e21b7c2dbdc7b70f085b993ba47fb1e36d2f9
+updated: 2019-01-09T09:53:22.962868408-02:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: f9a329340c5303f1977dcb9efb0918b34437a003
@@ -23,7 +23,7 @@ imports:
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/go-ini/ini
-  version: 9c8236e659b76e87bf02044d06fde8683008ff3e
+  version: 6ed8d5f64cd79a498d1f3fab5880cc376ce41bbe
 - name: github.com/hokaccha/go-prettyjson
   version: d229c224a219dcf41e9d2af4684b9782f33f5eb7
 - name: github.com/huandu/xstrings
@@ -33,7 +33,7 @@ imports:
 - name: github.com/julienschmidt/httprouter
   version: 348b672cd90d8190f8240323e372ecd1e66b59dc
 - name: github.com/konsorten/go-windows-terminal-sequences
-  version: b729f2633dfe35f4d1d8a32385f6685610ce1cb5
+  version: 5c8c8bd35d3832f5d134ae1e1e375b69a4d25242
 - name: github.com/koofr/go-httputils
   version: 966567c98232b97cb39a4a2a0b516a412b90e9a4
 - name: github.com/mattn/go-colorable
@@ -51,18 +51,18 @@ imports:
 - name: github.com/parnurzeal/gorequest
   version: a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3
 - name: github.com/pkg/errors
-  version: 645ef00459ed84a119197bfb8d8205042c6df63d
+  version: ba968bfe8b2f7e042a574c888954fccecfa385b4
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/sirupsen/logrus
-  version: bcd833dfe83d3cebad139e4a29ed79cb2318bf95
+  version: e1e72e9de974bd926e5c56f83753fba2df402ce5
   subpackages:
   - hooks/syslog
   - hooks/test
 - name: github.com/spf13/afero
-  version: d40851caa0d747393da1ffb28f7f9d8b4eeffebd
+  version: a5d6946387efe7d64d09dcba68cdd523dc1273a3
   subpackages:
   - mem
 - name: github.com/spf13/cobra
@@ -72,12 +72,12 @@ imports:
 - name: github.com/stretchr/objx
   version: 0ab728f62c7f6fcd754334f7931c2dd659dce1d1
 - name: github.com/stretchr/testify
-  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
+  version: ffdc059bfe9ce6a4e144ba849dbedead332c6053
   subpackages:
   - assert
   - mock
 - name: github.com/UpdateHub/agent-sdk-go
-  version: 942a2964043ce06717bf66c964c04fb77d6a8b28
+  version: 4159d014cd88d05c76aa647fb1e63baba497c8fc
 - name: golang.org/x/crypto
   version: 7f39a6fea4fe9364fb61e1def6a268a51b4f3a06
   subpackages:
