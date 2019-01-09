@@ -3,7 +3,7 @@ ENV{ID_FS_LABEL}=="updatehub|UPDATEHUB", \
   ACTION=="add", \
   SUBSYSTEM=="block", \
   RUN+="/bin/mkdir -p /mnt/updatehub", \
-  RUN+="/bin/sh -c '/bin/echo /usr/bin/updatehub-server --mount /dev/%k --fstype $env{ID_FS_TYPE} --probe /mnt/updatehub | at -M now'"
+  RUN+="/bin/sh -c '/bin/echo /usr/bin/updatehub-server --mount /dev/%k --fstype $env{ID_FS_TYPE} --probe --ignore-probe-asap /mnt/updatehub | at -M now'"
 
 ENV{ID_FS_LABEL}=="updatehub|UPDATEHUB", \
   ENV{DEVTYPE}=="partition", \
