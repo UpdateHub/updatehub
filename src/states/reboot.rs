@@ -8,7 +8,8 @@ use crate::{
 };
 
 use easy_process;
-use log::info;
+use slog::slog_info;
+use slog_scope::info;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Reboot {

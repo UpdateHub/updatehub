@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use log::error;
+use slog::slog_error;
+use slog_scope::error;
 use std::path::Path;
 
 const STATE_CHANGE_CALLBACK: &str = "state-change-callback";

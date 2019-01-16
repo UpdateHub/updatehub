@@ -9,9 +9,10 @@ use crate::{
 
 use crypto_hash::{hex_digest, Algorithm};
 use failure::Fail;
-use log::error;
 use serde_derive::Deserialize;
 use serde_json;
+use slog::slog_error;
+use slog_scope::error;
 
 mod supported_hardware;
 use self::supported_hardware::SupportedHardware;

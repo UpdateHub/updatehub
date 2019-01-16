@@ -4,7 +4,8 @@
 
 use crate::states::{State, StateChangeImpl, StateMachine};
 
-use log::debug;
+use slog::slog_debug;
+use slog_scope::debug;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Park {}

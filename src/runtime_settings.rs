@@ -6,9 +6,10 @@ use crate::serde_helpers::{de, ser};
 
 use chrono::{DateTime, Duration, Utc};
 use failure::Fail;
-use log::debug;
 use serde_derive::{Deserialize, Serialize};
 use serde_ini;
+use slog::slog_debug;
+use slog_scope::debug;
 use std::{
     io,
     path::{Path, PathBuf},

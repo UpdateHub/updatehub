@@ -6,9 +6,10 @@ use crate::serde_helpers::de;
 
 use chrono::Duration;
 use failure::Fail;
-use log::{debug, error};
 use serde_derive::Deserialize;
 use serde_ini;
+use slog::{slog_debug, slog_error};
+use slog_scope::{debug, error};
 use std::{io, path::PathBuf};
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";

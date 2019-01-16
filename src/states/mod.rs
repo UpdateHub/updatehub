@@ -20,7 +20,8 @@ use self::{
 
 use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings};
 
-use log::debug;
+use slog::slog_debug;
+use slog_scope::debug;
 
 trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine, failure::Error>;

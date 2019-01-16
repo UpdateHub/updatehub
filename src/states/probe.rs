@@ -7,7 +7,8 @@ use crate::{
     states::{Download, Idle, Poll, State, StateChangeImpl, StateMachine},
 };
 
-use log::{debug, error, info};
+use slog::{slog_debug, slog_error, slog_info};
+use slog_scope::{debug, error, info};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Probe {}
