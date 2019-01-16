@@ -66,18 +66,17 @@ impl<'a> Api<'a> {
         match response.status() {
             StatusCode::NOT_FOUND => Ok(ProbeResponse::NoUpdate),
             StatusCode::OK => {
-                if let Some(extra_poll) = response
+                match response
                     .headers()
                     .get("add-extra-poll")
                     .and_then(|extra_poll| extra_poll.to_str().ok())
                     .and_then(|extra_poll| extra_poll.parse().ok())
                 {
-                    return Ok(ProbeResponse::ExtraPoll(extra_poll));
+                    Some(extra_poll) => Ok(ProbeResponse::ExtraPoll(extra_poll)),
+                    None => Ok(ProbeResponse::Update(UpdatePackage::parse(
+                        &response.text()?,
+                    )?)),
                 }
-
-                Ok(ProbeResponse::Update(UpdatePackage::parse(
-                    &response.text()?,
-                )?))
             }
             _ => bail!("Invalid response. Status: {}", response.status()),
         }
