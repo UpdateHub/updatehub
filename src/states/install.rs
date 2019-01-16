@@ -64,18 +64,14 @@ impl StateChangeImpl for State<Install> {
 mod test {
     use super::*;
     use crate::{
-        firmware::{
-            tests::{create_fake_metadata, FakeDevice},
-            Metadata,
-        },
-        runtime_settings::RuntimeSettings,
-        settings::Settings,
+        firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings,
         update_package::tests::get_update_package,
     };
     use std::fs;
     use tempfile::NamedTempFile;
 
     fn fake_install_state() -> State<Install> {
+        use crate::firmware::tests::{create_fake_metadata, FakeDevice};
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
