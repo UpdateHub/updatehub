@@ -129,7 +129,8 @@ impl<'a> Api<'a> {
         #[derive(Serialize)]
         #[serde(rename_all = "kebab-case")]
         struct Payload<'a> {
-            status: &'a str,
+            #[serde(rename = "status")]
+            state: &'a str,
             #[serde(flatten)]
             firmware: &'a Metadata,
             package_uid: &'a str,
@@ -140,7 +141,7 @@ impl<'a> Api<'a> {
         }
 
         let payload = Payload {
-            status: state,
+            state,
             firmware,
             package_uid,
             previous_state,
