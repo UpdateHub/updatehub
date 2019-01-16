@@ -66,6 +66,7 @@ fn as_str() {
 
 #[test]
 fn works() {
+    use crate::firmware::tests::create_fake_installation_set;
     use std::env;
     use tempfile::tempdir;
 
@@ -74,37 +75,12 @@ fn works() {
     let tmpdir = tmpdir.path();
     env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
-    let create_fake_backend = |active: usize| {
-        use std::{
-            fs::{create_dir_all, metadata, File},
-            io::Write,
-            os::unix::fs::PermissionsExt,
-        };
-
-        create_dir_all(&tmpdir).unwrap();
-
-        let mut file = File::create(&tmpdir.join(GET_SCRIPT)).unwrap();
-        writeln!(file, "#!/bin/sh\necho {}", active).unwrap();
-
-        let mut permissions = metadata(tmpdir).unwrap().permissions();
-
-        permissions.set_mode(0o755);
-        file.set_permissions(permissions).unwrap();
-
-        let mut file = File::create(&tmpdir.join(SET_SCRIPT)).unwrap();
-        writeln!(file, "#!/bin/sh\nexit 0").unwrap();
-
-        let mut permissions = metadata(tmpdir).unwrap().permissions();
-        permissions.set_mode(0o755);
-        file.set_permissions(permissions).unwrap();
-    };
-
     // Create a fake backend using 0 as active. It must test the
     // following:
     // - active is A
     // - inactive is B
     // - swap works
-    create_fake_backend(0);
+    create_fake_installation_set(&tmpdir, 0);
     assert_eq!(active().unwrap(), Set::A);
     assert_eq!(inactive().unwrap(), Set::B);
     assert!(swap_active().is_ok());
@@ -114,7 +90,7 @@ fn works() {
     // - active is B
     // - inactive is A
     // - swap works
-    create_fake_backend(1);
+    create_fake_installation_set(&tmpdir, 1);
     assert_eq!(active().unwrap(), Set::B);
     assert_eq!(inactive().unwrap(), Set::A);
     assert!(swap_active().is_ok());
