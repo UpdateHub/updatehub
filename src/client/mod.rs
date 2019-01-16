@@ -28,8 +28,8 @@ pub(crate) enum ProbeResponse {
 }
 
 impl<'a> Api<'a> {
-    pub(crate) fn new(server: &'a str) -> Api<'a> {
-        Api { server }
+    pub(crate) fn new(server: &'a str) -> Self {
+        Self { server }
     }
 
     fn client(&self) -> Result<Client, failure::Error> {
@@ -120,7 +120,7 @@ impl<'a> Api<'a> {
     pub fn report(
         &self,
         state: &str,
-        firmware: &'a Metadata,
+        firmware: &Metadata,
         package_uid: &str,
         previous_state: Option<&str>,
         error_message: Option<String>,
