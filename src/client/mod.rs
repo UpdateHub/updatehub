@@ -97,13 +97,12 @@ impl<'a> Api<'a> {
             &self.server, product_uid, package_uid, object
         ));
 
-        let path = download_dir;
-        if !&path.exists() {
+        if !download_dir.exists() {
             debug!("Creating directory to store the downloads.");
-            create_dir_all(&path)?;
+            create_dir_all(download_dir)?;
         }
 
-        let file = path.join(object);
+        let file = download_dir.join(object);
         if file.exists() {
             client = client.header(RANGE, format!("bytes={}-", file.metadata()?.len() - 1));
         }
