@@ -65,6 +65,7 @@ mod test {
 
     #[test]
     fn cancel() {
+        crate::logger::init(0);
         let script = "#!/bin/sh\necho cancel";
         let tmpdir = create_state_change_callback_hook(&script);
         assert_eq!(
@@ -77,6 +78,7 @@ mod test {
 
     #[test]
     fn continue_transition() {
+        crate::logger::init(0);
         let script = "#!/bin/sh\necho ";
         let tmpdir = create_state_change_callback_hook(&script);
         assert_eq!(
@@ -89,6 +91,7 @@ mod test {
 
     #[test]
     fn non_existing_hook() {
+        crate::logger::init(0);
         assert_eq!(
             state_change_callback(&Path::new("/NaN"), CALLBACK_STATE_NAME).unwrap(),
             Transition::Continue,
@@ -98,6 +101,7 @@ mod test {
 
     #[test]
     fn is_error() {
+        crate::logger::init(0);
         for script in &["#!/bin/sh\necho 123", "#!/bin/sh\necho 123\ncancel"] {
             let tmpdir = create_state_change_callback_hook(script);
             assert!(state_change_callback(&tmpdir.path(), CALLBACK_STATE_NAME).is_err());

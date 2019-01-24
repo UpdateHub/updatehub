@@ -101,13 +101,15 @@ mod test {
         use std::env;
         use tempfile::tempdir;
 
+        crate::logger::init(0);
         // create the fake reboot command
         let tmpdir = tempdir().unwrap();
         let tmpdir = tmpdir.path();
         create_reboot(&tmpdir);
         env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
-        let machine = StateMachine::Reboot(fake_reboot_state()).move_to_next_state();
+        let st = StateMachine::Reboot(fake_reboot_state());
+        let machine = st.move_to_next_state();
 
         assert!(machine.is_ok(), "Error: {:?}", machine);
         assert_state!(machine, Idle);
@@ -115,6 +117,7 @@ mod test {
 
     #[test]
     fn reboot_has_transition_callback_trait() {
+        crate::logger::init(0);
         let state = fake_reboot_state();
         assert_eq!(state.callback_state_name(), "reboot");
     }

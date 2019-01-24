@@ -93,6 +93,7 @@ fn update_not_available() {
     use std::fs;
     use tempfile::NamedTempFile;
 
+    crate::logger::init(0);
     let tmpfile = NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
     fs::remove_file(&tmpfile).unwrap();
@@ -124,6 +125,7 @@ fn update_available() {
     use std::fs;
     use tempfile::NamedTempFile;
 
+    crate::logger::init(0);
     let tmpfile = NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
     fs::remove_file(&tmpfile).unwrap();
@@ -155,6 +157,7 @@ fn invalid_hardware() {
     use std::fs;
     use tempfile::NamedTempFile;
 
+    crate::logger::init(0);
     let tmpfile = NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
     fs::remove_file(&tmpfile).unwrap();
@@ -186,6 +189,7 @@ fn extra_poll_interval() {
     use std::fs;
     use tempfile::NamedTempFile;
 
+    crate::logger::init(0);
     let tmpfile = NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
     fs::remove_file(&tmpfile).unwrap();
@@ -220,6 +224,7 @@ fn skip_same_package_uid() {
     use std::fs;
     use tempfile::NamedTempFile;
 
+    crate::logger::init(0);
     let tmpfile = NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
     fs::remove_file(&tmpfile).unwrap();
@@ -271,6 +276,7 @@ fn error() {
     use std::fs;
     use tempfile::NamedTempFile;
 
+    crate::logger::init(0);
     let tmpfile = NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
     fs::remove_file(&tmpfile).unwrap();

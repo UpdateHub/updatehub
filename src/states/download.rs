@@ -45,6 +45,7 @@ impl ProgressReporter for State<Download> {
 
 impl StateChangeImpl for State<Download> {
     fn handle(self) -> Result<StateMachine, failure::Error> {
+        crate::logger::buffer().lock().unwrap().start_logging();
         let installation_set = installation_set::inactive()?;
 
         // Prune left over from previous installations

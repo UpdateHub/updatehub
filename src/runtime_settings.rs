@@ -15,7 +15,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Default, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct RuntimeSettings {
     polling: RuntimePolling,
@@ -285,6 +285,7 @@ fn load_and_save() {
     use std::fs;
     use tempfile::NamedTempFile;
 
+    crate::logger::init(0);
     let tempfile = NamedTempFile::new().unwrap();
     let settings_file = tempfile.path();
     fs::remove_file(&settings_file).unwrap();

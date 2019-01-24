@@ -89,24 +89,30 @@ where
         let enter_state = self.report_enter_state_name();
         let leave_state = self.report_leave_state_name();
 
-        let report = |state, previous_state, error_message| {
+        let report = |state, previous_state, error_message, current_log| {
             crate::client::Api::new(&server).report(
                 state,
                 &firmware,
                 &package_uid,
                 previous_state,
                 error_message,
+                current_log,
             )
         };
 
-        report(enter_state, None, None)?;
+        report(enter_state, None, None, None)?;
         self.handle()
             .and_then(|state| {
-                report(leave_state, None, None)?;
+                report(leave_state, None, None, None)?;
                 Ok(state)
             })
             .or_else(|e| {
-                report("error", Some(enter_state), Some(e.to_string()))?;
+                report(
+                    "error",
+                    Some(enter_state),
+                    Some(e.to_string()),
+                    Some(crate::logger::buffer().lock().unwrap().to_string()),
+                )?;
                 Err(e)
             })
     }
@@ -161,6 +167,7 @@ impl StateMachine {
 /// # fn run() -> Result<(), failure::Error> {
 /// use updatehub;
 ///
+/// updatehub::logger::init(0);
 /// let settings = updatehub::Settings::load()?;
 /// updatehub::run(settings)?;
 /// # Ok(())

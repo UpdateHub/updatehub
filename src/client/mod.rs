@@ -125,6 +125,7 @@ impl<'a> Api<'a> {
         package_uid: &str,
         previous_state: Option<&str>,
         error_message: Option<String>,
+        current_log: Option<String>,
     ) -> Result<(), failure::Error> {
         #[derive(Serialize)]
         #[serde(rename_all = "kebab-case")]
@@ -138,6 +139,8 @@ impl<'a> Api<'a> {
             previous_state: Option<&'a str>,
             #[serde(skip_serializing_if = "Option::is_none")]
             error_message: Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            current_log: Option<String>,
         }
 
         let payload = Payload {
@@ -146,6 +149,7 @@ impl<'a> Api<'a> {
             package_uid,
             previous_state,
             error_message,
+            current_log,
         };
 
         self.client()?

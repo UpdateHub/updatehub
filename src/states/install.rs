@@ -57,6 +57,9 @@ impl StateChangeImpl for State<Install> {
             .set_applied_package_uid(&package_uid)?;
 
         info!("Update installed successfully");
+        let buffer = crate::logger::buffer();
+        buffer.lock().unwrap().stop_logging();
+        buffer.lock().unwrap().clear();
         Ok(StateMachine::Reboot(self.into()))
     }
 }
@@ -73,10 +76,10 @@ mod test {
 
     fn fake_install_state() -> State<Install> {
         use crate::firmware::tests::{create_fake_metadata, FakeDevice};
+
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
-
         State {
             settings: Settings::default(),
             runtime_settings: RuntimeSettings::new()
@@ -91,6 +94,7 @@ mod test {
 
     #[test]
     fn has_package_uid_if_succeed() {
+        crate::logger::init(0);
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
@@ -105,6 +109,7 @@ mod test {
 
     #[test]
     fn polling_now_if_succeed() {
+        crate::logger::init(0);
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
@@ -116,6 +121,7 @@ mod test {
 
     #[test]
     fn install_has_transition_callback_trait() {
+        crate::logger::init(0);
         let state = fake_install_state();
         assert_eq!(state.callback_state_name(), "install");
     }

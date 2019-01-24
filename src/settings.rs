@@ -267,6 +267,7 @@ ServerAddress=http://localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
+    crate::logger::init(0);
     assert!(Settings::parse(ini).is_err());
 }
 
@@ -291,6 +292,7 @@ ServerAddress=localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
+    let _guard = crate::logger::init(0);
     assert!(Settings::parse(ini).is_err());
 }
 

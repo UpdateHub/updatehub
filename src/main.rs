@@ -1,7 +1,7 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: Apache-2.0
-use slog::{o, slog_info, Drain};
+use slog::slog_info;
 use slog_scope::info;
 
 use structopt::StructOpt;
@@ -23,19 +23,7 @@ struct Opt {
 fn run() -> Result<(), failure::Error> {
     let opt = Opt::from_args();
 
-    let level = match opt.verbose {
-        0 => slog::Level::Info,
-        1 => slog::Level::Debug,
-        _ => slog::Level::Trace,
-    };
-
-    let drain = slog_term::term_full().filter_level(level).fuse();
-    let drain = slog_async::Async::new(drain).build().fuse();
-    let log = slog::Logger::root(drain, o!());
-
-    // Must use a variable or Rust compiler drops it right away.
-    let _guard = slog_scope::set_global_logger(log);
-
+    updatehub::logger::init(opt.verbose);
     info!("Starting UpdateHub Agent {}", updatehub::version());
 
     let settings = updatehub::Settings::load()?;

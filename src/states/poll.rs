@@ -74,6 +74,7 @@ fn extra_poll_in_past() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
+    crate::logger::init(0);
     let mut settings = Settings::default();
     settings.polling.enabled = true;
 
@@ -101,6 +102,7 @@ fn probe_now() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
+    crate::logger::init(0);
     let mut settings = Settings::default();
     settings.polling.enabled = true;
 
@@ -126,6 +128,7 @@ fn last_poll_in_future() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
+    crate::logger::init(0);
     let mut settings = Settings::default();
     settings.polling.enabled = true;
 
@@ -150,6 +153,7 @@ fn interval_1_second() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
+    crate::logger::init(0);
     let mut settings = Settings::default();
     settings.polling.enabled = true;
     settings.polling.interval = Duration::seconds(1);
@@ -173,6 +177,7 @@ fn never_polled() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
+    crate::logger::init(0);
     let mut settings = Settings::default();
     settings.polling.enabled = true;
     settings.polling.interval = Duration::seconds(1);

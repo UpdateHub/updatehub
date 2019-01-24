@@ -234,6 +234,7 @@ fn report_success() {
         "package-uid",
         None,
         None,
+        None,
     );
     mock.assert();
 }
@@ -249,6 +250,7 @@ fn report_error() {
         "package-uid",
         Some("previous-state"),
         Some("errorMessage".into()),
+        None,
     );
     mock.assert();
 }
