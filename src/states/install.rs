@@ -94,7 +94,6 @@ mod test {
 
     #[test]
     fn has_package_uid_if_succeed() {
-        crate::logger::init(0);
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
@@ -109,7 +108,6 @@ mod test {
 
     #[test]
     fn polling_now_if_succeed() {
-        crate::logger::init(0);
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
@@ -121,7 +119,6 @@ mod test {
 
     #[test]
     fn install_has_transition_callback_trait() {
-        crate::logger::init(0);
         let state = fake_install_state();
         assert_eq!(state.callback_state_name(), "install");
     }

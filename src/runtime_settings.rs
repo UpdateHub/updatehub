@@ -285,7 +285,6 @@ fn load_and_save() {
     use std::fs;
     use tempfile::NamedTempFile;
 
-    crate::logger::init(0);
     let tempfile = NamedTempFile::new().unwrap();
     let settings_file = tempfile.path();
     fs::remove_file(&settings_file).unwrap();

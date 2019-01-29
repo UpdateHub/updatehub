@@ -37,7 +37,6 @@ fn polling_disable() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
-    crate::logger::init(0);
     let mut settings = Settings::default();
     settings.polling.enabled = false;
 
@@ -57,7 +56,6 @@ fn polling_enabled() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
-    crate::logger::init(0);
     let mut settings = Settings::default();
     settings.polling.enabled = true;
 
