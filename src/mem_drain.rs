@@ -37,7 +37,7 @@ impl Drain for MemDrain {
     fn log(&self, record: &Record, kvs: &OwnedKVList) -> io::Result<()> {
         if self.logging {
             let mut buffer = self.buffer.lock().unwrap();
-            const TIMESTAMP_FORMAT: &'static str = "%b %d %H:%M:%S%.3f";
+            const TIMESTAMP_FORMAT: &str = "%b %d %H:%M:%S%.3f";
             let mut serializer = Serializer::new(fmt::format(*record.msg()));
 
             record.kv().serialize(record, &mut serializer)?;
