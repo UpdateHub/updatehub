@@ -5,19 +5,13 @@
 use slog::{Drain, Key, OwnedKVList, Record, KV};
 use std::{fmt, io, sync::Mutex};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MemDrain {
     buffer: Mutex<Vec<String>>,
     logging: bool,
 }
 
 impl MemDrain {
-    pub fn new() -> Self {
-        let buffer = Mutex::new(vec![]);
-        let logging = false;
-        MemDrain { buffer, logging }
-    }
-
     pub fn clear(&self) {
         self.buffer.lock().unwrap().clear();
     }
@@ -37,8 +31,8 @@ impl MemDrain {
 }
 
 impl Drain for MemDrain {
-    type Ok = ();
     type Err = io::Error;
+    type Ok = ();
 
     fn log(&self, record: &Record, kvs: &OwnedKVList) -> io::Result<()> {
         if self.logging {
@@ -88,7 +82,7 @@ mod tests {
     fn drain_storage_log() {
         let s1 = "Multiple log messages should";
         let s2 = "all be find inside log string";
-        let drain = Arc::new(Mutex::new(MemDrain::new()));
+        let drain = Arc::new(Mutex::new(MemDrain::default()));
         let r_vec = drain.clone();
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!());
@@ -103,7 +97,7 @@ mod tests {
     fn drain_format() {
         let s1 = "Log should contain message type";
         let s2 = "Type strings are shorten";
-        let drain = Arc::new(Mutex::new(MemDrain::new()));
+        let drain = Arc::new(Mutex::new(MemDrain::default()));
         let r_vec = drain.clone();
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!());
@@ -119,7 +113,7 @@ mod tests {
         let txt = "Key values should be swapped, LOGGER and RECORD";
         let logger_value = "when defined on logger";
         let macro_value = "when defined on record";
-        let drain = Arc::new(Mutex::new(MemDrain::new()));
+        let drain = Arc::new(Mutex::new(MemDrain::default()));
         let r_vec = drain.clone();
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!("LOGGER" => logger_value));

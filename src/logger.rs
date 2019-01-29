@@ -11,7 +11,7 @@ use std::{
 };
 
 lazy_static! {
-    static ref BUFFER: Arc<Mutex<MemDrain>> = Arc::new(Mutex::new(MemDrain::new()));
+    static ref BUFFER: Arc<Mutex<MemDrain>> = Arc::new(Mutex::new(MemDrain::default()));
 }
 
 pub fn init(verbose: usize) {
@@ -21,7 +21,7 @@ pub fn init(verbose: usize) {
         _ => slog::Level::Trace,
     };
 
-    let buffer_drain = BUFFER.clone().filter_level(level).fuse();
+    let buffer_drain = buffer().filter_level(level).fuse();
     let terminal_drain = Mutex::new(slog_term::term_full().filter_level(level)).fuse();
     let terminal_drain = slog_async::Async::new(terminal_drain).build().fuse();
 
