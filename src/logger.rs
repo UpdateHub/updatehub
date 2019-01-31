@@ -29,6 +29,8 @@ pub fn init(verbose: usize) {
         slog::Duplicate::new(buffer_drain, terminal_drain).fuse(),
         o!(),
     );
+
+    // FIXME: Drop the use of Box::leak here (issue #23).
     let guard = slog_scope::set_global_logger(log);
     Box::leak(Box::new(guard));
 }
