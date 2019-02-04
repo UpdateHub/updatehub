@@ -163,7 +163,7 @@ struct RuntimePolling {
     #[serde(rename = "LastPoll")]
     last: Option<DateTime<Utc>>,
     #[serde(deserialize_with = "de::duration_from_int")]
-    #[serde(serialize_with = "ser::duration_to_int")]
+    #[serde(serialize_with = "ser::duration_option_to_int")]
     extra_interval: Option<Duration>,
     retries: usize,
     #[serde(rename = "ProbeASAP")]
