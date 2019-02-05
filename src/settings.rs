@@ -14,15 +14,10 @@ use std::{io, path::PathBuf};
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 
-#[cfg(not(test))]
-const SERVER_URL: &str = "https://api.updatehub.io";
-
 // When running inside a test environment we default to the mock
 // server
 #[cfg(test)]
 use mockito;
-#[cfg(test)]
-const SERVER_URL: &str = mockito::SERVER_URL;
 
 #[derive(Debug, Default, PartialEq, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -175,9 +170,12 @@ pub struct Network {
 
 impl Default for Network {
     fn default() -> Self {
-        Self {
-            server_address: SERVER_URL.into(),
-        }
+        #[cfg(test)]
+        let server_address = mockito::server_url().to_string();
+        #[cfg(not(test))]
+        let server_address = "https://api.updatehub.io".to_string();
+
+        Self { server_address }
     }
 }
 
@@ -297,7 +295,9 @@ MetadataPath=/tmp/metadata
 
 #[test]
 fn default() {
-    let settings = Settings::default();
+    let mut settings = Settings::default();
+    settings.network.server_address = "https://api.updatehub.io".to_string();
+
     let expected = Settings {
         polling: Polling {
             interval: Duration::days(1),
@@ -317,7 +317,7 @@ fn default() {
             .collect(),
         },
         network: Network {
-            server_address: SERVER_URL.into(),
+            server_address: "https://api.updatehub.io".to_string(),
         },
         firmware: Firmware {
             metadata_path: "/usr/share/updatehub".into(),
