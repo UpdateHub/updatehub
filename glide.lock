@@ -1,5 +1,5 @@
 hash: 50c75ccfdc5cd616c5b1929df38e21b7c2dbdc7b70f085b993ba47fb1e36d2f9
-updated: 2019-01-09T09:53:22.962868408-02:00
+updated: 2019-02-08T11:47:56.075162527-02:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: f9a329340c5303f1977dcb9efb0918b34437a003
@@ -39,9 +39,9 @@ imports:
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
-  version: 6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c
+  version: 3fb116b820352b7f0c281308a4d6250c22d94e27
 - name: github.com/mattn/go-shellwords
-  version: 02e3cf038dcea8290e44424da473dd12be796a8a
+  version: f8471b0a71ded0ab910825ee2cf230f25de000f1
 - name: github.com/moul/http2curl
   version: 9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d
 - name: github.com/OSSystems/pkg
@@ -62,13 +62,13 @@ imports:
   - hooks/syslog
   - hooks/test
 - name: github.com/spf13/afero
-  version: a5d6946387efe7d64d09dcba68cdd523dc1273a3
+  version: f4711e4db9e9a1d3887343acb72b2bbfc2f686f5
   subpackages:
   - mem
 - name: github.com/spf13/cobra
   version: ef82de70bb3f60c65fb8eebacbb2d122ef517385
 - name: github.com/spf13/pflag
-  version: 3ebe029320b2676d667ae88da602a5f854788a8a
+  version: 298182f68c66c05229eb03ac171abe6e309ee79a
 - name: github.com/stretchr/objx
   version: 0ab728f62c7f6fcd754334f7931c2dd659dce1d1
 - name: github.com/stretchr/testify
@@ -79,7 +79,7 @@ imports:
 - name: github.com/UpdateHub/agent-sdk-go
   version: 4159d014cd88d05c76aa647fb1e63baba497c8fc
 - name: golang.org/x/crypto
-  version: 7f39a6fea4fe9364fb61e1def6a268a51b4f3a06
+  version: 0c41d7ab0a0ee717d4590a44bcb987dfd9e183eb
   subpackages:
   - ssh/terminal
 - name: golang.org/x/net
@@ -87,12 +87,12 @@ imports:
   subpackages:
   - publicsuffix
 - name: golang.org/x/sys
-  version: ad87a3a340fa7f3bed189293fbfa7a9b7e021ae1
+  version: fa43e7bc11baaae89f3f902b2b4d832b68234844
   subpackages:
   - unix
   - windows
 - name: golang.org/x/text
-  version: 5cec4b58c438bd98288aeb248bab2c1840713d21
+  version: 4d1c5fb19474adfe9562c9847ba425e7da817e81
   subpackages:
   - transform
   - unicode/norm
