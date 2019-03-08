@@ -8,7 +8,7 @@ use crate::{
     states::{
         Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
     },
-    update_package::{ObjectStatus, UpdatePackage},
+    update_package::{Object, ObjectStatus, UpdatePackage},
 };
 
 use failure::bail;
@@ -54,14 +54,14 @@ impl StateChangeImpl for State<Download> {
             .min_depth(1)
             .into_iter()
             .filter_entry(|e| e.file_type().is_file())
-            .filter_map(|e| e.ok())
+            .filter_map(std::result::Result::ok)
             .filter(|e| {
                 !self
                     .state
                     .update_package
                     .objects(installation_set)
                     .iter()
-                    .map(|o| o.sha256sum())
+                    .map(Object::sha256sum)
                     .any(|x| x == e.file_name())
             })
         {

@@ -21,8 +21,7 @@ use self::supported_hardware::SupportedHardware;
 mod macros;
 
 mod object;
-use self::object::Object;
-pub(crate) use self::object::ObjectStatus;
+pub(crate) use self::object::{Object, ObjectStatus};
 
 #[cfg(test)]
 pub(crate) mod tests;

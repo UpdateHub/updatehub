@@ -6,7 +6,7 @@ macro_rules! create_state_step {
     ($source:ident => $dest:ident) => {
         impl From<State<$source>> for State<$dest> {
             fn from(from: State<$source>) -> State<$dest> {
-                State {
+                Self {
                     settings: from.settings,
                     runtime_settings: from.runtime_settings,
                     firmware: from.firmware,
@@ -18,7 +18,7 @@ macro_rules! create_state_step {
     ($source:ident => $dest:ident($field:ident)) => {
         impl From<State<$source>> for State<$dest> {
             fn from(from: State<$source>) -> State<$dest> {
-                State {
+                Self {
                     settings: from.settings,
                     runtime_settings: from.runtime_settings,
                     firmware: from.firmware,

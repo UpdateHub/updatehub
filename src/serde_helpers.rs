@@ -64,7 +64,7 @@ pub mod de {
     {
         Ok(String::deserialize(deserializer)?
             .split(',')
-            .map(|s| s.to_string())
+            .map(std::string::ToString::to_string)
             .collect())
     }
 
