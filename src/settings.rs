@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::serde_helpers::de;
+use crate::serde_helpers::{de, ser};
 
 use chrono::Duration;
 use failure::Fail;
-use serde_derive::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_ini;
 use slog::{slog_debug, slog_error};
 use slog_scope::{debug, error};
@@ -19,7 +19,7 @@ const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 #[cfg(test)]
 use mockito;
 
-#[derive(Debug, Default, PartialEq, Deserialize)]
+#[derive(Debug, Default, PartialEq, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Settings {
     pub(crate) firmware: Firmware,
@@ -95,10 +95,13 @@ pub enum Error {
     InvalidServerAddress,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Polling {
-    #[serde(deserialize_with = "de::duration_from_str")]
+    #[serde(
+        deserialize_with = "de::duration_from_str",
+        serialize_with = "ser::duration_to_int"
+    )]
     /// Inverval to automatically poll the server for update. By
     /// default, it uses 1 day of interval.
     pub interval: Duration,
@@ -117,7 +120,7 @@ impl Default for Polling {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
     #[serde(deserialize_with = "de::bool_from_str")]
@@ -139,7 +142,7 @@ impl Default for Storage {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Update {
     pub download_dir: PathBuf,
@@ -162,7 +165,7 @@ impl Default for Update {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Network {
     pub server_address: String,
@@ -179,7 +182,7 @@ impl Default for Network {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Firmware {
     pub metadata_path: PathBuf,

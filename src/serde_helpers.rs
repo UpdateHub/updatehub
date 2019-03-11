@@ -20,6 +20,13 @@ pub mod ser {
     {
         serializer.serialize_i64(v.unwrap_or(Duration::seconds(0)).num_seconds())
     }
+
+    pub fn duration_to_int<S>(v: &Duration, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_i64(v.num_seconds())
+    }
 }
 
 pub mod de {
