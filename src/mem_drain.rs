@@ -2,18 +2,32 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use serde::Serialize;
 use slog::{Drain, Key, OwnedKVList, Record, KV};
-use std::{fmt, io, sync::Mutex};
+use std::{
+    collections::HashMap,
+    fmt::{self, Write},
+    io,
+    sync::Mutex,
+};
 
 #[derive(Debug, Default)]
 pub struct MemDrain {
-    buffer: Mutex<Vec<String>>,
+    records: Mutex<Vec<LogRecord>>,
     logging: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct LogRecord {
+    level: String,
+    message: String,
+    time: String,
+    data: HashMap<String, String>,
 }
 
 impl MemDrain {
     pub fn clear(&self) {
-        self.buffer.lock().unwrap().clear();
+        self.records.lock().unwrap().clear();
     }
 
     pub fn start_logging(&mut self) {
@@ -23,10 +37,31 @@ impl MemDrain {
     pub fn stop_logging(&mut self) {
         self.logging = false;
     }
+}
 
-    pub fn to_string(&self) -> String {
-        let buffer = self.buffer.lock().unwrap();
-        buffer.join("\n")
+impl Serialize for MemDrain {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        self.records.serialize(serializer)
+    }
+}
+
+impl ToString for MemDrain {
+    fn to_string(&self) -> String {
+        let records = self.records.lock().unwrap();
+
+        let mut ret = String::new();
+        for record in records.iter() {
+            let mut msg = record.message.clone();
+            for (k, v) in &record.data {
+                msg = msg.replace(k, v);
+            }
+
+            writeln!(&mut ret, "{} {} {}", record.time, record.level, msg).unwrap();
+        }
+        ret
     }
 }
 
@@ -36,37 +71,33 @@ impl Drain for MemDrain {
 
     fn log(&self, record: &Record, kvs: &OwnedKVList) -> io::Result<()> {
         if self.logging {
-            let mut buffer = self.buffer.lock().unwrap();
-            let mut serializer = Serializer::new(fmt::format(*record.msg()));
+            let mut kv = KVSerializer::default();
+            record.kv().serialize(record, &mut kv)?;
+            kvs.serialize(record, &mut kv)?;
 
-            record.kv().serialize(record, &mut serializer)?;
-            kvs.serialize(record, &mut serializer)?;
-            let line = format!(
-                "{} {} {}",
-                chrono::Local::now().format("%b %d %H:%M:%S%.3f"),
-                record.level().as_short_str(),
-                serializer.text,
-            );
+            let l = LogRecord {
+                level: record.level().as_str().to_lowercase().to_string(),
+                message: fmt::format(*record.msg()),
+                time: chrono::Local::now()
+                    .format("%F %H:%M:%S%.9f %z")
+                    .to_string(),
+                data: kv.0,
+            };
 
-            buffer.push(line);
+            self.records.lock().unwrap().push(l);
         }
+
         Ok(())
     }
 }
 
-struct Serializer {
-    text: String,
-}
+#[derive(Default)]
+struct KVSerializer(HashMap<String, String>);
 
-impl Serializer {
-    fn new(text: String) -> Self {
-        Serializer { text }
-    }
-}
-
-impl slog::ser::Serializer for Serializer {
+impl slog::ser::Serializer for KVSerializer {
     fn emit_arguments(&mut self, key: Key, val: &fmt::Arguments) -> slog::Result {
-        self.text = self.text.replace(key, &format!("{:?}", val));
+        let val = &format!("{:?}", val);
+        self.0.insert(key.to_string(), val.to_string());
         Ok(())
     }
 }
@@ -74,8 +105,25 @@ impl slog::ser::Serializer for Serializer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use slog::{o, slog_debug, slog_info, Logger};
+    use slog::{o, slog_debug, slog_error, slog_info, Logger};
     use std::sync::Arc;
+
+    fn eq_without_time(s1: &str, s2: &str) -> bool {
+        let s1 = s1.split("\n");
+        let s2 = s2.split("\n");
+        let mut i = 0;
+        for (x, y) in s1.zip(s2) {
+            i += 1;
+            if x.contains("time") {
+                continue;
+            }
+            if x != y {
+                println!("Difference on string's line: {}\n{} != {}", i, x, y);
+                return false;
+            }
+        }
+        true
+    }
 
     #[test]
     fn drain_storage_log() {
@@ -88,6 +136,7 @@ mod tests {
         slog_info!(log, "{}", s1);
         slog_info!(log, "{}", s2);
         let result = format!("{}", r_vec.lock().unwrap().to_string());
+        println!("{}", result);
         assert!(result.contains(s1));
         assert!(result.contains(s2));
     }
@@ -103,8 +152,9 @@ mod tests {
         slog_info!(log, "{}", s1);
         slog_debug!(log, "{}", s2);
         let result = format!("{}", r_vec.lock().unwrap().to_string());
-        assert!(result.contains("INFO"));
-        assert!(result.contains("DEBG"));
+        println!("{}", result);
+        assert!(result.contains("info"));
+        assert!(result.contains("debug"));
     }
 
     #[test]
@@ -118,7 +168,47 @@ mod tests {
         let log = Logger::root(drain.fuse(), o!("LOGGER" => logger_value));
         slog_info!(log, "{}", txt; "RECORD" => macro_value);
         let result = format!("{}", r_vec.lock().unwrap().to_string());
+        println!("{}", result);
         assert!(result.contains(logger_value));
         assert!(result.contains(macro_value));
+    }
+
+    #[test]
+    fn drain_serialized() {
+        let expected = r#"[
+  {
+    "level": "info",
+    "message": "info 1",
+    "time": "2017-06-29 13:59:31.831111065 -0300 -03",
+    "data": {}
+  },
+  {
+    "level": "info",
+    "message": "info 2",
+    "time": "2017-06-29 14:59:41.831111065 -0300 -03",
+    "data": {
+      "field1": "value1"
+    }
+  },
+  {
+    "level": "error",
+    "message": "error n",
+    "time": "2017-06-29 15:59:51.831111065 -0300 -03",
+    "data": {}
+  }
+]"#;
+
+        let drain = Arc::new(Mutex::new(MemDrain::default()));
+        let r_vec = drain.clone();
+        drain.lock().unwrap().start_logging();
+        let log = Logger::root(drain.fuse(), o!());
+        slog_info!(log, "{}", "info 1");
+        slog_info!(log, "{}", "info 2"; "field1" => "value1");
+        slog_error!(log, "{}", "error n");
+        let result = serde_json::to_string_pretty(&r_vec).unwrap();
+        assert!(
+            eq_without_time(&expected, &result),
+            format!("Expected:\n{}\n\nResult:\n{}", expected, result)
+        );
     }
 }
