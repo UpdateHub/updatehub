@@ -13,6 +13,10 @@ pub(super) struct Park {}
 /// Implements the state change for `State<Park>`. It stays in
 /// `State<Park>` state.
 impl StateChangeImpl for State<Park> {
+    fn name(&self) -> &'static str {
+        "park"
+    }
+
     fn handle(self) -> Result<StateMachine, failure::Error> {
         debug!("Staying on Park state.");
         Ok(StateMachine::Park(self))

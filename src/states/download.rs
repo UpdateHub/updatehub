@@ -23,11 +23,7 @@ pub(super) struct Download {
 create_state_step!(Download => Idle);
 create_state_step!(Download => Install(update_package));
 
-impl TransitionCallback for State<Download> {
-    fn callback_state_name(&self) -> &'static str {
-        "download"
-    }
-}
+impl TransitionCallback for State<Download> {}
 
 impl ProgressReporter for State<Download> {
     fn package_uid(&self) -> String {
@@ -44,6 +40,10 @@ impl ProgressReporter for State<Download> {
 }
 
 impl StateChangeImpl for State<Download> {
+    fn name(&self) -> &'static str {
+        "download"
+    }
+
     fn handle(self) -> Result<StateMachine, failure::Error> {
         crate::logger::buffer().lock().unwrap().start_logging();
         let installation_set = installation_set::inactive()?;
@@ -226,6 +226,6 @@ mod test {
     #[test]
     fn download_has_transition_callback_trait() {
         let download_state = fake_download_state();
-        assert_eq!(download_state.callback_state_name(), "download");
+        assert_eq!(download_state.name(), "download");
     }
 }

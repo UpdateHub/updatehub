@@ -20,11 +20,7 @@ pub(super) struct Install {
 create_state_step!(Install => Idle);
 create_state_step!(Install => Reboot(update_package));
 
-impl TransitionCallback for State<Install> {
-    fn callback_state_name(&self) -> &'static str {
-        "install"
-    }
-}
+impl TransitionCallback for State<Install> {}
 
 impl ProgressReporter for State<Install> {
     fn package_uid(&self) -> String {
@@ -41,6 +37,10 @@ impl ProgressReporter for State<Install> {
 }
 
 impl StateChangeImpl for State<Install> {
+    fn name(&self) -> &'static str {
+        "install"
+    }
+
     fn handle(mut self) -> Result<StateMachine, failure::Error> {
         let package_uid = self.state.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
@@ -120,6 +120,6 @@ mod test {
     #[test]
     fn install_has_transition_callback_trait() {
         let state = fake_install_state();
-        assert_eq!(state.callback_state_name(), "install");
+        assert_eq!(state.name(), "install");
     }
 }

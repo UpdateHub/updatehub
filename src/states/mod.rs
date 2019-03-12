@@ -25,11 +25,10 @@ use slog_scope::debug;
 
 trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine, failure::Error>;
+    fn name(&self) -> &'static str;
 }
 
-trait TransitionCallback: StateChangeImpl + Into<State<Idle>> {
-    fn callback_state_name(&self) -> &'static str;
-}
+trait TransitionCallback: StateChangeImpl + Into<State<Idle>> {}
 
 trait ProgressReporter: TransitionCallback {
     fn package_uid(&self) -> String;
@@ -66,10 +65,7 @@ where
     fn handle_with_callback_and_report_progress(self) -> Result<StateMachine, failure::Error> {
         use crate::states::transition::{state_change_callback, Transition};
 
-        let transition = state_change_callback(
-            &self.settings.firmware.metadata_path,
-            self.callback_state_name(),
-        )?;
+        let transition = state_change_callback(&self.settings.firmware.metadata_path, self.name())?;
 
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress()?),

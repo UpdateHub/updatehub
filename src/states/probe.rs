@@ -18,6 +18,10 @@ create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
 impl StateChangeImpl for State<Probe> {
+    fn name(&self) -> &'static str {
+        "probe"
+    }
+
     fn handle(mut self) -> Result<StateMachine, failure::Error> {
         use crate::client::ProbeResponse;
         use chrono::{Duration, Utc};

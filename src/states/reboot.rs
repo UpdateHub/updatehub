@@ -18,11 +18,7 @@ pub(super) struct Reboot {
 
 create_state_step!(Reboot => Idle);
 
-impl TransitionCallback for State<Reboot> {
-    fn callback_state_name(&self) -> &'static str {
-        "reboot"
-    }
-}
+impl TransitionCallback for State<Reboot> {}
 
 impl ProgressReporter for State<Reboot> {
     fn package_uid(&self) -> String {
@@ -39,6 +35,10 @@ impl ProgressReporter for State<Reboot> {
 }
 
 impl StateChangeImpl for State<Reboot> {
+    fn name(&self) -> &'static str {
+        "reboot"
+    }
+
     fn handle(self) -> Result<StateMachine, failure::Error> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
@@ -117,6 +117,6 @@ mod test {
     #[test]
     fn reboot_has_transition_callback_trait() {
         let state = fake_reboot_state();
-        assert_eq!(state.callback_state_name(), "reboot");
+        assert_eq!(state.name(), "reboot");
     }
 }

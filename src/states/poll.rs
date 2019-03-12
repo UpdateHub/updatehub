@@ -22,6 +22,10 @@ create_state_step!(Poll => Probe);
 ///
 /// This state is used to control when to go to the `State<Probe>`.
 impl StateChangeImpl for State<Poll> {
+    fn name(&self) -> &'static str {
+        "poll"
+    }
+
     fn handle(self) -> Result<StateMachine, failure::Error> {
         let current_time: DateTime<Utc> = Utc::now();
 
