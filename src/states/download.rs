@@ -27,7 +27,7 @@ impl TransitionCallback for State<Download> {}
 
 impl ProgressReporter for State<Download> {
     fn package_uid(&self) -> String {
-        self.state.update_package.package_uid()
+        self.0.update_package.package_uid()
     }
 
     fn report_enter_state_name(&self) -> &'static str {
@@ -47,9 +47,10 @@ impl StateChangeImpl for State<Download> {
     fn handle(self) -> Result<StateMachine, failure::Error> {
         crate::logger::buffer().lock().unwrap().start_logging();
         let installation_set = installation_set::inactive()?;
+        let download_dir = &shared_state!().settings.update.download_dir.clone();
 
         // Prune left over from previous installations
-        for entry in WalkDir::new(&self.settings.update.download_dir)
+        for entry in WalkDir::new(download_dir)
             .follow_links(true)
             .min_depth(1)
             .into_iter()
@@ -57,7 +58,7 @@ impl StateChangeImpl for State<Download> {
             .filter_map(std::result::Result::ok)
             .filter(|e| {
                 !self
-                    .state
+                    .0
                     .update_package
                     .objects(installation_set)
                     .iter()
@@ -69,40 +70,44 @@ impl StateChangeImpl for State<Download> {
         }
 
         // Prune corrupted files
-        for object in self.state.update_package.filter_objects(
-            &self.settings,
+        for object in self.0.update_package.filter_objects(
+            &shared_state!().settings,
             installation_set,
             &ObjectStatus::Corrupted,
         ) {
-            fs::remove_file(&self.settings.update.download_dir.join(object.sha256sum()))?;
+            fs::remove_file(download_dir.join(object.sha256sum()))?;
         }
 
         // Download the missing or incomplete objects
         for object in self
-            .state
+            .0
             .update_package
-            .filter_objects(&self.settings, installation_set, &ObjectStatus::Missing)
+            .filter_objects(
+                &shared_state!().settings,
+                installation_set,
+                &ObjectStatus::Missing,
+            )
             .into_iter()
-            .chain(self.state.update_package.filter_objects(
-                &self.settings,
+            .chain(self.0.update_package.filter_objects(
+                &shared_state!().settings,
                 installation_set,
                 &ObjectStatus::Incomplete,
             ))
         {
-            Api::new(&self.settings.network.server_address).download_object(
-                &self.firmware.product_uid,
-                &self.state.update_package.package_uid(),
-                &self.settings.update.download_dir,
+            Api::new(&shared_state!().settings.network.server_address).download_object(
+                &shared_state!().firmware.product_uid,
+                &self.0.update_package.package_uid(),
+                download_dir,
                 object.sha256sum(),
             )?;
         }
 
         if self
-            .state
+            .0
             .update_package
             .objects(installation_set)
             .iter()
-            .all(|o| o.status(&self.settings.update.download_dir).ok() == Some(ObjectStatus::Ready))
+            .all(|o| o.status(download_dir).ok() == Some(ObjectStatus::Ready))
         {
             Ok(StateMachine::Install(self.into()))
         } else {
@@ -131,15 +136,13 @@ mod test {
         let _ = create_dir_all(&tmpdir);
         create_fake_installation_set(&tmpdir, 0);
         env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
+        let runtime_settings = RuntimeSettings::default();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        set_shared_state!(settings, runtime_settings, firmware);
 
-        State {
-            settings,
-            runtime_settings: RuntimeSettings::default(),
-            firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-            state: Download {
-                update_package: get_update_package(),
-            },
-        }
+        State(Download {
+            update_package: get_update_package(),
+        })
     }
 
     #[test]
@@ -147,9 +150,9 @@ mod test {
         use crate::update_package::tests::create_fake_object;
 
         let download_state = fake_download_state();
-        let tmpdir = download_state.settings.update.download_dir.clone();
+        let tmpdir = shared_state!().settings.update.download_dir.clone();
 
-        create_fake_object(&download_state.settings);
+        create_fake_object(&shared_state!().settings);
 
         let machine = StateMachine::Download(download_state).move_to_next_state();
         assert_state!(machine, Install);
@@ -174,7 +177,7 @@ mod test {
 
         let sha256sum = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
         let download_state = fake_download_state();
-        let tmpdir = download_state.settings.update.download_dir.clone();
+        let tmpdir = shared_state!().settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed
         let _ = File::create(&tmpdir.join("leftover-file"));
@@ -184,7 +187,7 @@ mod test {
             format!(
                 "/products/{}/packages/{}/objects/{}",
                 "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-                &download_state.state.update_package.package_uid(),
+                &download_state.0.update_package.package_uid(),
                 &sha256sum
             )
             .as_str(),

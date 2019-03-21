@@ -2,10 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    states::{Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback},
-    update_package::UpdatePackage,
-};
+use super::{Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback};
+use crate::update_package::UpdatePackage;
 
 use easy_process;
 use slog::slog_info;
@@ -22,7 +20,7 @@ impl TransitionCallback for State<Reboot> {}
 
 impl ProgressReporter for State<Reboot> {
     fn package_uid(&self) -> String {
-        self.state.update_package.package_uid()
+        self.0.update_package.package_uid()
     }
 
     fn report_enter_state_name(&self) -> &'static str {
@@ -68,14 +66,14 @@ mod test {
             update_package::tests::get_update_package,
         };
 
-        State {
-            settings: Settings::default(),
-            runtime_settings: RuntimeSettings::default(),
-            firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-            state: Reboot {
-                update_package: get_update_package(),
-            },
-        }
+        let settings = Settings::default();
+        let runtime_settings = RuntimeSettings::default();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        set_shared_state!(settings, runtime_settings, firmware);
+
+        State(Reboot {
+            update_package: get_update_package(),
+        })
     }
 
     fn create_reboot(path: &Path) {

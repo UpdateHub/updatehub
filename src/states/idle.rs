@@ -24,7 +24,7 @@ impl StateChangeImpl for State<Idle> {
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {
-        if !self.settings.polling.enabled {
+        if !shared_state!().settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
             return Ok(StateMachine::Park(self.into()));
         }
@@ -44,14 +44,11 @@ fn polling_disable() {
 
     let mut settings = Settings::default();
     settings.polling.enabled = false;
+    let runtime_settings = RuntimeSettings::default();
+    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    set_shared_state!(settings, runtime_settings, firmware);
 
-    let machine = StateMachine::Idle(State {
-        settings,
-        runtime_settings: RuntimeSettings::default(),
-        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Idle {},
-    })
-    .move_to_next_state();
+    let machine = StateMachine::Idle(State(Idle {})).move_to_next_state();
 
     assert_state!(machine, Park);
 }
@@ -63,14 +60,11 @@ fn polling_enabled() {
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;
+    let runtime_settings = RuntimeSettings::default();
+    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    set_shared_state!(settings, runtime_settings, firmware);
 
-    let machine = StateMachine::Idle(State {
-        settings,
-        runtime_settings: RuntimeSettings::default(),
-        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Idle {},
-    })
-    .move_to_next_state();
+    let machine = StateMachine::Idle(State(Idle {})).move_to_next_state();
 
     assert_state!(machine, Poll);
 }

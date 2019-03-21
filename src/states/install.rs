@@ -24,7 +24,7 @@ impl TransitionCallback for State<Install> {}
 
 impl ProgressReporter for State<Install> {
     fn package_uid(&self) -> String {
-        self.state.update_package.package_uid()
+        self.0.update_package.package_uid()
     }
 
     fn report_enter_state_name(&self) -> &'static str {
@@ -41,8 +41,8 @@ impl StateChangeImpl for State<Install> {
         "install"
     }
 
-    fn handle(mut self) -> Result<StateMachine, failure::Error> {
-        let package_uid = self.state.update_package.package_uid();
+    fn handle(self) -> Result<StateMachine, failure::Error> {
+        let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 
         // FIXME: Check if A/B install
@@ -50,10 +50,11 @@ impl StateChangeImpl for State<Install> {
 
         // Ensure we do a probe as soon as possible so full update
         // cycle can be finished.
-        self.runtime_settings.force_poll()?;
+        shared_state_mut!().runtime_settings.force_poll()?;
 
         // Avoid installing same package twice.
-        self.runtime_settings
+        shared_state_mut!()
+            .runtime_settings
             .set_applied_package_uid(&package_uid)?;
 
         info!("Update installed successfully");
@@ -80,16 +81,15 @@ mod test {
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
-        State {
-            settings: Settings::default(),
-            runtime_settings: RuntimeSettings::new()
-                .load(tmpfile.to_str().unwrap())
-                .unwrap(),
-            firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-            state: Install {
-                update_package: get_update_package(),
-            },
-        }
+
+        let settings = Settings::default();
+        let runtime_settings = RuntimeSettings::default();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        set_shared_state!(settings, runtime_settings, firmware);
+
+        State(Install {
+            update_package: get_update_package(),
+        })
     }
 
     #[test]
@@ -97,8 +97,8 @@ mod test {
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
-            Ok(StateMachine::Reboot(s)) => assert_eq!(
-                s.runtime_settings.applied_package_uid(),
+            Ok(StateMachine::Reboot(_)) => assert_eq!(
+                shared_state!().runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),
             Ok(s) => panic!("Invalid success: {:?}", s),
@@ -111,7 +111,9 @@ mod test {
         let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
 
         match machine {
-            Ok(StateMachine::Reboot(s)) => assert_eq!(s.runtime_settings.is_polling_forced(), true),
+            Ok(StateMachine::Reboot(_)) => {
+                assert_eq!(shared_state!().runtime_settings.is_polling_forced(), true)
+            }
             Ok(s) => panic!("Invalid success: {:?}", s),
             Err(e) => panic!("Invalid error: {:?}", e),
         }

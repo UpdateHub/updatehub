@@ -4,6 +4,7 @@
 
 #[macro_use]
 mod macros;
+pub(crate) mod actor;
 mod download;
 mod idle;
 mod install;
@@ -17,11 +18,16 @@ use self::{
     download::Download, idle::Idle, install::Install, park::Park, poll::Poll, probe::Probe,
     reboot::Reboot,
 };
-
 use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings};
 
-use slog::slog_debug;
-use slog_scope::debug;
+use actix::{Actor, System};
+use futures::future::Future;
+use lazy_static::lazy_static;
+use std::sync::{Arc, RwLock};
+
+lazy_static! {
+    static ref SHARED_STATE: Arc<RwLock<Option<SharedState>>> = Arc::new(RwLock::new(None));
+}
 
 trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine, failure::Error>;
@@ -37,14 +43,15 @@ trait ProgressReporter: TransitionCallback {
 }
 
 #[derive(Debug, PartialEq)]
-struct State<S>
+struct State<S>(S)
 where
-    State<S>: StateChangeImpl,
-{
+    State<S>: StateChangeImpl;
+
+#[derive(Debug, PartialEq)]
+struct SharedState {
     settings: Settings,
     runtime_settings: RuntimeSettings,
     firmware: Metadata,
-    state: S,
 }
 
 #[derive(Debug, PartialEq)]
@@ -63,9 +70,12 @@ where
     State<S>: TransitionCallback + ProgressReporter,
 {
     fn handle_with_callback_and_report_progress(self) -> Result<StateMachine, failure::Error> {
-        use crate::states::transition::{state_change_callback, Transition};
+        use transition::{state_change_callback, Transition};
 
-        let transition = state_change_callback(&self.settings.firmware.metadata_path, self.name())?;
+        let transition = state_change_callback(
+            &(shared_state_mut!().settings.firmware.metadata_path.clone()),
+            self.name(),
+        )?;
 
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress()?),
@@ -79,8 +89,8 @@ where
     State<S>: ProgressReporter,
 {
     fn handle_and_report_progress(self) -> Result<StateMachine, failure::Error> {
-        let server = self.settings.network.server_address.clone();
-        let firmware = self.firmware.clone();
+        let server = &shared_state_mut!().settings.network.server_address.clone();
+        let firmware = &shared_state_mut!().firmware.clone();
         let package_uid = self.package_uid().clone();
         let enter_state = self.report_enter_state_name();
         let leave_state = self.report_leave_state_name();
@@ -115,13 +125,8 @@ where
 }
 
 impl StateMachine {
-    fn new(settings: Settings, runtime_settings: RuntimeSettings, firmware: Metadata) -> Self {
-        StateMachine::Idle(State {
-            settings,
-            runtime_settings,
-            firmware,
-            state: Idle {},
-        })
+    fn new() -> Self {
+        StateMachine::Idle(State(Idle {}))
     }
 
     fn move_to_next_state(self) -> Result<Self, failure::Error> {
@@ -176,16 +181,20 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     }
 
     let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
-    let mut machine = StateMachine::new(settings, runtime_settings, firmware);
+    set_shared_state!(settings, runtime_settings, firmware);
 
-    // Iterate over the state machine.
-    loop {
-        machine = match machine.move_to_next_state()? {
-            StateMachine::Park(_) => {
-                debug!("Parking state machine.");
-                return Ok(());
-            }
-            s => s,
+    let agent_machine = actor::Machine::new(StateMachine::new());
+
+    System::run(|| {
+        let addr = agent_machine.start();
+
+        // Iterate over the state machine.
+        loop {
+            addr.send(actor::Step)
+                .wait()
+                .expect("Failed to communicate with actor");
         }
-    }
+    });
+
+    unreachable!("actix System has stopped");
 }

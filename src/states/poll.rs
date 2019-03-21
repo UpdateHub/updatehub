@@ -16,8 +16,6 @@ use std::{
 #[derive(Debug, PartialEq)]
 pub(super) struct Poll {}
 
-create_state_step!(Poll => Probe);
-
 /// Implements the state change for `State<Poll>`.
 ///
 /// This state is used to control when to go to the `State<Probe>`.
@@ -29,36 +27,45 @@ impl StateChangeImpl for State<Poll> {
     fn handle(self) -> Result<StateMachine, failure::Error> {
         let current_time: DateTime<Utc> = Utc::now();
 
-        if self.runtime_settings.is_polling_forced() {
+        if shared_state!().runtime_settings.is_polling_forced() {
             debug!("Moving to Probe state as soon as possible.");
-            return Ok(StateMachine::Probe(self.into()));
+            return Ok(StateMachine::Probe(State(Probe {
+                server_address: None,
+            })));
         }
 
-        let last_poll = self.runtime_settings.last_polling().unwrap_or_else(|| {
-            // When no polling has been done before, we choose an
-            // offset between current time and the intended polling
-            // interval and use it as last_poll
-            let mut rnd = rand::thread_rng();
-            let interval = self.settings.polling.interval.num_seconds();
-            let offset = Duration::seconds(rnd.gen_range(0, interval));
+        let last_poll = shared_state!()
+            .runtime_settings
+            .last_polling()
+            .unwrap_or_else(|| {
+                // When no polling has been done before, we choose an
+                // offset between current time and the intended polling
+                // interval and use it as last_poll
+                let mut rnd = rand::thread_rng();
+                let interval = shared_state!().settings.polling.interval.num_seconds();
+                let offset = Duration::seconds(rnd.gen_range(0, interval));
 
-            current_time + offset
-        });
+                current_time + offset
+            });
 
         if last_poll > current_time {
             info!("Forcing to Probe state as last polling seems to happened in future.");
-            return Ok(StateMachine::Probe(self.into()));
+            return Ok(StateMachine::Probe(State(Probe {
+                server_address: None,
+            })));
         }
 
-        let extra_interval = self.runtime_settings.polling_extra_interval();
+        let extra_interval = shared_state!().runtime_settings.polling_extra_interval();
         if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) < current_time {
             debug!("Moving to Probe state as the polling's due extra interval.");
-            return Ok(StateMachine::Probe(self.into()));
+            return Ok(StateMachine::Probe(State(Probe {
+                server_address: None,
+            })));
         }
 
         let probe = Arc::new((Mutex::new(()), Condvar::new()));
         let probe2 = probe.clone();
-        let interval = self.settings.polling.interval;
+        let interval = shared_state!().settings.polling.interval;
         thread::spawn(move || {
             let (_, ref cvar) = *probe2;
             thread::sleep(interval.to_std().unwrap());
@@ -69,7 +76,9 @@ impl StateChangeImpl for State<Poll> {
         let _ = cvar.wait(lock.lock().unwrap());
 
         debug!("Moving to Probe state.");
-        Ok(StateMachine::Probe(self.into()))
+        Ok(StateMachine::Probe(State(Probe {
+            server_address: None,
+        })))
     }
 }
 
@@ -89,13 +98,10 @@ fn extra_poll_in_past() {
         .set_polling_extra_interval(Duration::seconds(10))
         .unwrap();
 
-    let machine = StateMachine::Poll(State {
-        settings,
-        runtime_settings,
-        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Poll {},
-    })
-    .move_to_next_state();
+    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    set_shared_state!(settings, runtime_settings, firmware);
+
+    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state();
 
     assert_state!(machine, Probe);
 }
@@ -114,13 +120,10 @@ fn probe_now() {
         .force_poll()
         .expect("failed to force polling");
 
-    let machine = StateMachine::Poll(State {
-        settings,
-        runtime_settings,
-        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Poll {},
-    })
-    .move_to_next_state();
+    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    set_shared_state!(settings, runtime_settings, firmware);
+
+    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state();
 
     assert_state!(machine, Probe);
 }
@@ -138,13 +141,10 @@ fn last_poll_in_future() {
         .set_last_polling(Utc::now() + Duration::days(1))
         .unwrap();
 
-    let machine = StateMachine::Poll(State {
-        settings,
-        runtime_settings,
-        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Poll {},
-    })
-    .move_to_next_state();
+    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    set_shared_state!(settings, runtime_settings, firmware);
+
+    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state();
 
     assert_state!(machine, Probe);
 }
@@ -161,13 +161,10 @@ fn interval_1_second() {
     let mut runtime_settings = RuntimeSettings::default();
     runtime_settings.set_last_polling(Utc::now()).unwrap();
 
-    let machine = StateMachine::Poll(State {
-        settings,
-        runtime_settings,
-        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Poll {},
-    })
-    .move_to_next_state();
+    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    set_shared_state!(settings, runtime_settings, firmware);
+
+    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state();
 
     assert_state!(machine, Probe);
 }
@@ -181,13 +178,11 @@ fn never_polled() {
     settings.polling.enabled = true;
     settings.polling.interval = Duration::seconds(1);
 
-    let machine = StateMachine::Poll(State {
-        settings,
-        runtime_settings: RuntimeSettings::default(),
-        firmware: Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-        state: Poll {},
-    })
-    .move_to_next_state();
+    let runtime_settings = RuntimeSettings::default();
+    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    set_shared_state!(settings, runtime_settings, firmware);
+
+    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state();
 
     assert_state!(machine, Probe);
 }

@@ -5,29 +5,54 @@
 macro_rules! create_state_step {
     ($source:ident => $dest:ident) => {
         impl From<State<$source>> for State<$dest> {
-            fn from(from: State<$source>) -> State<$dest> {
-                Self {
-                    settings: from.settings,
-                    runtime_settings: from.runtime_settings,
-                    firmware: from.firmware,
-                    state: $dest {},
-                }
+            fn from(_from: State<$source>) -> State<$dest> {
+                Self($dest {})
             }
         }
     };
     ($source:ident => $dest:ident($field:ident)) => {
         impl From<State<$source>> for State<$dest> {
             fn from(from: State<$source>) -> State<$dest> {
-                Self {
-                    settings: from.settings,
-                    runtime_settings: from.runtime_settings,
-                    firmware: from.firmware,
-                    state: $dest {
-                        $field: from.state.$field,
-                    },
-                }
+                Self($dest {
+                    $field: (from.0).$field,
+                })
             }
         }
+    };
+}
+
+macro_rules! shared_state {
+    () => {
+        crate::states::SHARED_STATE
+            .clone()
+            .read()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+    };
+}
+
+macro_rules! shared_state_mut {
+    () => {
+        crate::states::SHARED_STATE
+            .clone()
+            .write()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+    };
+}
+
+macro_rules! set_shared_state {
+    ($settings:ident, $runtime_settings:ident, $firmware:ident) => {
+        crate::states::SHARED_STATE
+            .write()
+            .unwrap()
+            .replace(crate::states::SharedState {
+                $settings,
+                $runtime_settings,
+                $firmware,
+            });
     };
 }
 
