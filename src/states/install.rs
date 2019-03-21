@@ -6,7 +6,7 @@ use super::{
     actor::{download_abort, probe},
     Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
-use crate::update_package::UpdatePackage;
+use crate::{firmware::installation_set, update_package::UpdatePackage};
 use slog::slog_info;
 use slog_scope::info;
 
@@ -51,6 +51,9 @@ impl StateChangeImpl for State<Install> {
         let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 
+        let installation_set = installation_set::inactive()?;
+        info!("Using installation set as target {}", installation_set);
+
         // FIXME: What is missing:
         //
         // - verify if the object needs to be installed, accordingly to the install if
@@ -80,20 +83,28 @@ impl StateChangeImpl for State<Install> {
 mod test {
     use super::*;
     use crate::{
-        firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings,
+        firmware::Metadata, runtime_settings::RuntimeSettings,
         update_package::tests::get_update_package,
     };
     use std::fs;
     use tempfile::NamedTempFile;
 
     fn fake_install_state() -> State<Install> {
-        use crate::firmware::tests::{create_fake_metadata, FakeDevice};
+        use crate::{
+            firmware::tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
+            update_package::tests::create_fake_settings,
+        };
+        use std::env;
 
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
 
-        let settings = Settings::default();
+        let settings = create_fake_settings();
+        let tmpdir = settings.update.download_dir.clone();
+        create_fake_installation_set(&tmpdir, 0);
+        env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
+
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
         set_shared_state!(settings, runtime_settings, firmware);
