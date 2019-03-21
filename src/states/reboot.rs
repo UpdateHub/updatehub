@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback};
+use super::{
+    actor::{download_abort, probe},
+    Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
+};
 use crate::update_package::UpdatePackage;
 
 use easy_process;
@@ -35,6 +38,14 @@ impl ProgressReporter for State<Reboot> {
 impl StateChangeImpl for State<Reboot> {
     fn name(&self) -> &'static str {
         "reboot"
+    }
+
+    fn handle_download_abort(&self) -> download_abort::Response {
+        download_abort::Response::InvalidState
+    }
+
+    fn handle_trigger_probe(&self) -> probe::Response {
+        probe::Response::InvalidState(self.name().to_owned())
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {

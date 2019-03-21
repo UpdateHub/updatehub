@@ -18,8 +18,7 @@ use self::{
     download::Download, idle::Idle, install::Install, park::Park, poll::Poll, probe::Probe,
     reboot::Reboot,
 };
-use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings};
-
+use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use actix::{Actor, System};
 use futures::future::Future;
 use lazy_static::lazy_static;
@@ -32,6 +31,8 @@ lazy_static! {
 trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine, failure::Error>;
     fn name(&self) -> &'static str;
+    fn handle_download_abort(&self) -> actor::download_abort::Response;
+    fn handle_trigger_probe(&self) -> actor::probe::Response;
 }
 
 trait TransitionCallback: StateChangeImpl + Into<State<Idle>> {}
@@ -187,6 +188,11 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
 
     System::run(|| {
         let addr = agent_machine.start();
+        let addr_clone = addr.clone();
+        actix_web::server::new(move || http_api::app(addr_clone.clone()))
+            .bind("localhost:8080")
+            .unwrap()
+            .start();
 
         // Iterate over the state machine.
         loop {

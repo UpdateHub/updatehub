@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Download, Idle, Poll, State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{download_abort, probe},
+    Download, Idle, Poll, State, StateChangeImpl, StateMachine,
+};
 use crate::client::Api;
 
 use slog::{slog_debug, slog_error, slog_info};
@@ -20,6 +23,14 @@ create_state_step!(Probe => Poll);
 impl StateChangeImpl for State<Probe> {
     fn name(&self) -> &'static str {
         "probe"
+    }
+
+    fn handle_download_abort(&self) -> download_abort::Response {
+        download_abort::Response::InvalidState
+    }
+
+    fn handle_trigger_probe(&self) -> probe::Response {
+        probe::Response::RequestAccepted(self.name().to_owned())
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {

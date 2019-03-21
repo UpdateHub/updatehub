@@ -19,7 +19,7 @@ const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 #[cfg(test)]
 use mockito;
 
-#[derive(Debug, Default, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Default, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Settings {
     pub(crate) firmware: Firmware,
@@ -95,7 +95,7 @@ pub enum Error {
     InvalidServerAddress,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Polling {
     #[serde(
@@ -120,7 +120,7 @@ impl Default for Polling {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
     #[serde(deserialize_with = "de::bool_from_str")]
@@ -142,7 +142,7 @@ impl Default for Storage {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Update {
     pub download_dir: PathBuf,
@@ -165,7 +165,7 @@ impl Default for Update {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Network {
     pub server_address: String,
@@ -182,7 +182,7 @@ impl Default for Network {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Firmware {
     pub metadata_path: PathBuf,

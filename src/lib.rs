@@ -7,6 +7,7 @@
 mod build_info;
 mod client;
 mod firmware;
+mod http_api;
 pub mod logger;
 mod mem_drain;
 mod runtime_settings;

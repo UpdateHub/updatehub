@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::states::{Park, Poll, State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{download_abort, probe},
+    Park, Poll, State, StateChangeImpl, StateMachine,
+};
 
 use slog::slog_debug;
 use slog_scope::debug;
@@ -16,11 +19,16 @@ pub(super) struct Idle {}
 /// If polling is disabled it stays in `State<Idle>`, otherwise, it moves
 /// to `State<Poll>` state.
 impl StateChangeImpl for State<Idle> {
-    // FIXME: when supporting the HTTP API we need allow going to
-    // State<Probe>.
-
     fn name(&self) -> &'static str {
         "idle"
+    }
+
+    fn handle_download_abort(&self) -> download_abort::Response {
+        download_abort::Response::InvalidState
+    }
+
+    fn handle_trigger_probe(&self) -> probe::Response {
+        probe::Response::RequestAccepted(self.name().to_owned())
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {

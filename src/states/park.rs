@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::states::{State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{download_abort, probe},
+    State, StateChangeImpl, StateMachine,
+};
 
 use slog::slog_debug;
 use slog_scope::debug;
@@ -15,6 +18,14 @@ pub(super) struct Park {}
 impl StateChangeImpl for State<Park> {
     fn name(&self) -> &'static str {
         "park"
+    }
+
+    fn handle_download_abort(&self) -> download_abort::Response {
+        download_abort::Response::InvalidState
+    }
+
+    fn handle_trigger_probe(&self) -> probe::Response {
+        probe::Response::RequestAccepted(self.name().to_owned())
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {

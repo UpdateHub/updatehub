@@ -2,13 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    states::{
-        Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
-    },
-    update_package::UpdatePackage,
+use super::{
+    actor::{download_abort, probe},
+    Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
-
+use crate::update_package::UpdatePackage;
 use slog::slog_info;
 use slog_scope::info;
 
@@ -39,6 +37,14 @@ impl ProgressReporter for State<Install> {
 impl StateChangeImpl for State<Install> {
     fn name(&self) -> &'static str {
         "install"
+    }
+
+    fn handle_download_abort(&self) -> download_abort::Response {
+        download_abort::Response::InvalidState
+    }
+
+    fn handle_trigger_probe(&self) -> probe::Response {
+        probe::Response::InvalidState(self.name().to_owned())
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {

@@ -2,7 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Idle, State, StateMachine};
+pub(crate) mod download_abort;
+pub(crate) mod info;
+pub(crate) mod probe;
+
+use super::{Idle, Probe, State, StateChangeImpl, StateMachine};
 use actix::{Actor, Context, Handler, Message, MessageResult};
 use slog::slog_error;
 use slog_scope::error;

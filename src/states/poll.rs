@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::states::{Probe, State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{download_abort, probe},
+    Probe, State, StateChangeImpl, StateMachine,
+};
 
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
@@ -16,12 +19,22 @@ use std::{
 #[derive(Debug, PartialEq)]
 pub(super) struct Poll {}
 
+// create_state_step!(Poll => Probe);
+
 /// Implements the state change for `State<Poll>`.
 ///
 /// This state is used to control when to go to the `State<Probe>`.
 impl StateChangeImpl for State<Poll> {
     fn name(&self) -> &'static str {
         "poll"
+    }
+
+    fn handle_download_abort(&self) -> download_abort::Response {
+        download_abort::Response::InvalidState
+    }
+
+    fn handle_trigger_probe(&self) -> probe::Response {
+        probe::Response::RequestAccepted(self.name().to_owned())
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {
