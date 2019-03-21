@@ -4,7 +4,7 @@
 
 use super::{
     actor::{download_abort, probe},
-    Probe, State, StateChangeImpl, StateMachine,
+    Probe, ServerAddress, State, StateChangeImpl, StateMachine,
 };
 
 use chrono::{DateTime, Duration, Utc};
@@ -43,7 +43,7 @@ impl StateChangeImpl for State<Poll> {
         if shared_state!().runtime_settings.is_polling_forced() {
             debug!("Moving to Probe state as soon as possible.");
             return Ok(StateMachine::Probe(State(Probe {
-                server_address: None,
+                server_address: ServerAddress::Default,
             })));
         }
 
@@ -64,7 +64,7 @@ impl StateChangeImpl for State<Poll> {
         if last_poll > current_time {
             info!("Forcing to Probe state as last polling seems to happened in future.");
             return Ok(StateMachine::Probe(State(Probe {
-                server_address: None,
+                server_address: ServerAddress::Default,
             })));
         }
 
@@ -72,7 +72,7 @@ impl StateChangeImpl for State<Poll> {
         if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) < current_time {
             debug!("Moving to Probe state as the polling's due extra interval.");
             return Ok(StateMachine::Probe(State(Probe {
-                server_address: None,
+                server_address: ServerAddress::Default,
             })));
         }
 
@@ -90,7 +90,7 @@ impl StateChangeImpl for State<Poll> {
 
         debug!("Moving to Probe state.");
         Ok(StateMachine::Probe(State(Probe {
-            server_address: None,
+            server_address: ServerAddress::Default,
         })))
     }
 }

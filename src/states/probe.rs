@@ -11,9 +11,15 @@ use crate::client::Api;
 use slog::{slog_debug, slog_error, slog_info};
 use slog_scope::{debug, error, info};
 
+#[derive(Debug, PartialEq, Clone)]
+pub(super) enum ServerAddress {
+    Default,
+    Custom(String),
+}
+
 #[derive(Debug, PartialEq)]
 pub(super) struct Probe {
-    pub(super) server_address: Option<String>,
+    pub(super) server_address: ServerAddress,
 }
 
 create_state_step!(Probe => Idle);
@@ -38,11 +44,10 @@ impl StateChangeImpl for State<Probe> {
         use chrono::{Duration, Utc};
         use std::thread;
 
-        let server_address = self
-            .0
-            .server_address
-            .clone()
-            .unwrap_or_else(|| shared_state!().settings.network.server_address.clone());
+        let server_address = match self.0.server_address.clone() {
+            ServerAddress::Default => shared_state!().settings.network.server_address.clone(),
+            ServerAddress::Custom(s) => s,
+        };
 
         let r = loop {
             let probe = Api::new(&server_address)
@@ -129,7 +134,7 @@ fn update_not_available() {
     set_shared_state!(settings, runtime_settings, firmware);
 
     let machine = StateMachine::Probe(State(Probe {
-        server_address: None,
+        server_address: ServerAddress::Default,
     }))
     .move_to_next_state();
 
@@ -162,7 +167,7 @@ fn update_available() {
     set_shared_state!(settings, runtime_settings, firmware);
 
     let machine = StateMachine::Probe(State(Probe {
-        server_address: None,
+        server_address: ServerAddress::Default,
     }))
     .move_to_next_state();
 
@@ -195,7 +200,7 @@ fn invalid_hardware() {
     set_shared_state!(settings, runtime_settings, firmware);
 
     let machine = StateMachine::Probe(State(Probe {
-        server_address: None,
+        server_address: ServerAddress::Default,
     }))
     .move_to_next_state();
 
@@ -228,7 +233,7 @@ fn extra_poll_interval() {
     set_shared_state!(settings, runtime_settings, firmware);
 
     let machine = StateMachine::Probe(State(Probe {
-        server_address: None,
+        server_address: ServerAddress::Default,
     }))
     .move_to_next_state();
 
@@ -283,7 +288,7 @@ fn skip_same_package_uid() {
     set_shared_state!(settings, runtime_settings, firmware);
 
     let machine = StateMachine::Probe(State(Probe {
-        server_address: None,
+        server_address: ServerAddress::Default,
     }))
     .move_to_next_state();
 
@@ -318,7 +323,7 @@ fn error() {
     set_shared_state!(settings, runtime_settings, firmware);
 
     let machine = StateMachine::Probe(State(Probe {
-        server_address: None,
+        server_address: ServerAddress::Default,
     }))
     .move_to_next_state();
 

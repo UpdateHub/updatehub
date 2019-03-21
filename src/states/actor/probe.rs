@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Probe, State, StateChangeImpl, StateMachine};
+use super::{Probe, ServerAddress, State, StateChangeImpl, StateMachine};
 use actix::{Context, Handler, Message, MessageResult};
 
 pub(crate) struct Request(pub(crate) Option<String>);
@@ -25,7 +25,9 @@ impl Handler<Request> for super::Machine {
                     r @ Response::InvalidState(_) => MessageResult(r),
                     r @ Response::RequestAccepted(_) => {
                         self.0 = Some(StateMachine::Probe(State(Probe {
-                            server_address: req.0,
+                            server_address: req
+                                .0
+                                .map_or(ServerAddress::Default, |s| ServerAddress::Custom(s)),
                         })));
                         MessageResult(r)
                     }

@@ -15,7 +15,12 @@ mod reboot;
 mod transition;
 
 use self::{
-    download::Download, idle::Idle, install::Install, park::Park, poll::Poll, probe::Probe,
+    download::Download,
+    idle::Idle,
+    install::Install,
+    park::Park,
+    poll::Poll,
+    probe::{Probe, ServerAddress},
     reboot::Reboot,
 };
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
