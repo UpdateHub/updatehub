@@ -51,8 +51,13 @@ impl StateChangeImpl for State<Install> {
         let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 
-        // FIXME: Check if A/B install
-        // FIXME: Check InstallIfDifferent
+        // FIXME: What is missing:
+        //
+        // - verify if the object needs to be installed, accordingly to the install if
+        //   different rule.
+        //
+        // - if object needs installation, use the respective object installation mode.
+        //
 
         // Ensure we do a probe as soon as possible so full update
         // cycle can be finished.
