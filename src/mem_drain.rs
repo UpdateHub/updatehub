@@ -109,11 +109,9 @@ mod tests {
     use std::sync::Arc;
 
     fn eq_without_time(s1: &str, s2: &str) -> bool {
-        let s1 = s1.split("\n");
-        let s2 = s2.split("\n");
-        let mut i = 0;
-        for (x, y) in s1.zip(s2) {
-            i += 1;
+        let s1 = s1.split('\n');
+        let s2 = s2.split('\n');
+        for (i, (x, y)) in s1.zip(s2).enumerate() {
             if x.contains("time") {
                 continue;
             }
@@ -135,7 +133,7 @@ mod tests {
         let log = Logger::root(drain.fuse(), o!());
         slog_info!(log, "{}", s1);
         slog_info!(log, "{}", s2);
-        let result = format!("{}", r_vec.lock().unwrap().to_string());
+        let result = r_vec.lock().unwrap().to_string();
         println!("{}", result);
         assert!(result.contains(s1));
         assert!(result.contains(s2));
@@ -151,7 +149,7 @@ mod tests {
         let log = Logger::root(drain.fuse(), o!());
         slog_info!(log, "{}", s1);
         slog_debug!(log, "{}", s2);
-        let result = format!("{}", r_vec.lock().unwrap().to_string());
+        let result = r_vec.lock().unwrap().to_string();
         println!("{}", result);
         assert!(result.contains("info"));
         assert!(result.contains("debug"));
@@ -167,7 +165,7 @@ mod tests {
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!("LOGGER" => logger_value));
         slog_info!(log, "{}", txt; "RECORD" => macro_value);
-        let result = format!("{}", r_vec.lock().unwrap().to_string());
+        let result = r_vec.lock().unwrap().to_string();
         println!("{}", result);
         assert!(result.contains(logger_value));
         assert!(result.contains(macro_value));

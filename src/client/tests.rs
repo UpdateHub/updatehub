@@ -181,7 +181,7 @@ fn download_object() {
     settings.update.download_dir = tempdir.path().to_path_buf();
 
     // Download the object.
-    let _ = Api::new(&settings.network.server_address)
+    Api::new(&settings.network.server_address)
         .download_object(
             &metadata.product_uid,
             "package_id",
@@ -201,7 +201,7 @@ fn download_object() {
     assert_eq!(downloaded, "1234".to_string());
 
     // Download the remaining bytes of the object.
-    let _ = Api::new(&settings.network.server_address)
+    Api::new(&settings.network.server_address)
         .download_object(
             &metadata.product_uid,
             "package_id",

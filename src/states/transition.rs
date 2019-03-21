@@ -51,7 +51,7 @@ mod test {
     use super::*;
     use tempfile;
 
-    const CALLBACK_STATE_NAME: &'static str = "test_state";
+    const CALLBACK_STATE_NAME: &str = "test_state";
 
     fn create_state_change_callback_hook(content: &str) -> tempfile::TempDir {
         use crate::firmware::tests::create_hook;
