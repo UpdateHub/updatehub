@@ -36,8 +36,14 @@ lazy_static! {
 trait StateChangeImpl {
     fn handle(self) -> Result<StateMachine, failure::Error>;
     fn name(&self) -> &'static str;
-    fn handle_download_abort(&self) -> actor::download_abort::Response;
-    fn handle_trigger_probe(&self) -> actor::probe::Response;
+
+    fn handle_download_abort(&self) -> actor::download_abort::Response {
+        actor::download_abort::Response::InvalidState
+    }
+
+    fn handle_trigger_probe(&self) -> actor::probe::Response {
+        actor::probe::Response::InvalidState(self.name().to_owned())
+    }
 }
 
 trait TransitionCallback: StateChangeImpl + Into<State<Idle>> {}

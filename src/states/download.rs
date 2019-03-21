@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{download_abort, probe},
-    Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
+    actor::download_abort, Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine,
+    TransitionCallback,
 };
 use crate::{
     client::Api,
@@ -47,10 +47,6 @@ impl StateChangeImpl for State<Download> {
 
     fn handle_download_abort(&self) -> download_abort::Response {
         download_abort::Response::RequestAccepted
-    }
-
-    fn handle_trigger_probe(&self) -> probe::Response {
-        probe::Response::RequestAccepted(self.name().to_owned())
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {

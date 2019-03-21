@@ -2,11 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{
-    actor::{download_abort, probe},
-    Park, Poll, State, StateChangeImpl, StateMachine,
-};
-
+use super::{actor::probe, Park, Poll, State, StateChangeImpl, StateMachine};
 use slog::slog_debug;
 use slog_scope::debug;
 
@@ -21,10 +17,6 @@ pub(super) struct Idle {}
 impl StateChangeImpl for State<Idle> {
     fn name(&self) -> &'static str {
         "idle"
-    }
-
-    fn handle_download_abort(&self) -> download_abort::Response {
-        download_abort::Response::InvalidState
     }
 
     fn handle_trigger_probe(&self) -> probe::Response {

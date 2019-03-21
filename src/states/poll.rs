@@ -2,11 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{
-    actor::{download_abort, probe},
-    Probe, ServerAddress, State, StateChangeImpl, StateMachine,
-};
-
+use super::{Probe, ServerAddress, State, StateChangeImpl, StateMachine};
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use slog::{slog_debug, slog_info};
@@ -27,14 +23,6 @@ pub(super) struct Poll {}
 impl StateChangeImpl for State<Poll> {
     fn name(&self) -> &'static str {
         "poll"
-    }
-
-    fn handle_download_abort(&self) -> download_abort::Response {
-        download_abort::Response::InvalidState
-    }
-
-    fn handle_trigger_probe(&self) -> probe::Response {
-        probe::Response::RequestAccepted(self.name().to_owned())
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {
