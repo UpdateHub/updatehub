@@ -5,6 +5,7 @@
 use crate::firmware::metadata_value::MetadataValue;
 
 use easy_process;
+use failure::ResultExt;
 use slog::slog_error;
 use slog_scope::error;
 use std::{path::Path, str::FromStr};
@@ -32,7 +33,7 @@ pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, failure::
 }
 
 pub(crate) fn run_script(cmd: &str) -> Result<String, failure::Error> {
-    let output = easy_process::run(cmd)?;
+    let output = easy_process::run(cmd).context(format!("Running {:?}", cmd))?;
     if !output.stderr.is_empty() {
         output
             .stderr
