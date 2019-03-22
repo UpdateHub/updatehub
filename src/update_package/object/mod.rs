@@ -2,9 +2,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#[macro_use]
+mod macros;
+mod copy;
+pub mod definitions;
+mod flash;
+mod imxkobs;
+mod raw;
+mod tarball;
+#[cfg(test)]
+mod test;
+mod ubifs;
+
+#[cfg(test)]
+use self::test::Test;
+use self::{copy::Copy, flash::Flash, imxkobs::Imxkobs, raw::Raw, tarball::Tarball, ubifs::Ubifs};
+
 use crypto_hash::{Algorithm, Hasher};
 use hex;
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use std::{
     fs::File,
     io::{BufReader, Read, Write},
@@ -15,8 +31,17 @@ use std::{
 #[serde(tag = "mode")]
 #[serde(rename_all = "lowercase")]
 pub(crate) enum Object {
-    Test(Test),
+    Copy(Box<Copy>),
+    Flash(Box<Flash>),
+    Imxkobs(Box<Imxkobs>),
+    Raw(Box<Raw>),
+    Tarball(Box<Tarball>),
+    Ubifs(Box<Ubifs>),
+    #[cfg(test)]
+    Test(Box<Test>),
 }
+
+impl_object_for_object_types!(Copy, Flash, Imxkobs, Tarball, Ubifs, Raw);
 
 #[derive(PartialEq, Debug)]
 pub(crate) enum ObjectStatus {
@@ -62,15 +87,3 @@ trait ObjectType {
     fn len(&self) -> u64;
     fn sha256sum(&self) -> &str;
 }
-
-#[derive(Deserialize, PartialEq, Debug)]
-#[serde(rename_all = "kebab-case")]
-pub(crate) struct Test {
-    filename: String,
-    sha256sum: String,
-    target: String,
-    size: u64,
-}
-
-impl_object_for_object_types!(Test);
-impl_object_type!(Test);

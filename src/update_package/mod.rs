@@ -17,9 +17,6 @@ use slog_scope::error;
 mod supported_hardware;
 use self::supported_hardware::SupportedHardware;
 
-#[macro_use]
-mod macros;
-
 mod object;
 pub(crate) use self::object::{Object, ObjectStatus};
 
