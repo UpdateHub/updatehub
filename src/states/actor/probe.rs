@@ -27,7 +27,7 @@ impl Handler<Request> for super::Machine {
                         self.0 = Some(StateMachine::Probe(State(Probe {
                             server_address: req
                                 .0
-                                .map_or(ServerAddress::Default, |s| ServerAddress::Custom(s)),
+                                .map_or(ServerAddress::Default, ServerAddress::Custom),
                         })));
                         MessageResult(r)
                     }
