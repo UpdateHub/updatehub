@@ -68,6 +68,10 @@ func (m *UpdateMetadata) PackageUID() string {
 }
 
 func (m *UpdateMetadata) VerifySignature(key *rsa.PublicKey, signature []byte) bool {
+	if key == nil {
+		return true
+	}
+
 	sha256sum := sha256.Sum256(m.RawBytes)
 	err := rsa.VerifyPKCS1v15(key, crypto.SHA256, sha256sum[:], signature)
 	return err == nil

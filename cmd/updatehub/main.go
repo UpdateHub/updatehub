@@ -127,7 +127,7 @@ func main() {
 
 	pubKey, err := readPublicKey(osFs, settings)
 	if err != nil {
-		log.Fatal(errors.Wrap(err, "failed to read public key"))
+		log.Warn(errors.Wrap(err, "Package signature verification disabled. Not recommended for production"))
 	}
 
 	uh := updatehub.NewUpdateHub(gitversion, stateChangeCallbackPath, errorCallbackPath, validateCallbackPath, rollbackCallbackPath, osFs, *fm, pubKey, updatehub.NewIdleState(), settings, client.NewApiClient(settings.ServerAddress))
