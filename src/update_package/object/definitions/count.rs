@@ -33,6 +33,7 @@ impl<'de> Deserialize<'de> for Count {
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     #[derive(Debug, PartialEq, Deserialize)]

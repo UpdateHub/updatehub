@@ -11,6 +11,7 @@ pub struct Skip(#[serde(deserialize_with = "usize::deserialize")] usize);
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     #[derive(Debug, PartialEq, Deserialize)]

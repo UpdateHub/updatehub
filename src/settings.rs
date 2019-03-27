@@ -198,6 +198,7 @@ impl Default for Firmware {
 
 #[test]
 fn ok() {
+    use pretty_assertions::assert_eq;
     let ini = r"
 [Polling]
 Interval=60s
@@ -298,6 +299,7 @@ MetadataPath=/tmp/metadata
 
 #[test]
 fn default() {
+    use pretty_assertions::assert_eq;
     let mut settings = Settings::default();
     settings.network.server_address = "https://api.updatehub.io".to_string();
 

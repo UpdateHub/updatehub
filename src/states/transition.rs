@@ -49,6 +49,7 @@ pub(super) fn state_change_callback(
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
     use tempfile;
 
     const CALLBACK_STATE_NAME: &str = "test_state";

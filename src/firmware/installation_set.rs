@@ -60,6 +60,7 @@ pub fn swap_active() -> Result<(), failure::Error> {
 
 #[test]
 fn as_str() {
+    use pretty_assertions::assert_eq;
     assert_eq!("0", format!("{}", Set::A));
     assert_eq!("1", format!("{}", Set::B));
 }
@@ -67,6 +68,7 @@ fn as_str() {
 #[test]
 fn works() {
     use crate::firmware::tests::create_fake_installation_set;
+    use pretty_assertions::assert_eq;
     use std::env;
     use tempfile::tempdir;
 

@@ -143,6 +143,7 @@ fn probe_requirements() {
 #[test]
 fn download_object() {
     let metadata = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+    use pretty_assertions::assert_eq;
     use std::{fs::File, io::Read};
     use tempfile::tempdir;
 

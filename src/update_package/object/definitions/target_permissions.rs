@@ -22,6 +22,7 @@ pub enum Id {
 
 #[test]
 fn deserialize() {
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     assert_eq!(

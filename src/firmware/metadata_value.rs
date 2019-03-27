@@ -79,6 +79,7 @@ impl<'a> Index<&'a str> for MetadataValue {
 
 #[test]
 fn valid() {
+    use pretty_assertions::assert_eq;
     let v = MetadataValue::from_str("key1=v1\nkey=b\nnv=\nkey=a").unwrap();
 
     assert_eq!(v.keys().len(), 3);

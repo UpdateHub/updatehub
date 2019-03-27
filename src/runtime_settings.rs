@@ -203,6 +203,7 @@ impl Default for RuntimeUpdate {
 
 #[test]
 fn de() {
+    use pretty_assertions::assert_eq;
     let ini = r"
 [Polling]
 LastPoll=2017-01-01T00:00:00Z
@@ -239,6 +240,7 @@ UpgradeToInstallation=1
 
 #[test]
 fn default() {
+    use pretty_assertions::assert_eq;
     let settings = RuntimeSettings::new();
     let expected = RuntimeSettings {
         polling: RuntimePolling {
@@ -260,6 +262,7 @@ fn default() {
 
 #[test]
 fn ser() {
+    use pretty_assertions::assert_eq;
     let settings = RuntimeSettings {
         polling: RuntimePolling {
             last: Some("2017-01-01T00:00:00Z".parse::<DateTime<Utc>>().unwrap()),
@@ -282,6 +285,7 @@ fn ser() {
 
 #[test]
 fn load_and_save() {
+    use pretty_assertions::assert_eq;
     use std::fs;
     use tempfile::NamedTempFile;
 

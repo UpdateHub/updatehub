@@ -77,6 +77,7 @@ mod test {
         firmware::Metadata, runtime_settings::RuntimeSettings,
         update_package::tests::get_update_package,
     };
+    use pretty_assertions::assert_eq;
     use std::fs;
     use tempfile::NamedTempFile;
 

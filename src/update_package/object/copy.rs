@@ -30,6 +30,7 @@ impl_object_type!(Copy);
 
 #[test]
 fn deserialize() {
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     assert_eq!(

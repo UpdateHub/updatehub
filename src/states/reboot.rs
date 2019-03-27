@@ -53,6 +53,7 @@ impl StateChangeImpl for State<Reboot> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
     use std::path::Path;
 
     fn fake_reboot_state() -> State<Reboot> {

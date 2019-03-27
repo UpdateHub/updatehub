@@ -15,6 +15,7 @@ pub enum TargetType {
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
     use serde_json::json;
 
     #[test]

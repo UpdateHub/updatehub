@@ -124,6 +124,7 @@ impl StateChangeImpl for State<Download> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     fn fake_download_state() -> State<Download> {
         use crate::{
