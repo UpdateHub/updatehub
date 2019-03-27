@@ -38,6 +38,6 @@ walkdir = "2"
 git-version = "0.2"
 
 [dev-dependencies]
-mockito = "0.16"
+mockito = "0.17"
 pretty_assertions = "0.6"
 tempfile = "3"
