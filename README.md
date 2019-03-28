@@ -1,195 +1,49 @@
-# updatehub [![Build Status](https://travis-ci.org/updatehub/updatehub.svg?branch=v1)](https://travis-ci.org/updatehub/updatehub) [![Coverage Status](https://coveralls.io/repos/github/updatehub/updatehub/badge.svg?branch=v1)](https://coveralls.io/github/updatehub/updatehub?branch=v1)
+![UpdateHub logo](doc/updatehub.png)
 
-updatehub provides a generic and safe Firmware Over-The-Air agent for Embedded and
-Industrial Linux-based devices.
+---
 
-Features
---------
+UpdateHub is an enterprise-grade solution which makes simple to remotely update all your Linux-based devices in the field. It handles all aspects related to sending Firmware Over-the-Air (FOTA) updates with maximum security and efficiency, while you focus in adding value to your product.
 
-* **6 install modes**
+To learn more about UpdateHub, check out our [documentation](https://docs.updatehub.io).
 
-  * Copy: simple "mount", "copy", "umount" operation
-  * Flash: flash-related operations using the binaries "flashcp", "nandwrite" and "flash_erase"
-  * ImxKobs: imx-related operations using the "kobs-ng" binary
-  * Raw: a "dd"-like mode (supports parameters like "skip", "seek", "count", etc)
-  * Tarball: "mount", extract tarball and "umount"
-  * Ubifs: ubifs-related operations using the binary "ubiupdatevol"
+## Features
 
-* **Automatic update discovery**
+* **Yocto Linux support**: Integrate UpdateHub onto your existing Yocto based project
+* **Scalable**: Send updates to one device, or one million
+* **Reliability and robustness**: Automated rollback in case of update fail
+* **Powerful API & SDK**: Extend UpdateHub to fit your needs
 
-  * Configurable through files
-  * Automatic query on a specified interval
-  * Retry queries according to server policy
-  * Don't loose its timing even when the device is rebooted or turned
-    off for a long time
+## UpdateHub Linux Agent
 
-* **Conditional installation**
+[![Build Status](https://travis-ci.org/UpdateHub/updatehub.svg?branch=v1)](https://travis-ci.org/updatehub/updatehub) [![Coverage Status](https://coveralls.io/repos/github/updatehub/updatehub/badge.svg?branch=v1)](https://coveralls.io/github/updatehub/updatehub?branch=v1)
 
-  * Install only if the target is different from the source
-  * To decide what is different, can match string patterns or the
-    entire target (through sha256sum)
-  * Have presets for Linux kernel and U-boot to match versions
+This repository contains the UpdateHub Linux Agent, which can be run as system service in Yocto based images.
 
-* **Active/Inactive configuration**
+#### Building
 
-  * Using the Active/Inactive configuration, the device will contain 2
-    installed systems in different partitions, 1 running (active) and
-    1 inactive
-  * The updates will be installed in the inactive partition
-  * When an update installation fails, the device won't be bricked
-    since the running system wasn't touched by the installation
-  * When the update installation succeeds, the device reboots into the
-    new installed system (which is now the active)
+Prerequisites:
 
-* **Pluggable**
+* make
+* libarchive-dev
 
-  * The agent has a HTTP API that allows other applications to
-    interact. This includes: trigger downloads, trigger installations,
-    query status, query firmware metadata, query device information, etc.
+```
+$ make vendor
+$ make
+$ make test
+```
 
-  * Together with the HTTP API the agent supports several callback
-    types: state change, error, validate, rollback. They are better
-    explained below.
+## Contributing
 
-Prerequisites
---------
+UpdateHub is an open source project and we love to receive contributions from our community.
+If you would like to contribute, please read our [contributing guide](CONTRIBUTING.md).
 
--  make
--  libarchive-dev
+## License
 
-Build and test
---------
+UpdateHub Linux Agent is licensed under the GPLv2. See [COPYING](COPYING) for the full license text.
 
-    make vendor
-    make
-    make test
+## Getting in touch
 
-updatehub Usage
---------
+* Reach us on [Gitter](https://gitter.im/UpdateHub/community)
+* All source code are in [Github](https://github.com/UpdateHub)
+* Email us at [contact@updatehub.io](mailto:contact@updatehub.io)
 
-    ./bin/updatehub [flags]
-
-    Flags:
-          --debug   sets the log level to 'debug'
-      -h, --help    help for updatehub
-          --quiet   sets the log level to 'error'
-
-updatehub Server Usage
---------
-
-    ./bin/updatehub-server path [flags]
-
-    Path:
-      The directory path containing an uhupkg to be served.
-
-    Flags:
-          --debug   sets the log level to 'debug'
-      -h, --help    help for updatehub-server
-          --quiet   sets the log level to 'error'
-
-updatehub Settings File
---------
-
-Default path:
-
-    /etc/updatehub.conf
-
-Example file:
-
-    [Polling]
-    Interval=2h
-    Enabled=false
-
-    [Update]
-    DownloadDir=/tmp/download
-    SupportedInstallModes=mode1,mode2
-
-    [Network]
-    ServerAddress=http://addr:80
-
-    [Firmware]
-    MetadataPath=/usr/share/metadata
-
-    [Storage]
-    RuntimeSettingsPath=/var/lib/updatehub.conf
-
-* **Polling**
-
-  * Interval: the time interval on which each automatic poll will be
-    done. ``Default: 1h``
-  * Enabled: enable/disable the automatic polling. ``Default: enabled``
-
-* **Update**
-
-  * DownloadDir: the directory on which the update files will be
-    downloaded. ``Default: /tmp``
-  * SupportedInstallModes: the install modes supported by this
-    target. ``Default: all ("dry-run", "copy", "flash", "imxkobs",
-    "raw", "tarball", "ubifs")``
-  
-* **Network**
-
-  * ServerAddress: the address used in the network requests. ``Default:
-    https://api.updatehub.io``
-
-* **Firmware**
-
-  * MetadataPath: the directory on which are located the firmware
-    metadata scripts. ``Default: /usr/share/updatehub``
-
-* **Storage**
-
-  * RuntimeSettingsPath: the file on which will be saved the runtime
-    settings along reboots. ``Default: /var/lib/updatehub.conf``
-
-HTTP API
---------
-
-The HTTP API is detailed at: doc/agent-http.apib.
-
-Callbacks
---------
-
-Each callback is executed under certain circunstances:
-
-* **State change**
-
-This callback is executed before AND after every status change. When
-it's executed before, the agent calls it like this:
-
-    <callback> enter <state>
-
-If this callback fails, the agent does NOT execute the <state> handle
-and enter a error state. If this callback succeeds, proceeds as normal.
-
-When it's executed after the <state>, the agent calls it like this:
-
-    <callback> leave <state>
-
-If this callback fails, the agent enter a error state. ``Default path:
-/usr/share/updatehub/state-change-callback``
-
-The output of both enter and leave actions are parsed to determine
-transition state flow.
-
-To cancel the current state transition, the callback must write
-to stdout: ``cancel``.
-
-* **Error**
-
-This callback is executed whenever an error occurs. It's output is
-ignored. ``Default path: /usr/share/updatehub/error-callback``
-
-* **Validate**
-
-This callback is executed whenever a new installation is booted. If
-this callback succeeds the installation is validated and proceeds as
-normal. If it fails, the agent forces a reboot into the previous
-installation. ``Default path: /usr/share/updatehub/validate-callback``
-
-* **Rollback**
-
-This callback is executed whenever an installation validation
-fails. After the failure, the agent reboots into the previous
-installation and before entering it's normal execution, it executes
-the rollback callback. ``Default path: /usr/share/updatehub/rollback-callback``
