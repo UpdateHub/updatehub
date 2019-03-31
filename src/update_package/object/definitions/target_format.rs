@@ -4,10 +4,10 @@
 
 use serde::Deserialize;
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct TargetFormat {
-    #[serde(rename = "format?")]
+    #[serde(rename = "format?", default)]
     pub format: bool,
     pub format_options: Option<String>,
 }

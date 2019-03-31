@@ -16,11 +16,14 @@ pub(crate) struct Tarball {
     target: definitions::TargetType,
     target_path: String,
 
-    compressed: Option<bool>,
-    required_uncompressed_size: Option<u64>,
-    #[serde(flatten)]
-    target_format: Option<definitions::TargetFormat>,
-    mount_options: Option<String>,
+    #[serde(default)]
+    compressed: bool,
+    #[serde(default)]
+    required_uncompressed_size: u64,
+    #[serde(flatten, default)]
+    target_format: definitions::TargetFormat,
+    #[serde(default)]
+    mount_options: String,
 }
 
 impl_object_type!(Tarball);
@@ -37,13 +40,13 @@ fn deserialize() {
             size: 1024,
             sha256sum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                 .to_string(),
-            target: definitions::TargetType::Device("/dev/sda".to_string()),
+            target: definitions::TargetType::Device(std::path::PathBuf::from("/dev/sda")),
             target_path: "/".to_string(),
 
-            compressed: None,
-            required_uncompressed_size: None,
-            target_format: None,
-            mount_options: None,
+            compressed: bool::default(),
+            required_uncompressed_size: u64::default(),
+            target_format: definitions::TargetFormat::default(),
+            mount_options: String::default(),
         },
         serde_json::from_value::<Tarball>(json!({
             "filename": "etc/passwd",

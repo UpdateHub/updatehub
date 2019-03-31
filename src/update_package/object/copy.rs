@@ -13,17 +13,20 @@ pub(crate) struct Copy {
     size: u64,
     sha256sum: String,
     #[serde(flatten)]
-    target: definitions::TargetType,
+    target_type: definitions::TargetType,
     target_path: String,
 
     install_if_different: Option<definitions::InstallIfDifferent>,
     #[serde(flatten)]
     target_permissions: definitions::TargetPermissions,
-    compressed: Option<bool>,
-    required_uncompressed_size: Option<u64>,
-    #[serde(flatten)]
-    target_format: Option<definitions::TargetFormat>,
-    mount_options: Option<String>,
+    #[serde(default)]
+    compressed: bool,
+    #[serde(default)]
+    required_uncompressed_size: u64,
+    #[serde(flatten, default)]
+    target_format: definitions::TargetFormat,
+    #[serde(default)]
+    mount_options: String,
 }
 
 impl_object_type!(Copy);
@@ -32,6 +35,7 @@ impl_object_type!(Copy);
 fn deserialize() {
     use pretty_assertions::assert_eq;
     use serde_json::json;
+    use std::path::PathBuf;
 
     assert_eq!(
         Copy {
@@ -40,21 +44,16 @@ fn deserialize() {
             size: 1024,
             sha256sum: "cfe2be1c64b0387500853de0f48303e3de7b1c6f1508dc719eeafa0d41c36722"
                 .to_string(),
-            target: definitions::TargetType::Device("/dev/sda".to_string()),
+            target_type: definitions::TargetType::Device(PathBuf::from("/dev/sda")),
             target_path: "/etc/passwd".to_string(),
-
             install_if_different: Some(definitions::InstallIfDifferent::CheckSum(
                 definitions::install_if_different::CheckSum::Sha256Sum
             )),
-            target_permissions: definitions::TargetPermissions {
-                target_mode: None,
-                target_gid: None,
-                target_uid: None,
-            },
-            compressed: None,
-            required_uncompressed_size: None,
-            target_format: None,
-            mount_options: None,
+            target_permissions: definitions::TargetPermissions::default(),
+            compressed: false,
+            required_uncompressed_size: 0,
+            target_format: definitions::TargetFormat::default(),
+            mount_options: String::default(),
         },
         serde_json::from_value::<Copy>(json!({
             "filename": "etc/passwd",

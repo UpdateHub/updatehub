@@ -12,16 +12,23 @@ pub(crate) struct Raw {
     size: u64,
     sha256sum: String,
     #[serde(flatten)]
-    target: definitions::TargetType,
+    target_type: definitions::TargetType,
 
     install_if_different: Option<definitions::InstallIfDifferent>,
-    compressed: Option<bool>,
-    required_uncompressed_size: Option<u64>,
-    chunk_size: Option<definitions::ChunkSize>,
-    skip: Option<definitions::Skip>,
-    seek: Option<u64>,
-    count: Option<definitions::Count>,
-    truncate: Option<definitions::Truncate>,
+    #[serde(default)]
+    compressed: bool,
+    #[serde(default)]
+    required_uncompressed_size: u64,
+    #[serde(default)]
+    chunk_size: definitions::ChunkSize,
+    #[serde(default)]
+    skip: definitions::Skip,
+    #[serde(default)]
+    seek: u64,
+    #[serde(default)]
+    count: definitions::Count,
+    #[serde(default)]
+    truncate: definitions::Truncate,
 }
 
 impl_object_type!(Raw);
@@ -30,6 +37,7 @@ impl_object_type!(Raw);
 fn deserialize() {
     use pretty_assertions::assert_eq;
     use serde_json::json;
+    use std::path::PathBuf;
 
     assert_eq!(
         Raw {
@@ -37,18 +45,18 @@ fn deserialize() {
             size: 1024,
             sha256sum: "cfe2be1c64b0387500853de0f48303e3de7b1c6f1508dc719eeafa0d41c36722"
                 .to_string(),
-            target: definitions::TargetType::Device("/dev/sdb".to_string()),
+            target_type: definitions::TargetType::Device(PathBuf::from("/dev/sdb")),
 
             install_if_different: Some(definitions::InstallIfDifferent::CheckSum(
                 definitions::install_if_different::CheckSum::Sha256Sum
             )),
-            compressed: Some(true),
-            required_uncompressed_size: Some(2048),
-            chunk_size: None,
-            skip: None,
-            seek: None,
-            count: None,
-            truncate: None,
+            compressed: true,
+            required_uncompressed_size: 2048,
+            chunk_size: definitions::ChunkSize::default(),
+            skip: definitions::Skip::default(),
+            seek: u64::default(),
+            count: definitions::Count::default(),
+            truncate: definitions::Truncate::default(),
         },
         serde_json::from_value::<Raw>(json!({
             "filename": "etc/passwd",

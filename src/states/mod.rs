@@ -7,7 +7,7 @@ mod macros;
 pub(crate) mod actor;
 mod download;
 mod idle;
-mod install;
+pub(crate) mod install;
 mod park;
 mod poll;
 mod probe;

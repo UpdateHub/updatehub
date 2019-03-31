@@ -14,8 +14,10 @@ pub(crate) struct Ubifs {
     #[serde(flatten)]
     target: definitions::TargetType,
 
-    compressed: Option<bool>,
-    required_uncompressed_size: Option<u64>,
+    #[serde(default)]
+    compressed: bool,
+    #[serde(default)]
+    required_uncompressed_size: u64,
 }
 
 impl_object_type!(Ubifs);
@@ -33,8 +35,8 @@ fn deserialize() {
                 .to_string(),
             target: definitions::TargetType::UBIVolume("home".to_string()),
 
-            compressed: Some(true),
-            required_uncompressed_size: Some(2048),
+            compressed: true,
+            required_uncompressed_size: 2048,
         },
         serde_json::from_value::<Ubifs>(json!({
             "filename": "ubifs",

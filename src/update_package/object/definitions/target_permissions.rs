@@ -4,11 +4,11 @@
 
 use serde::Deserialize;
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct TargetPermissions {
-    //FIXME: Process string input into usize
-    pub target_mode: Option<String>,
+    #[serde(deserialize_with(de::octal_from_str))]
+    pub target_mode: Option<u32>,
     pub target_gid: Option<Id>,
     pub target_uid: Option<Id>,
 }
@@ -16,8 +16,12 @@ pub struct TargetPermissions {
 #[derive(PartialEq, Debug, Deserialize)]
 #[serde(untagged)]
 pub enum Id {
+    /// User or group name
     Name(String),
-    Number(usize),
+
+    /// User or group numeric id
+    #[serde(deserialize_with(de::octal_from_str))]
+    Number(u32),
 }
 
 #[test]
@@ -27,12 +31,12 @@ fn deserialize() {
 
     assert_eq!(
         TargetPermissions {
-            target_mode: Some("0777".to_string()),
+            target_mode: Some(0o0777),
             target_gid: Some(Id::Name("wheel".to_string())),
             target_uid: Some(Id::Name("user".to_string())),
         },
         serde_json::from_value::<TargetPermissions>(json!({
-            "target-mode": "0777",
+            "target-mode": 0o0777,
             "target-uid": "user",
             "target-gid": "wheel"
         }))

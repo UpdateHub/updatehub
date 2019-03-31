@@ -8,7 +8,7 @@ use serde::{de, Deserialize, Deserializer};
 /// the target. The default value of -1 means all possible bytes
 /// until the end of the file
 #[derive(PartialEq, Debug)]
-pub struct Count(isize);
+pub struct Count(pub isize);
 
 impl Default for Count {
     fn default() -> Self {

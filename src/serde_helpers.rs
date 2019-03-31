@@ -43,6 +43,14 @@ pub mod de {
         Ok(Duration::from_std(parse(&s).map_err(de::Error::custom)?).map_err(de::Error::custom)?)
     }
 
+    pub fn octal_from_str<'de, D>(deserializer: D) -> Result<u32, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(u32::from_str_radix(&s, 8).map_err(de::Error::custom)?)
+    }
+
     pub fn duration_from_int<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
     where
         D: Deserializer<'de>,

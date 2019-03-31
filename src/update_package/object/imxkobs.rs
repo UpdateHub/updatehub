@@ -13,10 +13,14 @@ pub(crate) struct Imxkobs {
 
     install_if_different: Option<definitions::InstallIfDifferent>,
     #[serde(rename = "1k_padding")]
-    padding_1k: Option<bool>,
-    search_exponent: Option<usize>,
-    chip_0_device_path: Option<String>,
-    chip_1_device_path: Option<String>,
+    #[serde(default)]
+    padding_1k: bool,
+    #[serde(default)]
+    search_exponent: usize,
+    #[serde(default)]
+    chip_0_device_path: String,
+    #[serde(default)]
+    chip_1_device_path: String,
 }
 
 impl_object_type!(Imxkobs);
@@ -34,10 +38,10 @@ fn deserialize() {
                 .to_string(),
 
             install_if_different: None,
-            padding_1k: Some(true),
-            search_exponent: Some(2),
-            chip_0_device_path: Some("/dev/sda1".to_string()),
-            chip_1_device_path: Some("/dev/sda2".to_string()),
+            padding_1k: true,
+            search_exponent: 2,
+            chip_0_device_path: "/dev/sda1".to_string(),
+            chip_1_device_path: "/dev/sda2".to_string(),
         },
         serde_json::from_value::<Imxkobs>(json!({
             "filename": "imxkobs-filename",

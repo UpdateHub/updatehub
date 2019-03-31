@@ -7,7 +7,7 @@ use serde::{de, Deserialize, Deserializer};
 /// The size of the buffers (in bytes) used to read and write,
 /// default is the 128KiB
 #[derive(PartialEq, Debug)]
-pub struct ChunkSize(usize);
+pub struct ChunkSize(pub usize);
 
 impl Default for ChunkSize {
     fn default() -> Self {
