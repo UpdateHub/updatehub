@@ -62,6 +62,9 @@ impl StateChangeImpl for State<Install> {
             .runtime_settings
             .set_applied_package_uid(&package_uid)?;
 
+        installation_set::swap_active()?;
+        info!("Swapping active installation set");
+
         info!("Update installed successfully");
         let buffer = crate::logger::buffer();
         buffer.lock().unwrap().stop_logging();
