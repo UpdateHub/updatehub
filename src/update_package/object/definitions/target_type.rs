@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use failure::ensure;
 use serde::Deserialize;
 use std::path::PathBuf;
 
@@ -11,6 +12,23 @@ pub enum TargetType {
     Device(PathBuf),
     UBIVolume(String),
     MTDName(String),
+}
+
+impl TargetType {
+    pub fn valid(&self) -> Result<&Self, failure::Error> {
+        Ok(match self {
+            TargetType::Device(ref p) => {
+                ensure!(p.exists(), "Target device does not exists");
+                ensure!(
+                    !p.metadata()?.permissions().readonly(),
+                    "User doesn't have write permission on target device"
+                );
+                &self
+            }
+            TargetType::UBIVolume(_) => &self,
+            TargetType::MTDName(_) => &self,
+        })
+    }
 }
 
 #[cfg(test)]
