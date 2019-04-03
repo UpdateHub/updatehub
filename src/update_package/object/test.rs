@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::ObjectType;
+use super::{ObjectInstaller, ObjectType};
 use serde::Deserialize;
 
 #[derive(Deserialize, PartialEq, Debug)]
@@ -12,6 +12,12 @@ pub(crate) struct Test {
     sha256sum: String,
     target: String,
     size: u64,
+}
+
+impl ObjectInstaller for Test {
+    fn install(&self, _: std::path::PathBuf) -> Result<(), failure::Error> {
+        Ok(())
+    }
 }
 
 impl_object_type!(Test);

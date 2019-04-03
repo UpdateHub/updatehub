@@ -14,6 +14,8 @@ mod tarball;
 mod test;
 mod ubifs;
 
+use crate::states::install::ObjectInstaller;
+
 #[cfg(test)]
 use self::test::Test;
 use self::{copy::Copy, flash::Flash, imxkobs::Imxkobs, raw::Raw, tarball::Tarball, ubifs::Ubifs};
@@ -42,6 +44,24 @@ pub(crate) enum Object {
 }
 
 impl_object_for_object_types!(Copy, Flash, Imxkobs, Tarball, Ubifs, Raw);
+
+impl ObjectInstaller for Object {
+    fn check_requirements(&self) -> Result<(), failure::Error> {
+        for_any_object!(self, o, { o.check_requirements() })
+    }
+
+    fn setup(&mut self) -> Result<(), failure::Error> {
+        for_any_object!(self, o, { o.setup() })
+    }
+
+    fn install(&self, _download_dir: std::path::PathBuf) -> Result<(), failure::Error> {
+        for_any_object!(self, o, { o.install(_download_dir) })
+    }
+
+    fn cleanup(&mut self) -> Result<(), failure::Error> {
+        for_any_object!(self, o, { o.cleanup() })
+    }
+}
 
 #[derive(PartialEq, Debug)]
 pub(crate) enum ObjectStatus {

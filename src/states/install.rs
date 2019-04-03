@@ -6,8 +6,8 @@ use super::{
     Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::{firmware::installation_set, update_package::UpdatePackage};
-use slog::slog_info;
-use slog_scope::info;
+use slog::{slog_debug, slog_info};
+use slog_scope::{debug, info};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Install {
@@ -33,12 +33,31 @@ impl ProgressReporter for State<Install> {
     }
 }
 
+pub(crate) trait ObjectInstaller {
+    fn check_requirements(&self) -> Result<(), failure::Error> {
+        debug!("running default check_requirements");
+        Ok(())
+    }
+
+    fn setup(&mut self) -> Result<(), failure::Error> {
+        debug!("running default setup");
+        Ok(())
+    }
+
+    fn cleanup(&mut self) -> Result<(), failure::Error> {
+        debug!("running default cleanup");
+        Ok(())
+    }
+
+    fn install(&self, download_dir: std::path::PathBuf) -> Result<(), failure::Error>;
+}
+
 impl StateChangeImpl for State<Install> {
     fn name(&self) -> &'static str {
         "install"
     }
 
-    fn handle(self) -> Result<StateMachine, failure::Error> {
+    fn handle(mut self) -> Result<StateMachine, failure::Error> {
         let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 
@@ -49,9 +68,15 @@ impl StateChangeImpl for State<Install> {
         //
         // - verify if the object needs to be installed, accordingly to the install if
         //   different rule.
-        //
-        // - if object needs installation, use the respective object installation mode.
-        //
+
+        let objs = self.0.update_package.objects_mut(installation_set);
+        objs.iter()
+            .try_for_each(ObjectInstaller::check_requirements)?;
+        objs.iter_mut().try_for_each(ObjectInstaller::setup)?;
+        objs.iter_mut().try_for_each(|obj| {
+            obj.install(shared_state!().settings.update.download_dir.clone())?;
+            obj.cleanup()
+        })?;
 
         // Ensure we do a probe as soon as possible so full update
         // cycle can be finished.
@@ -62,6 +87,7 @@ impl StateChangeImpl for State<Install> {
             .runtime_settings
             .set_applied_package_uid(&package_uid)?;
 
+        // Swap installation set so it is used next device boot.
         installation_set::swap_active()?;
         info!("Swapping active installation set");
 

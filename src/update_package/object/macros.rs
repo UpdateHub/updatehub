@@ -57,3 +57,13 @@ macro_rules! impl_object_type {
         }
     };
 }
+
+macro_rules! for_any_object {
+    ($mode:ident, $alias:ident, $code:block) => {
+        match $mode {
+            #[cfg(test)]
+            Object::Test($alias) => $code,
+            _ => panic!("FIXME: TODO: Mode still not supported"),
+        }
+    };
+}

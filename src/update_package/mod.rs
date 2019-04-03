@@ -17,7 +17,7 @@ use slog_scope::error;
 mod supported_hardware;
 use self::supported_hardware::SupportedHardware;
 
-mod object;
+pub(crate) mod object;
 pub(crate) use self::object::{Object, ObjectStatus};
 
 #[cfg(test)]
@@ -67,6 +67,13 @@ impl UpdatePackage {
         match installation_set {
             InstallationSet::A => &self.objects.0,
             InstallationSet::B => &self.objects.1,
+        }
+    }
+
+    pub(crate) fn objects_mut(&mut self, installation_set: InstallationSet) -> &mut Vec<Object> {
+        match installation_set {
+            InstallationSet::A => &mut self.objects.0,
+            InstallationSet::B => &mut self.objects.1,
         }
     }
 
