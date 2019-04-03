@@ -54,8 +54,8 @@ impl ObjectInstaller for Object {
         for_any_object!(self, o, { o.setup() })
     }
 
-    fn install(&self, _download_dir: std::path::PathBuf) -> Result<(), failure::Error> {
-        for_any_object!(self, o, { o.install(_download_dir) })
+    fn install(&self, download_dir: std::path::PathBuf) -> Result<(), failure::Error> {
+        for_any_object!(self, o, { o.install(download_dir) })
     }
 
     fn cleanup(&mut self) -> Result<(), failure::Error> {
