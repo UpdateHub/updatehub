@@ -21,18 +21,12 @@ CROSS_COMPILE ?= ""
 all: build
 
 .PHONY: build
-build: .GOPATH/.ok updatehub updatehub-server updatehub-ctl
+build: .GOPATH/.ok updatehub updatehub-ctl
 
 .PHONY: updatehub
 updatehub: .GOPATH/.ok vendor
 	@echo -n "building updatehub… "
 	$Q $(CROSS_COMPILE)go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub
-	@echo "done"
-
-.PHONY: updatehub-server vendor
-updatehub-server: .GOPATH/.ok
-	@echo -n "building updatehub-server… "
-	$Q $(CROSS_COMPILE)go install $(if $V,-v -x) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/updatehub-server
 	@echo "done"
 
 .PHONY: updatehub-ctl vendor

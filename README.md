@@ -46,4 +46,3 @@ UpdateHub Linux Agent is licensed under the GPLv2. See [COPYING](COPYING) for th
 * Reach us on [Gitter](https://gitter.im/UpdateHub/community)
 * All source code are in [Github](https://github.com/UpdateHub)
 * Email us at [contact@updatehub.io](mailto:contact@updatehub.io)
-
