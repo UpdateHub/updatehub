@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"path"
 	"reflect"
 	"testing"
@@ -24,7 +25,6 @@ import (
 	"github.com/UpdateHub/updatehub/testsmocks/controllermock"
 	"github.com/UpdateHub/updatehub/testsmocks/rebootermock"
 	"github.com/UpdateHub/updatehub/testsmocks/reportermock"
-	"github.com/UpdateHub/updatehub/testsmocks/responsewritermock"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
@@ -76,35 +76,8 @@ func TestNewAgentBackend(t *testing.T) {
 	s := updatehub.DefaultSettings
 	uh.Settings = &s
 
-	ab, err := NewAgentBackend(uh)
+	_, err := NewAgentBackend(uh)
 	assert.NoError(t, err)
-
-	routes := ab.Routes()
-	assert.Equal(t, 4, len(routes))
-
-	assert.Equal(t, "GET", routes[0].Method)
-	assert.Equal(t, "/info", routes[0].Path)
-	expectedFunction := reflect.ValueOf(ab.info)
-	receivedFunction := reflect.ValueOf(routes[0].Handle)
-	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
-
-	assert.Equal(t, "GET", routes[1].Method)
-	assert.Equal(t, "/log", routes[1].Path)
-	expectedFunction = reflect.ValueOf(ab.log)
-	receivedFunction = reflect.ValueOf(routes[1].Handle)
-	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
-
-	assert.Equal(t, "POST", routes[2].Method)
-	assert.Equal(t, "/probe", routes[2].Path)
-	expectedFunction = reflect.ValueOf(ab.probe)
-	receivedFunction = reflect.ValueOf(routes[2].Handle)
-	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
-
-	assert.Equal(t, "POST", routes[3].Method)
-	assert.Equal(t, "/update/download/abort", routes[3].Path)
-	expectedFunction = reflect.ValueOf(ab.updateDownloadAbort)
-	receivedFunction = reflect.ValueOf(routes[3].Handle)
-	assert.Equal(t, expectedFunction.Pointer(), receivedFunction.Pointer())
 }
 
 func setup(t *testing.T) (*updatehub.UpdateHub, *AgentBackend, *cmdlinemock.CmdLineExecuterMock, *rebootermock.RebooterMock) {
@@ -192,15 +165,17 @@ func TestInfoRoute(t *testing.T) {
 	expectedJSON, err := json.MarshalIndent(jsonMap, "", "    ")
 	assert.NoError(t, err)
 
-	rwm := &responsewritermock.ResponseWriterMock{}
-	rwm.On("WriteHeader", 200).Return()
-	rwm.On("Write", expectedJSON).Return(len(expectedJSON), nil)
+	router := NewRouter(ab)
+	rr := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/info", nil)
 
-	ab.info(rwm, nil, nil)
+	router.ServeHTTP(rr, req)
+
+	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, bytes.NewBuffer(expectedJSON), rr.Body)
 
 	clm.AssertExpectations(t)
 	rm.AssertExpectations(t)
-	rwm.AssertExpectations(t)
 }
 
 func TestProbeRouteWithDefaultApiClient(t *testing.T) {
@@ -222,10 +197,6 @@ func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 	uh.Controller = cm
 	cm.On("ProbeUpdate", uh.DefaultApiClient, 5).Return((*metadata.UpdateMetadata)(nil), []byte{}, 3600*time.Second, nil)
 
-	rwm := &responsewritermock.ResponseWriterMock{}
-	rwm.On("WriteHeader", 200)
-	rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
-
 	done := make(chan bool, 1)
 	go func() {
 		ok := false
@@ -239,16 +210,21 @@ func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 		done <- true
 	}()
 
-	ab.probe(rwm, nil, nil)
+	router := NewRouter(ab)
+	rr := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/probe", bytes.NewBuffer([]byte(`{}`)))
+	router.ServeHTTP(rr, req)
 
 	<-done
+
+	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, bytes.NewBuffer(expectedResponse), rr.Body)
 
 	assert.IsType(t, &updatehub.ProbeState{}, s.NextState())
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	rm.AssertExpectations(t)
-	rwm.AssertExpectations(t)
 }
 
 func TestProbeRouteIsBusy(t *testing.T) {
@@ -264,13 +240,13 @@ func TestProbeRouteIsBusy(t *testing.T) {
 	s := updatehub.NewRebootingState(uh.DefaultApiClient, nil)
 	uh.SetState(s)
 
-	rwm := &responsewritermock.ResponseWriterMock{}
-	rwm.On("WriteHeader", 202)
-	rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
+	router := NewRouter(ab)
+	rr := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/probe", bytes.NewBuffer([]byte(`{}`)))
+	router.ServeHTTP(rr, req)
 
-	ab.probe(rwm, nil, nil)
-
-	rwm.AssertExpectations(t)
+	assert.Equal(t, 202, rr.Code)
+	assert.Equal(t, bytes.NewBuffer(expectedResponse), rr.Body)
 }
 
 func TestProbeRouteWithServerAddressField(t *testing.T) {
@@ -319,10 +295,6 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 				return reflect.DeepEqual(actual, apiClient)
 			}), 5).Return((*metadata.UpdateMetadata)(nil), []byte{}, 3600*time.Second, nil)
 
-			rwm := &responsewritermock.ResponseWriterMock{}
-			rwm.On("WriteHeader", 200)
-			rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
-
 			done := make(chan bool, 1)
 			go func() {
 				ok := false
@@ -338,21 +310,23 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 
 			body := bytes.NewBufferString(fmt.Sprintf(`{ "server-address": "%s" }`, tc.ExpectedURL))
 
-			req, err := http.NewRequest("POST", tc.Address, body)
-			assert.NoError(t, err)
-
 			ab.DefaultApiClient = apiClient
 
-			ab.probe(rwm, req, nil)
+			router := NewRouter(ab)
+			rr := httptest.NewRecorder()
+			req, _ := http.NewRequest("POST", "/probe", body)
+			router.ServeHTTP(rr, req)
 
 			<-done
 
 			assert.IsType(t, &updatehub.ProbeState{}, s.NextState())
 
+			assert.Equal(t, 200, rr.Code)
+			assert.Equal(t, bytes.NewBuffer(expectedResponse), rr.Body)
+
 			clm.AssertExpectations(t)
 			cm.AssertExpectations(t)
 			rm.AssertExpectations(t)
-			rwm.AssertExpectations(t)
 		})
 	}
 }
@@ -375,19 +349,20 @@ func TestUpdateDownloadAbortRoute(t *testing.T) {
 
 	uh.SetState(ds)
 
-	rwm := &responsewritermock.ResponseWriterMock{}
-	rwm.On("WriteHeader", 200)
-	rwm.On("Write", expectedJSON).Return(len(expectedJSON), nil)
-
-	ab.updateDownloadAbort(rwm, nil, nil)
+	router := NewRouter(ab)
+	rr := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/update/download/abort", nil)
+	router.ServeHTTP(rr, req)
 
 	assert.IsType(t, &updatehub.IdleState{}, ds.NextState())
+
+	assert.Equal(t, 200, rr.Code)
+	assert.Equal(t, bytes.NewBuffer(expectedJSON), rr.Body)
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	repm.AssertExpectations(t)
 	rm.AssertExpectations(t)
-	rwm.AssertExpectations(t)
 }
 
 func TestUpdateDownloadAbortRouteWithNoDownloadInProgress(t *testing.T) {
@@ -408,40 +383,36 @@ func TestUpdateDownloadAbortRouteWithNoDownloadInProgress(t *testing.T) {
 	uh.TimeStep = time.Second
 	uh.SetState(updatehub.NewIdleState())
 
-	rwm := &responsewritermock.ResponseWriterMock{}
-	rwm.On("WriteHeader", 400)
-	rwm.On("Write", expectedResponse).Return(len(expectedResponse), nil)
-
-	ab.updateDownloadAbort(rwm, nil, nil)
+	router := NewRouter(ab)
+	rr := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/update/download/abort", nil)
+	router.ServeHTTP(rr, req)
 
 	assert.IsType(t, &updatehub.ErrorState{}, uh.GetState())
+
+	assert.Equal(t, 400, rr.Code)
+	assert.Equal(t, bytes.NewBuffer(expectedResponse), rr.Body)
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
 	repm.AssertExpectations(t)
 	rm.AssertExpectations(t)
-	rwm.AssertExpectations(t)
 }
 
 func TestLogRoute(t *testing.T) {
 	_, ab, clm, rm := setup(t)
 	defer teardown(t)
 
-	logContent := []uint8("")
-
-	rwm := &responsewritermock.ResponseWriterMock{}
-	rwm.On("WriteHeader", 200)
-	rwm.On("Write", mock.Anything).Run(func(args mock.Arguments) {
-		arg := args.Get(0).([]uint8)
-		logContent = arg
-	}).Return(len(logContent), nil)
-
-	ab.log(rwm, nil, nil)
+	router := NewRouter(ab)
+	rr := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/log", nil)
+	router.ServeHTTP(rr, req)
 
 	jsonArray := []map[string]interface{}{}
-	err := json.Unmarshal(logContent, &jsonArray)
+	err := json.NewDecoder(rr.Body).Decode(&jsonArray)
 	assert.NoError(t, err)
 
+	assert.Equal(t, 200, rr.Code)
 	assert.True(t, len(jsonArray) > 0)
 
 	// since we can't control which log messages will be on the
@@ -461,5 +432,4 @@ func TestLogRoute(t *testing.T) {
 
 	clm.AssertExpectations(t)
 	rm.AssertExpectations(t)
-	rwm.AssertExpectations(t)
 }

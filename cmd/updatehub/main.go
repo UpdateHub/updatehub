@@ -141,8 +141,8 @@ func main() {
 	log.Info("starting API HTTP server")
 
 	go func() {
-		router := server.NewBackendRouter(backend)
-		if err := http.ListenAndServe(":8080", router.HTTPRouter); err != nil {
+		router := server.NewRouter(backend)
+		if err := http.ListenAndServe(":8080", router); err != nil {
 			log.Fatal(err)
 		} else {
 			log.Info("API HTTP server started")
