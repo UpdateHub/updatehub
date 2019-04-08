@@ -1,45 +1,27 @@
-/*
- * UpdateHub
- * Copyright (C) 2017
- * O.S. Systems Sofware LTDA: contato@ossystems.com.br
- *
- * SPDX-License-Identifier:     GPL-2.0
- */
-
 package server
 
 import (
-	"fmt"
 	"net/http"
 
-	"github.com/OSSystems/pkg/log"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 )
 
-type BackendRouter struct {
-	backend    Backend
-	HTTPRouter *httprouter.Router
+type Router struct {
+	router  *mux.Router
+	backend *AgentBackend
 }
 
-func NewBackendRouter(b Backend) *BackendRouter {
-	br := &BackendRouter{
-		backend:    b,
-		HTTPRouter: httprouter.New(),
-	}
+func NewRouter(backend *AgentBackend) *Router {
+	s := &Router{router: mux.NewRouter(), backend: backend}
 
-	for _, r := range b.Routes() {
-		p, h := br.logMiddleware(r.Path, r.Handle)
-		br.HTTPRouter.Handle(r.Method, p, h)
-	}
+	s.router.HandleFunc("/info", backend.info).Methods("GET")
+	s.router.HandleFunc("/log", backend.log).Methods("GET")
+	s.router.HandleFunc("/probe", backend.probe).Methods("POST")
+	s.router.HandleFunc("/update/download/abort", backend.updateDownloadAbort).Methods("POST")
 
-	return br
+	return s
 }
 
-func (br *BackendRouter) logMiddleware(p string, h func(http.ResponseWriter, *http.Request, httprouter.Params)) (string, httprouter.Handle) {
-	middleware := func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		log.Info(fmt.Sprintf("processing HTTP API '%s %s' request", r.Method, r.URL))
-		h(w, r, p)
-	}
-
-	return p, middleware
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	r.router.ServeHTTP(w, req)
 }

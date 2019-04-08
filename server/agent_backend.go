@@ -18,7 +18,6 @@ import (
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/UpdateHub/updatehub/utils"
-	"github.com/julienschmidt/httprouter"
 )
 
 type AgentBackend struct {
@@ -31,16 +30,7 @@ func NewAgentBackend(uh *updatehub.UpdateHub) (*AgentBackend, error) {
 	return ab, nil
 }
 
-func (ab *AgentBackend) Routes() []Route {
-	return []Route{
-		{Method: "GET", Path: "/info", Handle: ab.info},
-		{Method: "GET", Path: "/log", Handle: ab.log},
-		{Method: "POST", Path: "/probe", Handle: ab.probe},
-		{Method: "POST", Path: "/update/download/abort", Handle: ab.updateDownloadAbort},
-	}
-}
-
-func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request) {
 	out := map[string]interface{}{}
 
 	out["version"] = ab.UpdateHub.Version
@@ -56,7 +46,7 @@ func (ab *AgentBackend) info(w http.ResponseWriter, r *http.Request, p httproute
 	log.Debug(string(outputJSON))
 }
 
-func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 	apiClient := ab.UpdateHub.DefaultApiClient
 
 	var in struct {
@@ -64,24 +54,22 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprout
 		IgnoreProbeASAP bool   `json:"ignore-probe-asap"`
 	}
 
-	if r != nil {
-		buffer := new(bytes.Buffer)
-		buffer.ReadFrom(r.Body)
-		body := buffer.Bytes()
+	buffer := new(bytes.Buffer)
+	buffer.ReadFrom(r.Body)
+	body := buffer.Bytes()
 
-		err := json.Unmarshal(body, &in)
+	err := json.Unmarshal(body, &in)
+	if err != nil {
+		log.Warn("failed to parse a /probe request: ", err)
+	}
+
+	if in.ServerAddress != "" {
+		sanitizedAddress, err := utils.SanitizeServerAddress(in.ServerAddress)
+
 		if err != nil {
-			log.Warn("failed to parse a /probe request: ", err)
-		}
-
-		if in.ServerAddress != "" {
-			sanitizedAddress, err := utils.SanitizeServerAddress(in.ServerAddress)
-
-			if err != nil {
-				log.Warn("failed to sanitize a server address from /probe request: ", err)
-			} else {
-				apiClient = client.NewApiClient(sanitizedAddress)
-			}
+			log.Warn("failed to sanitize a server address from /probe request: ", err)
+		} else {
+			apiClient = client.NewApiClient(sanitizedAddress)
 		}
 	}
 
@@ -123,7 +111,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request, p httprout
 	log.Debug(string(outputJSON))
 }
 
-func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Request) {
 	_, ok := ab.UpdateHub.GetState().(*updatehub.DownloadingState)
 	if !ok {
 		w.WriteHeader(400)
@@ -149,7 +137,7 @@ func (ab *AgentBackend) updateDownloadAbort(w http.ResponseWriter, r *http.Reque
 	log.Debug(msg)
 }
 
-func (ab *AgentBackend) log(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (ab *AgentBackend) log(w http.ResponseWriter, r *http.Request) {
 	out := []map[string]interface{}{}
 
 	for _, e := range log.AllEntries() {

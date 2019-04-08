@@ -1,5 +1,5 @@
-hash: 50c75ccfdc5cd616c5b1929df38e21b7c2dbdc7b70f085b993ba47fb1e36d2f9
-updated: 2019-02-08T11:47:56.075162527-02:00
+hash: a20d8178c48aa680ea77b7a0d3696ccbcffffaa28ff4502efba16ae40a21ef7d
+updated: 2019-04-09T09:20:51.674201904-03:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: f9a329340c5303f1977dcb9efb0918b34437a003
@@ -23,15 +23,15 @@ imports:
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/go-ini/ini
-  version: 6ed8d5f64cd79a498d1f3fab5880cc376ce41bbe
+  version: c85607071cf08ca1adaf48319cd1aa322e81d8c1
+- name: github.com/gorilla/mux
+  version: c5c6c98bc25355028a63748a498942a6398ccd22
 - name: github.com/hokaccha/go-prettyjson
   version: d229c224a219dcf41e9d2af4684b9782f33f5eb7
 - name: github.com/huandu/xstrings
   version: 7bb0250b58e5c15670406e6f93ffda43281305b1
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
-- name: github.com/julienschmidt/httprouter
-  version: 348b672cd90d8190f8240323e372ecd1e66b59dc
 - name: github.com/konsorten/go-windows-terminal-sequences
   version: 5c8c8bd35d3832f5d134ae1e1e375b69a4d25242
 - name: github.com/koofr/go-httputils
@@ -57,12 +57,12 @@ imports:
   subpackages:
   - difflib
 - name: github.com/sirupsen/logrus
-  version: e1e72e9de974bd926e5c56f83753fba2df402ce5
+  version: 8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f
   subpackages:
   - hooks/syslog
   - hooks/test
 - name: github.com/spf13/afero
-  version: f4711e4db9e9a1d3887343acb72b2bbfc2f686f5
+  version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
   subpackages:
   - mem
 - name: github.com/spf13/cobra
@@ -78,10 +78,6 @@ imports:
   - mock
 - name: github.com/UpdateHub/agent-sdk-go
   version: 4159d014cd88d05c76aa647fb1e63baba497c8fc
-- name: golang.org/x/crypto
-  version: 0c41d7ab0a0ee717d4590a44bcb987dfd9e183eb
-  subpackages:
-  - ssh/terminal
 - name: golang.org/x/net
   version: db08ff08e8622530d9ed3a0e8ac279f6d4c02196
   subpackages:
@@ -90,7 +86,6 @@ imports:
   version: fa43e7bc11baaae89f3f902b2b4d832b68234844
   subpackages:
   - unix
-  - windows
 - name: golang.org/x/text
   version: 4d1c5fb19474adfe9562c9847ba425e7da817e81
   subpackages:

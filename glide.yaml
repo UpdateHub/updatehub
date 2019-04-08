@@ -2,8 +2,6 @@ package: github.com/UpdateHub/updatehub
 import:
 - package: github.com/go-ini/ini
   version: ^1.39.0
-- package: github.com/julienschmidt/httprouter
-  version: ^1.2.0
 - package: github.com/pkg/errors
   version: ^0.8.0
 - package: github.com/spf13/afero
@@ -33,3 +31,5 @@ import:
 - package: github.com/c9s/goprocinfo
   subpackages:
   - linux
+- package: github.com/gorilla/mux
+  version: ^1.7.1
