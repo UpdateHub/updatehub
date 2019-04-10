@@ -9,19 +9,54 @@ use serde::Deserialize;
 pub struct TargetPermissions {
     #[serde(deserialize_with(de::octal_from_str))]
     pub target_mode: Option<u32>,
-    pub target_gid: Option<Id>,
-    pub target_uid: Option<Id>,
+    pub target_gid: Option<Gid>,
+    pub target_uid: Option<Uid>,
 }
 
 #[derive(PartialEq, Debug, Deserialize)]
 #[serde(untagged)]
-pub enum Id {
-    /// User or group name
+pub enum Gid {
+    /// Group name
     Name(String),
 
-    /// User or group numeric id
+    /// Group numeric id
     #[serde(deserialize_with(de::octal_from_str))]
     Number(u32),
+}
+
+#[derive(PartialEq, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum Uid {
+    /// User name
+    Name(String),
+
+    /// User numeric id
+    #[serde(deserialize_with(de::octal_from_str))]
+    Number(u32),
+}
+
+impl Gid {
+    pub fn as_u32(&self) -> u32 {
+        match self {
+            Gid::Name(s) => {
+                let s = std::ffi::CString::new(s.as_str());
+                unsafe { *nix::libc::getgrnam(s.unwrap().as_ptr()) }.gr_gid
+            }
+            Gid::Number(n) => *n,
+        }
+    }
+}
+
+impl Uid {
+    pub fn as_u32(&self) -> u32 {
+        match self {
+            Uid::Name(s) => {
+                let s = std::ffi::CString::new(s.as_str());
+                unsafe { *nix::libc::getpwnam(s.unwrap().as_ptr()) }.pw_uid
+            }
+            Uid::Number(n) => *n,
+        }
+    }
 }
 
 #[test]
@@ -32,8 +67,8 @@ fn deserialize() {
     assert_eq!(
         TargetPermissions {
             target_mode: Some(0o0777),
-            target_gid: Some(Id::Name("wheel".to_string())),
-            target_uid: Some(Id::Name("user".to_string())),
+            target_gid: Some(Gid::Name("wheel".to_string())),
+            target_uid: Some(Uid::Name("user".to_string())),
         },
         serde_json::from_value::<TargetPermissions>(json!({
             "target-mode": 0o0777,
@@ -46,8 +81,8 @@ fn deserialize() {
     assert_eq!(
         TargetPermissions {
             target_mode: None,
-            target_gid: Some(Id::Number(1000)),
-            target_uid: Some(Id::Number(1000)),
+            target_gid: Some(Gid::Number(1000)),
+            target_uid: Some(Uid::Number(1000)),
         },
         serde_json::from_value::<TargetPermissions>(json!({
             "target-uid": 1000,
