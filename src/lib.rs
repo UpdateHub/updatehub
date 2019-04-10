@@ -1,4 +1,4 @@
-// Copyright (C) 2018 O.S. Systems Sofware LTDA
+// Copyright (C) 2018, 2019 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -15,5 +15,6 @@ mod serde_helpers;
 mod settings;
 mod states;
 mod update_package;
+mod utils;
 
 pub use crate::{build_info::version, settings::Settings, states::run};

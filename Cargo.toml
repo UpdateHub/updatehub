@@ -23,6 +23,7 @@ slog = "2"
 slog-async = "2"
 slog-scope = "4"
 slog-term = "2"
+sys-mount = "1"
 lazy_static = "1"
 nix = "0.13"
 parse_duration = "1"
@@ -33,6 +34,7 @@ serde_derive = "1"
 serde_ini = "0.1"
 serde_json = "1"
 structopt = "0.2"
+tempfile = "3"
 walkdir = "2"
 
 [profile.release]
@@ -45,6 +47,6 @@ panic = 'abort'
 git-version = "0.2"
 
 [dev-dependencies]
+loopdev = "0.2"
 mockito = "0.17"
 pretty_assertions = "0.6"
-tempfile = "3"
