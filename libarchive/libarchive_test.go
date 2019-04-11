@@ -127,6 +127,8 @@ func generateTarball(fsBackend afero.Fs) (string, error) {
 		hdr := &tar.Header{
 			Name: file.Name,
 			Mode: 0600,
+			Uid:  os.Getuid(),
+			Gid:  os.Getgid(),
 			Size: int64(len(file.Body)),
 		}
 
