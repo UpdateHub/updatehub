@@ -411,6 +411,9 @@ func extractTarball(api API, filename string, enableRaw bool) error {
 	flags |= C.ARCHIVE_EXTRACT_PERM
 	flags |= C.ARCHIVE_EXTRACT_ACL
 	flags |= C.ARCHIVE_EXTRACT_FFLAGS
+	flags |= C.ARCHIVE_EXTRACT_OWNER
+	flags |= C.ARCHIVE_EXTRACT_FFLAGS
+	flags |= C.ARCHIVE_EXTRACT_XATTR
 
 	target := api.WriteDiskNew()
 	defer api.WriteFree(target)
