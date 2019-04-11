@@ -12,7 +12,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
+	"os"
+	"sort"
+	"strings"
 
 	"github.com/OSSystems/pkg/log"
 	"github.com/UpdateHub/updatehub/client"
@@ -64,12 +69,95 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if in.ServerAddress != "" {
-		sanitizedAddress, err := utils.SanitizeServerAddress(in.ServerAddress)
-
+		target, err := url.Parse(in.ServerAddress)
 		if err != nil {
-			log.Warn("failed to sanitize a server address from /probe request: ", err)
-		} else {
-			apiClient = client.NewApiClient(sanitizedAddress)
+		}
+
+		var updatePackage *UpdatePackage
+
+		switch target.Scheme {
+		case "http":
+			fallthrough
+		case "https":
+			if strings.HasSuffix(target.Path, ".uhupkg") {
+				updatePackage, err = fetchUpdatePackage(target)
+				if err != nil {
+					log.Error(err)
+					w.WriteHeader(500)
+					return
+				}
+			} else {
+				sanitizedAddress, err := utils.SanitizeServerAddress(in.ServerAddress)
+
+				if err != nil {
+					log.Warn("failed to sanitize a server address from /probe request: ", err)
+				} else {
+					apiClient = client.NewApiClient(sanitizedAddress)
+				}
+			}
+		case "file":
+			if fi, err := os.Stat(target.Path); err == nil {
+				var filename string
+
+				if fi.IsDir() {
+					files, _ := ioutil.ReadDir(target.Path)
+					sort.Slice(files, func(i, j int) bool {
+						return files[i].ModTime().After(files[j].ModTime())
+					})
+
+					for _, f := range files {
+						if strings.HasSuffix(f.Name(), ".uhupkg") {
+							filename = f.Name()
+							break
+						}
+					}
+
+					if fi == nil {
+						w.WriteHeader(500)
+						return
+					}
+				} else {
+					filename = fi.Name()
+				}
+
+				if filename != "" {
+					f, _ := os.Open(filename)
+					defer f.Close()
+
+					updatePackage, err = NewUpdatePackage(f)
+					if err != nil {
+						w.WriteHeader(500)
+						return
+					}
+				} else {
+					w.WriteHeader(500)
+					return
+				}
+			} else {
+				w.WriteHeader(500)
+				return
+			}
+		}
+
+		if updatePackage != nil {
+			s, err := NewLocalServer(updatePackage)
+			if err != nil {
+				log.Error(err)
+				w.WriteHeader(500)
+				return
+			}
+
+			apiClient = client.NewApiClient(fmt.Sprintf("http://localhost:%d", s.port))
+
+			go func() {
+				err := s.start()
+				log.Fatal(err)
+			}()
+
+			if ok := s.waitForAvailable(); !ok {
+				w.WriteHeader(500)
+				return
+			}
 		}
 	}
 
