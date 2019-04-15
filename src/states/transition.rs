@@ -18,7 +18,6 @@ pub(super) fn state_change_callback(
     path: &Path,
     state: &'static str,
 ) -> Result<Transition, failure::Error> {
-    use easy_process;
     use std::io;
 
     let callback = path.join(STATE_CHANGE_CALLBACK);
