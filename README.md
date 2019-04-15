@@ -1,4 +1,4 @@
-# updatehub [![Build Status](https://travis-ci.org/otavio/updatehub.svg?branch=next)](https://travis-ci.org/otavio/updatehub) [![Coverage Status](https://coveralls.io/repos/github/otavio/updatehub/badge.svg?branch=next)](https://coveralls.io/github/otavio/updatehub?branch=next)
+# updatehub [![Build Status](https://travis-ci.org/otavio/updatehub.svg?branch=next)](https://travis-ci.org/otavio/updatehub) [![Coverage Status](https://coveralls.io/repos/github/otavio/updatehub/badge.svg?branch=next)](https://coveralls.io/github/otavio/updatehub?branch=next) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fotavio%2Fupdatehub.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fotavio%2Fupdatehub?ref=badge_shield)
 
 UpdateHub provides a generic and safe Firmware Over-The-Air agent for
 Embedded and Industrial Linux-based devices.
