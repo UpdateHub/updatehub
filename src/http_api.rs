@@ -35,7 +35,7 @@ impl API {
         agent.0.send(actor::probe::Request(server_address)).wait()
     }
 
-    fn log(_: web::Data<API>) -> impl Responder {
+    fn log() -> impl Responder {
         web::Json(crate::logger::buffer())
     }
 
