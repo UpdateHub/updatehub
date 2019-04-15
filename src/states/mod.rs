@@ -200,10 +200,12 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     System::run(|| {
         let addr = agent_machine.start();
         let addr_clone = addr.clone();
-        actix_web::server::new(move || http_api::app(addr_clone.clone()))
-            .bind("localhost:8080")
-            .unwrap()
-            .start();
+        actix_web::HttpServer::new(move || {
+            actix_web::App::new().configure(|cfg| http_api::configure(cfg, addr_clone.clone()))
+        })
+        .bind("localhost:8080")
+        .unwrap()
+        .start();
 
         // Iterate over the state machine.
         loop {
@@ -211,7 +213,7 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
                 .wait()
                 .expect("Failed to communicate with actor");
         }
-    });
+    })?;
 
     unreachable!("actix System has stopped");
 }

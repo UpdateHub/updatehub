@@ -4,22 +4,20 @@
 
 use crate::states::actor;
 use actix::Addr;
-use actix_web::{error::Error, http, App, HttpRequest, HttpResponse, Json, Responder, Result};
+use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
 use futures::future::Future;
 use serde::Serialize;
 use serde_json::json;
 
-pub fn app(addr: Addr<actor::Machine>) -> App<API> {
-    let agent = API::new(addr);
-    App::with_state(agent)
-        .route("/info", http::Method::GET, API::info)
-        .route("/log", http::Method::GET, API::probe)
-        .route("/probe", http::Method::POST, API::probe)
+pub fn configure(cfg: &mut web::RouterConfig, addr: Addr<actor::Machine>) {
+    cfg.data(API::new(addr))
+        .route("/info", web::get().to(API::info))
+        .route("/log", web::get().to(API::log))
+        .route("/probe", web::post().to(API::probe))
         .route(
             "/update/download/abort",
-            http::Method::POST,
-            API::download_abort,
-        )
+            web::post().to(API::download_abort),
+        );
 }
 
 pub struct API(Addr<actor::Machine>);
@@ -29,46 +27,36 @@ impl API {
         Self(addr)
     }
 
-    fn info(req: HttpRequest<API>) -> impl Responder {
-        Json(req.state().0.send(actor::info::Request).wait().unwrap())
+    fn info(agent: web::Data<API>) -> impl Responder {
+        web::Json(agent.0.send(actor::info::Request).wait().unwrap())
     }
 
-    fn probe(req: HttpRequest<API>) -> impl Responder {
-        let server_address = req
-            .match_info()
-            .get("server-address")
-            .map(std::string::ToString::to_string);
-
-        req.state()
-            .0
-            .send(actor::probe::Request(server_address))
-            .wait()
+    fn probe(agent: web::Data<API>, server_address: Option<String>) -> impl Responder {
+        agent.0.send(actor::probe::Request(server_address)).wait()
     }
 
-    fn log(_req: HttpRequest<API>) -> impl Responder {
-        Json(crate::logger::buffer())
+    fn log(_: web::Data<API>) -> impl Responder {
+        web::Json(crate::logger::buffer())
     }
 
-    fn download_abort(req: HttpRequest<API>) -> impl Responder {
-        req.state().0.send(actor::download_abort::Request).wait()
+    fn download_abort(agent: web::Data<API>) -> impl Responder {
+        agent.0.send(actor::download_abort::Request).wait()
     }
 }
 
 impl Responder for actor::download_abort::Response {
     type Error = Error;
-    type Item = HttpResponse;
+    type Future = HttpResponse;
 
-    fn respond_to<S: 'static>(self, _: &HttpRequest<S>) -> Result<Self::Item, Self::Error> {
+    fn respond_to(self, _: &HttpRequest) -> Self::Future {
         match self {
-            actor::download_abort::Response::RequestAccepted => {
-                Ok(HttpResponse::Ok().json(json!({
-                    "message": "request accepted, download aborted"
-                })))
-            }
+            actor::download_abort::Response::RequestAccepted => HttpResponse::Ok().json(json!({
+                "message": "request accepted, download aborted"
+            })),
             actor::download_abort::Response::InvalidState => {
-                Ok(HttpResponse::BadRequest().json(json!({
+                HttpResponse::BadRequest().json(json!({
                     "error": "there is no download to be aborted"
-                })))
+                }))
             }
         }
     }
@@ -76,9 +64,9 @@ impl Responder for actor::download_abort::Response {
 
 impl Responder for actor::probe::Response {
     type Error = Error;
-    type Item = HttpResponse;
+    type Future = HttpResponse;
 
-    fn respond_to<S: 'static>(self, _: &HttpRequest<S>) -> Result<Self::Item, Self::Error> {
+    fn respond_to(self, _: &HttpRequest) -> Self::Future {
         #[derive(Serialize)]
         struct Payload {
             busy: bool,
@@ -88,10 +76,10 @@ impl Responder for actor::probe::Response {
 
         match self {
             actor::probe::Response::RequestAccepted(state) => {
-                Ok(HttpResponse::Ok().json(Payload { busy: false, state }))
+                HttpResponse::Ok().json(Payload { busy: false, state })
             }
             actor::probe::Response::InvalidState(state) => {
-                Ok(HttpResponse::Ok().json(Payload { busy: true, state }))
+                HttpResponse::Ok().json(Payload { busy: true, state })
             }
         }
     }
