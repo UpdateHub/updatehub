@@ -55,6 +55,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 	apiClient := ab.UpdateHub.DefaultApiClient
 
 	var in struct {
+		From            string `json:"from"`
 		ServerAddress   string `json:"server-address"`
 		IgnoreProbeASAP bool   `json:"ignore-probe-asap"`
 	}
@@ -68,8 +69,11 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 		log.Warn("failed to parse a /probe request: ", err)
 	}
 
-	if in.ServerAddress != "" {
-		target, err := url.Parse(in.ServerAddress)
+	// ServerAddress is deprecated, so this was neccessary in order to maintain compability
+	in.From = in.ServerAddress
+
+	if in.From != "" {
+		target, err := url.Parse(in.From)
 		if err != nil {
 		}
 
@@ -87,7 +91,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			} else {
-				sanitizedAddress, err := utils.SanitizeServerAddress(in.ServerAddress)
+				sanitizedAddress, err := utils.SanitizeServerAddress(in.From)
 
 				if err != nil {
 					log.Warn("failed to sanitize a server address from /probe request: ", err)
