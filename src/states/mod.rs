@@ -201,7 +201,7 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
         let addr = agent_machine.start();
         let addr_clone = addr.clone();
         actix_web::HttpServer::new(move || {
-            actix_web::App::new().configure(|cfg| http_api::configure(cfg, addr_clone.clone()))
+            actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, addr_clone.clone()))
         })
         .bind("localhost:8080")
         .unwrap()
