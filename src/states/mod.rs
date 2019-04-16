@@ -198,10 +198,10 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     let agent_machine = actor::Machine::new(StateMachine::new());
 
     System::run(|| {
-        let addr = agent_machine.start();
-        let addr_clone = addr.clone();
+        let machine = agent_machine.start();
+        let api = machine.clone();
         actix_web::HttpServer::new(move || {
-            actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, addr_clone.clone()))
+            actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, api.clone()))
         })
         .bind("localhost:8080")
         .unwrap()
@@ -209,7 +209,8 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
 
         // Iterate over the state machine.
         loop {
-            addr.send(actor::Step)
+            machine
+                .send(actor::Step)
                 .wait()
                 .expect("Failed to communicate with actor");
         }
