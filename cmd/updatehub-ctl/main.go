@@ -15,7 +15,7 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
-	var probeServerAddress string
+	var probeFrom string
 	var ignoreProbeASAP bool
 
 	agent := updatehub.NewClient()
@@ -24,7 +24,7 @@ func main() {
 		Use:   "probe",
 		Short: "Probe the server for update",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return execProbeCmd(agent, probeServerAddress, ignoreProbeASAP)
+			return execProbeCmd(agent, probeFrom, ignoreProbeASAP)
 		},
 	}
 
@@ -44,8 +44,10 @@ func main() {
 		},
 	}
 
-	probeCmd.Flags().StringVarP(&probeServerAddress, "server-address", "s", "", "Server address for the triggered probe")
+	probeCmd.Flags().StringVarP(&probeFrom, "from", "f", "", "Probe update from")
+	probeCmd.Flags().StringVarP(&probeFrom, "server-address", "s", "", "Server address for the triggered probe")
 	probeCmd.Flags().BoolVar(&ignoreProbeASAP, "ignore-probe-asap", false, "Ignore Probe ASAP")
+	probeCmd.Flags().MarkDeprecated("server-address", "use --from instead")
 
 	rootCmd.AddCommand(probeCmd)
 	rootCmd.AddCommand(infoCmd)
