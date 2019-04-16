@@ -54,21 +54,17 @@ impl ObjectInstaller for Copy {
     fn install(&self, download_dir: PathBuf) -> Result<(), failure::Error> {
         info!("'copy' handler Install");
 
-        let device = match self.target_type {
-            definitions::TargetType::Device(ref p) => p,
-            _ => unreachable!("Device should be secured by check_requirements"),
-        };
-
+        let device = self.target_type.get_target()?;
         let filesystem = self.filesystem;
         let mount_options = &self.mount_options;
         let format_options = &self.target_format.format_options;
         let chunk_size = definitions::ChunkSize::default().0;
 
         if self.target_format.format {
-            utils::fs::format(device, filesystem, &format_options)?;
+            utils::fs::format(&device, filesystem, &format_options)?;
         }
 
-        utils::fs::mount_map(device, filesystem, mount_options, |path| {
+        utils::fs::mount_map(&device, filesystem, mount_options, |path| {
             let dest = path.join(&self.target_path);
             let source = download_dir.join(self.sha256sum());
             let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);

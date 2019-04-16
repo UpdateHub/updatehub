@@ -17,7 +17,7 @@ pub enum TargetType {
 impl TargetType {
     pub fn valid(&self) -> Result<&Self, failure::Error> {
         Ok(match self {
-            TargetType::Device(ref p) => {
+            TargetType::Device(p) => {
                 ensure!(p.exists(), "Target device does not exists");
                 ensure!(
                     !p.metadata()?.permissions().readonly(),
@@ -25,9 +25,17 @@ impl TargetType {
                 );
                 &self
             }
-            TargetType::UBIVolume(_) => &self,
-            TargetType::MTDName(_) => &self,
+            TargetType::UBIVolume(_) => unimplemented!("FIXME: Check if UBI Volume is valid"),
+            TargetType::MTDName(_) => unimplemented!("FIXME: Check if MTD name is valid"),
         })
+    }
+
+    pub fn get_target(&self) -> Result<PathBuf, failure::Error> {
+        match self {
+            TargetType::Device(p) => Ok(p.clone()),
+            TargetType::UBIVolume(_s) => unimplemented!("FIXME: Get device from UBI Volume name"),
+            TargetType::MTDName(_s) => unimplemented!("FIXME: Get device from MTD name"),
+        }
     }
 }
 
