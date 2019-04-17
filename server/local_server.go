@@ -112,8 +112,6 @@ func (l *LocalServer) getObject(w http.ResponseWriter, r *http.Request) {
 
 	defer reader.Free()
 
-	fmt.Println(mux.Vars(r)["object"])
-
 	err = reader.ExtractFile(mux.Vars(r)["object"], w)
 	if err != nil {
 		w.WriteHeader(500)
