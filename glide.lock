@@ -1,5 +1,5 @@
-hash: 50c75ccfdc5cd616c5b1929df38e21b7c2dbdc7b70f085b993ba47fb1e36d2f9
-updated: 2019-02-08T11:47:56.075162527-02:00
+hash: 3cb69dd25f354056ba8a89cbfebe9be9d8c5bfc0f406629acac481ee46a0e7fb
+updated: 2019-04-17T17:43:28.583575418-03:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: f9a329340c5303f1977dcb9efb0918b34437a003
@@ -23,7 +23,7 @@ imports:
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/go-ini/ini
-  version: 6ed8d5f64cd79a498d1f3fab5880cc376ce41bbe
+  version: c85607071cf08ca1adaf48319cd1aa322e81d8c1
 - name: github.com/hokaccha/go-prettyjson
   version: d229c224a219dcf41e9d2af4684b9782f33f5eb7
 - name: github.com/huandu/xstrings
@@ -57,12 +57,12 @@ imports:
   subpackages:
   - difflib
 - name: github.com/sirupsen/logrus
-  version: e1e72e9de974bd926e5c56f83753fba2df402ce5
+  version: 8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f
   subpackages:
   - hooks/syslog
   - hooks/test
 - name: github.com/spf13/afero
-  version: f4711e4db9e9a1d3887343acb72b2bbfc2f686f5
+  version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
   subpackages:
   - mem
 - name: github.com/spf13/cobra
@@ -72,16 +72,12 @@ imports:
 - name: github.com/stretchr/objx
   version: 0ab728f62c7f6fcd754334f7931c2dd659dce1d1
 - name: github.com/stretchr/testify
-  version: ffdc059bfe9ce6a4e144ba849dbedead332c6053
+  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
   subpackages:
   - assert
   - mock
 - name: github.com/UpdateHub/agent-sdk-go
   version: 4159d014cd88d05c76aa647fb1e63baba497c8fc
-- name: golang.org/x/crypto
-  version: 0c41d7ab0a0ee717d4590a44bcb987dfd9e183eb
-  subpackages:
-  - ssh/terminal
 - name: golang.org/x/net
   version: db08ff08e8622530d9ed3a0e8ac279f6d4c02196
   subpackages:
@@ -90,7 +86,6 @@ imports:
   version: fa43e7bc11baaae89f3f902b2b4d832b68234844
   subpackages:
   - unix
-  - windows
 - name: golang.org/x/text
   version: 4d1c5fb19474adfe9562c9847ba425e7da817e81
   subpackages:
