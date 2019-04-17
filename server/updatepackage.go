@@ -43,7 +43,7 @@ func fetchUpdatePackage(target *url.URL) (*UpdatePackage, error) {
 		return nil, errors.New("failed")
 	}
 
-	out, err := ioutil.TempFile("/var/lib/updatehub", "uhupkg")
+	out, err := ioutil.TempFile("", "uhupkg")
 	if err != nil {
 		return nil, err
 	}
