@@ -23,6 +23,7 @@ import (
 	"github.com/UpdateHub/updatehub/client"
 	"github.com/UpdateHub/updatehub/updatehub"
 	"github.com/UpdateHub/updatehub/utils"
+	"github.com/sirupsen/logrus"
 )
 
 type AgentBackend struct {
@@ -112,6 +113,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 					for _, f := range files {
 						if strings.HasSuffix(f.Name(), ".uhupkg") {
 							filename = f.Name()
+							log.WithFields(logrus.Fields{"package": filename}).Info("Using package")
 							break
 						}
 					}
