@@ -218,7 +218,7 @@ func TestProbeRouteWithDefaultApiClient(t *testing.T) {
 	<-done
 
 	assert.Equal(t, 200, rr.Code)
-	assert.Equal(t, bytes.NewBuffer(expectedResponse), rr.Body)
+	assert.JSONEq(t, string(expectedResponse), rr.Body.String())
 
 	assert.IsType(t, &updatehub.ProbeState{}, s.NextState())
 
@@ -246,7 +246,7 @@ func TestProbeRouteIsBusy(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	assert.Equal(t, 202, rr.Code)
-	assert.Equal(t, bytes.NewBuffer(expectedResponse), rr.Body)
+	assert.JSONEq(t, string(expectedResponse), rr.Body.String())
 }
 
 func TestProbeRouteWithServerAddressField(t *testing.T) {
@@ -322,7 +322,7 @@ func TestProbeRouteWithServerAddressField(t *testing.T) {
 			assert.IsType(t, &updatehub.ProbeState{}, s.NextState())
 
 			assert.Equal(t, 200, rr.Code)
-			assert.Equal(t, bytes.NewBuffer(expectedResponse), rr.Body)
+			assert.JSONEq(t, string(expectedResponse), rr.Body.String())
 
 			clm.AssertExpectations(t)
 			cm.AssertExpectations(t)
@@ -357,7 +357,7 @@ func TestUpdateDownloadAbortRoute(t *testing.T) {
 	assert.IsType(t, &updatehub.IdleState{}, ds.NextState())
 
 	assert.Equal(t, 200, rr.Code)
-	assert.Equal(t, bytes.NewBuffer(expectedJSON), rr.Body)
+	assert.JSONEq(t, string(expectedJSON), rr.Body.String())
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
@@ -391,7 +391,7 @@ func TestUpdateDownloadAbortRouteWithNoDownloadInProgress(t *testing.T) {
 	assert.IsType(t, &updatehub.ErrorState{}, uh.GetState())
 
 	assert.Equal(t, 400, rr.Code)
-	assert.Equal(t, bytes.NewBuffer(expectedResponse), rr.Body)
+	assert.JSONEq(t, string(expectedResponse), rr.Body.String())
 
 	clm.AssertExpectations(t)
 	cm.AssertExpectations(t)
