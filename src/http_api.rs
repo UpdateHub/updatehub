@@ -3,16 +3,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::states::actor;
-use actix::Addr;
 use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
 use futures::future::Future;
 use serde::Serialize;
 use serde_json::json;
 
-pub struct API(Addr<actor::Machine>);
+pub struct API(actix::Addr<actor::Machine>);
 
 impl API {
-    pub fn configure(cfg: &mut web::RouterConfig, addr: Addr<actor::Machine>) {
+    pub fn configure(cfg: &mut web::ServiceConfig, addr: actix::Addr<actor::Machine>) {
         cfg.data(Self(addr))
             .route("/info", web::get().to(API::info))
             .route("/log", web::get().to(API::log))

@@ -10,7 +10,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-actix-web = "1.0.0-alpha.6"
+actix-web = "1.0.0-beta.1"
 actix = { version = "0.8", features = ["http"] }
 chrono = { version = "0.4", features = ["serde"] }
 crypto-hash = "0.3"
