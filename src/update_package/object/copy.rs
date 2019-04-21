@@ -71,8 +71,8 @@ impl ObjectInstaller for Copy {
         utils::fs::mount_map(device, filesystem, mount_options, |path| {
             let dest = path.join(&self.target_path);
             let source = download_dir.join(self.sha256sum());
-            let mut input = io::BufReader::with_capacity(chunk_size, fs::File::open(source)?);
-            let mut output = io::BufWriter::with_capacity(
+            let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
+            let mut output = utils::io::timed_buf_writer(
                 chunk_size,
                 fs::OpenOptions::new()
                     .read(true)

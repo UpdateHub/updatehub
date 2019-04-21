@@ -3,17 +3,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{definitions, ObjectInstaller, ObjectType};
-
-use failure::{bail, ensure};
+use crate::utils;
+use failure::bail;
 use serde::Deserialize;
 use slog::slog_info;
 use slog_scope::info;
 use std::{
     fs,
-    io::{self, BufRead, Seek, SeekFrom, Write},
+    io::{BufRead, Seek, SeekFrom, Write},
     path::PathBuf,
-    sync::mpsc,
-    thread, time,
 };
 
 #[derive(Deserialize, PartialEq, Debug)]
@@ -68,9 +66,10 @@ impl ObjectInstaller for Raw {
         let truncate = self.truncate.0;
         let count = self.count.clone();
 
-        let mut input = io::BufReader::with_capacity(chunk_size, fs::File::open(source)?);
+        let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
+
         input.seek(SeekFrom::Start(skip))?;
-        let mut output = io::BufWriter::with_capacity(
+        let mut output = utils::io::timed_buf_writer(
             chunk_size,
             fs::OpenOptions::new()
                 .read(true)
@@ -79,12 +78,6 @@ impl ObjectInstaller for Raw {
                 .open(device)?,
         );
         output.seek(SeekFrom::Start(seek))?;
-
-        let (time_snd, time_rcv) = mpsc::channel();
-        thread::spawn(move || {
-            thread::sleep(time::Duration::from_secs(3600)); // 1h timeout
-            let _ = time_snd.send(());
-        });
 
         for _ in count {
             let buf = input.fill_buf()?;
@@ -95,9 +88,6 @@ impl ObjectInstaller for Raw {
             if len == 0 {
                 break;
             }
-
-            // If no message was received, timeout was not trigged.
-            ensure!(time_rcv.try_recv().is_err(), "copy error: timeout");
 
             output.write_all(&buf)?;
             input.consume(len);
@@ -112,7 +102,7 @@ mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
     use serde_json::json;
-    use std::{iter, path::PathBuf};
+    use std::{io, iter, path::PathBuf};
     use tempfile::{tempdir, NamedTempFile};
 
     const DEFAULT_BYTE: u8 = 0xF;
