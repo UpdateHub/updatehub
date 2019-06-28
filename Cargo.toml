@@ -27,7 +27,7 @@ sys-mount = "1"
 lazy_static = "1"
 nix = "0.14"
 parse_duration = "1"
-rand = "0.6"
+rand = "0.7"
 reqwest = "0.9"
 serde = { version = "1", features = ["rc", "derive"]}
 serde_derive = "1"
