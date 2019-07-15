@@ -7,8 +7,42 @@ use crate::update_package::object::definitions::{
     Filesystem,
 };
 use easy_process;
+use failure::format_err;
 use std::{io, path::Path};
 use sys_mount::{Mount, Unmount, UnmountDrop};
+
+pub(crate) fn find_compress_tarball_kind(
+    file: &Path,
+) -> Result<compress_tools::Kind, failure::Error> {
+    match infer::Infer::new()
+        .get_from_path(file)?
+        .ok_or_else(|| format_err!("Unknown type"))?
+        .ext
+        .as_str()
+    {
+        "bz2" => Ok(compress_tools::Kind::TarBZip2),
+        "gz" => Ok(compress_tools::Kind::TarGZip),
+        "lz" => Ok(compress_tools::Kind::TarLZip),
+        "xz" => Ok(compress_tools::Kind::TarXz),
+        "tar" => Ok(compress_tools::Kind::Tar),
+        t => Err(format_err!("{} is not a valid archive type", t)),
+    }
+}
+
+pub(crate) fn find_compress_kind(file: &Path) -> Result<compress_tools::Kind, failure::Error> {
+    match infer::Infer::new()
+        .get_from_path(file)?
+        .ok_or_else(|| format_err!("Unknown archive type"))?
+        .ext
+        .as_str()
+    {
+        "gz" => Ok(compress_tools::Kind::GZip),
+        "bz2" => Ok(compress_tools::Kind::BZip2),
+        "xz" => Ok(compress_tools::Kind::Xz),
+        "lz" => Ok(compress_tools::Kind::LZip),
+        _ => Err(format_err!("Invalid archive type")),
+    }
+}
 
 pub(crate) fn format(
     target: &Path,

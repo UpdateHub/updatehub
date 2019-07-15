@@ -2,8 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{definitions, ObjectType};
+use super::{definitions, ObjectInstaller, ObjectType};
+use crate::utils;
 use serde::Deserialize;
+use slog::slog_info;
+use slog_scope::info;
+use std::path::PathBuf;
 
 #[derive(Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "kebab-case")]
@@ -27,6 +31,44 @@ pub(crate) struct Tarball {
 }
 
 impl_object_type!(Tarball);
+
+impl ObjectInstaller for Tarball {
+    fn check_requirements(&self) -> Result<(), failure::Error> {
+        info!("'tarball' handle checking requirements");
+
+        match self.target {
+            definitions::TargetType::Device(_)
+            | definitions::TargetType::UBIVolume(_)
+            | definitions::TargetType::MTDName(_) => self.target.valid().map(|_| ()),
+        }
+    }
+
+    fn install(&self, download_dir: PathBuf) -> Result<(), failure::Error> {
+        info!("'tarball' handler Install");
+
+        let device = self.target.get_target()?;
+        let filesystem = self.filesystem;
+        let mount_options = &self.mount_options;
+        let format_options = &self.target_format.format_options;
+        let source = download_dir.join(self.sha256sum());
+
+        if self.target_format.should_format {
+            utils::fs::format(&device, filesystem, format_options)?;
+        }
+
+        utils::fs::mount_map(&device, filesystem, mount_options, |path| {
+            let dest = path.join(&self.target_path);
+
+            compress_tools::uncompress(
+                &source,
+                &dest,
+                utils::fs::find_compress_tarball_kind(&source)?,
+            )
+        })
+    }
+}
+
+// FIXME: Add more tests
 
 #[test]
 fn deserialize() {
