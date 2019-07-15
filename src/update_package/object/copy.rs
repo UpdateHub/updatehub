@@ -60,7 +60,7 @@ impl ObjectInstaller for Copy {
         let format_options = &self.target_format.format_options;
         let chunk_size = definitions::ChunkSize::default().0;
 
-        if self.target_format.format {
+        if self.target_format.should_format {
             utils::fs::format(&device, filesystem, &format_options)?;
         }
 
@@ -254,7 +254,7 @@ mod tests {
     #[test]
     #[ignore]
     fn copy_over_formated_partion() {
-        exec_test_with_copy(|obj| obj.target_format.format = true, None).unwrap();
+        exec_test_with_copy(|obj| obj.target_format.should_format = true, None).unwrap();
     }
 
     #[test]

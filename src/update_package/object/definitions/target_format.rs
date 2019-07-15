@@ -8,7 +8,7 @@ use serde::Deserialize;
 #[serde(rename_all = "kebab-case")]
 pub struct TargetFormat {
     #[serde(rename = "format?", default)]
-    pub format: bool,
+    pub should_format: bool,
     pub format_options: Option<String>,
 }
 
@@ -19,7 +19,7 @@ fn deserialize() {
 
     assert_eq!(
         TargetFormat {
-            format: true,
+            should_format: true,
             format_options: Some("-fs ext2".to_string()),
         },
         serde_json::from_value::<TargetFormat>(json!({
@@ -31,7 +31,7 @@ fn deserialize() {
 
     assert_eq!(
         TargetFormat {
-            format: false,
+            should_format: false,
             format_options: None,
         },
         serde_json::from_value::<TargetFormat>(json!({
@@ -47,7 +47,7 @@ fn default() {
 
     assert_eq!(
         TargetFormat {
-            format: false,
+            should_format: false,
             format_options: None,
         },
         TargetFormat::default(),
