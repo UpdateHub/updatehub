@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use core::ops::Index;
-use serde_derive::Serialize;
+use serde::Serialize;
 use std::{
     collections::{
         btree_map::{Entry, Keys},

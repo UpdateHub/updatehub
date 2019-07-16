@@ -26,7 +26,6 @@ parse_duration = "1"
 rand = "0.7"
 reqwest = "0.9"
 serde = { version = "1", features = ["rc", "derive"]}
-serde_derive = "1"
 serde_ini = "0.2"
 serde_json = "1"
 slog = "2"

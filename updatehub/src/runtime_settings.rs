@@ -6,7 +6,7 @@ use crate::serde_helpers::{de, ser};
 
 use chrono::{DateTime, Duration, Utc};
 use failure::Fail;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_ini;
 use slog::slog_debug;
 use slog_scope::debug;

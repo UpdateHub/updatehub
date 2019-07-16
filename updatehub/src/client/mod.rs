@@ -9,7 +9,7 @@ use reqwest::{
     header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
     Client, StatusCode,
 };
-use serde_derive::Serialize;
+use serde::Serialize;
 use slog::slog_debug;
 use slog_scope::debug;
 use std::{path::Path, time::Duration};

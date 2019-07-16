@@ -4,7 +4,7 @@
 
 use crate::{serde_helpers::de::supported_hardware_any as any, update_package::UpdatePackageError};
 
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(untagged)]

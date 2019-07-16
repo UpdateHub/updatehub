@@ -5,7 +5,7 @@
 use self::hook::{run_hook, run_hooks_from_dir};
 
 use failure::Fail;
-use serde_derive::Serialize;
+use serde::Serialize;
 use std::path::Path;
 
 mod hook;
