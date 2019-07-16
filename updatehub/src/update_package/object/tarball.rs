@@ -80,7 +80,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use serde_json::json;
     use std::{
-        env, fs,
+        fs,
         io::{Seek, SeekFrom, Write},
         os::unix::fs::MetadataExt,
         path::Path,
@@ -142,7 +142,7 @@ mod tests {
         // Peform Install
         obj.check_requirements()?;
         obj.setup()?;
-        obj.install(env::current_dir()?.join("test/fixtures"))?;
+        obj.install(PathBuf::from("test/fixtures"))?;
 
         // Validade File
         utils::fs::mount_map(
