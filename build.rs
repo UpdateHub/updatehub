@@ -2,10 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use git_version;
+use git_version::git_version;
 
 fn main() {
-    git_version::set_env();
+    println!("cargo:rustc-env={}={}", "VERSION", git_version!());
 
     // Run in single thread due the active/inactive tests not
     // supporting to run in parallel for now.
