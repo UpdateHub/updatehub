@@ -18,7 +18,7 @@ pub(crate) struct Tarball {
     sha256sum: String,
     #[serde(flatten)]
     target: definitions::TargetType,
-    target_path: String,
+    target_path: PathBuf,
 
     #[serde(default)]
     compressed: bool,
@@ -57,7 +57,7 @@ impl ObjectInstaller for Tarball {
         }
 
         utils::fs::mount_map(&device, filesystem, mount_options, |path| {
-            let dest = path.join(&self.target_path);
+            let dest = path.join(&self.target_path.strip_prefix("/")?);
 
             compress_tools::uncompress(
                 &source,
@@ -83,7 +83,7 @@ fn deserialize() {
             sha256sum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                 .to_string(),
             target: definitions::TargetType::Device(std::path::PathBuf::from("/dev/sda")),
-            target_path: "/".to_string(),
+            target_path: PathBuf::from("/"),
 
             compressed: bool::default(),
             required_uncompressed_size: u64::default(),

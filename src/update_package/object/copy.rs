@@ -24,7 +24,7 @@ pub(crate) struct Copy {
     sha256sum: String,
     #[serde(flatten)]
     target_type: definitions::TargetType,
-    target_path: String,
+    target_path: PathBuf,
 
     install_if_different: Option<definitions::InstallIfDifferent>,
     #[serde(flatten)]
@@ -184,7 +184,7 @@ mod tests {
             size: FILE_SIZE as u64,
             sha256sum: source.path().to_string_lossy().to_string(),
             target_type: definitions::TargetType::Device(device.clone()),
-            target_path: "original_file".to_string(),
+            target_path: PathBuf::from("original_file"),
             install_if_different: None,
             target_permissions: definitions::TargetPermissions::default(),
             compressed: false,
@@ -325,7 +325,7 @@ mod tests {
                 sha256sum: "cfe2be1c64b0387500853de0f48303e3de7b1c6f1508dc719eeafa0d41c36722"
                     .to_string(),
                 target_type: definitions::TargetType::Device(PathBuf::from("/dev/sda")),
-                target_path: "/etc/passwd".to_string(),
+                target_path: PathBuf::from("/etc/passwd"),
 
                 install_if_different: Some(definitions::InstallIfDifferent::CheckSum(
                     definitions::install_if_different::CheckSum::Sha256Sum
