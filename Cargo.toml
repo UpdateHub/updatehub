@@ -2,6 +2,7 @@
 
 members = [
     "updatehub",
+    "updatehub-package-schema",
 ]
 
 [profile.release]
