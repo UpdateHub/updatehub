@@ -40,3 +40,16 @@ fn deserialize() {
         .unwrap()
     );
 }
+
+#[test]
+fn default() {
+    use pretty_assertions::assert_eq;
+
+    assert_eq!(
+        TargetFormat {
+            format: false,
+            format_options: None,
+        },
+        TargetFormat::default(),
+    );
+}
