@@ -52,6 +52,10 @@ impl ObjectInstaller for Tarball {
         let format_options = &self.target_format.format_options;
         let source = download_dir.join(self.sha256sum());
 
+        // FIXME: use required_uncompressed_size
+        // if we will format, we check the full size
+        // else we check the remaning size
+
         if self.target_format.should_format {
             utils::fs::format(&device, filesystem, format_options)?;
         }
@@ -68,37 +72,144 @@ impl ObjectInstaller for Tarball {
     }
 }
 
-// FIXME: Add more tests
-
-#[test]
-fn deserialize() {
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lazy_static::lazy_static;
+    use loopdev;
     use pretty_assertions::assert_eq;
     use serde_json::json;
+    use std::{
+        env, fs,
+        io::{Seek, SeekFrom, Write},
+        os::unix::fs::MetadataExt,
+        path::Path,
+        sync::{Arc, Mutex},
+    };
+    use tempfile;
 
-    assert_eq!(
-        Tarball {
-            filename: "etc/passwd".to_string(),
+    const CONTENT_SIZE: usize = 10240;
+
+    lazy_static! {
+        static ref SERIALIZE: Arc<Mutex<()>> = Arc::new(Mutex::default());
+    }
+
+    fn exec_test_with_tarball<F>(mut f: F) -> Result<(), failure::Error>
+    where
+        F: FnMut(&mut Tarball),
+    {
+        // Generate a sparse file for the faked device use
+        let mut image = tempfile::NamedTempFile::new()?;
+        image.seek(SeekFrom::Start(1024 * 1024 + CONTENT_SIZE as u64))?;
+        image.write_all(&[0])?;
+
+        // Setup faked device
+        let (loopdev, device) = {
+            // Loop device next_free is not thread safe
+            let mutex = SERIALIZE.clone();
+            let _mutex = mutex.lock().unwrap();
+            let loopdev = loopdev::LoopControl::open()?.next_free()?;
+            let device = loopdev.path().unwrap();
+            loopdev.attach_file(image.path())?;
+            (loopdev, device)
+        };
+
+        // Format the faked device
+        utils::fs::format(&device, definitions::Filesystem::Ext4, &None)?;
+
+        // Generate base copy object
+        let mut obj = Tarball {
+            filename: "".to_string(),
             filesystem: definitions::Filesystem::Ext4,
-            size: 1024,
-            sha256sum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-                .to_string(),
-            target: definitions::TargetType::Device(std::path::PathBuf::from("/dev/sda")),
+            size: CONTENT_SIZE as u64,
+            sha256sum: "tree.tar".to_string(),
+            target: definitions::TargetType::Device(device.clone()),
             target_path: PathBuf::from("/"),
 
-            compressed: bool::default(),
-            required_uncompressed_size: u64::default(),
+            compressed: false,
+            required_uncompressed_size: CONTENT_SIZE as u64,
             target_format: definitions::TargetFormat::default(),
             mount_options: String::default(),
-        },
-        serde_json::from_value::<Tarball>(json!({
-            "filename": "etc/passwd",
-            "size": 1024,
-            "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "target-type": "device",
-            "target": "/dev/sda",
-            "filesystem": "ext4",
-            "target-path": "/"
-        }))
-        .unwrap()
-    );
+        };
+        f(&mut obj);
+
+        // Setup preinstall structure
+        utils::fs::mount_map(&device, definitions::Filesystem::Ext4, &"", |path| {
+            fs::create_dir(path.join("existing_dir"))?;
+            Ok(())
+        })?;
+
+        // Peform Install
+        obj.check_requirements()?;
+        obj.setup()?;
+        obj.install(env::current_dir()?.join("test/fixtures"))?;
+
+        // Validade File
+        utils::fs::mount_map(
+            &device,
+            obj.filesystem,
+            &obj.mount_options.clone(),
+            |path| {
+                let assert_metadata = |p: &Path| -> Result<(), failure::Error> {
+                    let metadata = p.metadata()?;
+                    assert_eq!(metadata.mode() % 0o1000, 0o664);
+                    assert_eq!(metadata.uid(), 1000);
+                    assert_eq!(metadata.gid(), 1000);
+
+                    Ok(())
+                };
+                let dest = path.join(&obj.target_path.strip_prefix("/")?);
+                assert_metadata(&dest.join("tree/branch1/leaf"))?;
+                assert_metadata(&dest.join("tree/branch2/leaf"))?;
+
+                Ok(())
+            },
+        )?;
+
+        loopdev.detach()?;
+
+        Ok(())
+    }
+
+    #[test]
+    #[ignore]
+    fn install_over_formated_partion() {
+        exec_test_with_tarball(|obj| obj.target_format.should_format = true).unwrap();
+    }
+
+    #[test]
+    #[ignore]
+    fn install_over_unformated_partion() {
+        exec_test_with_tarball(|obj| obj.target_path = PathBuf::from("/existing_dir")).unwrap();
+    }
+
+    #[test]
+    fn deserialize() {
+        assert_eq!(
+            Tarball {
+                filename: "etc/passwd".to_string(),
+                filesystem: definitions::Filesystem::Ext4,
+                size: 1024,
+                sha256sum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                    .to_string(),
+                target: definitions::TargetType::Device(std::path::PathBuf::from("/dev/sda")),
+                target_path: PathBuf::from("/"),
+
+                compressed: false,
+                required_uncompressed_size: 0,
+                target_format: definitions::TargetFormat::default(),
+                mount_options: String::default(),
+            },
+            serde_json::from_value::<Tarball>(json!({
+                "filename": "etc/passwd",
+                "size": 1024,
+                "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "target-type": "device",
+                "target": "/dev/sda",
+                "filesystem": "ext4",
+                "target-path": "/"
+            }))
+            .unwrap()
+        );
+    }
 }
