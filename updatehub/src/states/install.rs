@@ -5,7 +5,11 @@
 use super::{
     Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
-use crate::{firmware::installation_set, update_package::UpdatePackage};
+use crate::{
+    firmware::installation_set,
+    object::{self, Installer},
+    update_package::UpdatePackage,
+};
 use slog::{slog_debug, slog_info};
 use slog_scope::{debug, info};
 
@@ -71,8 +75,8 @@ impl StateChangeImpl for State<Install> {
 
         let objs = self.0.update_package.objects_mut(installation_set);
         objs.iter()
-            .try_for_each(ObjectInstaller::check_requirements)?;
-        objs.iter_mut().try_for_each(ObjectInstaller::setup)?;
+            .try_for_each(object::Installer::check_requirements)?;
+        objs.iter_mut().try_for_each(object::Installer::setup)?;
         objs.iter_mut().try_for_each(|obj| {
             obj.install(shared_state!().settings.update.download_dir.clone())?;
             obj.cleanup()

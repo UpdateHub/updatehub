@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::update_package::object::definitions::{
-    target_permissions::{Gid, Uid},
-    Filesystem,
-};
 use easy_process;
 use failure::format_err;
 use std::{io, path::Path};
 use sys_mount::{Mount, Unmount, UnmountDrop};
+use pkg_schema::definitions::{
+    target_permissions::{Gid, Uid},
+    Filesystem,
+};
 
 pub(crate) fn find_compress_tarball_kind(
     file: &Path,

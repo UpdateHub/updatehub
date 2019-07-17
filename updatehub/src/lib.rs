@@ -10,6 +10,7 @@ mod firmware;
 mod http_api;
 pub mod logger;
 mod mem_drain;
+mod object;
 mod runtime_settings;
 mod serde_helpers;
 mod settings;

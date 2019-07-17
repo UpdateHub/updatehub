@@ -9,7 +9,8 @@ use super::{
 use crate::{
     client::Api,
     firmware::installation_set,
-    update_package::{Object, ObjectStatus, UpdatePackage},
+    object::{self, Info},
+    update_package::UpdatePackage,
 };
 
 use failure::bail;
@@ -67,7 +68,7 @@ impl StateChangeImpl for State<Download> {
                     .update_package
                     .objects(installation_set)
                     .iter()
-                    .map(Object::sha256sum)
+                    .map(object::Info::sha256sum)
                     .any(|x| x == e.file_name())
             })
         {
@@ -78,7 +79,7 @@ impl StateChangeImpl for State<Download> {
         for object in self.0.update_package.filter_objects(
             &shared_state!().settings,
             installation_set,
-            &ObjectStatus::Corrupted,
+            object::info::Status::Corrupted,
         ) {
             fs::remove_file(download_dir.join(object.sha256sum()))?;
         }
@@ -90,13 +91,13 @@ impl StateChangeImpl for State<Download> {
             .filter_objects(
                 &shared_state!().settings,
                 installation_set,
-                &ObjectStatus::Missing,
+                object::info::Status::Missing,
             )
             .into_iter()
             .chain(self.0.update_package.filter_objects(
                 &shared_state!().settings,
                 installation_set,
-                &ObjectStatus::Incomplete,
+                object::info::Status::Incomplete,
             ))
         {
             Api::new(&shared_state!().settings.network.server_address).download_object(
@@ -112,7 +113,7 @@ impl StateChangeImpl for State<Download> {
             .update_package
             .objects(installation_set)
             .iter()
-            .all(|o| o.status(download_dir).ok() == Some(ObjectStatus::Ready))
+            .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
             Ok(StateMachine::Install(self.into()))
         } else {

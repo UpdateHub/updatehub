@@ -36,6 +36,7 @@ structopt = "0.2"
 sys-mount = "1"
 tempfile = "3"
 timeout-readwrite = "0.2"
+pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 walkdir = "2"
 
 [build-dependencies]

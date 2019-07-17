@@ -4,11 +4,13 @@
 
 use crate::{
     firmware::{installation_set::Set as InstallationSet, Metadata},
+    object::{self, Info},
     settings::Settings,
 };
 
 use crypto_hash::{hex_digest, Algorithm};
 use failure::Fail;
+use pkg_schema::Object;
 use serde::Deserialize;
 use serde_json;
 use slog::slog_error;
@@ -16,9 +18,6 @@ use slog_scope::error;
 
 mod supported_hardware;
 use self::supported_hardware::SupportedHardware;
-
-pub(crate) mod object;
-pub(crate) use self::object::{Object, ObjectStatus};
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -81,7 +80,7 @@ impl UpdatePackage {
         &self,
         settings: &Settings,
         installation_set: InstallationSet,
-        filter: &ObjectStatus,
+        filter: object::info::Status,
     ) -> Vec<&Object> {
         self.objects(installation_set)
             .iter()
@@ -90,8 +89,8 @@ impl UpdatePackage {
                     .map_err(|e| {
                         error!("Fail accessing the object: {} (err: {})", o.sha256sum(), e)
                     })
-                    .unwrap_or(ObjectStatus::Missing)
-                    .eq(filter)
+                    .unwrap_or(object::info::Status::Missing)
+                    .eq(&filter)
             })
             .collect()
     }
