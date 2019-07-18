@@ -11,7 +11,7 @@ impl Installer for objects::Flash {
     }
 
     #[allow(unused_variables)]
-    fn install(&self, download_dir: std::path::PathBuf) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &std::path::Path) -> Result<(), failure::Error> {
         unimplemented!("FIXME: implement install for Flash object")
     }
 }

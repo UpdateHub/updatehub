@@ -9,7 +9,7 @@ use crate::{
 use pkg_schema::{definitions, objects};
 use slog::slog_info;
 use slog_scope::info;
-use std::path::PathBuf;
+use std::path::Path;
 
 impl Installer for objects::Tarball {
     fn check_requirements(&self) -> Result<(), failure::Error> {
@@ -22,7 +22,7 @@ impl Installer for objects::Tarball {
         }
     }
 
-    fn install(&self, download_dir: PathBuf) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &Path) -> Result<(), failure::Error> {
         info!("'tarball' handler Install");
 
         let device = self.target.get_target()?;
@@ -61,7 +61,7 @@ mod tests {
         fs,
         io::{Seek, SeekFrom, Write},
         os::unix::fs::MetadataExt,
-        path::Path,
+        path::{Path, PathBuf},
         sync::{Arc, Mutex},
     };
     use tempfile;
@@ -120,7 +120,7 @@ mod tests {
         // Peform Install
         obj.check_requirements()?;
         obj.setup()?;
-        obj.install(PathBuf::from("test/fixtures"))?;
+        obj.install(&PathBuf::from("test/fixtures"))?;
 
         // Validade File
         utils::fs::mount_map(

@@ -78,7 +78,7 @@ impl StateChangeImpl for State<Install> {
             .try_for_each(object::Installer::check_requirements)?;
         objs.iter_mut().try_for_each(object::Installer::setup)?;
         objs.iter_mut().try_for_each(|obj| {
-            obj.install(shared_state!().settings.update.download_dir.clone())?;
+            obj.install(&shared_state!().settings.update.download_dir.clone())?;
             obj.cleanup()
         })?;
 

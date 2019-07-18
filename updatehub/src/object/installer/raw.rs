@@ -16,7 +16,7 @@ use slog_scope::info;
 use std::{
     fs,
     io::{BufRead, Seek, SeekFrom, Write},
-    path::PathBuf,
+    path::Path,
 };
 
 impl Installer for objects::Raw {
@@ -29,7 +29,7 @@ impl Installer for objects::Raw {
         bail!("Unexpected target type, expected some device.")
     }
 
-    fn install(&self, download_dir: PathBuf) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &Path) -> Result<(), failure::Error> {
         info!("'raw' handler Install");
 
         let device = match self.target_type {
@@ -191,7 +191,7 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate).unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(download_dir).unwrap();
+        obj.install(&download_dir).unwrap();
 
         compare_files(
             source_guard.as_file_mut(),
@@ -217,7 +217,7 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate).unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(download_dir).unwrap();
+        obj.install(&download_dir).unwrap();
 
         compare_files(
             source_guard.as_file_mut(),
@@ -244,7 +244,7 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate).unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(download_dir).unwrap();
+        obj.install(&download_dir).unwrap();
 
         compare_files(
             source_guard.as_file_mut(),
@@ -271,7 +271,7 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate).unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(download_dir).unwrap();
+        obj.install(&download_dir).unwrap();
 
         compare_files(
             source_guard.as_file_mut(),

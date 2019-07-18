@@ -14,7 +14,7 @@ use std::{
     fs,
     io::{self, Write},
     os::unix::fs::PermissionsExt,
-    path::PathBuf,
+    path::Path,
 };
 
 impl Installer for objects::Copy {
@@ -27,7 +27,7 @@ impl Installer for objects::Copy {
         bail!("Unexpected target type, expected some device.")
     }
 
-    fn install(&self, download_dir: PathBuf) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &Path) -> Result<(), failure::Error> {
         info!("'copy' handler Install");
 
         let device = self.target_type.get_target()?;
@@ -174,7 +174,7 @@ mod tests {
         // Peform Install
         obj.check_requirements()?;
         obj.setup()?;
-        obj.install(download_dir.path().to_path_buf())?;
+        obj.install(&download_dir.path())?;
 
         // Validade File
         utils::fs::mount_map(

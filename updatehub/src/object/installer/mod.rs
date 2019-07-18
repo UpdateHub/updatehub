@@ -30,7 +30,7 @@ pub(crate) trait Installer {
         Ok(())
     }
 
-    fn install(&self, download_dir: std::path::PathBuf) -> Result<(), failure::Error>;
+    fn install(&self, download_dir: &std::path::Path) -> Result<(), failure::Error>;
 }
 
 impl Installer for Object {
@@ -42,7 +42,7 @@ impl Installer for Object {
         for_any_object!(self, o, { o.setup() })
     }
 
-    fn install(&self, download_dir: std::path::PathBuf) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &std::path::Path) -> Result<(), failure::Error> {
         for_any_object!(self, o, { o.install(download_dir) })
     }
 
