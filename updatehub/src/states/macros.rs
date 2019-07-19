@@ -24,13 +24,13 @@ macro_rules! create_state_step {
 macro_rules! for_any_state {
     ($machine:ident, $state:ident, $code:block) => {
         match $machine {
-            StateMachine::Park($state) => $code,
-            StateMachine::Idle($state) => $code,
-            StateMachine::Poll($state) => $code,
-            StateMachine::Probe($state) => $code,
-            StateMachine::Download($state) => $code,
-            StateMachine::Install($state) => $code,
-            StateMachine::Reboot($state) => $code,
+            crate::states::StateMachine::Park($state) => $code,
+            crate::states::StateMachine::Idle($state) => $code,
+            crate::states::StateMachine::Poll($state) => $code,
+            crate::states::StateMachine::Probe($state) => $code,
+            crate::states::StateMachine::Download($state) => $code,
+            crate::states::StateMachine::Install($state) => $code,
+            crate::states::StateMachine::Reboot($state) => $code,
         }
     };
 }
