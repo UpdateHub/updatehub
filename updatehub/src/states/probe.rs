@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Download, Idle, Poll, State, StateChangeImpl, StateMachine};
+use super::{Idle, Poll, PrepareDownload, State, StateChangeImpl, StateMachine};
 use crate::client::Api;
 use slog::{slog_debug, slog_error, slog_info};
 use slog_scope::{debug, error, info};
@@ -88,8 +88,8 @@ impl StateChangeImpl for State<Probe> {
                     debug!("Moving to Idle state as this update package is already installed.");
                     Ok(StateMachine::Idle(self.into()))
                 } else {
-                    debug!("Moving to Download state to process the update package.");
-                    Ok(StateMachine::Download(State(Download {
+                    debug!("Moving to PrepareDownload state to process the update package.");
+                    Ok(StateMachine::PrepareDownload(State(PrepareDownload {
                         update_package: u,
                     })))
                 }
@@ -161,7 +161,7 @@ fn update_available() {
 
     mock.assert();
 
-    assert_state!(machine, Download);
+    assert_state!(machine, PrepareDownload);
 }
 
 #[test]

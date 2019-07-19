@@ -28,6 +28,7 @@ macro_rules! for_any_state {
             crate::states::StateMachine::Idle($state) => $code,
             crate::states::StateMachine::Poll($state) => $code,
             crate::states::StateMachine::Probe($state) => $code,
+            crate::states::StateMachine::PrepareDownload($state) => $code,
             crate::states::StateMachine::Download($state) => $code,
             crate::states::StateMachine::Install($state) => $code,
             crate::states::StateMachine::Reboot($state) => $code,

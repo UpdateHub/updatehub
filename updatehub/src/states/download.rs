@@ -12,14 +12,12 @@ use crate::{
     object::{self, Info},
     update_package::UpdatePackage,
 };
-
 use failure::bail;
-use std::fs;
-use walkdir::WalkDir;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
+    pub(super) installation_set: installation_set::Set,
 }
 
 create_state_step!(Download => Idle);
@@ -51,38 +49,8 @@ impl StateChangeImpl for State<Download> {
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {
-        crate::logger::buffer().lock().unwrap().start_logging();
-        let installation_set = installation_set::inactive()?;
+        let installation_set = self.0.installation_set;
         let download_dir = &shared_state!().settings.update.download_dir.clone();
-
-        // Prune left over from previous installations
-        for entry in WalkDir::new(download_dir)
-            .follow_links(true)
-            .min_depth(1)
-            .into_iter()
-            .filter_entry(|e| e.file_type().is_file())
-            .filter_map(std::result::Result::ok)
-            .filter(|e| {
-                !self
-                    .0
-                    .update_package
-                    .objects(installation_set)
-                    .iter()
-                    .map(object::Info::sha256sum)
-                    .any(|x| x == e.file_name())
-            })
-        {
-            fs::remove_file(entry.path())?;
-        }
-
-        // Prune corrupted files
-        for object in self.0.update_package.filter_objects(
-            &shared_state!().settings,
-            installation_set,
-            object::info::Status::Corrupted,
-        ) {
-            fs::remove_file(download_dir.join(object.sha256sum()))?;
-        }
 
         // Download the missing or incomplete objects
         for object in self
@@ -125,9 +93,11 @@ impl StateChangeImpl for State<Download> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::states::PrepareDownload;
     use pretty_assertions::assert_eq;
+    use walkdir::WalkDir;
 
-    fn fake_download_state() -> State<Download> {
+    fn fake_download_state() -> State<PrepareDownload> {
         use crate::{
             firmware::{
                 tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
@@ -147,7 +117,7 @@ mod test {
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
         set_shared_state!(settings, runtime_settings, firmware);
 
-        State(Download {
+        State(PrepareDownload {
             update_package: get_update_package(),
         })
     }
@@ -156,12 +126,14 @@ mod test {
     fn skip_download_if_ready() {
         use crate::update_package::tests::create_fake_object;
 
-        let download_state = fake_download_state();
+        let predownload_state = fake_download_state();
         let tmpdir = shared_state!().settings.update.download_dir.clone();
 
         create_fake_object(&shared_state!().settings);
 
-        let machine = StateMachine::Download(download_state).move_to_next_state();
+        let machine = StateMachine::PrepareDownload(predownload_state).move_to_next_state();
+        assert_state!(machine, Download);
+        let machine = machine.unwrap().move_to_next_state();
         assert_state!(machine, Install);
 
         assert_eq!(
@@ -183,7 +155,7 @@ mod test {
         use std::{fs::File, io::Read};
 
         let sha256sum = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
-        let download_state = fake_download_state();
+        let predownload_state = fake_download_state();
         let tmpdir = shared_state!().settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed
@@ -194,7 +166,7 @@ mod test {
             format!(
                 "/products/{}/packages/{}/objects/{}",
                 "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-                &download_state.0.update_package.package_uid(),
+                &predownload_state.0.update_package.package_uid(),
                 &sha256sum
             )
             .as_str(),
@@ -205,7 +177,9 @@ mod test {
         .with_body("1234567890")
         .create();
 
-        let machine = StateMachine::Download(download_state).move_to_next_state();
+        let machine = StateMachine::PrepareDownload(predownload_state).move_to_next_state();
+        assert_state!(machine, Download);
+        let machine = machine.unwrap().move_to_next_state();
         assert_state!(machine, Install);
 
         mock.assert();
@@ -231,11 +205,5 @@ mod test {
             &sha256sum,
             "Checksum mismatch"
         );
-    }
-
-    #[test]
-    fn download_has_transition_callback_trait() {
-        let download_state = fake_download_state();
-        assert_eq!(download_state.name(), "download");
     }
 }

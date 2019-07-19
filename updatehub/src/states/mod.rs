@@ -10,6 +10,7 @@ mod idle;
 pub(crate) mod install;
 mod park;
 mod poll;
+mod prepare_download;
 mod probe;
 mod reboot;
 mod transition;
@@ -20,6 +21,7 @@ use self::{
     install::Install,
     park::Park,
     poll::Poll,
+    prepare_download::PrepareDownload,
     probe::{Probe, ServerAddress},
     reboot::Reboot,
 };
@@ -72,6 +74,7 @@ enum StateMachine {
     Idle(State<Idle>),
     Poll(State<Poll>),
     Probe(State<Probe>),
+    PrepareDownload(State<PrepareDownload>),
     Download(State<Download>),
     Install(State<Install>),
     Reboot(State<Reboot>),
@@ -147,6 +150,7 @@ impl StateMachine {
             StateMachine::Idle(s) => Ok(s.handle()?),
             StateMachine::Poll(s) => Ok(s.handle()?),
             StateMachine::Probe(s) => Ok(s.handle()?),
+            StateMachine::PrepareDownload(s) => Ok(s.handle()?),
             StateMachine::Download(s) => Ok(s.handle_with_callback_and_report_progress()?),
             StateMachine::Install(s) => Ok(s.handle_with_callback_and_report_progress()?),
             StateMachine::Reboot(s) => Ok(s.handle_with_callback_and_report_progress()?),
