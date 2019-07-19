@@ -7,17 +7,22 @@ use super::{
     TransitionCallback,
 };
 use crate::{
-    client::Api,
     firmware::installation_set,
     object::{self, Info},
     update_package::UpdatePackage,
 };
-use failure::bail;
+use derivative::Derivative;
+use failure::format_err;
+use std::sync::mpsc;
 
-#[derive(Debug, PartialEq)]
+#[derive(Derivative)]
+#[derivative(Debug, PartialEq)]
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
     pub(super) installation_set: installation_set::Set,
+    #[derivative(PartialEq = "ignore")]
+    #[derivative(Debug = "ignore")]
+    pub(super) download_chan: mpsc::Receiver<Vec<Result<(), failure::Error>>>,
 }
 
 create_state_step!(Download => Idle);
@@ -49,43 +54,23 @@ impl StateChangeImpl for State<Download> {
     }
 
     fn handle(self) -> Result<StateMachine, failure::Error> {
-        let installation_set = self.0.installation_set;
-        let download_dir = &shared_state!().settings.update.download_dir.clone();
-
-        // Download the missing or incomplete objects
-        for object in self
-            .0
-            .update_package
-            .filter_objects(
-                &shared_state!().settings,
-                installation_set,
-                object::info::Status::Missing,
-            )
-            .into_iter()
-            .chain(self.0.update_package.filter_objects(
-                &shared_state!().settings,
-                installation_set,
-                object::info::Status::Incomplete,
-            ))
-        {
-            Api::new(&shared_state!().settings.network.server_address).download_object(
-                &shared_state!().firmware.product_uid,
-                &self.0.update_package.package_uid(),
-                download_dir,
-                object.sha256sum(),
-            )?;
+        match self.0.download_chan.try_recv() {
+            Ok(vec) => vec.into_iter().try_for_each(|res| res)?,
+            Err(mpsc::TryRecvError::Empty) => return Ok(StateMachine::Download(self)),
+            Err(e) => return Err(format_err!("Failed to read from channel: {:?}", e)),
         }
 
+        let download_dir = &shared_state!().settings.update.download_dir.to_owned();
         if self
             .0
             .update_package
-            .objects(installation_set)
+            .objects(self.0.installation_set)
             .iter()
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
             Ok(StateMachine::Install(self.into()))
         } else {
-            bail!("Not all objects are ready for use")
+            Err(format_err!("Not all objects are ready for use"))
         }
     }
 }
@@ -177,9 +162,14 @@ mod test {
         .with_body("1234567890")
         .create();
 
-        let machine = StateMachine::PrepareDownload(predownload_state).move_to_next_state();
+        let mut machine = StateMachine::PrepareDownload(predownload_state).move_to_next_state();
         assert_state!(machine, Download);
-        let machine = machine.unwrap().move_to_next_state();
+        loop {
+            machine = machine.unwrap().move_to_next_state();
+            if let Ok(StateMachine::Install(_)) = machine {
+                break;
+            }
+        }
         assert_state!(machine, Install);
 
         mock.assert();
