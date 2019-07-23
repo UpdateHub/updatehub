@@ -54,7 +54,6 @@ pub(crate) trait Info {
         }
 
         if hex::encode(hasher.finish()) != self.sha256sum() {
-            println!("{:?} {:?}", &self.sha256sum(), hex::encode(hasher.finish()));
             return Ok(Status::Corrupted);
         }
 
