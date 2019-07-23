@@ -23,6 +23,7 @@ infer = "0.1"
 lazy_static = "1"
 nix = "0.14"
 parse_duration = "1"
+pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 rand = "0.7"
 reqwest = "0.9"
 serde = { version = "1", features = ["rc", "derive"]}
@@ -36,7 +37,6 @@ structopt = "0.2"
 sys-mount = "1"
 tempfile = "3"
 timeout-readwrite = "0.2"
-pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 walkdir = "2"
 
 [build-dependencies]
