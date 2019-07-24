@@ -23,7 +23,7 @@ pub(crate) enum FakeServer {
 }
 
 pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
-    use crate::update_package::tests::get_update_json;
+    use crate::update_package::tests::{get_update_json, SHA256SUM};
     use mockito::Matcher;
 
     fn fake_device_reply_body(identity: usize, hardware: &str) -> Matcher {
@@ -56,7 +56,7 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(fake_device_reply_body(2, "board"))
             .with_status(200)
-            .with_body(&get_update_json().to_string())
+            .with_body(&get_update_json(SHA256SUM).to_string())
             .create(),
         FakeServer::ExtraPoll => mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
@@ -77,7 +77,7 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(fake_device_reply_body(4, "invalid"))
             .with_status(200)
-            .with_body(&get_update_json().to_string())
+            .with_body(&get_update_json(SHA256SUM).to_string())
             .create(),
         FakeServer::ReportSuccess => mock("POST", "/report")
             .match_header("Content-Type", "application/json")

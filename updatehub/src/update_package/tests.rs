@@ -7,9 +7,11 @@ use super::*;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 
-const SHA256SUM: &str = "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
+pub(crate) const SHA256SUM: &str =
+    "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646";
+pub(crate) const OBJECT: &[u8] = b"1234567890";
 
-pub(crate) fn get_update_json() -> serde_json::Value {
+pub(crate) fn get_update_json(sha256sum: &str) -> serde_json::Value {
     json!(
         {
             "product-uid": "0123456789",
@@ -22,7 +24,7 @@ pub(crate) fn get_update_json() -> serde_json::Value {
                         "mode": "test",
                         "filename": "testfile",
                         "target": "/dev/device1",
-                        "sha256sum": SHA256SUM,
+                        "sha256sum": sha256sum,
                         "size": 10
                     }
                 ],
@@ -31,7 +33,7 @@ pub(crate) fn get_update_json() -> serde_json::Value {
                         "mode": "test",
                         "filename": "testfile",
                         "target": "/dev/device2",
-                        "sha256sum": SHA256SUM,
+                        "sha256sum": sha256sum,
                         "size": 10
                     }
                 ]
@@ -41,12 +43,16 @@ pub(crate) fn get_update_json() -> serde_json::Value {
 }
 
 pub(crate) fn get_update_package() -> UpdatePackage {
-    serde_json::from_value(get_update_json())
+    serde_json::from_value(get_update_json(SHA256SUM))
         .map_err(|e| println!("{:?}", e))
         .unwrap()
 }
 
-pub(crate) fn create_fake_object(settings: &Settings) {
+pub(crate) fn get_update_package_with_shasum(shasum: &str) -> UpdatePackage {
+    serde_json::from_value(get_update_json(shasum)).unwrap()
+}
+
+pub(crate) fn create_fake_object(body: &[u8], shasum: &str, settings: &Settings) {
     use std::{
         fs::{create_dir_all, File},
         io::Write,
@@ -57,9 +63,9 @@ pub(crate) fn create_fake_object(settings: &Settings) {
     // ensure path exists
     create_dir_all(&dir).unwrap();
 
-    File::create(&dir.join(SHA256SUM))
+    File::create(&dir.join(shasum))
         .unwrap()
-        .write_all(b"1234567890")
+        .write_all(body)
         .unwrap();
 }
 
@@ -89,7 +95,7 @@ fn complete_object_file() {
     let update_package = get_update_package();
     let settings = create_fake_settings();
 
-    create_fake_object(&settings);
+    create_fake_object(OBJECT, SHA256SUM, &settings);
 
     assert!(update_package
         .filter_objects(&settings, InstallationSet::A, object::info::Status::Missing)
