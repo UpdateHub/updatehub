@@ -2,31 +2,39 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{firmware::Metadata, settings::Settings};
+use crate::{firmware::Metadata, settings::Settings, states::StateChangeImpl};
 use actix::{Context, Handler, Message, MessageResult};
 use serde::Serialize;
 
 pub(crate) struct Request;
 
 #[derive(Serialize)]
-pub(crate) struct Payload {
-    version: String,
-    config: Settings,
-    firmware: Metadata,
+pub(crate) struct Response {
+    #[serde(skip)]
+    pub(crate) state: String,
+    pub(crate) version: String,
+    pub(crate) config: Settings,
+    pub(crate) firmware: Metadata,
 }
 
 impl Message for Request {
-    type Result = Payload;
+    type Result = Response;
 }
 
 impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
-        MessageResult(Payload {
-            version: crate::version().to_string(),
-            config: shared_state!().settings.clone(),
-            firmware: shared_state!().firmware.clone(),
-        })
+        if let Some(machine) = &self.0 {
+            let state = for_any_state!(machine, s, { s.name().to_owned() });
+            return MessageResult(Response {
+                state,
+                version: crate::version().to_string(),
+                config: shared_state!().settings.clone(),
+                firmware: shared_state!().firmware.clone(),
+            });
+        }
+
+        unreachable!("Failed to take StateMachine's ownership");
     }
 }
