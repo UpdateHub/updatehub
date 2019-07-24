@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(test)]
+mod test;
+
 pub(crate) mod download_abort;
 pub(crate) mod info;
 pub(crate) mod probe;
