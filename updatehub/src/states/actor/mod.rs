@@ -6,7 +6,7 @@ pub(crate) mod download_abort;
 pub(crate) mod info;
 pub(crate) mod probe;
 
-use super::{Idle, Probe, ServerAddress, State, StateChangeImpl, StateMachine};
+use super::{Idle, Probe, ServerAddress, State, StateMachine};
 use actix::{Actor, Context, Handler, Message, MessageResult};
 use slog::slog_error;
 use slog_scope::error;

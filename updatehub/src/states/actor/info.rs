@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{firmware::Metadata, settings::Settings, states::StateChangeImpl};
+use crate::{firmware::Metadata, settings::Settings};
 use actix::{Context, Handler, Message, MessageResult};
 use serde::Serialize;
 
@@ -26,7 +26,7 @@ impl Handler<Request> for super::Machine {
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = &self.0 {
-            let state = for_any_state!(machine, s, { s.name().to_owned() });
+            let state = machine.for_any_state(|s| s.name().to_owned());
             return MessageResult(Response {
                 state,
                 version: crate::version().to_string(),

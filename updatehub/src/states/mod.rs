@@ -156,6 +156,22 @@ impl StateMachine {
             StateMachine::Reboot(s) => Ok(s.handle_with_callback_and_report_progress()?),
         }
     }
+
+    fn for_any_state<F, A>(&self, f: F) -> A
+    where
+        F: Fn(&dyn StateChangeImpl) -> A,
+    {
+        match self {
+            StateMachine::Park(s) => f(s),
+            StateMachine::Idle(s) => f(s),
+            StateMachine::Poll(s) => f(s),
+            StateMachine::Probe(s) => f(s),
+            StateMachine::PrepareDownload(s) => f(s),
+            StateMachine::Download(s) => f(s),
+            StateMachine::Install(s) => f(s),
+            StateMachine::Reboot(s) => f(s),
+        }
+    }
 }
 
 /// Runs the state machine up to completion handling all procing

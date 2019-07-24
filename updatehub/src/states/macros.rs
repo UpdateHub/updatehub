@@ -21,21 +21,6 @@ macro_rules! create_state_step {
     };
 }
 
-macro_rules! for_any_state {
-    ($machine:ident, $state:ident, $code:block) => {
-        match $machine {
-            crate::states::StateMachine::Park($state) => $code,
-            crate::states::StateMachine::Idle($state) => $code,
-            crate::states::StateMachine::Poll($state) => $code,
-            crate::states::StateMachine::Probe($state) => $code,
-            crate::states::StateMachine::PrepareDownload($state) => $code,
-            crate::states::StateMachine::Download($state) => $code,
-            crate::states::StateMachine::Install($state) => $code,
-            crate::states::StateMachine::Reboot($state) => $code,
-        }
-    };
-}
-
 macro_rules! shared_state {
     () => {
         crate::states::SHARED_STATE
