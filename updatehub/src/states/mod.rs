@@ -28,15 +28,9 @@ use self::{
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use actix::{Actor, System};
 use futures::future::Future;
-use lazy_static::lazy_static;
-use std::sync::{Arc, RwLock};
-
-lazy_static! {
-    static ref SHARED_STATE: Arc<RwLock<Option<SharedState>>> = Arc::new(RwLock::new(None));
-}
 
 trait StateChangeImpl {
-    fn handle(self) -> Result<StateMachine, failure::Error>;
+    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error>;
     fn name(&self) -> &'static str;
 
     fn handle_download_abort(&self) -> actor::download_abort::Response {
@@ -84,16 +78,17 @@ impl<S> State<S>
 where
     State<S>: TransitionCallback + ProgressReporter,
 {
-    fn handle_with_callback_and_report_progress(self) -> Result<StateMachine, failure::Error> {
+    fn handle_with_callback_and_report_progress(
+        self,
+        shared_state: &mut SharedState,
+    ) -> Result<StateMachine, failure::Error> {
         use transition::{state_change_callback, Transition};
 
-        let transition = state_change_callback(
-            &(shared_state_mut!().settings.firmware.metadata_path.clone()),
-            self.name(),
-        )?;
+        let transition =
+            state_change_callback(&shared_state.settings.firmware.metadata_path, self.name())?;
 
         match transition {
-            Transition::Continue => Ok(self.handle_and_report_progress()?),
+            Transition::Continue => Ok(self.handle_and_report_progress(shared_state)?),
             Transition::Cancel => Ok(StateMachine::Idle(self.into())),
         }
     }
@@ -103,18 +98,21 @@ impl<S> State<S>
 where
     State<S>: ProgressReporter,
 {
-    fn handle_and_report_progress(self) -> Result<StateMachine, failure::Error> {
-        let server = &shared_state_mut!().settings.network.server_address.clone();
-        let firmware = &shared_state_mut!().firmware.clone();
-        let package_uid = self.package_uid().clone();
+    fn handle_and_report_progress(
+        self,
+        shared_state: &mut SharedState,
+    ) -> Result<StateMachine, failure::Error> {
+        let server = &shared_state.settings.network.server_address.clone();
+        let firmware = &shared_state.firmware.clone();
+        let package_uid = &self.package_uid();
         let enter_state = self.report_enter_state_name();
         let leave_state = self.report_leave_state_name();
 
         let report = |state, previous_state, error_message, current_log| {
             crate::client::Api::new(&server).report(
                 state,
-                &firmware,
-                &package_uid,
+                firmware,
+                package_uid,
                 previous_state,
                 error_message,
                 current_log,
@@ -122,7 +120,7 @@ where
         };
 
         report(enter_state, None, None, None)?;
-        self.handle()
+        self.handle(shared_state)
             .and_then(|state| {
                 report(leave_state, None, None, None)?;
                 Ok(state)
@@ -144,16 +142,22 @@ impl StateMachine {
         StateMachine::Idle(State(Idle {}))
     }
 
-    fn move_to_next_state(self) -> Result<Self, failure::Error> {
+    fn move_to_next_state(self, shared_state: &mut SharedState) -> Result<Self, failure::Error> {
         match self {
-            StateMachine::Park(s) => Ok(s.handle()?),
-            StateMachine::Idle(s) => Ok(s.handle()?),
-            StateMachine::Poll(s) => Ok(s.handle()?),
-            StateMachine::Probe(s) => Ok(s.handle()?),
-            StateMachine::PrepareDownload(s) => Ok(s.handle()?),
-            StateMachine::Download(s) => Ok(s.handle_with_callback_and_report_progress()?),
-            StateMachine::Install(s) => Ok(s.handle_with_callback_and_report_progress()?),
-            StateMachine::Reboot(s) => Ok(s.handle_with_callback_and_report_progress()?),
+            StateMachine::Park(s) => Ok(s.handle(shared_state)?),
+            StateMachine::Idle(s) => Ok(s.handle(shared_state)?),
+            StateMachine::Poll(s) => Ok(s.handle(shared_state)?),
+            StateMachine::Probe(s) => Ok(s.handle(shared_state)?),
+            StateMachine::PrepareDownload(s) => Ok(s.handle(shared_state)?),
+            StateMachine::Download(s) => {
+                Ok(s.handle_with_callback_and_report_progress(shared_state)?)
+            }
+            StateMachine::Install(s) => {
+                Ok(s.handle_with_callback_and_report_progress(shared_state)?)
+            }
+            StateMachine::Reboot(s) => {
+                Ok(s.handle_with_callback_and_report_progress(shared_state)?)
+            }
         }
     }
 
@@ -213,9 +217,16 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     }
 
     let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
-    set_shared_state!(settings, runtime_settings, firmware);
+    // set_shared_state!(settings, runtime_settings, firmware);
 
-    let agent_machine = actor::Machine::new(StateMachine::new());
+    let agent_machine = actor::Machine::new(
+        StateMachine::new(),
+        SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        },
+    );
 
     System::run(|| {
         let machine = agent_machine.start();

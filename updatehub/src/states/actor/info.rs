@@ -25,13 +25,13 @@ impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
-        if let Some(machine) = &self.0 {
+        if let Some(machine) = &self.state {
             let state = machine.for_any_state(|s| s.name().to_owned());
             return MessageResult(Response {
                 state,
                 version: crate::version().to_string(),
-                config: shared_state!().settings.clone(),
-                firmware: shared_state!().firmware.clone(),
+                config: self.shared_state.settings.clone(),
+                firmware: self.shared_state.firmware.clone(),
             });
         }
 

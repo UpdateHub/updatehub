@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{actor::download_abort, Download, State, StateChangeImpl, StateMachine};
+use super::{actor::download_abort, Download, SharedState, State, StateChangeImpl, StateMachine};
 use crate::{
     client::Api,
     firmware::installation_set,
@@ -28,10 +28,10 @@ impl StateChangeImpl for State<PrepareDownload> {
         download_abort::Response::RequestAccepted
     }
 
-    fn handle(self) -> Result<StateMachine, failure::Error> {
+    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
         crate::logger::buffer().lock().unwrap().start_logging();
         let installation_set = installation_set::inactive()?;
-        let download_dir = shared_state!().settings.update.download_dir.to_owned();
+        let download_dir = shared_state.settings.update.download_dir.to_owned();
 
         // Prune left over from previous installations
         for entry in WalkDir::new(&download_dir)
@@ -55,7 +55,7 @@ impl StateChangeImpl for State<PrepareDownload> {
 
         // Prune corrupted files
         for object in self.0.update_package.filter_objects(
-            &shared_state!().settings,
+            &shared_state.settings,
             installation_set,
             object::info::Status::Corrupted,
         ) {
@@ -82,8 +82,8 @@ impl StateChangeImpl for State<PrepareDownload> {
             .collect();
 
         // Get ownership of remaining data that will be sent to new thread
-        let server = shared_state!().settings.network.server_address.to_owned();
-        let product_uid = shared_state!().firmware.product_uid.to_owned();
+        let server = shared_state.settings.network.server_address.to_owned();
+        let product_uid = shared_state.firmware.product_uid.to_owned();
         let package_uid = self.0.update_package.package_uid();
         let (sndr, recv) = mpsc::channel();
 

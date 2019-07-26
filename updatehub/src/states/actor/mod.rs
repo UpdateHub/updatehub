@@ -9,20 +9,26 @@ pub(crate) mod download_abort;
 pub(crate) mod info;
 pub(crate) mod probe;
 
-use super::{Idle, Probe, ServerAddress, State, StateMachine};
+use super::{Idle, Probe, ServerAddress, SharedState, State, StateMachine};
 use actix::{Actor, Context, Handler, Message, MessageResult};
 use slog::slog_error;
 use slog_scope::error;
 
-pub struct Machine(Option<StateMachine>);
+pub struct Machine {
+    state: Option<StateMachine>,
+    shared_state: SharedState,
+}
 
 impl Actor for Machine {
     type Context = Context<Self>;
 }
 
 impl Machine {
-    pub(super) fn new(machine: StateMachine) -> Self {
-        Machine(Some(machine))
+    pub(super) fn new(state: StateMachine, shared_state: SharedState) -> Self {
+        Machine {
+            state: Some(state),
+            shared_state,
+        }
     }
 }
 
@@ -36,11 +42,15 @@ impl Handler<Step> for Machine {
     type Result = MessageResult<Step>;
 
     fn handle(&mut self, _req: Step, _ctx: &mut Context<Self>) -> Self::Result {
-        if let Some(machine) = self.0.take() {
-            self.0 = Some(machine.move_to_next_state().unwrap_or_else(|e| {
-                error!("Error: {}. Moving to Idle state.", e);
-                StateMachine::Idle(State(Idle {}))
-            }));
+        if let Some(machine) = self.state.take() {
+            self.state = Some(
+                machine
+                    .move_to_next_state(&mut self.shared_state)
+                    .unwrap_or_else(|e| {
+                        error!("Error: {}. Moving to Idle state.", e);
+                        StateMachine::Idle(State(Idle {}))
+                    }),
+            );
 
             return MessageResult(());
         }

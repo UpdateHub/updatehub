@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::download_abort, Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine,
-    TransitionCallback,
+    actor::download_abort, Idle, Install, ProgressReporter, SharedState, State, StateChangeImpl,
+    StateMachine, TransitionCallback,
 };
 use crate::{
     firmware::installation_set,
@@ -53,14 +53,14 @@ impl StateChangeImpl for State<Download> {
         download_abort::Response::RequestAccepted
     }
 
-    fn handle(self) -> Result<StateMachine, failure::Error> {
+    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
         match self.0.download_chan.try_recv() {
             Ok(vec) => vec.into_iter().try_for_each(|res| res)?,
             Err(mpsc::TryRecvError::Empty) => return Ok(StateMachine::Download(self)),
             Err(e) => return Err(format_err!("Failed to read from channel: {:?}", e)),
         }
 
-        let download_dir = &shared_state!().settings.update.download_dir.to_owned();
+        let download_dir = &shared_state.settings.update.download_dir;
         if self
             .0
             .update_package
@@ -103,7 +103,7 @@ mod test {
         (vec, shasum)
     }
 
-    fn fake_download_state(shasum: &str) -> State<PrepareDownload> {
+    fn fake_download_state(shasum: &str) -> (State<PrepareDownload>, SharedState) {
         let settings = create_fake_settings();
         let tmpdir = settings.update.download_dir.clone();
         let _ = create_dir_all(&tmpdir);
@@ -111,17 +111,23 @@ mod test {
         env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        set_shared_state!(settings, runtime_settings, firmware);
 
-        State(PrepareDownload {
-            update_package: get_update_package_with_shasum(shasum),
-        })
+        (
+            State(PrepareDownload {
+                update_package: get_update_package_with_shasum(shasum),
+            }),
+            SharedState {
+                settings,
+                runtime_settings,
+                firmware,
+            },
+        )
     }
 
     fn test_object_download(size: usize) {
         let (obj, shasum) = fake_download_object(size);
-        let predownload_state = fake_download_state(&shasum);
-        let tmpdir = shared_state!().settings.update.download_dir.clone();
+        let (predownload_state, mut shared_state) = fake_download_state(&shasum);
+        let tmpdir = shared_state.settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed
         let _ = File::create(&tmpdir.join("leftover-file"));
@@ -142,10 +148,11 @@ mod test {
         .with_body(obj)
         .create();
 
-        let mut machine = StateMachine::PrepareDownload(predownload_state).move_to_next_state();
+        let mut machine =
+            StateMachine::PrepareDownload(predownload_state).move_to_next_state(&mut shared_state);
         assert_state!(machine, Download);
         loop {
-            machine = machine.unwrap().move_to_next_state();
+            machine = machine.unwrap().move_to_next_state(&mut shared_state);
             if let Ok(StateMachine::Install(_)) = machine {
                 break;
             }
@@ -181,14 +188,15 @@ mod test {
     fn skip_download_if_ready() {
         use crate::update_package::tests::create_fake_object;
         let (obj, shasum) = fake_download_object(16);
-        let predownload_state = fake_download_state(&shasum);
-        let tmpdir = shared_state!().settings.update.download_dir.clone();
+        let (predownload_state, mut shared_state) = fake_download_state(&shasum);
+        let tmpdir = shared_state.settings.update.download_dir.clone();
 
-        create_fake_object(&obj, &shasum, &shared_state!().settings);
+        create_fake_object(&obj, &shasum, &shared_state.settings);
 
-        let machine = StateMachine::PrepareDownload(predownload_state).move_to_next_state();
+        let machine =
+            StateMachine::PrepareDownload(predownload_state).move_to_next_state(&mut shared_state);
         assert_state!(machine, Download);
-        let machine = machine.unwrap().move_to_next_state();
+        let machine = machine.unwrap().move_to_next_state(&mut shared_state);
         assert_state!(machine, Install);
 
         assert_eq!(

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{actor::probe, Park, Poll, State, StateChangeImpl, StateMachine};
+use super::{actor::probe, Park, Poll, SharedState, State, StateChangeImpl, StateMachine};
 use slog::slog_debug;
 use slog_scope::debug;
 
@@ -23,8 +23,8 @@ impl StateChangeImpl for State<Idle> {
         probe::Response::RequestAccepted(self.name().to_owned())
     }
 
-    fn handle(self) -> Result<StateMachine, failure::Error> {
-        if !shared_state!().settings.polling.enabled {
+    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
+        if !shared_state.settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
             return Ok(StateMachine::Park(self.into()));
         }
@@ -46,9 +46,13 @@ fn polling_disable() {
     settings.polling.enabled = false;
     let runtime_settings = RuntimeSettings::default();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    set_shared_state!(settings, runtime_settings, firmware);
+    let mut shared_state = SharedState {
+        settings,
+        runtime_settings,
+        firmware,
+    };
 
-    let machine = StateMachine::Idle(State(Idle {})).move_to_next_state();
+    let machine = StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state);
 
     assert_state!(machine, Park);
 }
@@ -62,9 +66,13 @@ fn polling_enabled() {
     settings.polling.enabled = true;
     let runtime_settings = RuntimeSettings::default();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    set_shared_state!(settings, runtime_settings, firmware);
+    let mut shared_state = SharedState {
+        settings,
+        runtime_settings,
+        firmware,
+    };
 
-    let machine = StateMachine::Idle(State(Idle {})).move_to_next_state();
+    let machine = StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state);
 
     assert_state!(machine, Poll);
 }

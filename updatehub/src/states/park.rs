@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{actor::probe, State, StateChangeImpl, StateMachine};
+use super::{actor::probe, SharedState, State, StateChangeImpl, StateMachine};
 
 use slog::slog_debug;
 use slog_scope::debug;
@@ -21,7 +21,7 @@ impl StateChangeImpl for State<Park> {
         probe::Response::RequestAccepted(self.name().to_owned())
     }
 
-    fn handle(self) -> Result<StateMachine, failure::Error> {
+    fn handle(self, _: &mut SharedState) -> Result<StateMachine, failure::Error> {
         debug!("Staying on Park state.");
         Ok(StateMachine::Park(self))
     }

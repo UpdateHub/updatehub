@@ -22,11 +22,20 @@ enum Setup {
     NoUpdate,
 }
 
-fn setup_actor(kind: Setup) -> (Addr<Machine>, mockito::Mock, Settings, Metadata) {
+enum Probe {
+    Enabled,
+    Disabled,
+}
+
+fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Settings, Metadata) {
     let tmpfile = tempfile::NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
     fs::remove_file(&tmpfile).unwrap();
-    let settings = Settings::default();
+    let mut settings = Settings::default();
+    settings.polling.enabled = match probe {
+        Probe::Enabled => true,
+        Probe::Disabled => false,
+    };
     let runtime_settings = RuntimeSettings::new()
         .load(tmpfile.to_str().unwrap())
         .unwrap();
@@ -35,16 +44,24 @@ fn setup_actor(kind: Setup) -> (Addr<Machine>, mockito::Mock, Settings, Metadata
         Setup::NoUpdate => FakeDevice::NoUpdate,
     }))
     .unwrap();
+
     let settings_clone = settings.clone();
     let firmware_clone = firmware.clone();
     let mock = create_mock_server(match kind {
         Setup::HasUpdate => FakeServer::HasUpdate,
         Setup::NoUpdate => FakeServer::NoUpdate,
     });
-    set_shared_state!(settings, runtime_settings, firmware);
 
     (
-        Machine(Some(StateMachine::Idle(State(Idle {})))).start(),
+        Machine::new(
+            StateMachine::Idle(State(Idle {})),
+            SharedState {
+                settings,
+                runtime_settings,
+                firmware,
+            },
+        )
+        .start(),
         mock,
         settings_clone,
         firmware_clone,
@@ -55,7 +72,7 @@ fn setup_actor(kind: Setup) -> (Addr<Machine>, mockito::Mock, Settings, Metadata
 fn info_request() {
     let system = System::new("test");
 
-    let (addr, _, settings, firmware) = setup_actor(Setup::NoUpdate);
+    let (addr, _, settings, firmware) = setup_actor(Setup::NoUpdate, Probe::Enabled);
     Arbiter::spawn(
         addr.send(info::Request)
             .map(move |response| {
@@ -77,7 +94,7 @@ fn info_request() {
 fn step_sequence() {
     let system = System::new("test");
 
-    let (addr, mock, ..) = setup_actor(Setup::NoUpdate);
+    let (addr, mock, ..) = setup_actor(Setup::NoUpdate, Probe::Enabled);
     Arbiter::spawn(
         addr.send(info::Request)
             .map(move |response| {
@@ -119,7 +136,7 @@ fn step_sequence() {
 fn download_abort() {
     let system = System::new("test");
 
-    let (addr, mock, ..) = setup_actor(Setup::HasUpdate);
+    let (addr, mock, ..) = setup_actor(Setup::HasUpdate, Probe::Enabled);
     Arbiter::spawn(
         future::ok::<_, failure::Error>(addr)
             .and_then(|addr| {
@@ -155,8 +172,7 @@ fn download_abort() {
 fn trigger_probe() {
     let system = System::new("test");
 
-    let (addr, ..) = setup_actor(Setup::NoUpdate);
-    shared_state_mut!().settings.polling.enabled = false;
+    let (addr, ..) = setup_actor(Setup::NoUpdate, Probe::Disabled);
     Arbiter::spawn(
         future::ok::<_, failure::Error>(addr)
             .and_then(|addr| {

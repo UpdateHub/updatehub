@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback};
+use super::{
+    Idle, ProgressReporter, SharedState, State, StateChangeImpl, StateMachine, TransitionCallback,
+};
 use crate::update_package::UpdatePackage;
 
 use easy_process;
@@ -37,7 +39,7 @@ impl StateChangeImpl for State<Reboot> {
         "reboot"
     }
 
-    fn handle(self) -> Result<StateMachine, failure::Error> {
+    fn handle(self, _: &mut SharedState) -> Result<StateMachine, failure::Error> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
@@ -56,7 +58,7 @@ mod test {
     use pretty_assertions::assert_eq;
     use std::path::Path;
 
-    fn fake_reboot_state() -> State<Reboot> {
+    fn fake_reboot_state() -> (State<Reboot>, SharedState) {
         use crate::{
             firmware::{
                 tests::{create_fake_metadata, FakeDevice},
@@ -70,11 +72,18 @@ mod test {
         let settings = Settings::default();
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        set_shared_state!(settings, runtime_settings, firmware);
+        let shared_state = SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        };
 
-        State(Reboot {
-            update_package: get_update_package(),
-        })
+        (
+            State(Reboot {
+                update_package: get_update_package(),
+            }),
+            shared_state,
+        )
     }
 
     fn create_reboot(path: &Path) {
@@ -106,8 +115,8 @@ mod test {
         create_reboot(&tmpdir);
         env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
-        let st = StateMachine::Reboot(fake_reboot_state());
-        let machine = st.move_to_next_state();
+        let (state, mut shared_state) = fake_reboot_state();
+        let machine = StateMachine::Reboot(state).move_to_next_state(&mut shared_state);
 
         assert!(machine.is_ok(), "Error: {:?}", machine);
         assert_state!(machine, Idle);
@@ -115,7 +124,7 @@ mod test {
 
     #[test]
     fn reboot_has_transition_callback_trait() {
-        let state = fake_reboot_state();
+        let (state, _) = fake_reboot_state();
         assert_eq!(state.name(), "reboot");
     }
 }

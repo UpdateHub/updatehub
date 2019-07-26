@@ -21,41 +21,6 @@ macro_rules! create_state_step {
     };
 }
 
-macro_rules! shared_state {
-    () => {
-        crate::states::SHARED_STATE
-            .clone()
-            .read()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-    };
-}
-
-macro_rules! shared_state_mut {
-    () => {
-        crate::states::SHARED_STATE
-            .clone()
-            .write()
-            .unwrap()
-            .as_mut()
-            .unwrap()
-    };
-}
-
-macro_rules! set_shared_state {
-    ($settings:ident, $runtime_settings:ident, $firmware:ident) => {
-        crate::states::SHARED_STATE
-            .write()
-            .unwrap()
-            .replace(crate::states::SharedState {
-                $settings,
-                $runtime_settings,
-                $firmware,
-            });
-    };
-}
-
 #[cfg(test)]
 macro_rules! assert_state {
     ($machine:ident, $state:ident) => {

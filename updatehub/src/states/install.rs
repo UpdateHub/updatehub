@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
+    Idle, ProgressReporter, Reboot, SharedState, State, StateChangeImpl, StateMachine,
+    TransitionCallback,
 };
 use crate::{
     firmware::installation_set,
@@ -61,7 +62,7 @@ impl StateChangeImpl for State<Install> {
         "install"
     }
 
-    fn handle(mut self) -> Result<StateMachine, failure::Error> {
+    fn handle(mut self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
         let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 
@@ -78,16 +79,16 @@ impl StateChangeImpl for State<Install> {
             .try_for_each(object::Installer::check_requirements)?;
         objs.iter_mut().try_for_each(object::Installer::setup)?;
         objs.iter_mut().try_for_each(|obj| {
-            obj.install(&shared_state!().settings.update.download_dir.clone())?;
+            obj.install(&shared_state.settings.update.download_dir)?;
             obj.cleanup()
         })?;
 
         // Ensure we do a probe as soon as possible so full update
         // cycle can be finished.
-        shared_state_mut!().runtime_settings.force_poll()?;
+        shared_state.runtime_settings.force_poll()?;
 
         // Avoid installing same package twice.
-        shared_state_mut!()
+        shared_state
             .runtime_settings
             .set_applied_package_uid(&package_uid)?;
 
@@ -114,7 +115,7 @@ mod test {
     use std::fs;
     use tempfile::NamedTempFile;
 
-    fn fake_install_state() -> State<Install> {
+    fn fake_install_state() -> (State<Install>, SharedState) {
         use crate::{
             firmware::tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
             update_package::tests::create_fake_settings,
@@ -132,20 +133,28 @@ mod test {
 
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        set_shared_state!(settings, runtime_settings, firmware);
+        let shared_state = SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        };
 
-        State(Install {
-            update_package: get_update_package(),
-        })
+        (
+            State(Install {
+                update_package: get_update_package(),
+            }),
+            shared_state,
+        )
     }
 
     #[test]
     fn has_package_uid_if_succeed() {
-        let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
+        let (state, mut shared_state) = fake_install_state();
+        let machine = StateMachine::Install(state).move_to_next_state(&mut shared_state);
 
         match machine {
             Ok(StateMachine::Reboot(_)) => assert_eq!(
-                shared_state!().runtime_settings.applied_package_uid(),
+                shared_state.runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),
             Ok(s) => panic!("Invalid success: {:?}", s),
@@ -155,20 +164,15 @@ mod test {
 
     #[test]
     fn polling_now_if_succeed() {
-        let machine = StateMachine::Install(fake_install_state()).move_to_next_state();
+        let (state, mut shared_state) = fake_install_state();
+        let machine = StateMachine::Install(state).move_to_next_state(&mut shared_state);
 
         match machine {
             Ok(StateMachine::Reboot(_)) => {
-                assert_eq!(shared_state!().runtime_settings.is_polling_forced(), true)
+                assert_eq!(shared_state.runtime_settings.is_polling_forced(), true)
             }
             Ok(s) => panic!("Invalid success: {:?}", s),
             Err(e) => panic!("Invalid error: {:?}", e),
         }
-    }
-
-    #[test]
-    fn install_has_transition_callback_trait() {
-        let state = fake_install_state();
-        assert_eq!(state.name(), "install");
     }
 }
