@@ -6,6 +6,7 @@
 mod macros;
 pub(crate) mod actor;
 mod download;
+mod error;
 mod idle;
 pub(crate) mod install;
 mod park;
@@ -17,6 +18,7 @@ mod transition;
 
 use self::{
     download::Download,
+    error::Error,
     idle::Idle,
     install::Install,
     park::Park,
@@ -72,6 +74,7 @@ enum StateMachine {
     Download(State<Download>),
     Install(State<Install>),
     Reboot(State<Reboot>),
+    Error(State<Error>),
 }
 
 impl<S> State<S>
@@ -144,6 +147,7 @@ impl StateMachine {
 
     fn move_to_next_state(self, shared_state: &mut SharedState) -> Result<Self, failure::Error> {
         match self {
+            StateMachine::Error(s) => Ok(s.handle(shared_state)?),
             StateMachine::Park(s) => Ok(s.handle(shared_state)?),
             StateMachine::Idle(s) => Ok(s.handle(shared_state)?),
             StateMachine::Poll(s) => Ok(s.handle(shared_state)?),
@@ -166,6 +170,7 @@ impl StateMachine {
         F: Fn(&dyn StateChangeImpl) -> A,
     {
         match self {
+            StateMachine::Error(s) => f(s),
             StateMachine::Park(s) => f(s),
             StateMachine::Idle(s) => f(s),
             StateMachine::Poll(s) => f(s),

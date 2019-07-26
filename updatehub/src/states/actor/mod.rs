@@ -11,8 +11,6 @@ pub(crate) mod probe;
 
 use super::{Idle, Probe, ServerAddress, SharedState, State, StateMachine};
 use actix::{Actor, Context, Handler, Message, MessageResult};
-use slog::slog_error;
-use slog_scope::error;
 
 pub struct Machine {
     state: Option<StateMachine>,
@@ -46,10 +44,7 @@ impl Handler<Step> for Machine {
             self.state = Some(
                 machine
                     .move_to_next_state(&mut self.shared_state)
-                    .unwrap_or_else(|e| {
-                        error!("Error: {}. Moving to Idle state.", e);
-                        StateMachine::Idle(State(Idle {}))
-                    }),
+                    .unwrap_or_else(StateMachine::from),
             );
 
             return MessageResult(());
