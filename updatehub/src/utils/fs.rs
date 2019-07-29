@@ -4,12 +4,12 @@
 
 use easy_process;
 use failure::format_err;
-use std::{io, path::Path};
-use sys_mount::{Mount, Unmount, UnmountDrop};
 use pkg_schema::definitions::{
     target_permissions::{Gid, Uid},
     Filesystem,
 };
+use std::{io, path::Path, process::Command};
+use sys_mount::{Mount, Unmount, UnmountDrop};
 
 pub(crate) fn find_compress_tarball_kind(
     file: &Path,
@@ -41,6 +41,19 @@ pub(crate) fn find_compress_kind(file: &Path) -> Result<compress_tools::Kind, fa
         "xz" => Ok(compress_tools::Kind::Xz),
         "lz" => Ok(compress_tools::Kind::LZip),
         _ => Err(format_err!("Invalid archive type")),
+    }
+}
+
+pub(crate) fn is_executable_in_path(cmd: &str) -> Result<(), failure::Error> {
+    match Command::new(cmd).spawn() {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            if let io::ErrorKind::NotFound = e.kind() {
+                Err(format_err!("'{}' not found on Path", cmd))
+            } else {
+                Err(e.into())
+            }
+        }
     }
 }
 
