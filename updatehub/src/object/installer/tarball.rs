@@ -54,7 +54,7 @@ impl Installer for objects::Tarball {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lazy_static::lazy_static;
+    use crate::object::installer::tests::SERIALIZE;
     use loopdev;
     use pretty_assertions::assert_eq;
     use std::{
@@ -62,15 +62,10 @@ mod tests {
         io::{Seek, SeekFrom, Write},
         os::unix::fs::MetadataExt,
         path::{Path, PathBuf},
-        sync::{Arc, Mutex},
     };
     use tempfile;
 
     const CONTENT_SIZE: usize = 10240;
-
-    lazy_static! {
-        static ref SERIALIZE: Arc<Mutex<()>> = Arc::new(Mutex::default());
-    }
 
     fn exec_test_with_tarball<F>(mut f: F) -> Result<(), failure::Error>
     where

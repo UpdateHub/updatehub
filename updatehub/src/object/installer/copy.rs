@@ -79,19 +79,14 @@ impl Installer for objects::Copy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lazy_static::lazy_static;
+    use crate::object::installer::tests::SERIALIZE;
     use pretty_assertions::assert_eq;
     use std::{
         io::{BufRead, Seek, SeekFrom, Write},
         iter,
         os::unix::fs::MetadataExt,
         path::PathBuf,
-        sync::{Arc, Mutex},
     };
-
-    lazy_static! {
-        static ref SERIALIZE: Arc<Mutex<()>> = Arc::new(Mutex::default());
-    }
 
     const DEFAULT_BYTE: u8 = 0xF;
     const ORIGINAL_BYTE: u8 = 0xA;
