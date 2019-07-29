@@ -4,3 +4,4 @@
 
 pub(crate) mod fs;
 pub(crate) mod io;
+pub(crate) mod mtd;
