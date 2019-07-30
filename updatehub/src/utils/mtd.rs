@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use failure::format_err;
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 // FIXME: discuss rather this function should be called here, or on
 // package_schema
@@ -32,4 +35,14 @@ pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf
         "/dev/ubi{}_{}",
         dev_number, &re_match[0]
     )))
+}
+
+#[allow(unused_variables)]
+pub(crate) fn is_nand(device: &Path) -> Result<bool, failure::Error> {
+    unimplemented!("FIXME: impl is_nand")
+}
+
+#[allow(unused_variables)]
+pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf, failure::Error> {
+    unimplemented!("FIXME: impl get_target_device_from_mtd_name")
 }
