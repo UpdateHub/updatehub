@@ -42,8 +42,7 @@ pub struct Pattern {
 fn deserialize_checksum<'de, D, E>(deserializer: D) -> Result<(), E>
 where
     D: serde::Deserializer<'de>,
-    E: serde::de::Error,
-    E: From<D::Error>,
+    E: serde::de::Error + From<D::Error>,
 {
     match String::deserialize(deserializer)?.to_lowercase().as_str() {
         "sha256sum" => Ok(()),
