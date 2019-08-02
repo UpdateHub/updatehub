@@ -28,7 +28,7 @@ pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-packag
 rand = "0.7"
 regex = "1"
 reqwest = "=0.9.17"
-serde = { version = "1", features = ["rc", "derive"]}
+serde = { version = "1", features = ["rc", "derive"] }
 serde_ini = "0.2"
 serde_json = "1"
 slog = "2"
@@ -48,3 +48,4 @@ git-version = "0.3"
 loopdev = "0.2"
 mockito = "0.20"
 pretty_assertions = "0.6"
+tempfile = "3"

@@ -4,7 +4,7 @@
 
 use crate::{
     object::{Info, Installer},
-    utils,
+    utils::{self, definitions::TargetTypeExt},
 };
 use failure::bail;
 use pkg_schema::{definitions, objects};
@@ -78,7 +78,7 @@ impl Installer for objects::Copy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::object::installer::tests::SERIALIZE;
+    use crate::{object::installer::tests::SERIALIZE, utils::definitions::IdExt};
     use pretty_assertions::assert_eq;
     use std::{
         io::{BufRead, Seek, SeekFrom, Write},

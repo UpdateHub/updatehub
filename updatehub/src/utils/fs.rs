@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::utils::definitions::IdExt;
 use easy_process;
 use failure::format_err;
 use pkg_schema::definitions::{
