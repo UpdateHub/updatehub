@@ -4,7 +4,6 @@
 
 use super::{Idle, Poll, PrepareDownload, SharedState, State, StateChangeImpl, StateMachine};
 use crate::client::Api;
-use slog::{slog_debug, slog_error, slog_info};
 use slog_scope::{debug, error, info};
 
 #[derive(Debug, PartialEq, Clone)]

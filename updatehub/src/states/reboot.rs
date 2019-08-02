@@ -8,7 +8,6 @@ use super::{
 use crate::update_package::UpdatePackage;
 
 use easy_process;
-use slog::slog_info;
 use slog_scope::info;
 
 #[derive(Debug, PartialEq)]

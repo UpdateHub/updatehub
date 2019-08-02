@@ -9,7 +9,6 @@ use crate::{
     object::{self, Info},
     update_package::UpdatePackage,
 };
-use slog::slog_error;
 use slog_scope::error;
 use std::{fs, sync::mpsc};
 use walkdir::WalkDir;

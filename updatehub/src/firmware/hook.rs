@@ -6,7 +6,6 @@ use crate::firmware::metadata_value::MetadataValue;
 
 use easy_process;
 use failure::ResultExt;
-use slog::slog_error;
 use slog_scope::error;
 use std::{path::Path, str::FromStr};
 use walkdir::WalkDir;

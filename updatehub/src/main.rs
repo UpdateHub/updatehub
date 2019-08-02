@@ -1,7 +1,6 @@
 // Copyright (C) 2017, 2018 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: Apache-2.0
-use slog::slog_info;
 use slog_scope::info;
 
 use structopt::StructOpt;

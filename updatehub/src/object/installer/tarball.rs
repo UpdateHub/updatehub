@@ -7,7 +7,6 @@ use crate::{
     utils,
 };
 use pkg_schema::{definitions, objects};
-use slog::slog_info;
 use slog_scope::info;
 use std::path::Path;
 

@@ -8,7 +8,6 @@ use chrono::Duration;
 use failure::Fail;
 use serde::{Deserialize, Serialize};
 use serde_ini;
-use slog::{slog_debug, slog_error};
 use slog_scope::{debug, error};
 use std::{io, path::PathBuf};
 

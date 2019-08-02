@@ -9,7 +9,6 @@ use crate::{
 use easy_process;
 use failure::format_err;
 use pkg_schema::objects;
-use slog::slog_info;
 use slog_scope::info;
 
 impl Installer for objects::Imxkobs {

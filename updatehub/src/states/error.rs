@@ -5,7 +5,6 @@
 use super::{Idle, SharedState, State, StateChangeImpl, StateMachine};
 
 use derivative::Derivative;
-use slog::{slog_error, slog_info};
 use slog_scope::{error, info};
 
 #[derive(Derivative)]

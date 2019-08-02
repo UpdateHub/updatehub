@@ -8,7 +8,6 @@ use crate::{
 };
 use failure::bail;
 use pkg_schema::{definitions, objects};
-use slog::slog_info;
 use slog_scope::info;
 
 impl Installer for objects::Flash {

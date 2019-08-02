@@ -5,7 +5,6 @@
 use super::{Probe, ServerAddress, SharedState, State, StateChangeImpl, StateMachine};
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
-use slog::{slog_debug, slog_info};
 use slog_scope::{debug, info};
 use std::{
     sync::{Arc, Condvar, Mutex},

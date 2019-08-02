@@ -8,7 +8,6 @@ use chrono::{DateTime, Duration, Utc};
 use failure::Fail;
 use serde::{Deserialize, Serialize};
 use serde_ini;
-use slog::slog_debug;
 use slog_scope::debug;
 use std::{
     io,

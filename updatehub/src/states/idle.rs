@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{actor::probe, Park, Poll, SharedState, State, StateChangeImpl, StateMachine};
-use slog::slog_debug;
 use slog_scope::debug;
 
 #[derive(Debug, PartialEq)]

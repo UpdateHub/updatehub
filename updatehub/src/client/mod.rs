@@ -10,7 +10,6 @@ use reqwest::{
     Client, StatusCode,
 };
 use serde::Serialize;
-use slog::slog_debug;
 use slog_scope::debug;
 use std::{path::Path, time::Duration};
 

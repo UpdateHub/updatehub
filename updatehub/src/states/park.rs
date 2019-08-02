@@ -4,7 +4,6 @@
 
 use super::{actor::probe, SharedState, State, StateChangeImpl, StateMachine};
 
-use slog::slog_debug;
 use slog_scope::debug;
 
 #[derive(Debug, PartialEq)]

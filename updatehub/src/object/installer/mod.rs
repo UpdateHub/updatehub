@@ -11,7 +11,6 @@ mod test;
 mod ubifs;
 
 use pkg_schema::Object;
-use slog::slog_debug;
 use slog_scope::debug;
 
 pub(crate) trait Installer {

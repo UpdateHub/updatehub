@@ -11,7 +11,6 @@ use crate::{
     object::{self, Installer},
     update_package::UpdatePackage,
 };
-use slog::{slog_debug, slog_info};
 use slog_scope::{debug, info};
 
 #[derive(Debug, PartialEq)]
