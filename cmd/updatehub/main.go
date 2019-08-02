@@ -142,7 +142,7 @@ func main() {
 
 	go func() {
 		router := server.NewBackendRouter(backend)
-		if err := http.ListenAndServe(":8080", router.HTTPRouter); err != nil {
+		if err := http.ListenAndServe("127.0.0.1:8080", router.HTTPRouter); err != nil {
 			log.Fatal(err)
 		} else {
 			log.Info("API HTTP server started")
