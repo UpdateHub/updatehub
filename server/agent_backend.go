@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"sort"
 	"strings"
 
@@ -112,7 +113,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 
 					for _, f := range files {
 						if strings.HasSuffix(f.Name(), ".uhupkg") {
-							filename = f.Name()
+							filename = path.Join(target.Path, f.Name())
 							log.WithFields(logrus.Fields{"package": filename}).Info("Using package")
 							break
 						}
@@ -123,7 +124,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 				} else {
-					filename = fi.Name()
+					filename = target.Path
 				}
 
 				if filename != "" {
