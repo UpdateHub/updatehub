@@ -36,32 +36,6 @@ pub enum Uid {
     Number(u32),
 }
 
-impl Gid {
-    /// Gets group's numeric id.
-    pub fn as_u32(&self) -> u32 {
-        match self {
-            Gid::Name(s) => {
-                let s = std::ffi::CString::new(s.as_str());
-                unsafe { *nix::libc::getgrnam(s.unwrap().as_ptr()) }.gr_gid
-            }
-            Gid::Number(n) => *n,
-        }
-    }
-}
-
-impl Uid {
-    /// Gets user's numeric id.
-    pub fn as_u32(&self) -> u32 {
-        match self {
-            Uid::Name(s) => {
-                let s = std::ffi::CString::new(s.as_str());
-                unsafe { *nix::libc::getpwnam(s.unwrap().as_ptr()) }.pw_uid
-            }
-            Uid::Number(n) => *n,
-        }
-    }
-}
-
 #[test]
 fn deserialize() {
     use pretty_assertions::assert_eq;

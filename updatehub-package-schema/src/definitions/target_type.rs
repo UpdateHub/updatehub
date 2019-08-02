@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use failure::ensure;
 use serde::Deserialize;
 use std::path::PathBuf;
 
@@ -13,34 +12,6 @@ pub enum TargetType {
     Device(PathBuf),
     UBIVolume(String),
     MTDName(String),
-}
-
-impl TargetType {
-    /// Checks whether the device is valid to start installation, i.e.,
-    /// device exists, use have write permission.
-    pub fn valid(&self) -> Result<&Self, failure::Error> {
-        Ok(match self {
-            TargetType::Device(p) => {
-                ensure!(p.exists(), "Target device does not exists");
-                ensure!(
-                    !p.metadata()?.permissions().readonly(),
-                    "User doesn't have write permission on target device"
-                );
-                &self
-            }
-            TargetType::UBIVolume(_) => unimplemented!("FIXME: Check if UBI Volume is valid"),
-            TargetType::MTDName(_) => unimplemented!("FIXME: Check if MTD name is valid"),
-        })
-    }
-
-    /// Gets device's path for mounting.
-    pub fn get_target(&self) -> Result<PathBuf, failure::Error> {
-        match self {
-            TargetType::Device(p) => Ok(p.clone()),
-            TargetType::UBIVolume(_s) => unimplemented!("FIXME: Get device from UBI Volume name"),
-            TargetType::MTDName(_s) => unimplemented!("FIXME: Get device from MTD name"),
-        }
-    }
 }
 
 #[cfg(test)]
