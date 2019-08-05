@@ -4,6 +4,7 @@
 
 use crate::definitions::InstallIfDifferent;
 use serde::Deserialize;
+use std::path::PathBuf;
 
 #[derive(Deserialize, PartialEq, Debug)]
 pub struct Imxkobs {
@@ -18,9 +19,9 @@ pub struct Imxkobs {
     #[serde(default)]
     pub search_exponent: usize,
     #[serde(default)]
-    pub chip_0_device_path: String,
+    pub chip_0_device_path: Option<PathBuf>,
     #[serde(default)]
-    pub chip_1_device_path: String,
+    pub chip_1_device_path: Option<PathBuf>,
 }
 
 #[test]
@@ -38,8 +39,8 @@ fn deserialize() {
             install_if_different: None,
             padding_1k: true,
             search_exponent: 2,
-            chip_0_device_path: "/dev/sda1".to_string(),
-            chip_1_device_path: "/dev/sda2".to_string(),
+            chip_0_device_path: Some(PathBuf::from("/dev/sda1")),
+            chip_1_device_path: Some(PathBuf::from("/dev/sda2")),
         },
         serde_json::from_value::<Imxkobs>(json!({
             "filename": "imxkobs-filename",
