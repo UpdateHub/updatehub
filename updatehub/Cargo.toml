@@ -25,6 +25,7 @@ lazy_static = "1"
 nix = "0.14"
 parse_duration = "1"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
+quale = "1"
 rand = "0.7"
 regex = "1"
 reqwest = "=0.9.17"
