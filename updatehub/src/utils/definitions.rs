@@ -41,7 +41,15 @@ impl TargetTypeExt for TargetType {
                 );
                 &self
             }
-            TargetType::MTDName(_) => unimplemented!("FIXME: Check if MTD name is valid"),
+            TargetType::MTDName(n) => {
+                let dev = mtd::target_device_from_mtd_name(n)?;
+                ensure!(
+                    !dev.metadata()?.permissions().readonly(),
+                    "User doesn't have write permission on target device: {:?}",
+                    dev
+                );
+                &self
+            }
         })
     }
 
