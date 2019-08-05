@@ -97,15 +97,15 @@ mod ffi {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use lazy_static::lazy_static;
     use pretty_assertions::assert_eq;
     use std::sync::{Arc, Mutex};
 
     pub(crate) struct FakeMtd {
-        devices: Vec<PathBuf>,
-        kind: MtdKind,
+        pub(crate) devices: Vec<PathBuf>,
+        pub(crate) kind: MtdKind,
     }
 
     pub(crate) enum MtdKind {
