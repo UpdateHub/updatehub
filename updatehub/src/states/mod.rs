@@ -160,9 +160,7 @@ impl StateMachine {
             StateMachine::Install(s) => {
                 Ok(s.handle_with_callback_and_report_progress(shared_state)?)
             }
-            StateMachine::Reboot(s) => {
-                Ok(s.handle_with_callback_and_report_progress(shared_state)?)
-            }
+            StateMachine::Reboot(s) => Ok(s.handle_with_callback_and_report_progress(shared_state)?),
         }
     }
 

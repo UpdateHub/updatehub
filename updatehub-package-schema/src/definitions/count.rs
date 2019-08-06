@@ -83,5 +83,4 @@ mod test {
     fn validation_of_minimal() {
         assert!(serde_json::from_value::<Payload>(json!({ "count": -2 })).is_err());
     }
-
 }
