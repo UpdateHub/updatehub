@@ -13,6 +13,9 @@ use std::path::Path;
 impl Installer for objects::Tarball {
     fn check_requirements(&self) -> Result<(), failure::Error> {
         info!("'tarball' handle checking requirements");
+        if self.compressed {
+            unimplemented!("FIXME: check the required_uncompressed_size");
+        }
 
         match self.target {
             definitions::TargetType::Device(_)
@@ -29,10 +32,6 @@ impl Installer for objects::Tarball {
         let mount_options = &self.mount_options;
         let format_options = &self.target_format.format_options;
         let source = download_dir.join(self.sha256sum());
-
-        // FIXME: use required_uncompressed_size
-        // if we will format, we check the full size
-        // else we check the remaning size
 
         if self.target_format.should_format {
             utils::fs::format(&device, filesystem, format_options)?;

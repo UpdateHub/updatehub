@@ -19,6 +19,10 @@ use std::{
 impl Installer for objects::Copy {
     fn check_requirements(&self) -> Result<(), failure::Error> {
         info!("'copy' handle checking requirements");
+        if self.compressed {
+            unimplemented!("FIXME: check the required_uncompressed_size");
+        }
+
         if let definitions::TargetType::Device(_) = self.target_type.valid()? {
             return Ok(());
         }
@@ -42,23 +46,28 @@ impl Installer for objects::Copy {
         utils::fs::mount_map(&device, filesystem, mount_options, |path| {
             let dest = path.join(&self.target_path);
             let source = download_dir.join(self.sha256sum());
-            let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
-            let mut output = utils::io::timed_buf_writer(
-                chunk_size,
-                fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&dest)?,
-            );
 
-            let metadata = dest.metadata()?;
-            let orig_mode = metadata.permissions().mode();
-            metadata.permissions().set_mode(0o100_666);
-            io::copy(&mut input, &mut output)?;
-            output.flush()?;
-            metadata.permissions().set_mode(orig_mode);
+            if self.compressed {
+                unimplemented!("FIXME: uncompress to dest");
+            } else {
+                let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
+                let mut output = utils::io::timed_buf_writer(
+                    chunk_size,
+                    fs::OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .create(true)
+                        .truncate(true)
+                        .open(&dest)?,
+                );
+
+                let metadata = dest.metadata()?;
+                let orig_mode = metadata.permissions().mode();
+                metadata.permissions().set_mode(0o100_666);
+                io::copy(&mut input, &mut output)?;
+                output.flush()?;
+                metadata.permissions().set_mode(orig_mode);
+            }
 
             if let Some(mode) = self.target_permissions.target_mode {
                 utils::fs::chmod(&dest, mode)?;

@@ -13,6 +13,10 @@ use slog_scope::info;
 impl Installer for objects::Ubifs {
     fn check_requirements(&self) -> Result<(), failure::Error> {
         info!("'ubifs' handle checking requirements");
+        if self.compressed {
+            unimplemented!("FIXME: check the required_uncompressed_size");
+        }
+
         utils::fs::is_executable_in_path("ubiupdatevol")?;
         utils::fs::is_executable_in_path("ubinfo")?;
 
@@ -29,11 +33,15 @@ impl Installer for objects::Ubifs {
         let target = self.target.get_target()?;
         let source = download_dir.join(self.sha256sum());
 
-        easy_process::run(&format!(
-            "ubiupdatevol {} {}",
-            target.display(),
-            source.display()
-        ))?;
+        if self.compressed {
+            unimplemented!("FIXME: handle compressed installation");
+        } else {
+            easy_process::run(&format!(
+                "ubiupdatevol {} {}",
+                target.display(),
+                source.display()
+            ))?;
+        }
 
         Ok(())
     }
@@ -56,7 +64,7 @@ mod tests {
             sha256sum: "e3b0c44298fc1c149afb".to_string(),
             target: definitions::TargetType::UBIVolume(name.to_string()),
 
-            compressed: true,
+            compressed: false,
             required_uncompressed_size: 2048,
         }
     }

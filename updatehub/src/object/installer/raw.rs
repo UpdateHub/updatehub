@@ -21,6 +21,10 @@ use std::{
 impl Installer for objects::Raw {
     fn check_requirements(&self) -> Result<(), failure::Error> {
         info!("'raw' handle checking requirements");
+        if self.compressed {
+            unimplemented!("FIXME: check the required_uncompressed_size");
+        }
+
         if let definitions::TargetType::Device(_) = self.target_type.valid()? {
             return Ok(());
         }
@@ -42,31 +46,35 @@ impl Installer for objects::Raw {
         let truncate = self.truncate.0;
         let count = self.count.clone();
 
-        let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
+        if self.compressed {
+            unimplemented!("FIXME: handle compressed installation");
+        } else {
+            let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
 
-        input.seek(SeekFrom::Start(skip))?;
-        let mut output = utils::io::timed_buf_writer(
-            chunk_size,
-            fs::OpenOptions::new()
-                .read(true)
-                .write(true)
-                .truncate(truncate)
-                .open(device)?,
-        );
-        output.seek(SeekFrom::Start(seek))?;
+            input.seek(SeekFrom::Start(skip))?;
+            let mut output = utils::io::timed_buf_writer(
+                chunk_size,
+                fs::OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .truncate(truncate)
+                    .open(device)?,
+            );
+            output.seek(SeekFrom::Start(seek))?;
 
-        for _ in count {
-            let buf = input.fill_buf()?;
-            let len = buf.len();
+            for _ in count {
+                let buf = input.fill_buf()?;
+                let len = buf.len();
 
-            // We break the loop in case we have no bytes left for
-            // read (EOF is reached).
-            if len == 0 {
-                break;
+                // We break the loop in case we have no bytes left for
+                // read (EOF is reached).
+                if len == 0 {
+                    break;
+                }
+
+                output.write_all(&buf)?;
+                input.consume(len);
             }
-
-            output.write_all(&buf)?;
-            input.consume(len);
         }
 
         Ok(())
