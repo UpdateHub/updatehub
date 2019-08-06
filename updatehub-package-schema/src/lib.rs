@@ -5,10 +5,12 @@
 mod copy;
 mod flash;
 mod imxkobs;
+mod mender;
 mod raw;
 mod tarball;
 mod test;
 mod ubifs;
+mod zephyr;
 
 /// Internal structures in the Objects for some type validation
 pub mod definitions;
