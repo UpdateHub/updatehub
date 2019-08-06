@@ -12,30 +12,32 @@ use std::{
 pub(crate) use ffi::is_nand;
 
 pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf, failure::Error> {
-    let re = regex::Regex::new(r"^Volume ID:   (\d) \(on ubi(\d)\)$").unwrap();
-    let path = fs::read_dir("/dev")?
-        .filter(|entry| entry.is_ok())
-        .map(|entry| format!("{:?}", entry.unwrap().path()))
-        .find(|path| path.starts_with("ubi"))
-        .ok_or_else(|| format_err!("Unable to find coorespoing ubi volume"))?;
+    let re = regex::Regex::new(r"^Volume ID:   (?P<volume>\d+) \(on ubi(\d+)\)$").unwrap();
+    walkdir::WalkDir::new("/dev")
+        .min_depth(1)
+        .into_iter()
+        .filter_entry(|p| {
+            p.file_name()
+                .to_str()
+                .map(|n| n.starts_with("ubi") && !n.contains('_'))
+                .unwrap_or(false)
+        })
+        .filter_map(Result::ok)
+        .find_map(|entry| {
+            let path = entry.path();
+            let output =
+                easy_process::run(&format!("ubinfo {} -N {}", path.display(), volume)).ok()?;
 
-    let dev_number = path.replace("ubi", "");
+            let line = output.stdout.lines().next()?;
+            let re_match = re.captures(line)?;
 
-    let output = easy_process::run(&format!("ubinfo -d {} -N {}", dev_number, volume))?;
-    let line = output
-        .stdout
-        .lines()
-        .next()
-        .ok_or_else(|| format_err!("Unable to read first line of ubinfo"))?;
-
-    let re_match = re
-        .captures(line)
-        .ok_or_else(|| format_err!("Unable to extract any matches for Volume ID"))?;
-
-    Ok(PathBuf::from(format!(
-        "/dev/ubi{}_{}",
-        dev_number, &re_match[0]
-    )))
+            Some(PathBuf::from(format!(
+                "{}_{}",
+                path.display(),
+                &re_match.name("volume").unwrap().as_str()
+            )))
+        })
+        .ok_or_else(|| format_err!("Unable to find Ubi Volume"))
 }
 
 pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf, failure::Error> {
@@ -103,6 +105,34 @@ pub(crate) mod tests {
     use pretty_assertions::assert_eq;
     use std::sync::{Arc, Mutex};
 
+    pub(crate) struct FakeUbi {
+        pub(crate) mtd: FakeMtd,
+    }
+
+    impl FakeUbi {
+        pub(crate) fn new(names: &[&str], kind: MtdKind) -> Result<FakeUbi, failure::Error> {
+            let mtd = FakeMtd::new(&["system"], kind)?;
+            easy_process::run("modprobe ubi mtd=0")?;
+
+            // Ubi created here so if anything fails the Drop will still be executed
+            let ubi = FakeUbi { mtd };
+
+            for name in names {
+                easy_process::run(&format!("ubimkvol /dev/ubi0 -N {} -s 1MiB", name))?;
+            }
+
+            Ok(ubi)
+        }
+    }
+
+    impl Drop for FakeUbi {
+        fn drop(&mut self) {
+            if let Err(e) = easy_process::run(&format!("rmmod ubi")) {
+                eprintln!("Failed to cleanup FakeUbi, Error: {}", e);
+            }
+        }
+    }
+
     pub(crate) struct FakeMtd {
         pub(crate) devices: Vec<PathBuf>,
         pub(crate) kind: MtdKind,
@@ -121,10 +151,10 @@ pub(crate) mod tests {
                     easy_process::run("mtdpart del /dev/mtd0 1")?;
                 }
                 MtdKind::Nor => {
-                    easy_process::run("modprobe mtdram total_size=1000 erase_size=10")?;
+                    easy_process::run("modprobe mtdram total_size=20000 erase_size=10")?;
                 }
             }
-            let total_size = 1000;
+            let total_size = 20000;
 
             // FakeMtd created here so if any subsequent command fails the drop will still
             // be called to cleanup mtd devices
@@ -173,7 +203,7 @@ pub(crate) mod tests {
 
     #[test]
     #[ignore]
-    fn device_from_mtd_name_nor() -> Result<(), failure::Error> {
+    fn device_from_mtd_name_nor() {
         let _lock = SERIALIZE.lock();
         let dev_names = vec!["system0", "system1"];
 
@@ -188,13 +218,11 @@ pub(crate) mod tests {
             mtd.devices,
         );
         assert!(target_device_from_mtd_name("some_inexistent_device").is_err());
-
-        Ok(())
     }
 
     #[test]
     #[ignore]
-    fn device_from_mtd_name_nand() -> Result<(), failure::Error> {
+    fn device_from_mtd_name_nand() {
         let _lock = SERIALIZE.lock();
         let dev_names = vec!["system0", "system1"];
 
@@ -209,13 +237,11 @@ pub(crate) mod tests {
             mtd.devices,
         );
         assert!(target_device_from_mtd_name("some_inexistent_device").is_err());
-
-        Ok(())
     }
 
     #[test]
     #[ignore]
-    fn test_is_nand() -> Result<(), failure::Error> {
+    fn test_is_nand() {
         let _lock = SERIALIZE.lock();
         let dev_names = vec!["system0"];
 
@@ -227,7 +253,42 @@ pub(crate) mod tests {
             let mtd = FakeMtd::new(&dev_names, MtdKind::Nor).unwrap();
             assert_eq!(is_nand(&mtd.devices[0]).unwrap(), false);
         }
+    }
 
-        Ok(())
+    #[test]
+    #[ignore]
+    fn device_from_ubi_volume_name() {
+        let _lock = SERIALIZE.lock();
+        let volume_names = vec!["some_ui_volume", "another_ubi_volume"];
+
+        let _ubi = FakeUbi::new(&volume_names, MtdKind::Nor).unwrap();
+        assert_eq!(
+            target_device_from_ubi_volume_name(volume_names[1]).unwrap(),
+            PathBuf::from("/dev/ubi0_1")
+        );
+        assert_eq!(
+            target_device_from_ubi_volume_name(volume_names[0]).unwrap(),
+            PathBuf::from("/dev/ubi0_0")
+        );
+    }
+
+    #[test]
+    #[ignore]
+    fn device_from_ubi_volume_name_multiple_volumes() {
+        let _lock = SERIALIZE.lock();
+        let volume_names = vec![
+            "volume0", "volume1", "volume2", "volume3", "volume4", "volume5", "volume6", "volume7",
+            "volume8", "volume9", "volume10", "volume11", "volume12", "volume13",
+        ];
+
+        let _ubi = FakeUbi::new(&volume_names, MtdKind::Nor).unwrap();
+        assert_eq!(
+            target_device_from_ubi_volume_name(volume_names[8]).unwrap(),
+            PathBuf::from("/dev/ubi0_8")
+        );
+        assert_eq!(
+            target_device_from_ubi_volume_name(volume_names[12]).unwrap(),
+            PathBuf::from("/dev/ubi0_12")
+        );
     }
 }
