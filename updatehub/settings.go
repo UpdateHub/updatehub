@@ -54,6 +54,7 @@ var DefaultSettings = Settings{
 
 	NetworkSettings: NetworkSettings{
 		ServerAddress: defaultServerAddress,
+		ListenSocket:  "tcp://localhost:8080",
 	},
 
 	FirmwareSettings: FirmwareSettings{
@@ -105,6 +106,7 @@ type PersistentUpdateSettings struct {
 
 type NetworkSettings struct {
 	ServerAddress string `ini:"ServerAddress" json:"server-address"`
+	ListenSocket  string `ini:"ListenSocket" json:"listen-socket"`
 }
 
 type FirmwareSettings struct {

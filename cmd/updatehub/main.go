@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log/syslog"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -142,7 +143,17 @@ func main() {
 
 	go func() {
 		router := server.NewRouter(backend)
-		if err := http.ListenAndServe(":8080", router); err != nil {
+
+		addr, err := url.Parse(settings.ListenSocket)
+		if err != nil {
+			log.Fatal(errors.Wrap(err, "Invalid listen socket addr"))
+		}
+
+		if addr.Scheme != "tcp" {
+			log.Fatal("Listen socket protocol not supported")
+		}
+
+		if err := http.ListenAndServe(addr.Host, router); err != nil {
 			log.Fatal(err)
 		} else {
 			log.Info("API HTTP server started")

@@ -162,6 +162,7 @@ func TestLoadSettings(t *testing.T) {
 
 				NetworkSettings: NetworkSettings{
 					ServerAddress: "https://api.updatehub.io",
+					ListenSocket:  "tcp://localhost:8080",
 				},
 
 				FirmwareSettings: FirmwareSettings{
@@ -200,6 +201,7 @@ func TestLoadSettings(t *testing.T) {
 
 				NetworkSettings: NetworkSettings{
 					ServerAddress: "http://localhost",
+					ListenSocket:  "tcp://localhost:8080",
 				},
 
 				FirmwareSettings: FirmwareSettings{
