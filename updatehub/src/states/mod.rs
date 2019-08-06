@@ -30,6 +30,7 @@ use self::{
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use actix::{Actor, System};
 use futures::future::Future;
+use slog_scope::error;
 
 trait StateChangeImpl {
     fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error>;
@@ -243,13 +244,14 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
         .unwrap()
         .start();
 
-        // Iterate over the state machine.
-        loop {
-            machine
-                .send(actor::Step)
-                .wait()
-                .expect("Failed to communicate with actor");
-        }
+        // Iterate over the state machine on a separated thread.
+        actix::Arbiter::new().exec_fn(move || {
+            while machine.connected() {
+                if let Err(e) = machine.send(actor::Step).wait() {
+                    error!("Communication to actor failed: {:?}", e);
+                }
+            }
+        });
     })?;
 
     unreachable!("actix System has stopped");
