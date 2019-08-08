@@ -21,6 +21,7 @@ use mockito;
 #[derive(Debug, Default, PartialEq, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Settings {
+    #[serde(default)]
     pub(crate) firmware: Firmware,
     pub(crate) network: Network,
     pub(crate) polling: Polling,
@@ -122,13 +123,15 @@ impl Default for Polling {
 #[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Storage {
-    #[serde(deserialize_with = "de::bool_from_str")]
     /// Determine if it should run on read-only mode or not. By
     /// default, read-only mode is disabled.
+    #[serde(deserialize_with = "de::bool_from_str")]
+    #[serde(default)]
     pub read_only: bool,
     /// Define where the runtime settings are stored. By default,
     /// those are stored in
     /// `/var/lib/updatehub/runtime_settings.conf`.
+    #[serde(rename = "RuntimeSettingsPath")]
     pub runtime_settings: String,
 }
 
@@ -204,8 +207,7 @@ Interval=60s
 Enabled=false
 
 [Storage]
-ReadOnly=true
-RuntimeSettings=/run/updatehub/state
+RuntimeSettingsPath=/run/updatehub/state
 
 [Update]
 DownloadDir=/tmp/download
@@ -213,9 +215,6 @@ SupportedInstallModes=mode1,mode2
 
 [Network]
 ServerAddress=http://localhost
-
-[Firmware]
-MetadataPath=/tmp/metadata
 ";
 
     let expected = Settings {
@@ -224,7 +223,7 @@ MetadataPath=/tmp/metadata
             enabled: false,
         },
         storage: Storage {
-            read_only: true,
+            read_only: false,
             runtime_settings: "/run/updatehub/state".into(),
         },
         update: Update {
@@ -235,7 +234,7 @@ MetadataPath=/tmp/metadata
             server_address: "http://localhost".into(),
         },
         firmware: Firmware {
-            metadata_path: "/tmp/metadata".into(),
+            metadata_path: "/usr/share/updatehub".into(),
         },
     };
 
