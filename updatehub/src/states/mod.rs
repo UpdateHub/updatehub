@@ -215,6 +215,7 @@ impl StateMachine {
 /// # }
 /// ```
 pub fn run(settings: Settings) -> Result<(), failure::Error> {
+    let listen_socket = settings.network.listen_socket.clone();
     let mut runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
     if !settings.storage.read_only {
         runtime_settings.enable_persistency();
@@ -238,7 +239,7 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
         actix_web::HttpServer::new(move || {
             actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, api.clone()))
         })
-        .bind("localhost:8080")
+        .bind(listen_socket)
         .unwrap()
         .start();
 

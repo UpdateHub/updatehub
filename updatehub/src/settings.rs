@@ -171,6 +171,7 @@ impl Default for Update {
 #[serde(rename_all = "PascalCase")]
 pub struct Network {
     pub server_address: String,
+    pub listen_socket: String,
 }
 
 impl Default for Network {
@@ -180,12 +181,16 @@ impl Default for Network {
         #[cfg(not(test))]
         let server_address = "https://api.updatehub.io".to_string();
 
-        Self { server_address }
+        Self {
+            server_address,
+            listen_socket: "localhost:8080".to_string(),
+        }
     }
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
 #[serde(rename_all = "PascalCase")]
+#[serde(default)]
 pub struct Firmware {
     pub metadata_path: PathBuf,
 }
@@ -215,6 +220,7 @@ SupportedInstallModes=mode1,mode2
 
 [Network]
 ServerAddress=http://localhost
+ListenSocket=localhost:8081
 ";
 
     let expected = Settings {
@@ -232,6 +238,7 @@ ServerAddress=http://localhost
         },
         network: Network {
             server_address: "http://localhost".into(),
+            listen_socket: "localhost:8081".into(),
         },
         firmware: Firmware {
             metadata_path: "/usr/share/updatehub".into(),
@@ -321,6 +328,7 @@ fn default() {
         },
         network: Network {
             server_address: "https://api.updatehub.io".to_string(),
+            listen_socket: "localhost:8080".to_string(),
         },
         firmware: Firmware {
             metadata_path: "/usr/share/updatehub".into(),
