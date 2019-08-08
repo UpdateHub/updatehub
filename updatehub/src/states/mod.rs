@@ -222,8 +222,6 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     }
 
     let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
-    // set_shared_state!(settings, runtime_settings, firmware);
-
     let agent_machine = actor::Machine::new(
         StateMachine::new(),
         SharedState {
