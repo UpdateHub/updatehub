@@ -5,7 +5,7 @@
 use crate::serde_helpers::{de, ser};
 
 use chrono::{DateTime, Duration, Utc};
-use failure::Fail;
+use failure::{format_err, Fail};
 use serde::{Deserialize, Serialize};
 use serde_ini;
 use slog_scope::debug;
@@ -60,19 +60,31 @@ impl RuntimeSettings {
     }
 
     fn save(&self) -> Result<(), failure::Error> {
-        use std::{fs::File, io::Write};
+        use std::{
+            fs::{self, File},
+            io::Write,
+        };
 
         if !self.persistent {
             debug!("Skipping runtime settings save, using non-persistent.");
             return Ok(());
         }
 
-        debug!(
-            "Saving runtime settings from '{}'...",
-            &self.path.to_string_lossy()
-        );
+        self.path
+            .parent()
+            .ok_or(format_err!("Invalid runtime settings destination"))
+            .and_then(|p| {
+                if !p.exists() {
+                    debug!("Creating runtime settings to store state.");
+                    fs::create_dir_all(p)?;
+                }
 
+                Ok(())
+            })?;
+
+        debug!("Saving runtime settings from '{}'...", &self.path.display());
         File::create(&self.path)?.write_all(self.serialize()?.as_bytes())?;
+
         Ok(())
     }
 
