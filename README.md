@@ -9,3 +9,16 @@ should not be used in production yet.
 
 For the official UpdateHub agent, please use the
 https://github.com/UpdateHub/UpdateHub repository instead.
+
+## Running tests
+
+Some tests are marked as ignored because they requoire user previleges. There's a Vagrantfile that can be used to run them. To run tests on the virtual machine run:
+
+```Bash
+vagrant up
+vagrant ssh
+sudo -i
+cd /vagrant
+cargo test
+cargo test -- --ignored
+```

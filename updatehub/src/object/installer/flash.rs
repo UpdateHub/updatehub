@@ -96,31 +96,6 @@ mod tests {
 
     #[test]
     #[ignore]
-    fn install_nand() {
-        let _mtd_lock = SERIALIZE.lock();
-        let mtd = FakeMtd::new(&["system0"], MtdKind::Nand).unwrap();
-        let target = &mtd.devices[0];
-        let flash_obj = fake_flash_obj("system0");
-        let download_dir = tempfile::tempdir().unwrap();
-        let source = download_dir.path().join(&flash_obj.sha256sum);
-
-        let (_handle, calls) = create_echo_bins(&["flash_erase", "flashcp", "nandwrite"]).unwrap();
-
-        flash_obj.check_requirements().unwrap();
-        flash_obj.install(download_dir.path()).unwrap();
-
-        let expected = format!(
-            "flash_erase {} 0 0\nnandwrite -p {} {}\n",
-            target.to_str().unwrap(),
-            target.to_str().unwrap(),
-            source.to_str().unwrap()
-        );
-
-        assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
-    }
-
-    #[test]
-    #[ignore]
     fn install_nor() {
         let _mtd_lock = SERIALIZE.lock();
         let mtd = FakeMtd::new(&["system0"], MtdKind::Nor).unwrap();

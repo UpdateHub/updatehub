@@ -146,15 +146,9 @@ pub(crate) mod tests {
     impl FakeMtd {
         pub(crate) fn new(names: &[&str], kind: MtdKind) -> Result<FakeMtd, failure::Error> {
             match kind {
-                MtdKind::Nand => {
-                    easy_process::run("modprobe nandsim second_id_byte=0x36")?;
-                    easy_process::run("mtdpart del /dev/mtd0 1")?;
-                }
-                MtdKind::Nor => {
-                    easy_process::run("modprobe mtdram total_size=20000 erase_size=10")?;
-                }
-            }
-            let total_size = 20000;
+                MtdKind::Nand => easy_process::run("modprobe nandsim second_id_byte=0x36"),
+                MtdKind::Nor => easy_process::run("modprobe mtdram total_size=20000"),
+            }?;
 
             // FakeMtd created here so if any subsequent command fails the drop will still
             // be called to cleanup mtd devices
@@ -162,13 +156,12 @@ pub(crate) mod tests {
                 devices: vec![],
                 kind,
             };
-            let size = total_size / names.len();
-            names.iter().enumerate().try_for_each(|(i, n)| {
+            names.iter().enumerate().try_for_each(|(i, name)| {
                 easy_process::run(&format!(
                     "mtdpart add /dev/mtd0 {} {} {}",
-                    n,
-                    i * size,
-                    size
+                    name,
+                    i * 100,
+                    100
                 ))
                 .map(|_| {
                     mtd.devices
@@ -203,7 +196,7 @@ pub(crate) mod tests {
 
     #[test]
     #[ignore]
-    fn device_from_mtd_name_nor() {
+    fn device_from_mtd_name() {
         let _lock = SERIALIZE.lock();
         let dev_names = vec!["system0", "system1"];
 
@@ -222,36 +215,16 @@ pub(crate) mod tests {
 
     #[test]
     #[ignore]
-    fn device_from_mtd_name_nand() {
-        let _lock = SERIALIZE.lock();
-        let dev_names = vec!["system0", "system1"];
-
-        let mtd = FakeMtd::new(&dev_names, MtdKind::Nand).unwrap();
-
-        assert_eq!(
-            dev_names
-                .into_iter()
-                .map(target_device_from_mtd_name)
-                .map(Result::unwrap)
-                .collect::<Vec<_>>(),
-            mtd.devices,
-        );
-        assert!(target_device_from_mtd_name("some_inexistent_device").is_err());
-    }
-
-    #[test]
-    #[ignore]
     fn test_is_nand() {
         let _lock = SERIALIZE.lock();
-        let dev_names = vec!["system0"];
 
         {
-            let mtd = FakeMtd::new(&dev_names, MtdKind::Nand).unwrap();
-            assert_eq!(is_nand(&mtd.devices[0]).unwrap(), true);
+            let _mtd = FakeMtd::new(&[], MtdKind::Nand).unwrap();
+            assert_eq!(is_nand(&PathBuf::from("/dev/mtd0")).unwrap(), true);
         }
         {
-            let mtd = FakeMtd::new(&dev_names, MtdKind::Nor).unwrap();
-            assert_eq!(is_nand(&mtd.devices[0]).unwrap(), false);
+            let _mtd = FakeMtd::new(&[], MtdKind::Nor).unwrap();
+            assert_eq!(is_nand(&PathBuf::from("/dev/mtd0")).unwrap(), false);
         }
     }
 
