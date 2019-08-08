@@ -8,26 +8,12 @@
 
 package main
 
+import "github.com/UpdateHub/updatehub/updatehub"
+
 const (
-	// The system settings are the settings configured in the client-side and will be read-only
-	systemSettingsPath = "/etc/updatehub.conf"
-
-	// The state change callback is executed twice each state
-	// change. Once before the state handling and once after. Ex.:
-	// <stateChangeCallbackPath> enter downloading
-	// <stateChangeCallbackPath> leave downloading
-	stateChangeCallbackPath = "/usr/share/updatehub/state-change-callback"
-
-	// The error callback is executed whenever a error state is
-	// handled. Ex.:
-	// <errorCallbackPath> 'error_message'
-	errorCallbackPath = "/usr/share/updatehub/error-callback"
-
-	// The validate callback is executed whenever a successful
-	// installation is booted.
-	validateCallbackPath = "/usr/share/updatehub/validate-callback"
-
-	// The rollback callback is executed whenever the agent boots
-	// after an errored installation boot
-	rollbackCallbackPath = "/usr/share/updatehub/rollback-callback"
+	systemSettingsPath      = updatehub.SystemSettingsPath
+	stateChangeCallbackPath = updatehub.StateChangeCallbackPath
+	errorCallbackPath       = updatehub.ErrorCallbackPath
+	validateCallbackPath    = updatehub.ValidateCallbackPath
+	rollbackCallbackPath    = updatehub.RollbackCallbackPath
 )
