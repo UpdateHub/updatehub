@@ -32,7 +32,7 @@ reqwest = "=0.9.17"
 serde = { version = "1", features = ["rc", "derive"] }
 serde_ini = "0.2"
 serde_json = "1"
-slog = "2"
+slog = { version = "2", features = ["max_level_trace", "release_max_level_trace"] }
 slog-async = "2"
 slog-scope = "4"
 slog-term = "2"
