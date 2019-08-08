@@ -69,7 +69,7 @@ impl Metadata {
             version: run_hook(&version_hook)?,
             hardware: run_hook(&hardware_hook)?,
             device_identity: run_hooks_from_dir(&device_identity_dir)?,
-            device_attributes: run_hooks_from_dir(&device_attributes_dir)?,
+            device_attributes: run_hooks_from_dir(&device_attributes_dir).unwrap_or_default(),
         };
 
         if metadata.product_uid.is_empty() {
