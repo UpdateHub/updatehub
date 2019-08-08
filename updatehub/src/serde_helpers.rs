@@ -11,7 +11,7 @@ pub mod ser {
     where
         S: Serializer,
     {
-        Ok(serializer.serialize_str(if *v { "true" } else { "false" })?)
+        serializer.serialize_str(if *v { "true" } else { "false" })
     }
 
     pub fn duration_option_to_int<S>(v: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
