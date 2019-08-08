@@ -49,6 +49,8 @@ func main() {
 	probeCmd.Flags().BoolVar(&ignoreProbeASAP, "ignore-probe-asap", false, "Ignore Probe ASAP")
 	probeCmd.Flags().MarkDeprecated("server-address", "use --from instead")
 
+	rootCmd.PersistentFlags().StringVarP(&updatehub.DefaultHost, "host", "H", updatehub.DefaultHost, "UpdateHub socket to connect to")
+
 	rootCmd.AddCommand(probeCmd)
 	rootCmd.AddCommand(infoCmd)
 	rootCmd.AddCommand(logsCmd)
