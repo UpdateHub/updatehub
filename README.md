@@ -16,6 +16,7 @@ To learn more about UpdateHub, check out our [documentation](https://docs.update
 ## UpdateHub Linux Agent
 
 [![Build Status](https://travis-ci.org/UpdateHub/updatehub.svg?branch=v1)](https://travis-ci.org/updatehub/updatehub) [![Coverage Status](https://coveralls.io/repos/github/updatehub/updatehub/badge.svg?branch=v1)](https://coveralls.io/github/updatehub/updatehub?branch=v1)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FUpdateHub%2Fupdatehub.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FUpdateHub%2Fupdatehub?ref=badge_shield)
 
 This repository contains the UpdateHub Linux Agent, which can be run as system service in Yocto based images.
 
