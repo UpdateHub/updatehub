@@ -2,7 +2,7 @@
 # Copyright (C) 2017 O.S. Systems Sofware LTDA
 # Copyright (C) 2017 Cloudflare
 #
-# SPDX-License-Identifier:     GPL-2.0
+# SPDX-License-Identifier: Apache-2.0
 
 # The import path is where your repository can be found.
 # To import subpackages, always prepend the full import path.

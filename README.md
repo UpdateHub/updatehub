@@ -39,7 +39,8 @@ If you would like to contribute, please read our [contributing guide](CONTRIBUTI
 
 ## License
 
-UpdateHub Linux Agent is licensed under the GPLv2. See [COPYING](COPYING) for the full license text.
+UpdateHub Linux Agent is licensed under the Apache-2.0. See
+[LICENSE](LICENSE) for the full license text.
 
 ## Getting in touch
 
