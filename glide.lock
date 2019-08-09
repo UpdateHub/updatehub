@@ -1,5 +1,5 @@
 hash: a20d8178c48aa680ea77b7a0d3696ccbcffffaa28ff4502efba16ae40a21ef7d
-updated: 2019-04-09T09:20:51.674201904-03:00
+updated: 2019-08-09T14:05:23.37700413-03:00
 imports:
 - name: github.com/anacrolix/missinggo
   version: f9a329340c5303f1977dcb9efb0918b34437a003
@@ -23,9 +23,9 @@ imports:
 - name: github.com/fsnotify/fsnotify
   version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
 - name: github.com/go-ini/ini
-  version: c85607071cf08ca1adaf48319cd1aa322e81d8c1
+  version: d4cae42d398bc0095297fc3315669590d29166ea
 - name: github.com/gorilla/mux
-  version: c5c6c98bc25355028a63748a498942a6398ccd22
+  version: 00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15
 - name: github.com/hokaccha/go-prettyjson
   version: d229c224a219dcf41e9d2af4684b9782f33f5eb7
 - name: github.com/huandu/xstrings
@@ -57,7 +57,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/sirupsen/logrus
-  version: 8bdbc7bcc01dcbb8ec23dc8a28e332258d25251f
+  version: 839c75faf7f98a33d445d181f3018b5c3409a45e
   subpackages:
   - hooks/syslog
   - hooks/test
@@ -66,7 +66,7 @@ imports:
   subpackages:
   - mem
 - name: github.com/spf13/cobra
-  version: ef82de70bb3f60c65fb8eebacbb2d122ef517385
+  version: f2b07da1e2c38d5f12845a4f607e2e1018cbb1f5
 - name: github.com/spf13/pflag
   version: 298182f68c66c05229eb03ac171abe6e309ee79a
 - name: github.com/stretchr/objx
@@ -76,8 +76,10 @@ imports:
   subpackages:
   - assert
   - mock
+  - require
+  - suite
 - name: github.com/UpdateHub/agent-sdk-go
-  version: 4159d014cd88d05c76aa647fb1e63baba497c8fc
+  version: 8887998c2ce474764feb146a1fc9bbcb8fe48fda
 - name: golang.org/x/net
   version: db08ff08e8622530d9ed3a0e8ac279f6d4c02196
   subpackages:
