@@ -231,14 +231,17 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
         },
     );
 
-    System::run(|| {
+    System::run(move || {
         let machine = agent_machine.start();
         let api = machine.clone();
         actix_web::HttpServer::new(move || {
             actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, api.clone()))
         })
-        .bind(listen_socket)
-        .unwrap()
+        .bind(listen_socket.clone())
+        .expect(&format!(
+            "Failed to bind listen socket, {:?}, for HTTP API",
+            listen_socket,
+        ))
         .start();
 
         // Iterate over the state machine on a separated thread.
