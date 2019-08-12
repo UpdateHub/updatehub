@@ -56,7 +56,7 @@ impl StateChangeImpl for State<Poll> {
         }
 
         let extra_interval = shared_state.runtime_settings.polling_extra_interval();
-        if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) < current_time {
+        if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) > current_time {
             debug!("Moving to Probe state as the polling's due extra interval.");
             return Ok(StateMachine::Probe(State(Probe {
                 server_address: ServerAddress::Default,
@@ -95,7 +95,7 @@ fn extra_poll_in_past() {
         .set_last_polling(Utc::now() - Duration::seconds(10))
         .unwrap();
     runtime_settings
-        .set_polling_extra_interval(Duration::seconds(10))
+        .set_polling_extra_interval(Duration::seconds(20))
         .unwrap();
 
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
