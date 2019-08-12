@@ -22,7 +22,7 @@ futures = "0.1"
 hex = "0.3"
 infer = "0.1"
 lazy_static = "1"
-nix = "0.14"
+nix = "0.15"
 parse_duration = "1"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
