@@ -171,7 +171,12 @@ impl Default for Update {
 #[serde(rename_all = "PascalCase")]
 pub struct Network {
     pub server_address: String,
+    #[serde(default = "default_listen_socket")]
     pub listen_socket: String,
+}
+
+fn default_listen_socket() -> String {
+    "localhost:8080".to_string()
 }
 
 impl Default for Network {
@@ -183,7 +188,7 @@ impl Default for Network {
 
         Self {
             server_address,
-            listen_socket: "localhost:8080".to_string(),
+            listen_socket: default_listen_socket(),
         }
     }
 }
@@ -203,10 +208,14 @@ impl Default for Firmware {
     }
 }
 
-#[test]
-fn ok() {
-    use pretty_assertions::assert_eq;
-    let ini = r"
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn ok() {
+        use pretty_assertions::assert_eq;
+        let ini = r"
 [Polling]
 Interval=60s
 Enabled=false
@@ -220,42 +229,91 @@ SupportedInstallModes=mode1,mode2
 
 [Network]
 ServerAddress=http://localhost
-ListenSocket=localhost:8081
 ";
 
-    let expected = Settings {
-        polling: Polling {
-            interval: Duration::seconds(60),
-            enabled: false,
-        },
-        storage: Storage {
-            read_only: false,
-            runtime_settings: "/run/updatehub/state".into(),
-        },
-        update: Update {
-            download_dir: "/tmp/download".into(),
-            install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(),
-        },
-        network: Network {
-            server_address: "http://localhost".into(),
-            listen_socket: "localhost:8081".into(),
-        },
-        firmware: Firmware {
-            metadata_path: "/usr/share/updatehub".into(),
-        },
-    };
+        let expected = Settings {
+            polling: Polling {
+                interval: Duration::seconds(60),
+                enabled: false,
+            },
+            storage: Storage {
+                read_only: false,
+                runtime_settings: "/run/updatehub/state".into(),
+            },
+            update: Update {
+                download_dir: "/tmp/download".into(),
+                install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(),
+            },
+            network: Network {
+                server_address: "http://localhost".into(),
+                listen_socket: "localhost:8080".into(),
+            },
+            firmware: Firmware {
+                metadata_path: "/usr/share/updatehub".into(),
+            },
+        };
 
-    assert_eq!(
-        serde_ini::from_str::<Settings>(ini)
-            .map_err(|e| println!("{}", e))
-            .ok(),
-        Some(expected)
-    );
-}
+        assert_eq!(
+            serde_ini::from_str::<Settings>(ini)
+                .map_err(|e| println!("{}", e))
+                .unwrap(),
+            expected
+        );
+    }
 
-#[test]
-fn invalid_polling_interval() {
-    let ini = r"
+    #[test]
+    fn custom_listen_socket() {
+        use pretty_assertions::assert_eq;
+        let ini = r"
+[Polling]
+Interval=60s
+Enabled=false
+
+[Storage]
+RuntimeSettingsPath=/run/updatehub/state
+
+[Update]
+DownloadDir=/tmp/download
+SupportedInstallModes=mode1,mode2
+
+[Network]
+ServerAddress=http://localhost
+ListenSocket=localhost:8313
+";
+
+        let expected = Settings {
+            polling: Polling {
+                interval: Duration::seconds(60),
+                enabled: false,
+            },
+            storage: Storage {
+                read_only: false,
+                runtime_settings: "/run/updatehub/state".into(),
+            },
+            update: Update {
+                download_dir: "/tmp/download".into(),
+                install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(),
+            },
+            network: Network {
+                server_address: "http://localhost".into(),
+                listen_socket: "localhost:8313".into(),
+            },
+            firmware: Firmware {
+                metadata_path: "/usr/share/updatehub".into(),
+            },
+        };
+
+        assert_eq!(
+            serde_ini::from_str::<Settings>(ini)
+                .map_err(|e| println!("{}", e))
+                .unwrap(),
+            expected
+        );
+    }
+
+    #[test]
+    fn invalid_polling_interval() {
+        let ini = r"
 [Polling]
 Interval=59s
 Enabled=false
@@ -274,12 +332,12 @@ ServerAddress=http://localhost
 [Firmware]
 MetadataPath=/tmp/metadata
 ";
-    assert!(Settings::parse(ini).is_err());
-}
+        assert!(Settings::parse(ini).is_err());
+    }
 
-#[test]
-fn invalid_network_server_address() {
-    let ini = r"
+    #[test]
+    fn invalid_network_server_address() {
+        let ini = r"
 [Polling]
 Interval=60s
 Enabled=false
@@ -299,41 +357,42 @@ ServerAddress=localhost
 MetadataPath=/tmp/metadata
 ";
 
-    assert!(Settings::parse(ini).is_err());
-}
+        assert!(Settings::parse(ini).is_err());
+    }
 
-#[test]
-fn default() {
-    use pretty_assertions::assert_eq;
-    let mut settings = Settings::default();
-    settings.network.server_address = "https://api.updatehub.io".to_string();
+    #[test]
+    fn default() {
+        use pretty_assertions::assert_eq;
+        let mut settings = Settings::default();
+        settings.network.server_address = "https://api.updatehub.io".to_string();
 
-    let expected = Settings {
-        polling: Polling {
-            interval: Duration::days(1),
-            enabled: true,
-        },
-        storage: Storage {
-            read_only: false,
-            runtime_settings: "/var/lib/updatehub/runtime_settings.conf".into(),
-        },
-        update: Update {
-            download_dir: "/tmp/updatehub".into(),
-            install_modes: [
-                "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
-            ]
-            .iter()
-            .map(|i| i.to_string())
-            .collect(),
-        },
-        network: Network {
-            server_address: "https://api.updatehub.io".to_string(),
-            listen_socket: "localhost:8080".to_string(),
-        },
-        firmware: Firmware {
-            metadata_path: "/usr/share/updatehub".into(),
-        },
-    };
+        let expected = Settings {
+            polling: Polling {
+                interval: Duration::days(1),
+                enabled: true,
+            },
+            storage: Storage {
+                read_only: false,
+                runtime_settings: "/var/lib/updatehub/runtime_settings.conf".into(),
+            },
+            update: Update {
+                download_dir: "/tmp/updatehub".into(),
+                install_modes: [
+                    "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
+                ]
+                .iter()
+                .map(|i| i.to_string())
+                .collect(),
+            },
+            network: Network {
+                server_address: "https://api.updatehub.io".to_string(),
+                listen_socket: "localhost:8080".to_string(),
+            },
+            firmware: Firmware {
+                metadata_path: "/usr/share/updatehub".into(),
+            },
+        };
 
-    assert_eq!(Some(settings), Some(expected));
+        assert_eq!(Some(settings), Some(expected));
+    }
 }
