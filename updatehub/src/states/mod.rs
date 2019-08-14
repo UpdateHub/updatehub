@@ -30,7 +30,7 @@ use self::{
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use actix::{Actor, System};
 use futures::future::Future;
-use slog_scope::error;
+use slog_scope::{error, info};
 
 trait StateChangeImpl {
     fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error>;
@@ -220,22 +220,23 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     if !settings.storage.read_only {
         runtime_settings.enable_persistency();
     }
-
     let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
-    let agent_machine = actor::Machine::new(
-        StateMachine::new(),
-        SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        },
-    );
 
     System::run(move || {
-        let machine = agent_machine.start();
-        let api = machine.clone();
+        let machine_addr = actor::Machine::start_in_arbiter(&actix::Arbiter::new(), move |_| {
+            actor::Machine::new(
+                StateMachine::new(),
+                SharedState {
+                    settings,
+                    runtime_settings,
+                    firmware,
+                },
+            )
+        });
+
+        let addr_clone = machine_addr.clone();
         actix_web::HttpServer::new(move || {
-            actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, api.clone()))
+            actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, addr_clone.clone()))
         })
         .bind(listen_socket.clone())
         .expect(&format!(
@@ -246,13 +247,15 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
 
         // Iterate over the state machine on a separated thread.
         actix::Arbiter::new().exec_fn(move || {
-            while machine.connected() {
-                if let Err(e) = machine.send(actor::Step).wait() {
+            while machine_addr.connected() {
+                if let Err(e) = machine_addr.send(actor::Step).wait() {
                     error!("Communication to actor failed: {:?}", e);
                 }
             }
+            System::current().stop();
         });
     })?;
 
-    unreachable!("actix System has stopped");
+    info!("actix System has stopped");
+    Ok(())
 }
