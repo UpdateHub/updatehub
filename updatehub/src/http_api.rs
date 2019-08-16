@@ -8,10 +8,10 @@ use futures::future::Future;
 use serde::Serialize;
 use serde_json::json;
 
-pub struct API(actix::Addr<actor::Machine>);
+pub(crate) struct API(actix::Addr<actor::Machine>);
 
 impl API {
-    pub fn configure(cfg: &mut web::ServiceConfig, addr: actix::Addr<actor::Machine>) {
+    pub(crate) fn configure(cfg: &mut web::ServiceConfig, addr: actix::Addr<actor::Machine>) {
         cfg.data(Self(addr))
             .route("/info", web::get().to(API::info))
             .route("/log", web::get().to(API::log))

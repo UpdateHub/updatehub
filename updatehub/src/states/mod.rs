@@ -28,9 +28,8 @@ use self::{
     reboot::Reboot,
 };
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
-use actix::{Actor, System};
-use futures::future::Future;
-use slog_scope::{error, info};
+use actix::System;
+use slog_scope::info;
 
 trait StateChangeImpl {
     fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error>;
@@ -223,20 +222,18 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
 
     System::run(move || {
-        let machine_addr = actor::Machine::start_in_arbiter(&actix::Arbiter::new(), move |_| {
-            actor::Machine::new(
-                StateMachine::new(),
-                SharedState {
-                    settings,
-                    runtime_settings,
-                    firmware,
-                },
-            )
-        });
+        let machine_addr = actor::Machine::start(
+            StateMachine::new(),
+            SharedState {
+                settings,
+                runtime_settings,
+                firmware,
+            },
+        );
 
-        let addr_clone = machine_addr.clone();
         actix_web::HttpServer::new(move || {
-            actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, addr_clone.clone()))
+            actix_web::App::new()
+                .configure(|cfg| http_api::API::configure(cfg, machine_addr.clone()))
         })
         .bind(listen_socket.clone())
         .unwrap_or_else(|_| {
@@ -246,16 +243,6 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
             )
         })
         .start();
-
-        // Iterate over the state machine on a separated thread.
-        actix::Arbiter::new().exec_fn(move || {
-            while machine_addr.connected() {
-                if let Err(e) = machine_addr.send(actor::Step).wait() {
-                    error!("Communication to actor failed: {:?}", e);
-                }
-            }
-            System::current().stop();
-        });
     })?;
 
     info!("actix System has stopped");

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{actor::probe, Park, Poll, SharedState, State, StateChangeImpl, StateMachine};
+use super::{actor, Park, Poll, SharedState, State, StateChangeImpl, StateMachine};
 use slog_scope::debug;
 
 #[derive(Debug, PartialEq)]
@@ -18,8 +18,8 @@ impl StateChangeImpl for State<Idle> {
         "idle"
     }
 
-    fn handle_trigger_probe(&self) -> probe::Response {
-        probe::Response::RequestAccepted(self.name().to_owned())
+    fn handle_trigger_probe(&self) -> actor::probe::Response {
+        actor::probe::Response::RequestAccepted(self.name().to_owned())
     }
 
     fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {

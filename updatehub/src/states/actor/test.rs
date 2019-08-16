@@ -12,7 +12,7 @@ use crate::{
     runtime_settings::RuntimeSettings,
     settings::Settings,
 };
-use actix::{Actor, Addr, Arbiter, System};
+use actix::{Addr, Arbiter, System};
 use futures::future::{self, Future};
 use pretty_assertions::assert_eq;
 use std::fs;
@@ -53,15 +53,14 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
     });
 
     (
-        Machine::new(
+        Machine::start(
             StateMachine::Idle(State(Idle {})),
             SharedState {
                 settings,
                 runtime_settings,
                 firmware,
             },
-        )
-        .start(),
+        ),
         mock,
         settings_clone,
         firmware_clone,
