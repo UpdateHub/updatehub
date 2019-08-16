@@ -239,10 +239,12 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
             actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, addr_clone.clone()))
         })
         .bind(listen_socket.clone())
-        .expect(&format!(
-            "Failed to bind listen socket, {:?}, for HTTP API",
-            listen_socket,
-        ))
+        .unwrap_or_else(|_| {
+            panic!(
+                "Failed to bind listen socket, {:?}, for HTTP API",
+                listen_socket,
+            )
+        })
         .start();
 
         // Iterate over the state machine on a separated thread.

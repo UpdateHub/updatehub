@@ -72,7 +72,7 @@ impl RuntimeSettings {
 
         self.path
             .parent()
-            .ok_or(format_err!("Invalid runtime settings destination"))
+            .ok_or_else(|| format_err!("Invalid runtime settings destination"))
             .and_then(|p| {
                 if !p.exists() {
                     debug!("Creating runtime settings to store state.");
