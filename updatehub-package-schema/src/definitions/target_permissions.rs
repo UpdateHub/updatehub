@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use serde::Deserialize;
+use serde::{de, Deserialize, Deserializer};
 
 /// Options to set permissions after installing on target.
 #[derive(PartialEq, Debug, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct TargetPermissions {
-    #[serde(deserialize_with(de::octal_from_str))]
+    #[serde(deserialize_with = "optional_octal_from_str")]
     pub target_mode: Option<u32>,
     pub target_gid: Option<Gid>,
     pub target_uid: Option<Uid>,
@@ -21,7 +22,6 @@ pub enum Gid {
     Name(String),
 
     /// Group numeric id.
-    #[serde(deserialize_with(de::octal_from_str))]
     Number(u32),
 }
 
@@ -32,8 +32,17 @@ pub enum Uid {
     Name(String),
 
     /// User numeric id.
-    #[serde(deserialize_with(de::octal_from_str))]
     Number(u32),
+}
+
+fn optional_octal_from_str<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(match Option::<String>::deserialize(deserializer)? {
+        Some(s) => Some(u32::from_str_radix(&s, 8).map_err(de::Error::custom)?),
+        None => None,
+    })
 }
 
 #[test]
@@ -48,7 +57,7 @@ fn deserialize() {
             target_uid: Some(Uid::Name("user".to_string())),
         },
         serde_json::from_value::<TargetPermissions>(json!({
-            "target-mode": 0o0777,
+            "target-mode": "0777",
             "target-uid": "user",
             "target-gid": "wheel"
         }))
