@@ -39,9 +39,9 @@ fn optional_octal_from_str<'de, D>(deserializer: D) -> Result<Option<u32>, D::Er
 where
     D: Deserializer<'de>,
 {
-    Ok(match Option::<String>::deserialize(deserializer)? {
-        Some(s) => Some(u32::from_str_radix(&s, 8).map_err(de::Error::custom)?),
-        None => None,
+    Option::<String>::deserialize(deserializer).and_then(|opt| {
+        opt.map(|s| u32::from_str_radix(&s, 8).map_err(de::Error::custom))
+            .transpose()
     })
 }
 
