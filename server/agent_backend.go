@@ -118,11 +118,6 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 					}
-
-					if fi == nil {
-						w.WriteHeader(500)
-						return
-					}
 				} else {
 					filename = target.Path
 				}
@@ -136,13 +131,7 @@ func (ab *AgentBackend) probe(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(500)
 						return
 					}
-				} else {
-					w.WriteHeader(500)
-					return
 				}
-			} else {
-				w.WriteHeader(500)
-				return
 			}
 		}
 
