@@ -123,7 +123,8 @@ fn update_not_available() {
     let machine = StateMachine::Probe(State(Probe {
         server_address: ServerAddress::Default,
     }))
-    .move_to_next_state(&mut shared_state);
+    .move_to_next_state(&mut shared_state)
+    .unwrap();
 
     mock.assert();
 
@@ -160,7 +161,8 @@ fn update_available() {
     let machine = StateMachine::Probe(State(Probe {
         server_address: ServerAddress::Default,
     }))
-    .move_to_next_state(&mut shared_state);
+    .move_to_next_state(&mut shared_state)
+    .unwrap();
 
     mock.assert();
 
@@ -234,7 +236,8 @@ fn extra_poll_interval() {
     let machine = StateMachine::Probe(State(Probe {
         server_address: ServerAddress::Default,
     }))
-    .move_to_next_state(&mut shared_state);
+    .move_to_next_state(&mut shared_state)
+    .unwrap();
 
     mock.assert();
 
@@ -293,7 +296,8 @@ fn skip_same_package_uid() {
     let machine = StateMachine::Probe(State(Probe {
         server_address: ServerAddress::Default,
     }))
-    .move_to_next_state(&mut shared_state);
+    .move_to_next_state(&mut shared_state)
+    .unwrap();
 
     mock.assert();
 
@@ -332,7 +336,8 @@ fn error() {
     let machine = StateMachine::Probe(State(Probe {
         server_address: ServerAddress::Default,
     }))
-    .move_to_next_state(&mut shared_state);
+    .move_to_next_state(&mut shared_state)
+    .unwrap();
 
     mock.assert();
 

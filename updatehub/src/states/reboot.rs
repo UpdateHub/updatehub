@@ -115,9 +115,10 @@ mod test {
         env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
         let (state, mut shared_state) = fake_reboot_state();
-        let machine = StateMachine::Reboot(state).move_to_next_state(&mut shared_state);
+        let machine = StateMachine::Reboot(state)
+            .move_to_next_state(&mut shared_state)
+            .unwrap();
 
-        assert!(machine.is_ok(), "Error: {:?}", machine);
         assert_state!(machine, Idle);
     }
 

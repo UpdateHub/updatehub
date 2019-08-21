@@ -148,12 +148,13 @@ mod test {
         .with_body(obj)
         .create();
 
-        let mut machine =
-            StateMachine::PrepareDownload(predownload_state).move_to_next_state(&mut shared_state);
+        let mut machine = StateMachine::PrepareDownload(predownload_state)
+            .move_to_next_state(&mut shared_state)
+            .unwrap();
         assert_state!(machine, Download);
         loop {
-            machine = machine.unwrap().move_to_next_state(&mut shared_state);
-            if let Ok(StateMachine::Install(_)) = machine {
+            machine = machine.move_to_next_state(&mut shared_state).unwrap();
+            if let StateMachine::Install(_) = machine {
                 break;
             }
         }
@@ -193,10 +194,11 @@ mod test {
 
         create_fake_object(&obj, &shasum, &shared_state.settings);
 
-        let machine =
-            StateMachine::PrepareDownload(predownload_state).move_to_next_state(&mut shared_state);
+        let machine = StateMachine::PrepareDownload(predownload_state)
+            .move_to_next_state(&mut shared_state)
+            .unwrap();
         assert_state!(machine, Download);
-        let machine = machine.unwrap().move_to_next_state(&mut shared_state);
+        let machine = machine.move_to_next_state(&mut shared_state).unwrap();
         assert_state!(machine, Install);
 
         assert_eq!(

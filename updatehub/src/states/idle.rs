@@ -51,7 +51,9 @@ fn polling_disable() {
         firmware,
     };
 
-    let machine = StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state);
+    let machine = StateMachine::Idle(State(Idle {}))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
 
     assert_state!(machine, Park);
 }
@@ -71,7 +73,9 @@ fn polling_enabled() {
         firmware,
     };
 
-    let machine = StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state);
+    let machine = StateMachine::Idle(State(Idle {}))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
 
     assert_state!(machine, Poll);
 }

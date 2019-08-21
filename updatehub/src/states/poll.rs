@@ -105,7 +105,9 @@ fn extra_poll_in_past() {
         firmware,
     };
 
-    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state);
+    let machine = StateMachine::Poll(State(Poll {}))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
 
     assert_state!(machine, Probe);
 }
@@ -131,7 +133,9 @@ fn probe_now() {
         firmware,
     };
 
-    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state);
+    let machine = StateMachine::Poll(State(Poll {}))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
 
     assert_state!(machine, Probe);
 }
@@ -156,7 +160,9 @@ fn last_poll_in_future() {
         firmware,
     };
 
-    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state);
+    let machine = StateMachine::Poll(State(Poll {}))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
 
     assert_state!(machine, Probe);
 }
@@ -180,7 +186,9 @@ fn interval_1_second() {
         firmware,
     };
 
-    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state);
+    let machine = StateMachine::Poll(State(Poll {}))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
 
     assert_state!(machine, Probe);
 }
@@ -202,7 +210,9 @@ fn never_polled() {
         firmware,
     };
 
-    let machine = StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state);
+    let machine = StateMachine::Poll(State(Poll {}))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
 
     assert_state!(machine, Probe);
 }

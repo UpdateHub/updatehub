@@ -25,7 +25,7 @@ macro_rules! create_state_step {
 macro_rules! assert_state {
     ($machine:ident, $state:ident) => {
         assert!(
-            if let Ok(StateMachine::$state(_)) = $machine {
+            if let StateMachine::$state(_) = $machine {
                 true
             } else {
                 false
