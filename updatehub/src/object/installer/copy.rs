@@ -38,14 +38,19 @@ impl Installer for objects::Copy {
         let mount_options = &self.mount_options;
         let format_options = &self.target_format.format_options;
         let chunk_size = definitions::ChunkSize::default().0;
+        let sha256sum = self.sha256sum();
+        let target_path = self
+            .target_path
+            .strip_prefix("/")
+            .unwrap_or(&self.target_path);
+        let source = download_dir.join(sha256sum);
 
         if self.target_format.should_format {
             utils::fs::format(&device, filesystem, &format_options)?;
         }
 
         utils::fs::mount_map(&device, filesystem, mount_options, |path| {
-            let dest = path.join(&self.target_path);
-            let source = download_dir.join(self.sha256sum());
+            let dest = path.join(&target_path);
 
             if self.compressed {
                 unimplemented!("FIXME: uncompress to dest");
