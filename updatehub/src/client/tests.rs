@@ -33,12 +33,12 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
                 "version": "1.1",
                 "hardware": hardware,
                 "device-identity": {
-                    "id1":[format!("value{}", identity)],
-                    "id2":["value2"]
+                    "id1":format!("value{}", identity),
+                    "id2":"value2"
                 },
                 "device-attributes": {
-                    "attr1":["attrvalue1"],
-                    "attr2":["attrvalue2"]
+                    "attr1":"attrvalue1",
+                    "attr2":"attrvalue2"
                 }
             }
         ))
@@ -88,12 +88,12 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
                     "version": "1.1",
                     "hardware": "board",
                     "device-identity": {
-                        "id1": ["value2"],
-                        "id2": ["value2"]
+                        "id1": "value2",
+                        "id2": "value2"
                     },
                     "device-attributes": {
-                        "attr1": ["attrvalue1"],
-                        "attr2": ["attrvalue2"]
+                        "attr1": "attrvalue1",
+                        "attr2": "attrvalue2"
                     },
                     "status": "state",
                     "package-uid": "package-uid",
@@ -110,12 +110,12 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
                     "version": "1.1",
                     "hardware": "board",
                     "device-identity": {
-                        "id1": ["value2"],
-                        "id2": ["value2"]
+                        "id1": "value2",
+                        "id2": "value2"
                     },
                     "device-attributes": {
-                        "attr1": ["attrvalue1"],
-                        "attr2": ["attrvalue2"]
+                        "attr1": "attrvalue1",
+                        "attr2": "attrvalue2"
                     },
                     "status": "state",
                     "package-uid": "package-uid",
