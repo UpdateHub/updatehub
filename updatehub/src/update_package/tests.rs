@@ -14,7 +14,7 @@ pub(crate) const OBJECT: &[u8] = b"1234567890";
 pub(crate) fn get_update_json(sha256sum: &str) -> serde_json::Value {
     json!(
         {
-            "product-uid": "0123456789",
+            "product": "0123456789",
             "version": "1.0",
             "supported-hardware": ["board"],
             "objects":

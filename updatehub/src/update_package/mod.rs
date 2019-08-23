@@ -27,6 +27,7 @@ pub(crate) mod tests;
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct UpdatePackage {
+    #[serde(rename = "product")]
     product_uid: String,
     version: String,
 
