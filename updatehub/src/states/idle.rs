@@ -29,6 +29,9 @@ impl StateChangeImpl for State<Idle> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+        // Cleanup temporary settings from last installation
+        shared_state.runtime_settings.reset_transient_settings();
+
         if !shared_state.settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
             return Ok((
