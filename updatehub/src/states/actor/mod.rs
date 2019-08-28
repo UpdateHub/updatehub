@@ -8,9 +8,10 @@ mod test;
 pub(crate) mod download_abort;
 pub(crate) mod info;
 pub(crate) mod probe;
-mod stepper;
+/// Used to send `Step` messages to the `Machine` actor.
+pub(crate) mod stepper;
 
-use super::{Idle, Probe, ServerAddress, SharedState, State, StateMachine};
+use super::{Idle, Metadata, Probe, RuntimeSettings, ServerAddress, Settings, State, StateMachine};
 use actix::{Actor, Addr, Arbiter, AsyncContext, Context, Handler, Message, MessageResult};
 use slog_scope::info;
 
@@ -20,12 +21,18 @@ pub(crate) struct Machine {
     stepper: stepper::Controller,
 }
 
+#[derive(Debug, PartialEq)]
+pub(super) struct SharedState {
+    pub(super) settings: Settings,
+    pub(super) runtime_settings: RuntimeSettings,
+    pub(super) firmware: Metadata,
+}
+
 impl Actor for Machine {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+    fn started(&mut self, _: &mut Self::Context) {
         info!("Starting State Machine Actor...");
-        self.stepper.ensure_running(ctx.address());
     }
 
     fn stopped(&mut self, _: &mut Self::Context) {
@@ -34,18 +41,34 @@ impl Actor for Machine {
 }
 
 impl Machine {
-    pub(super) fn start(state: StateMachine, shared_state: SharedState) -> Addr<Self> {
-        Machine::start_in_arbiter(&Arbiter::new(), move |_| Machine {
+    pub(super) fn new(
+        state: StateMachine,
+        settings: Settings,
+        runtime_settings: RuntimeSettings,
+        firmware: Metadata,
+    ) -> Self {
+        Machine {
             state: Some(state),
-            shared_state,
+            shared_state: SharedState {
+                settings,
+                runtime_settings,
+                firmware,
+            },
             stepper: stepper::Controller::default(),
+        }
+    }
+
+    pub(super) fn start(mut self) -> Addr<Self> {
+        Machine::start_in_arbiter(&Arbiter::new(), move |ctx| {
+            self.stepper.start(ctx.address());
+            self
         })
     }
 }
 
 struct Step;
 
-enum StepTransition {
+pub(crate) enum StepTransition {
     Delayed(std::time::Duration),
     Immediate,
     Never,
@@ -60,16 +83,12 @@ impl Handler<Step> for Machine {
 
     fn handle(&mut self, _: Step, _: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = self.state.take() {
-            self.state = Some(
-                machine
-                    .move_to_next_state(&mut self.shared_state)
-                    .unwrap_or_else(StateMachine::from),
-            );
+            let (state, transition) = machine
+                .move_to_next_state(&mut self.shared_state)
+                .unwrap_or_else(|e| (StateMachine::from(e), StepTransition::Immediate));
+            self.state = Some(state);
 
-            return MessageResult(match self.state {
-                Some(StateMachine::Park(_)) => StepTransition::Never,
-                _ => StepTransition::Immediate,
-            });
+            return MessageResult(transition);
         }
 
         unreachable!("Failed to take StateMachine from StateAgent")

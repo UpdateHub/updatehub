@@ -2,14 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Probe, ServerAddress, SharedState, State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{self, SharedState},
+    Probe, ServerAddress, State, StateChangeImpl, StateMachine,
+};
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
 use slog_scope::{debug, info};
-use std::{
-    sync::{Arc, Condvar, Mutex},
-    thread,
-};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Poll {}
@@ -24,14 +23,20 @@ impl StateChangeImpl for State<Poll> {
         "poll"
     }
 
-    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
+    fn handle(
+        self,
+        shared_state: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         let current_time: DateTime<Utc> = Utc::now();
 
         if shared_state.runtime_settings.is_polling_forced() {
             debug!("Moving to Probe state as soon as possible.");
-            return Ok(StateMachine::Probe(State(Probe {
-                server_address: ServerAddress::Default,
-            })));
+            return Ok((
+                StateMachine::Probe(State(Probe {
+                    server_address: ServerAddress::Default,
+                })),
+                actor::StepTransition::Immediate,
+            ));
         }
 
         let last_poll = shared_state
@@ -50,35 +55,34 @@ impl StateChangeImpl for State<Poll> {
 
         if last_poll > current_time {
             info!("Forcing to Probe state as last polling seems to happened in future.");
-            return Ok(StateMachine::Probe(State(Probe {
-                server_address: ServerAddress::Default,
-            })));
+            return Ok((
+                StateMachine::Probe(State(Probe {
+                    server_address: ServerAddress::Default,
+                })),
+                actor::StepTransition::Immediate,
+            ));
         }
 
         let extra_interval = shared_state.runtime_settings.polling_extra_interval();
         if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) > current_time {
             debug!("Moving to Probe state as the polling's due extra interval.");
-            return Ok(StateMachine::Probe(State(Probe {
-                server_address: ServerAddress::Default,
-            })));
+            return Ok((
+                StateMachine::Probe(State(Probe {
+                    server_address: ServerAddress::Default,
+                })),
+                actor::StepTransition::Immediate,
+            ));
         }
 
-        let probe = Arc::new((Mutex::new(()), Condvar::new()));
-        let probe2 = probe.clone();
-        let interval = shared_state.settings.polling.interval;
-        thread::spawn(move || {
-            let (_, ref cvar) = *probe2;
-            thread::sleep(interval.to_std().unwrap());
-            cvar.notify_one();
-        });
-
-        let (ref lock, ref cvar) = *probe;
-        let _ = cvar.wait(lock.lock().unwrap());
-
-        debug!("Moving to Probe state.");
-        Ok(StateMachine::Probe(State(Probe {
-            server_address: ServerAddress::Default,
-        })))
+        debug!("Moving to Probe state after delay.");
+        Ok((
+            StateMachine::Probe(State(Probe {
+                server_address: ServerAddress::Default,
+            })),
+            actor::StepTransition::Delayed(
+                shared_state.settings.polling.interval.to_std().unwrap(),
+            ),
+        ))
     }
 }
 
@@ -107,7 +111,8 @@ fn extra_poll_in_past() {
 
     let machine = StateMachine::Poll(State(Poll {}))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
     assert_state!(machine, Probe);
 }
@@ -135,7 +140,8 @@ fn probe_now() {
 
     let machine = StateMachine::Poll(State(Poll {}))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
     assert_state!(machine, Probe);
 }
@@ -162,7 +168,8 @@ fn last_poll_in_future() {
 
     let machine = StateMachine::Poll(State(Poll {}))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
     assert_state!(machine, Probe);
 }
@@ -188,7 +195,8 @@ fn interval_1_second() {
 
     let machine = StateMachine::Poll(State(Poll {}))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
     assert_state!(machine, Probe);
 }
@@ -212,7 +220,8 @@ fn never_polled() {
 
     let machine = StateMachine::Poll(State(Poll {}))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
     assert_state!(machine, Probe);
 }

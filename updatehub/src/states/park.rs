@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{actor, SharedState, State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{self, SharedState},
+    State, StateChangeImpl, StateMachine,
+};
 
 use slog_scope::debug;
 
@@ -20,8 +23,11 @@ impl StateChangeImpl for State<Park> {
         actor::probe::Response::RequestAccepted(self.name().to_owned())
     }
 
-    fn handle(self, _: &mut SharedState) -> Result<StateMachine, failure::Error> {
+    fn handle(
+        self,
+        _: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         debug!("Staying on Park state.");
-        Ok(StateMachine::Park(self))
+        Ok((StateMachine::Park(self), actor::StepTransition::Never))
     }
 }

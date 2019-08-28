@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::download_abort, Idle, Install, ProgressReporter, SharedState, State, StateChangeImpl,
-    StateMachine, TransitionCallback,
+    actor::{self, download_abort, SharedState},
+    Idle, Install, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::{
     firmware::installation_set,
@@ -53,10 +53,18 @@ impl StateChangeImpl for State<Download> {
         download_abort::Response::RequestAccepted
     }
 
-    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
+    fn handle(
+        self,
+        shared_state: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         match self.0.download_chan.try_recv() {
             Ok(vec) => vec.into_iter().try_for_each(|res| res)?,
-            Err(mpsc::TryRecvError::Empty) => return Ok(StateMachine::Download(self)),
+            Err(mpsc::TryRecvError::Empty) => {
+                return Ok((
+                    StateMachine::Download(self),
+                    actor::StepTransition::Immediate,
+                ))
+            }
             Err(e) => return Err(format_err!("Failed to read from channel: {:?}", e)),
         }
 
@@ -68,7 +76,10 @@ impl StateChangeImpl for State<Download> {
             .iter()
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
-            Ok(StateMachine::Install(self.into()))
+            Ok((
+                StateMachine::Install(self.into()),
+                actor::StepTransition::Immediate,
+            ))
         } else {
             Err(format_err!("Not all objects are ready for use"))
         }
@@ -150,10 +161,11 @@ mod test {
 
         let mut machine = StateMachine::PrepareDownload(predownload_state)
             .move_to_next_state(&mut shared_state)
-            .unwrap();
+            .unwrap()
+            .0;
         assert_state!(machine, Download);
         loop {
-            machine = machine.move_to_next_state(&mut shared_state).unwrap();
+            machine = machine.move_to_next_state(&mut shared_state).unwrap().0;
             if let StateMachine::Install(_) = machine {
                 break;
             }
@@ -196,9 +208,10 @@ mod test {
 
         let machine = StateMachine::PrepareDownload(predownload_state)
             .move_to_next_state(&mut shared_state)
-            .unwrap();
+            .unwrap()
+            .0;
         assert_state!(machine, Download);
-        let machine = machine.move_to_next_state(&mut shared_state).unwrap();
+        let machine = machine.move_to_next_state(&mut shared_state).unwrap().0;
         assert_state!(machine, Install);
 
         assert_eq!(

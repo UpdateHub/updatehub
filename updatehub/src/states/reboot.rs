@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    Idle, ProgressReporter, SharedState, State, StateChangeImpl, StateMachine, TransitionCallback,
+    actor::{self, SharedState},
+    Idle, ProgressReporter, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::update_package::UpdatePackage;
 
@@ -38,7 +39,10 @@ impl StateChangeImpl for State<Reboot> {
         "reboot"
     }
 
-    fn handle(self, _: &mut SharedState) -> Result<StateMachine, failure::Error> {
+    fn handle(
+        self,
+        _: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
@@ -47,7 +51,10 @@ impl StateChangeImpl for State<Reboot> {
                 output.stdout, output.stderr
             );
         }
-        Ok(StateMachine::Idle(self.into()))
+        Ok((
+            StateMachine::Idle(self.into()),
+            actor::StepTransition::Immediate,
+        ))
     }
 }
 
@@ -117,7 +124,8 @@ mod test {
         let (state, mut shared_state) = fake_reboot_state();
         let machine = StateMachine::Reboot(state)
             .move_to_next_state(&mut shared_state)
-            .unwrap();
+            .unwrap()
+            .0;
 
         assert_state!(machine, Idle);
     }

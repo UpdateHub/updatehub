@@ -32,7 +32,10 @@ use actix::System;
 use slog_scope::info;
 
 trait StateChangeImpl {
-    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error>;
+    fn handle(
+        self,
+        shared_state: &mut actor::SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error>;
     fn name(&self) -> &'static str;
 
     fn handle_download_abort(&self) -> actor::download_abort::Response {
@@ -58,13 +61,6 @@ where
     State<S>: StateChangeImpl;
 
 #[derive(Debug, PartialEq)]
-struct SharedState {
-    settings: Settings,
-    runtime_settings: RuntimeSettings,
-    firmware: Metadata,
-}
-
-#[derive(Debug, PartialEq)]
 enum StateMachine {
     Park(State<Park>),
     Idle(State<Idle>),
@@ -83,8 +79,8 @@ where
 {
     fn handle_with_callback_and_report_progress(
         self,
-        shared_state: &mut SharedState,
-    ) -> Result<StateMachine, failure::Error> {
+        shared_state: &mut actor::SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         use transition::{state_change_callback, Transition};
 
         let transition =
@@ -92,7 +88,10 @@ where
 
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress(shared_state)?),
-            Transition::Cancel => Ok(StateMachine::Idle(self.into())),
+            Transition::Cancel => Ok((
+                StateMachine::Idle(self.into()),
+                actor::StepTransition::Immediate,
+            )),
         }
     }
 }
@@ -103,8 +102,8 @@ where
 {
     fn handle_and_report_progress(
         self,
-        shared_state: &mut SharedState,
-    ) -> Result<StateMachine, failure::Error> {
+        shared_state: &mut actor::SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         let server = &shared_state.settings.network.server_address.clone();
         let firmware = &shared_state.firmware.clone();
         let package_uid = &self.package_uid();
@@ -124,9 +123,9 @@ where
 
         report(enter_state, None, None, None)?;
         self.handle(shared_state)
-            .and_then(|state| {
+            .and_then(|(state, trans)| {
                 report(leave_state, None, None, None)?;
-                Ok(state)
+                Ok((state, trans))
             })
             .or_else(|e| {
                 report(
@@ -145,21 +144,20 @@ impl StateMachine {
         StateMachine::Idle(State(Idle {}))
     }
 
-    fn move_to_next_state(self, shared_state: &mut SharedState) -> Result<Self, failure::Error> {
+    fn move_to_next_state(
+        self,
+        shared_state: &mut actor::SharedState,
+    ) -> Result<(Self, actor::StepTransition), failure::Error> {
         match self {
-            StateMachine::Error(s) => Ok(s.handle(shared_state)?),
-            StateMachine::Park(s) => Ok(s.handle(shared_state)?),
-            StateMachine::Idle(s) => Ok(s.handle(shared_state)?),
-            StateMachine::Poll(s) => Ok(s.handle(shared_state)?),
-            StateMachine::Probe(s) => Ok(s.handle(shared_state)?),
-            StateMachine::PrepareDownload(s) => Ok(s.handle(shared_state)?),
-            StateMachine::Download(s) => {
-                Ok(s.handle_with_callback_and_report_progress(shared_state)?)
-            }
-            StateMachine::Install(s) => {
-                Ok(s.handle_with_callback_and_report_progress(shared_state)?)
-            }
-            StateMachine::Reboot(s) => Ok(s.handle_with_callback_and_report_progress(shared_state)?),
+            StateMachine::Error(s) => s.handle(shared_state),
+            StateMachine::Park(s) => s.handle(shared_state),
+            StateMachine::Idle(s) => s.handle(shared_state),
+            StateMachine::Poll(s) => s.handle(shared_state),
+            StateMachine::Probe(s) => s.handle(shared_state),
+            StateMachine::PrepareDownload(s) => s.handle(shared_state),
+            StateMachine::Download(s) => s.handle_with_callback_and_report_progress(shared_state),
+            StateMachine::Install(s) => s.handle_with_callback_and_report_progress(shared_state),
+            StateMachine::Reboot(s) => s.handle_with_callback_and_report_progress(shared_state),
         }
     }
 
@@ -222,14 +220,8 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
 
     System::run(move || {
-        let machine_addr = actor::Machine::start(
-            StateMachine::new(),
-            SharedState {
-                settings,
-                runtime_settings,
-                firmware,
-            },
-        );
+        let machine_addr =
+            actor::Machine::new(StateMachine::new(), settings, runtime_settings, firmware).start();
 
         actix_web::HttpServer::new(move || {
             actix_web::App::new()

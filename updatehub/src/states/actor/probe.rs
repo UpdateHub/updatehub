@@ -24,7 +24,7 @@ impl Handler<Request> for super::Machine {
             return match res {
                 Response::InvalidState(_) => MessageResult(res),
                 Response::RequestAccepted(_) => {
-                    self.stepper.ensure_running(ctx.address());
+                    self.stepper.restart(ctx.address());
                     self.state.replace(StateMachine::Probe(State(Probe {
                         server_address: req.0.map_or(ServerAddress::Default, ServerAddress::Custom),
                     })));

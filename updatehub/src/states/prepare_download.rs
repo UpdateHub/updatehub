@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{actor::download_abort, Download, SharedState, State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{self, download_abort, SharedState},
+    Download, State, StateChangeImpl, StateMachine,
+};
 use crate::{
     client::Api,
     firmware::installation_set,
@@ -27,7 +30,10 @@ impl StateChangeImpl for State<PrepareDownload> {
         download_abort::Response::RequestAccepted
     }
 
-    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
+    fn handle(
+        self,
+        shared_state: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         crate::logger::buffer().lock().unwrap().start_logging();
         let installation_set = installation_set::inactive()?;
         let download_dir = shared_state.settings.update.download_dir.to_owned();
@@ -99,10 +105,13 @@ impl StateChangeImpl for State<PrepareDownload> {
                 .expect("Unable to send response about object downlod");
         });
 
-        Ok(StateMachine::Download(State(Download {
-            update_package: self.0.update_package,
-            installation_set,
-            download_chan: recv,
-        })))
+        Ok((
+            StateMachine::Download(State(Download {
+                update_package: self.0.update_package,
+                installation_set,
+                download_chan: recv,
+            })),
+            actor::StepTransition::Immediate,
+        ))
     }
 }

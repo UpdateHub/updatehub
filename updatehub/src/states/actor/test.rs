@@ -27,6 +27,37 @@ enum Probe {
     Disabled,
 }
 
+#[derive(Default)]
+struct FakeMachine {
+    step_count: usize,
+    step_expect: usize,
+}
+
+impl Actor for FakeMachine {
+    type Context = Context<Self>;
+
+    // In tests, only one reference to the Actor's Addr is held, and it is held by
+    // the stepper, when it stops the system can be shutdown and we can assert the
+    // number of steppers received
+    fn stopped(&mut self, _: &mut Context<Self>) {
+        assert_eq!(self.step_count, self.step_expect);
+        System::current().stop();
+    }
+}
+
+impl Handler<Step> for FakeMachine {
+    type Result = MessageResult<Step>;
+
+    fn handle(&mut self, _: Step, _: &mut Context<Self>) -> Self::Result {
+        self.step_count += 1;
+        if self.step_count >= self.step_expect {
+            MessageResult(super::StepTransition::Never)
+        } else {
+            MessageResult(super::StepTransition::Immediate)
+        }
+    }
+}
+
 fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Settings, Metadata) {
     let tmpfile = tempfile::NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
@@ -53,14 +84,14 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
     });
 
     (
-        Machine::start(
+        // We use the actix::Actor::start here instead of the Machine::start in order to not start
+        // the stepper and thus have control of how many steps are been sent to the Machine
+        actix::Actor::start(Machine::new(
             StateMachine::Idle(State(Idle {})),
-            SharedState {
-                settings,
-                runtime_settings,
-                firmware,
-            },
-        ),
+            settings,
+            runtime_settings,
+            firmware,
+        )),
         mock,
         settings_clone,
         firmware_clone,
@@ -193,6 +224,21 @@ fn trigger_probe() {
                 future::ok(())
             }),
     );
+
+    system.run().unwrap();
+}
+
+#[test]
+fn stepper_with_never() {
+    let system = System::new("test");
+
+    let mock = actix::Actor::start(FakeMachine {
+        step_expect: 15,
+        ..FakeMachine::default()
+    });
+    let mut stepper = super::stepper::Controller::default();
+
+    stepper.start(mock);
 
     system.run().unwrap();
 }

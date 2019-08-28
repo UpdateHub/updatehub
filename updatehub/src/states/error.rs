@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Idle, SharedState, State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{self, SharedState},
+    Idle, State, StateChangeImpl, StateMachine,
+};
 
 use derivative::Derivative;
 use slog_scope::{error, info};
@@ -19,11 +22,17 @@ impl StateChangeImpl for State<Error> {
         "error"
     }
 
-    fn handle(self, _: &mut SharedState) -> Result<StateMachine, failure::Error> {
+    fn handle(
+        self,
+        _: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         error!("Error state reached: {:?}", self.0.error);
 
         info!("Returning to idle state");
-        Ok(StateMachine::Idle(State(Idle {})))
+        Ok((
+            StateMachine::Idle(State(Idle {})),
+            actor::StepTransition::Immediate,
+        ))
     }
 }
 

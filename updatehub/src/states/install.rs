@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    Idle, ProgressReporter, Reboot, SharedState, State, StateChangeImpl, StateMachine,
-    TransitionCallback,
+    actor::{self, SharedState},
+    Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::{
     firmware::installation_set,
@@ -61,7 +61,10 @@ impl StateChangeImpl for State<Install> {
         "install"
     }
 
-    fn handle(mut self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
+    fn handle(
+        mut self,
+        shared_state: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 
@@ -99,7 +102,10 @@ impl StateChangeImpl for State<Install> {
         let buffer = crate::logger::buffer();
         buffer.lock().unwrap().stop_logging();
         buffer.lock().unwrap().clear();
-        Ok(StateMachine::Reboot(self.into()))
+        Ok((
+            StateMachine::Reboot(self.into()),
+            actor::StepTransition::Immediate,
+        ))
     }
 }
 
@@ -149,29 +155,33 @@ mod test {
     #[test]
     fn has_package_uid_if_succeed() {
         let (state, mut shared_state) = fake_install_state();
-        let machine = StateMachine::Install(state).move_to_next_state(&mut shared_state);
+        let machine = StateMachine::Install(state)
+            .move_to_next_state(&mut shared_state)
+            .unwrap()
+            .0;
 
         match machine {
-            Ok(StateMachine::Reboot(_)) => assert_eq!(
+            StateMachine::Reboot(_) => assert_eq!(
                 shared_state.runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),
-            Ok(s) => panic!("Invalid success: {:?}", s),
-            Err(e) => panic!("Invalid error: {:?}", e),
+            s => panic!("Invalid success: {:?}", s),
         }
     }
 
     #[test]
     fn polling_now_if_succeed() {
         let (state, mut shared_state) = fake_install_state();
-        let machine = StateMachine::Install(state).move_to_next_state(&mut shared_state);
+        let machine = StateMachine::Install(state)
+            .move_to_next_state(&mut shared_state)
+            .unwrap()
+            .0;
 
         match machine {
-            Ok(StateMachine::Reboot(_)) => {
+            StateMachine::Reboot(_) => {
                 assert_eq!(shared_state.runtime_settings.is_polling_forced(), true)
             }
-            Ok(s) => panic!("Invalid success: {:?}", s),
-            Err(e) => panic!("Invalid error: {:?}", e),
+            s => panic!("Invalid success: {:?}", s),
         }
     }
 }

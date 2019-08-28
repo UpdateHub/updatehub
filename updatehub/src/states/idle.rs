@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{actor, Park, Poll, SharedState, State, StateChangeImpl, StateMachine};
+use super::{
+    actor::{self, SharedState},
+    Park, Poll, State, StateChangeImpl, StateMachine,
+};
 use slog_scope::debug;
 
 #[derive(Debug, PartialEq)]
@@ -22,14 +25,23 @@ impl StateChangeImpl for State<Idle> {
         actor::probe::Response::RequestAccepted(self.name().to_owned())
     }
 
-    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
+    fn handle(
+        self,
+        shared_state: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         if !shared_state.settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
-            return Ok(StateMachine::Park(self.into()));
+            return Ok((
+                StateMachine::Park(self.into()),
+                actor::StepTransition::Immediate,
+            ));
         }
 
         debug!("Polling is enabled, moving to Poll state.");
-        Ok(StateMachine::Poll(self.into()))
+        Ok((
+            StateMachine::Poll(self.into()),
+            actor::StepTransition::Immediate,
+        ))
     }
 }
 
@@ -53,7 +65,8 @@ fn polling_disable() {
 
     let machine = StateMachine::Idle(State(Idle {}))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
     assert_state!(machine, Park);
 }
@@ -75,7 +88,8 @@ fn polling_enabled() {
 
     let machine = StateMachine::Idle(State(Idle {}))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
     assert_state!(machine, Poll);
 }

@@ -3,9 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor, Idle, Poll, PrepareDownload, SharedState, State, StateChangeImpl, StateMachine,
+    actor::{self, SharedState},
+    Idle, Poll, PrepareDownload, State, StateChangeImpl, StateMachine,
 };
-use crate::client::Api;
+use crate::client::{Api, ProbeResponse};
+use chrono::{Duration, Utc};
 use slog_scope::{debug, error, info};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -32,48 +34,53 @@ impl StateChangeImpl for State<Probe> {
         actor::probe::Response::RequestAccepted(self.name().to_owned())
     }
 
-    fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
-        use crate::client::ProbeResponse;
-        use chrono::{Duration, Utc};
-        use std::thread;
-
+    fn handle(
+        self,
+        shared_state: &mut SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
         let server_address = match self.0.server_address.clone() {
             ServerAddress::Default => shared_state.settings.network.server_address.clone(),
             ServerAddress::Custom(s) => s,
         };
 
-        let r = loop {
-            let probe = Api::new(&server_address)
-                .probe(&shared_state.runtime_settings, &shared_state.firmware);
-            if let Err(e) = probe {
+        let probe = match Api::new(&server_address)
+            .probe(&shared_state.runtime_settings, &shared_state.firmware)
+        {
+            Err(e) => {
                 error!("{}", e);
                 shared_state.runtime_settings.inc_retries();
-                thread::sleep(Duration::seconds(1).to_std().unwrap());
-            } else {
-                shared_state.runtime_settings.clear_retries();
-                break probe?;
+                return Ok((
+                    StateMachine::Probe(self),
+                    actor::StepTransition::Delayed(std::time::Duration::from_secs(1)),
+                ));
             }
+            Ok(probe) => probe,
         };
+        shared_state.runtime_settings.clear_retries();
 
-        if let ProbeResponse::ExtraPoll(s) = r {
-            info!("Delaying the probing as requested by the server.");
-            shared_state
-                .runtime_settings
-                .set_polling_extra_interval(Duration::seconds(s))?;
-        };
-
-        match r {
+        match probe {
             ProbeResponse::NoUpdate => {
                 debug!("Moving to Idle state as no update is available.");
 
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
-                Ok(StateMachine::Idle(self.into()))
+                Ok((
+                    StateMachine::Idle(self.into()),
+                    actor::StepTransition::Immediate,
+                ))
             }
 
-            ProbeResponse::ExtraPoll(_) => {
+            ProbeResponse::ExtraPoll(s) => {
+                info!("Delaying the probing as requested by the server.");
+                shared_state
+                    .runtime_settings
+                    .set_polling_extra_interval(Duration::seconds(s))?;
+
                 debug!("Moving to Poll state due the extra polling interval.");
-                Ok(StateMachine::Poll(self.into()))
+                Ok((
+                    StateMachine::Poll(self.into()),
+                    actor::StepTransition::Immediate,
+                ))
             }
 
             ProbeResponse::Update(u) => {
@@ -87,27 +94,33 @@ impl StateChangeImpl for State<Probe> {
                         "Not applying the update package. Same package has already been installed."
                     );
                     debug!("Moving to Idle state as this update package is already installed.");
-                    Ok(StateMachine::Idle(self.into()))
+                    Ok((
+                        StateMachine::Idle(self.into()),
+                        actor::StepTransition::Immediate,
+                    ))
                 } else {
                     debug!("Moving to PrepareDownload state to process the update package.");
-                    Ok(StateMachine::PrepareDownload(State(PrepareDownload {
-                        update_package: u,
-                    })))
+                    Ok((
+                        StateMachine::PrepareDownload(State(PrepareDownload { update_package: u })),
+                        actor::StepTransition::Immediate,
+                    ))
                 }
             }
         }
     }
 }
 
-#[cfg(tets)]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        client::{
-            tests::{create_mock_server, FakeServer},
-            ProbeResponse,
+        client::tests::{create_mock_server, FakeServer},
+        firmware::{
+            tests::{create_fake_metadata, FakeDevice},
+            Metadata,
         },
-        firmware::tests::{create_fake_metadata, FakeDevice},
+        runtime_settings::RuntimeSettings,
+        settings::Settings,
     };
     use std::fs;
     use tempfile::NamedTempFile;
@@ -135,7 +148,8 @@ mod tests {
             server_address: ServerAddress::Default,
         }))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
         mock.assert();
 
@@ -165,7 +179,8 @@ mod tests {
             server_address: ServerAddress::Default,
         }))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
         mock.assert();
 
@@ -225,7 +240,8 @@ mod tests {
             server_address: ServerAddress::Default,
         }))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
         mock.assert();
 
@@ -274,7 +290,8 @@ mod tests {
             server_address: ServerAddress::Default,
         }))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0;
 
         mock.assert();
 
@@ -306,7 +323,11 @@ mod tests {
             server_address: ServerAddress::Default,
         }))
         .move_to_next_state(&mut shared_state)
-        .unwrap();
+        .unwrap()
+        .0
+        .move_to_next_state(&mut shared_state)
+        .unwrap()
+        .0;
 
         mock.assert();
 
