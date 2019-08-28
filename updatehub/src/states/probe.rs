@@ -26,6 +26,10 @@ impl StateChangeImpl for State<Probe> {
         "probe"
     }
 
+    fn handle_trigger_probe(&self) -> actor::probe::Response {
+        actor::probe::Response::RequestAccepted(self.name().to_owned())
+    }
+
     fn handle(self, shared_state: &mut SharedState) -> Result<StateMachine, failure::Error> {
         use crate::client::ProbeResponse;
         use chrono::{Duration, Utc};
