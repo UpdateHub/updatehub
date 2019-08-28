@@ -73,8 +73,8 @@ impl IdExt for Gid {
     fn as_u32(&self) -> u32 {
         match self {
             Gid::Name(s) => {
-                let s = std::ffi::CString::new(s.as_str());
-                unsafe { *nix::libc::getgrnam(s.unwrap().as_ptr()) }.gr_gid
+                let s = std::ffi::CString::new(s.as_str()).unwrap();
+                unsafe { *nix::libc::getgrnam(s.as_ptr()) }.gr_gid
             }
             Gid::Number(n) => *n,
         }
@@ -85,8 +85,8 @@ impl IdExt for Uid {
     fn as_u32(&self) -> u32 {
         match self {
             Uid::Name(s) => {
-                let s = std::ffi::CString::new(s.as_str());
-                unsafe { *nix::libc::getpwnam(s.unwrap().as_ptr()) }.pw_uid
+                let s = std::ffi::CString::new(s.as_str()).unwrap();
+                unsafe { *nix::libc::getpwnam(s.as_ptr()) }.pw_uid
             }
             Uid::Number(n) => *n,
         }
