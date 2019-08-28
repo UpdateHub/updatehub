@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Idle, Poll, PrepareDownload, SharedState, State, StateChangeImpl, StateMachine};
+use super::{
+    actor, Idle, Poll, PrepareDownload, SharedState, State, StateChangeImpl, StateMachine,
+};
 use crate::client::Api;
 use slog_scope::{debug, error, info};
 
@@ -97,159 +99,8 @@ impl StateChangeImpl for State<Probe> {
     }
 }
 
-#[test]
-fn update_not_available() {
-    use super::*;
-    use crate::{
-        client::tests::{create_mock_server, FakeServer},
-        firmware::tests::{create_fake_metadata, FakeDevice},
-    };
-    use std::fs;
-    use tempfile::NamedTempFile;
-
-    let tmpfile = NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
-
-    let mock = create_mock_server(FakeServer::NoUpdate);
-
-    let settings = Settings::default();
-    let runtime_settings = RuntimeSettings::new()
-        .load(tmpfile.to_str().unwrap())
-        .unwrap();
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    let mut shared_state = SharedState {
-        settings,
-        runtime_settings,
-        firmware,
-    };
-
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
-    .move_to_next_state(&mut shared_state)
-    .unwrap();
-
-    mock.assert();
-
-    assert_state!(machine, Idle);
-}
-
-#[test]
-fn update_available() {
-    use super::*;
-    use crate::{
-        client::tests::{create_mock_server, FakeServer},
-        firmware::tests::{create_fake_metadata, FakeDevice},
-    };
-    use std::fs;
-    use tempfile::NamedTempFile;
-
-    let tmpfile = NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
-
-    let mock = create_mock_server(FakeServer::HasUpdate);
-
-    let settings = Settings::default();
-    let runtime_settings = RuntimeSettings::new()
-        .load(tmpfile.to_str().unwrap())
-        .unwrap();
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-    let mut shared_state = SharedState {
-        settings,
-        runtime_settings,
-        firmware,
-    };
-
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
-    .move_to_next_state(&mut shared_state)
-    .unwrap();
-
-    mock.assert();
-
-    assert_state!(machine, PrepareDownload);
-}
-
-#[test]
-fn invalid_hardware() {
-    use super::*;
-    use crate::{
-        client::tests::{create_mock_server, FakeServer},
-        firmware::tests::{create_fake_metadata, FakeDevice},
-    };
-    use std::fs;
-    use tempfile::NamedTempFile;
-
-    let tmpfile = NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
-
-    let mock = create_mock_server(FakeServer::InvalidHardware);
-
-    let settings = Settings::default();
-    let runtime_settings = RuntimeSettings::new()
-        .load(tmpfile.to_str().unwrap())
-        .unwrap();
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap();
-    let mut shared_state = SharedState {
-        settings,
-        runtime_settings,
-        firmware,
-    };
-
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
-    .move_to_next_state(&mut shared_state);
-
-    mock.assert();
-
-    assert!(machine.is_err(), "Did not catch an incompatible hardware");
-}
-
-#[test]
-fn extra_poll_interval() {
-    use super::*;
-    use crate::{
-        client::tests::{create_mock_server, FakeServer},
-        firmware::tests::{create_fake_metadata, FakeDevice},
-    };
-    use std::fs;
-    use tempfile::NamedTempFile;
-
-    let tmpfile = NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
-
-    let mock = create_mock_server(FakeServer::ExtraPoll);
-
-    let settings = Settings::default();
-    let runtime_settings = RuntimeSettings::new()
-        .load(tmpfile.to_str().unwrap())
-        .unwrap();
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap();
-    let mut shared_state = SharedState {
-        settings,
-        runtime_settings,
-        firmware,
-    };
-
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
-    .move_to_next_state(&mut shared_state)
-    .unwrap();
-
-    mock.assert();
-
-    assert_state!(machine, Poll);
-}
-
-#[test]
-fn skip_same_package_uid() {
+#[cfg(tets)]
+mod tests {
     use super::*;
     use crate::{
         client::{
@@ -261,89 +112,204 @@ fn skip_same_package_uid() {
     use std::fs;
     use tempfile::NamedTempFile;
 
-    let tmpfile = NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
+    #[test]
+    fn update_not_available() {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = tmpfile.path();
+        fs::remove_file(&tmpfile).unwrap();
 
-    let mock = create_mock_server(FakeServer::HasUpdate).expect(2);
+        let mock = create_mock_server(FakeServer::NoUpdate);
 
-    let mut runtime_settings = RuntimeSettings::new()
-        .load(tmpfile.to_str().unwrap())
-        .unwrap();
-
-    // We first get the package_uid that will be returned so we can
-    // use it for the upcoming test.
-    //
-    // This has been done so we don't need to manually update it every
-    // time we change the package payload.
-    let probe = Api::new(&Settings::default().network.server_address)
-        .probe(
-            &RuntimeSettings::default(),
-            &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-        )
-        .unwrap();
-
-    if let ProbeResponse::Update(u) = probe {
-        runtime_settings
-            .set_applied_package_uid(&u.package_uid())
+        let settings = Settings::default();
+        let runtime_settings = RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
             .unwrap();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        let mut shared_state = SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        };
+
+        let machine = StateMachine::Probe(State(Probe {
+            server_address: ServerAddress::Default,
+        }))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
+
+        mock.assert();
+
+        assert_state!(machine, Idle);
     }
 
-    let settings = Settings::default();
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-    let mut shared_state = SharedState {
-        settings,
-        runtime_settings,
-        firmware,
-    };
+    #[test]
+    fn update_available() {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = tmpfile.path();
+        fs::remove_file(&tmpfile).unwrap();
 
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
-    .move_to_next_state(&mut shared_state)
-    .unwrap();
+        let mock = create_mock_server(FakeServer::HasUpdate);
 
-    mock.assert();
+        let settings = Settings::default();
+        let runtime_settings = RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
+        let mut shared_state = SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        };
 
-    assert_state!(machine, Idle);
-}
-
-#[test]
-fn error() {
-    use super::*;
-    use crate::{
-        client::tests::{create_mock_server, FakeServer},
-        firmware::tests::{create_fake_metadata, FakeDevice},
-    };
-    use std::fs;
-    use tempfile::NamedTempFile;
-
-    let tmpfile = NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
-
-    // The server here waits for the second request which includes the
-    // retries to succeed.
-    let mock = create_mock_server(FakeServer::ErrorOnce);
-
-    let settings = Settings::default();
-    let runtime_settings = RuntimeSettings::new()
-        .load(tmpfile.to_str().unwrap())
+        let machine = StateMachine::Probe(State(Probe {
+            server_address: ServerAddress::Default,
+        }))
+        .move_to_next_state(&mut shared_state)
         .unwrap();
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    let mut shared_state = SharedState {
-        settings,
-        runtime_settings,
-        firmware,
-    };
 
-    let machine = StateMachine::Probe(State(Probe {
-        server_address: ServerAddress::Default,
-    }))
-    .move_to_next_state(&mut shared_state)
-    .unwrap();
+        mock.assert();
 
-    mock.assert();
+        assert_state!(machine, PrepareDownload);
+    }
 
-    assert_state!(machine, Idle);
+    #[test]
+    fn invalid_hardware() {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = tmpfile.path();
+        fs::remove_file(&tmpfile).unwrap();
+
+        let mock = create_mock_server(FakeServer::InvalidHardware);
+
+        let settings = Settings::default();
+        let runtime_settings = RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap();
+        let firmware =
+            Metadata::from_path(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap();
+        let mut shared_state = SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        };
+
+        let machine = StateMachine::Probe(State(Probe {
+            server_address: ServerAddress::Default,
+        }))
+        .move_to_next_state(&mut shared_state);
+
+        mock.assert();
+
+        assert!(machine.is_err(), "Did not catch an incompatible hardware");
+    }
+
+    #[test]
+    fn extra_poll_interval() {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = tmpfile.path();
+        fs::remove_file(&tmpfile).unwrap();
+
+        let mock = create_mock_server(FakeServer::ExtraPoll);
+
+        let settings = Settings::default();
+        let runtime_settings = RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap();
+        let mut shared_state = SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        };
+
+        let machine = StateMachine::Probe(State(Probe {
+            server_address: ServerAddress::Default,
+        }))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
+
+        mock.assert();
+
+        assert_state!(machine, Poll);
+    }
+
+    #[test]
+    fn skip_same_package_uid() {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = tmpfile.path();
+        fs::remove_file(&tmpfile).unwrap();
+
+        let mock = create_mock_server(FakeServer::HasUpdate).expect(2);
+
+        let mut runtime_settings = RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap();
+
+        // We first get the package_uid that will be returned so we can
+        // use it for the upcoming test.
+        //
+        // This has been done so we don't need to manually update it every
+        // time we change the package payload.
+        let probe = Api::new(&Settings::default().network.server_address)
+            .probe(
+                &RuntimeSettings::default(),
+                &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+            )
+            .unwrap();
+
+        if let ProbeResponse::Update(u) = probe {
+            runtime_settings
+                .set_applied_package_uid(&u.package_uid())
+                .unwrap();
+        }
+
+        let settings = Settings::default();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
+        let mut shared_state = SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        };
+
+        let machine = StateMachine::Probe(State(Probe {
+            server_address: ServerAddress::Default,
+        }))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
+
+        mock.assert();
+
+        assert_state!(machine, Idle);
+    }
+
+    #[test]
+    fn error() {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = tmpfile.path();
+        fs::remove_file(&tmpfile).unwrap();
+
+        // The server here waits for the second request which includes the
+        // retries to succeed.
+        let mock = create_mock_server(FakeServer::ErrorOnce);
+
+        let settings = Settings::default();
+        let runtime_settings = RuntimeSettings::new()
+            .load(tmpfile.to_str().unwrap())
+            .unwrap();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        let mut shared_state = SharedState {
+            settings,
+            runtime_settings,
+            firmware,
+        };
+
+        let machine = StateMachine::Probe(State(Probe {
+            server_address: ServerAddress::Default,
+        }))
+        .move_to_next_state(&mut shared_state)
+        .unwrap();
+
+        mock.assert();
+
+        assert_state!(machine, Idle);
+    }
 }
