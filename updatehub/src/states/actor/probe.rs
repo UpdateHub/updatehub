@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Probe, ServerAddress, State, StateMachine};
+use super::{Probe, State, StateMachine};
 use actix::{AsyncContext, Context, Handler, Message, MessageResult};
 
 pub(crate) struct Request(pub(crate) Option<String>);
@@ -24,10 +24,13 @@ impl Handler<Request> for super::Machine {
             return match res {
                 Response::InvalidState(_) => MessageResult(res),
                 Response::RequestAccepted(_) => {
+                    if let Some(server_address) = req.0 {
+                        self.shared_state
+                            .runtime_settings
+                            .set_custom_server_address(&server_address);
+                    }
                     self.stepper.restart(ctx.address());
-                    self.state.replace(StateMachine::Probe(State(Probe {
-                        server_address: req.0.map_or(ServerAddress::Default, ServerAddress::Custom),
-                    })));
+                    self.state.replace(StateMachine::Probe(State(Probe {})));
                     MessageResult(res)
                 }
             };

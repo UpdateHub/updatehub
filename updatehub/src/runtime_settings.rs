@@ -152,6 +152,24 @@ impl RuntimeSettings {
         self.update.applied_package_uid = Some(applied_package_uid.to_string());
         self.save()
     }
+
+    pub(crate) fn custom_server_address(&self) -> Option<&str> {
+        match &self.polling.server_address {
+            ServerAddress::Custom(s) => Some(s),
+            ServerAddress::Default => None,
+        }
+    }
+
+    pub(crate) fn set_custom_server_address(&mut self, server_address: &str) {
+        self.polling.server_address = ServerAddress::Custom(server_address.to_owned());
+    }
+
+    /// Reset settings that are only need through a single installation
+    pub(crate) fn reset_transient_settings(&mut self) {
+        // Server address is reset so it doesn't keep probing the last custom server
+        // requested
+        self.polling.server_address = ServerAddress::default();
+    }
 }
 
 #[derive(Debug, Fail)]
@@ -181,6 +199,20 @@ struct RuntimePolling {
     #[serde(deserialize_with = "de::bool_from_str")]
     #[serde(serialize_with = "ser::bool_to_string")]
     now: bool,
+    #[serde(skip)]
+    server_address: ServerAddress,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum ServerAddress {
+    Default,
+    Custom(String),
+}
+
+impl Default for ServerAddress {
+    fn default() -> Self {
+        ServerAddress::Default
+    }
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
@@ -220,6 +252,7 @@ UpgradeToInstallation=1
             extra_interval: Some(Duration::seconds(4)),
             retries: 5,
             now: false,
+            server_address: ServerAddress::Default,
         },
         update: RuntimeUpdate {
             upgrading_to: 1,
@@ -248,6 +281,7 @@ fn default() {
             extra_interval: None,
             retries: 0,
             now: false,
+            server_address: ServerAddress::Default,
         },
         update: RuntimeUpdate {
             upgrading_to: -1,
@@ -269,6 +303,7 @@ fn ser() {
             extra_interval: Some(Duration::seconds(4)),
             retries: 5,
             now: false,
+            server_address: ServerAddress::Default,
         },
         update: RuntimeUpdate {
             upgrading_to: 1,

@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Probe, ServerAddress, State, StateChangeImpl, StateMachine,
+    Probe, State, StateChangeImpl, StateMachine,
 };
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
@@ -13,7 +13,7 @@ use slog_scope::{debug, info};
 #[derive(Debug, PartialEq)]
 pub(super) struct Poll {}
 
-// create_state_step!(Poll => Probe);
+create_state_step!(Poll => Probe);
 
 /// Implements the state change for `State<Poll>`.
 ///
@@ -32,9 +32,7 @@ impl StateChangeImpl for State<Poll> {
         if shared_state.runtime_settings.is_polling_forced() {
             debug!("Moving to Probe state as soon as possible.");
             return Ok((
-                StateMachine::Probe(State(Probe {
-                    server_address: ServerAddress::Default,
-                })),
+                StateMachine::Probe(self.into()),
                 actor::StepTransition::Immediate,
             ));
         }
@@ -56,9 +54,7 @@ impl StateChangeImpl for State<Poll> {
         if last_poll > current_time {
             info!("Forcing to Probe state as last polling seems to happened in future.");
             return Ok((
-                StateMachine::Probe(State(Probe {
-                    server_address: ServerAddress::Default,
-                })),
+                StateMachine::Probe(self.into()),
                 actor::StepTransition::Immediate,
             ));
         }
@@ -67,18 +63,14 @@ impl StateChangeImpl for State<Poll> {
         if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) > current_time {
             debug!("Moving to Probe state as the polling's due extra interval.");
             return Ok((
-                StateMachine::Probe(State(Probe {
-                    server_address: ServerAddress::Default,
-                })),
+                StateMachine::Probe(self.into()),
                 actor::StepTransition::Immediate,
             ));
         }
 
         debug!("Moving to Probe state after delay.");
         Ok((
-            StateMachine::Probe(State(Probe {
-                server_address: ServerAddress::Default,
-            })),
+            StateMachine::Probe(self.into()),
             actor::StepTransition::Delayed(
                 shared_state.settings.polling.interval.to_std().unwrap(),
             ),

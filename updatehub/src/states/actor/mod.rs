@@ -11,7 +11,7 @@ pub(crate) mod probe;
 /// Used to send `Step` messages to the `Machine` actor.
 pub(crate) mod stepper;
 
-use super::{Idle, Metadata, Probe, RuntimeSettings, ServerAddress, Settings, State, StateMachine};
+use super::{Idle, Metadata, Probe, RuntimeSettings, Settings, State, StateMachine};
 use actix::{Actor, Addr, Arbiter, AsyncContext, Context, Handler, Message, MessageResult};
 use slog_scope::info;
 

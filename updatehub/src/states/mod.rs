@@ -17,15 +17,8 @@ mod reboot;
 mod transition;
 
 use self::{
-    download::Download,
-    error::Error,
-    idle::Idle,
-    install::Install,
-    park::Park,
-    poll::Poll,
-    prepare_download::PrepareDownload,
-    probe::{Probe, ServerAddress},
-    reboot::Reboot,
+    download::Download, error::Error, idle::Idle, install::Install, park::Park, poll::Poll,
+    prepare_download::PrepareDownload, probe::Probe, reboot::Reboot,
 };
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use actix::System;

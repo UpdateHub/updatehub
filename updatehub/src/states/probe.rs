@@ -10,16 +10,8 @@ use crate::client::{Api, ProbeResponse};
 use chrono::{Duration, Utc};
 use slog_scope::{debug, error, info};
 
-#[derive(Debug, PartialEq, Clone)]
-pub(super) enum ServerAddress {
-    Default,
-    Custom(String),
-}
-
 #[derive(Debug, PartialEq)]
-pub(super) struct Probe {
-    pub(super) server_address: ServerAddress,
-}
+pub(super) struct Probe;
 
 create_state_step!(Probe => Idle);
 create_state_step!(Probe => Poll);
@@ -38,10 +30,10 @@ impl StateChangeImpl for State<Probe> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
-        let server_address = match self.0.server_address.clone() {
-            ServerAddress::Default => shared_state.settings.network.server_address.clone(),
-            ServerAddress::Custom(s) => s,
-        };
+        let server_address = shared_state
+            .runtime_settings
+            .custom_server_address()
+            .unwrap_or(&shared_state.settings.network.server_address);
 
         let probe = match Api::new(&server_address)
             .probe(&shared_state.runtime_settings, &shared_state.firmware)
@@ -144,12 +136,10 @@ mod tests {
             firmware,
         };
 
-        let machine = StateMachine::Probe(State(Probe {
-            server_address: ServerAddress::Default,
-        }))
-        .move_to_next_state(&mut shared_state)
-        .unwrap()
-        .0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .unwrap()
+            .0;
 
         mock.assert();
 
@@ -175,12 +165,10 @@ mod tests {
             firmware,
         };
 
-        let machine = StateMachine::Probe(State(Probe {
-            server_address: ServerAddress::Default,
-        }))
-        .move_to_next_state(&mut shared_state)
-        .unwrap()
-        .0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .unwrap()
+            .0;
 
         mock.assert();
 
@@ -207,10 +195,7 @@ mod tests {
             firmware,
         };
 
-        let machine = StateMachine::Probe(State(Probe {
-            server_address: ServerAddress::Default,
-        }))
-        .move_to_next_state(&mut shared_state);
+        let machine = StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state);
 
         mock.assert();
 
@@ -236,12 +221,10 @@ mod tests {
             firmware,
         };
 
-        let machine = StateMachine::Probe(State(Probe {
-            server_address: ServerAddress::Default,
-        }))
-        .move_to_next_state(&mut shared_state)
-        .unwrap()
-        .0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .unwrap()
+            .0;
 
         mock.assert();
 
@@ -286,12 +269,10 @@ mod tests {
             firmware,
         };
 
-        let machine = StateMachine::Probe(State(Probe {
-            server_address: ServerAddress::Default,
-        }))
-        .move_to_next_state(&mut shared_state)
-        .unwrap()
-        .0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .unwrap()
+            .0;
 
         mock.assert();
 
@@ -319,15 +300,13 @@ mod tests {
             firmware,
         };
 
-        let machine = StateMachine::Probe(State(Probe {
-            server_address: ServerAddress::Default,
-        }))
-        .move_to_next_state(&mut shared_state)
-        .unwrap()
-        .0
-        .move_to_next_state(&mut shared_state)
-        .unwrap()
-        .0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .unwrap()
+            .0
+            .move_to_next_state(&mut shared_state)
+            .unwrap()
+            .0;
 
         mock.assert();
 
