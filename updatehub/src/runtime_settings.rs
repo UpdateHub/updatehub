@@ -167,7 +167,7 @@ pub(crate) enum Error {
     IniSerialize(serde_ini::ser::Error),
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct RuntimePolling {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -181,17 +181,6 @@ struct RuntimePolling {
     #[serde(deserialize_with = "de::bool_from_str")]
     #[serde(serialize_with = "ser::bool_to_string")]
     now: bool,
-}
-
-impl Default for RuntimePolling {
-    fn default() -> Self {
-        Self {
-            last: None,
-            extra_interval: None,
-            retries: 0,
-            now: false,
-        }
-    }
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
