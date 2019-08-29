@@ -30,10 +30,7 @@ impl StateChangeImpl for State<Probe> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
-        let server_address = shared_state
-            .runtime_settings
-            .custom_server_address()
-            .unwrap_or(&shared_state.settings.network.server_address);
+        let server_address = shared_state.server();
 
         let probe = match Api::new(&server_address)
             .probe(&shared_state.runtime_settings, &shared_state.firmware)

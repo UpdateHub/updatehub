@@ -28,6 +28,14 @@ pub(super) struct SharedState {
     pub(super) firmware: Metadata,
 }
 
+impl SharedState {
+    pub(super) fn server(&self) -> &str {
+        self.runtime_settings
+            .custom_server_address()
+            .unwrap_or(&self.settings.network.server_address)
+    }
+}
+
 impl Actor for Machine {
     type Context = Context<Self>;
 

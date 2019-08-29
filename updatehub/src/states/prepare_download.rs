@@ -87,7 +87,7 @@ impl StateChangeImpl for State<PrepareDownload> {
             .collect();
 
         // Get ownership of remaining data that will be sent to new thread
-        let server = shared_state.settings.network.server_address.to_owned();
+        let server = shared_state.server().to_owned();
         let product_uid = shared_state.firmware.product_uid.to_owned();
         let package_uid = self.0.update_package.package_uid();
         let (sndr, recv) = mpsc::channel();
