@@ -30,7 +30,7 @@ impl ProgressReporter for State<Reboot> {
     }
 
     fn report_leave_state_name(&self) -> &'static str {
-        "rebooted"
+        "rebooting"
     }
 }
 

@@ -29,7 +29,7 @@ pub(super) struct SharedState {
 }
 
 impl SharedState {
-    pub(super) fn server(&self) -> &str {
+    pub(super) fn server_address(&self) -> &str {
         self.runtime_settings
             .custom_server_address()
             .unwrap_or(&self.settings.network.server_address)

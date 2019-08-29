@@ -97,7 +97,7 @@ where
         self,
         shared_state: &mut actor::SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
-        let server = shared_state.server().to_owned();
+        let server = shared_state.server_address().to_owned();
         let firmware = &shared_state.firmware.clone();
         let package_uid = &self.package_uid();
         let enter_state = self.report_enter_state_name();
