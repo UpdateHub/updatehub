@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Idle, State, StateMachine};
+use super::{EntryPoint, State, StateMachine};
 use actix::{Context, Handler, Message, MessageResult};
 
 #[derive(Message)]
@@ -23,7 +23,7 @@ impl Handler<Request> for super::Machine {
             return match res {
                 Response::InvalidState => MessageResult(res),
                 Response::RequestAccepted => {
-                    self.state.replace(StateMachine::Idle(State(Idle {})));
+                    self.state.replace(StateMachine::EntryPoint(State(EntryPoint {})));
                     MessageResult(res)
                 }
             };

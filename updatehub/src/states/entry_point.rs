@@ -9,17 +9,17 @@ use super::{
 use slog_scope::debug;
 
 #[derive(Debug, PartialEq)]
-pub(super) struct Idle {}
+pub(super) struct EntryPoint {}
 
-/// Implements the state change for `State<Idle>`. It has two
+/// Implements the state change for `State<EntryPoint>`. It has two
 /// possibilities:
 ///
-/// If polling is disabled it stays in `State<Idle>`, otherwise, it moves
+/// If polling is disabled it stays in `State<EntryPoint>`, otherwise, it moves
 /// to `State<Poll>` state.
 #[async_trait::async_trait]
-impl StateChangeImpl for State<Idle> {
+impl StateChangeImpl for State<EntryPoint> {
     fn name(&self) -> &'static str {
-        "idle"
+        "entry_point"
     }
 
     fn handle_trigger_probe(&self) -> actor::probe::Response {
@@ -42,7 +42,7 @@ impl StateChangeImpl for State<Idle> {
         shared_state.runtime_settings.reset_transient_settings();
 
         if !shared_state.settings.polling.enabled {
-            debug!("Polling is disabled, staying on Idle state.");
+            debug!("Polling is disabled, parking the state machine.");
             return Ok((StateMachine::Park(self.into()), actor::StepTransition::Immediate));
         }
 
@@ -51,8 +51,8 @@ impl StateChangeImpl for State<Idle> {
     }
 }
 
-create_state_step!(Idle => Park);
-create_state_step!(Idle => Poll);
+create_state_step!(EntryPoint => Park);
+create_state_step!(EntryPoint => Poll);
 
 #[actix_rt::test]
 async fn polling_disable() {
@@ -65,8 +65,11 @@ async fn polling_disable() {
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-    let machine =
-        StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state).await.unwrap().0;
+    let machine = StateMachine::EntryPoint(State(EntryPoint {}))
+        .move_to_next_state(&mut shared_state)
+        .await
+        .unwrap()
+        .0;
 
     assert_state!(machine, Park);
 }
@@ -82,8 +85,11 @@ async fn polling_enabled() {
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-    let machine =
-        StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state).await.unwrap().0;
+    let machine = StateMachine::EntryPoint(State(EntryPoint {}))
+        .move_to_next_state(&mut shared_state)
+        .await
+        .unwrap()
+        .0;
 
     assert_state!(machine, Poll);
 }
