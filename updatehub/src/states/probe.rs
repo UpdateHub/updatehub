@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, Poll, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
+    EntryPoint, Poll, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
 };
 use crate::client::{self, Api, ProbeResponse};
 use chrono::{Duration, Utc};
@@ -13,7 +13,7 @@ use slog_scope::{debug, error, info};
 #[derive(Debug, PartialEq)]
 pub(super) struct Probe;
 
-create_state_step!(Probe => Idle);
+create_state_step!(Probe => EntryPoint);
 create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
@@ -54,11 +54,11 @@ impl StateChangeImpl for State<Probe> {
 
         match probe {
             ProbeResponse::NoUpdate => {
-                debug!("Moving to Idle state as no update is available.");
+                debug!("Moving to EntryPoint state as no update is available.");
 
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
-                Ok((StateMachine::Idle(self.into()), actor::StepTransition::Immediate))
+                Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
             }
 
             ProbeResponse::ExtraPoll(s) => {
@@ -79,8 +79,8 @@ impl StateChangeImpl for State<Probe> {
                     info!(
                         "Not applying the update package. Same package has already been installed."
                     );
-                    debug!("Moving to Idle state as this update package is already installed.");
-                    Ok((StateMachine::Idle(self.into()), actor::StepTransition::Immediate))
+                    debug!("Moving to EntryPoint as this update package is already installed.");
+                    Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
                 } else {
                     debug!("Moving to PrepareDownload state to process the update package.");
                     Ok((
@@ -147,7 +147,7 @@ mod tests {
 
         mock.assert();
 
-        assert_state!(machine, Idle);
+        assert_state!(machine, EntryPoint);
     }
 
     #[actix_rt::test]
@@ -259,7 +259,7 @@ mod tests {
 
         mock.assert();
 
-        assert_state!(machine, Idle);
+        assert_state!(machine, EntryPoint);
     }
 
     #[actix_rt::test]
@@ -289,6 +289,6 @@ mod tests {
 
         mock.assert();
 
-        assert_state!(machine, Idle);
+        assert_state!(machine, EntryPoint);
     }
 }

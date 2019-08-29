@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, Result, State, StateChangeImpl, StateMachine, TransitionError,
+    EntryPoint, Result, State, StateChangeImpl, StateMachine, TransitionError,
 };
 
 use slog_scope::{error, info};
@@ -30,8 +30,8 @@ impl StateChangeImpl for State<Error> {
     async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
         error!("Error state reached: {}", self.0.error);
 
-        info!("Returning to idle state");
-        Ok((StateMachine::Idle(State(Idle {})), actor::StepTransition::Immediate))
+        info!("Returning to machine's entry point");
+        Ok((StateMachine::EntryPoint(State(EntryPoint {})), actor::StepTransition::Immediate))
     }
 }
 

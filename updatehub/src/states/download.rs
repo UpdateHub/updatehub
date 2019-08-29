@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, download_abort, SharedState},
-    Idle, Install, ProgressReporter, Result, State, StateChangeImpl, StateMachine,
+    EntryPoint, Install, ProgressReporter, Result, State, StateChangeImpl, StateMachine,
     TransitionCallback, TransitionError,
 };
 use crate::{
@@ -39,7 +39,7 @@ impl fmt::Debug for Download {
     }
 }
 
-create_state_step!(Download => Idle);
+create_state_step!(Download => EntryPoint);
 create_state_step!(Download => Install(update_package));
 
 impl TransitionCallback for State<Download> {}

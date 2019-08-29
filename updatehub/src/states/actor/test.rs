@@ -84,7 +84,7 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
         // We use the actix::Actor::start here instead of the Machine::start in order to not
         // start the stepper and thus have control of how many steps are been sent to the Machine
         actix::Actor::start(Machine::new(
-            StateMachine::Idle(State(Idle {})),
+            StateMachine::EntryPoint(State(EntryPoint {})),
             settings,
             runtime_settings,
             firmware,
@@ -99,7 +99,7 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
 async fn info_request() {
     let (addr, _, settings, firmware) = setup_actor(Setup::NoUpdate, Probe::Enabled);
     let response = addr.send(info::Request).await.unwrap();
-    assert_eq!(response.state, "idle");
+    assert_eq!(response.state, "entry_point");
     assert_eq!(response.version, crate::version().to_string());
     assert_eq!(response.config, settings.0);
     assert_eq!(response.firmware, firmware.0);
@@ -109,7 +109,7 @@ async fn info_request() {
 async fn step_sequence() {
     let (addr, mock, ..) = setup_actor(Setup::NoUpdate, Probe::Enabled);
     let response = addr.send(info::Request).await.unwrap();
-    assert_eq!(response.state, "idle");
+    assert_eq!(response.state, "entry_point");
 
     addr.send(Step).await.unwrap();
     let res = addr.send(info::Request).await.unwrap();
@@ -121,7 +121,7 @@ async fn step_sequence() {
 
     addr.send(Step).await.unwrap();
     let res = addr.send(info::Request).await.unwrap();
-    assert_eq!(res.state, "idle");
+    assert_eq!(res.state, "entry_point");
 
     mock.assert();
 }
@@ -137,7 +137,7 @@ async fn download_abort() {
 
     addr.send(download_abort::Request).await.unwrap();
     let res = addr.send(info::Request).await.unwrap();
-    assert_eq!(res.state, "idle");
+    assert_eq!(res.state, "entry_point");
 
     mock.assert();
 }

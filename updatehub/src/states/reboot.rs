@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, ProgressReporter, Result, State, StateChangeImpl, StateMachine, TransitionCallback,
+    EntryPoint, ProgressReporter, Result, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::update_package::UpdatePackage;
 use slog_scope::info;
@@ -14,7 +14,7 @@ pub(super) struct Reboot {
     pub(super) update_package: UpdatePackage,
 }
 
-create_state_step!(Reboot => Idle);
+create_state_step!(Reboot => EntryPoint);
 
 impl TransitionCallback for State<Reboot> {}
 
@@ -44,7 +44,7 @@ impl StateChangeImpl for State<Reboot> {
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
             info!("  reboot output: stdout: {}, stderr: {}", output.stdout, output.stderr);
         }
-        Ok((StateMachine::Idle(self.into()), actor::StepTransition::Immediate))
+        Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
     }
 }
 
@@ -106,7 +106,7 @@ mod test {
         let machine =
             StateMachine::Reboot(state).move_to_next_state(&mut shared_state).await.unwrap().0;
 
-        assert_state!(machine, Idle);
+        assert_state!(machine, EntryPoint);
     }
 
     #[test]
