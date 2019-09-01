@@ -8,11 +8,12 @@ use updatehub;
 
 #[derive(StructOpt, Debug)]
 #[structopt(
+    no_version,
     name = "updatehub",
     author = "O.S. Systems Software LTDA. <contact@ossystems.com.br>",
-    about = "A generic and safe Firmware Over-The-Air agent."
+    about = "A generic and safe Firmware Over-The-Air agent.",
+    version = updatehub::version()
 )]
-#[structopt(raw(version = "updatehub::version()"))]
 struct Opt {
     /// Increase the verboseness level
     #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
