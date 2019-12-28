@@ -152,7 +152,7 @@ impl Default for Update {
             download_dir: "/tmp/updatehub".into(),
             install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"]
                 .iter()
-                .map(|i| i.to_string())
+                .map(|i| (*i).to_string())
                 .collect(),
         }
     }

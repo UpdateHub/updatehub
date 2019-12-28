@@ -96,10 +96,8 @@ impl<'a> Api<'a> {
 
         let file = download_dir.join(object);
         if file.exists() {
-            client = client.header(
-                RANGE,
-                format!("bytes={}-", file.metadata()?.len().checked_sub(1).unwrap_or(0)),
-            );
+            client = client
+                .header(RANGE, format!("bytes={}-", file.metadata()?.len().saturating_sub(1)));
         }
 
         let mut file = OpenOptions::new().create(true).append(true).open(&file)?;
