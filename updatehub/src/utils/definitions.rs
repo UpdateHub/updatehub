@@ -68,10 +68,7 @@ pub(crate) trait IdExt {
 impl IdExt for Gid {
     fn as_u32(&self) -> u32 {
         match self {
-            Gid::Name(s) => {
-                let s = std::ffi::CString::new(s.as_str()).unwrap();
-                unsafe { *nix::libc::getgrnam(s.as_ptr()) }.gr_gid
-            }
+            Gid::Name(s) => nix::unistd::Group::from_name(s).unwrap().unwrap().gid.as_raw(),
             Gid::Number(n) => *n,
         }
     }
@@ -80,10 +77,7 @@ impl IdExt for Gid {
 impl IdExt for Uid {
     fn as_u32(&self) -> u32 {
         match self {
-            Uid::Name(s) => {
-                let s = std::ffi::CString::new(s.as_str()).unwrap();
-                unsafe { *nix::libc::getpwnam(s.as_ptr()) }.pw_uid
-            }
+            Uid::Name(s) => nix::unistd::User::from_name(s).unwrap().unwrap().uid.as_raw(),
             Uid::Number(n) => *n,
         }
     }
