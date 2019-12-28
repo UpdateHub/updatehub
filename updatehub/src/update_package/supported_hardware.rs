@@ -69,10 +69,7 @@ mod tests {
     #[test]
     fn many_hardware() {
         assert_eq!(
-            Test(SupportedHardware::HardwareList(vec![
-                "hw-1".into(),
-                "hw-2".into(),
-            ])),
+            Test(SupportedHardware::HardwareList(vec!["hw-1".into(), "hw-2".into(),])),
             serde_json::from_str::<Test>(&json!(["hw-1", "hw-2"]).to_string()).unwrap()
         );
     }

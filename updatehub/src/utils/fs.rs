@@ -125,9 +125,7 @@ pub(crate) fn chmod(path: &Path, mode: u32) -> Result<(), failure::Error> {
 pub(crate) fn chown(path: &Path, uid: &Option<Uid>, gid: &Option<Gid>) -> nix::Result<()> {
     nix::unistd::chown(
         path,
-        uid.as_ref()
-            .map(|id| nix::unistd::Uid::from_raw(id.as_u32())),
-        gid.as_ref()
-            .map(|id| nix::unistd::Gid::from_raw(id.as_u32())),
+        uid.as_ref().map(|id| nix::unistd::Uid::from_raw(id.as_u32())),
+        gid.as_ref().map(|id| nix::unistd::Gid::from_raw(id.as_u32())),
     )
 }

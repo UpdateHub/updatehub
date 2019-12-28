@@ -39,10 +39,7 @@ impl Installer for objects::Copy {
         let format_options = &self.target_format.format_options;
         let chunk_size = definitions::ChunkSize::default().0;
         let sha256sum = self.sha256sum();
-        let target_path = self
-            .target_path
-            .strip_prefix("/")
-            .unwrap_or(&self.target_path);
+        let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
         let source = download_dir.join(sha256sum);
 
         if self.target_format.should_format {
@@ -134,21 +131,14 @@ mod tests {
         // Generate the source file
         let download_dir = tempfile::tempdir()?;
         let mut source = tempfile::NamedTempFile::new_in(download_dir.path())?;
-        source.write_all(
-            &iter::repeat(DEFAULT_BYTE)
-                .take(FILE_SIZE)
-                .collect::<Vec<_>>(),
-        )?;
+        source.write_all(&iter::repeat(DEFAULT_BYTE).take(FILE_SIZE).collect::<Vec<_>>())?;
 
         // When needed, create a file inside the mounted device
         if let Some(perm) = original_permissions {
             utils::fs::mount_map(&device, definitions::Filesystem::Ext4, &"", |path| {
                 let file = path.join(&"original_file");
-                fs::File::create(&file)?.write_all(
-                    &iter::repeat(ORIGINAL_BYTE)
-                        .take(FILE_SIZE)
-                        .collect::<Vec<_>>(),
-                )?;
+                fs::File::create(&file)?
+                    .write_all(&iter::repeat(ORIGINAL_BYTE).take(FILE_SIZE).collect::<Vec<_>>())?;
 
                 if let Some(mode) = perm.target_mode {
                     utils::fs::chmod(&file, mode)?;
@@ -185,49 +175,44 @@ mod tests {
         obj.install(&download_dir.path())?;
 
         // Validade File
-        utils::fs::mount_map(
-            &device,
-            obj.filesystem,
-            &obj.mount_options.clone(),
-            |path| {
-                let chunk_size = definitions::ChunkSize::default().0;
-                let dest = path.join(&obj.target_path);
-                let source = download_dir.path().join(&obj.sha256sum);
-                let mut rd1 = io::BufReader::with_capacity(chunk_size, fs::File::open(&source)?);
-                let mut rd2 = io::BufReader::with_capacity(chunk_size, fs::File::open(&dest)?);
+        utils::fs::mount_map(&device, obj.filesystem, &obj.mount_options.clone(), |path| {
+            let chunk_size = definitions::ChunkSize::default().0;
+            let dest = path.join(&obj.target_path);
+            let source = download_dir.path().join(&obj.sha256sum);
+            let mut rd1 = io::BufReader::with_capacity(chunk_size, fs::File::open(&source)?);
+            let mut rd2 = io::BufReader::with_capacity(chunk_size, fs::File::open(&dest)?);
 
-                loop {
-                    let buf1 = rd1.fill_buf()?;
-                    let len1 = buf1.len();
-                    let buf2 = rd2.fill_buf()?;
-                    let len2 = buf2.len();
-                    // Stop comparing when both the files reach EOF
-                    if len1 == 0 && len2 == 0 {
-                        break;
-                    }
-                    assert_eq!(buf1, buf2);
-                    rd1.consume(len1);
-                    rd2.consume(len2);
+            loop {
+                let buf1 = rd1.fill_buf()?;
+                let len1 = buf1.len();
+                let buf2 = rd2.fill_buf()?;
+                let len2 = buf2.len();
+                // Stop comparing when both the files reach EOF
+                if len1 == 0 && len2 == 0 {
+                    break;
                 }
+                assert_eq!(buf1, buf2);
+                rd1.consume(len1);
+                rd2.consume(len2);
+            }
 
-                let metadata = dest.metadata()?;
-                if let Some(mode) = obj.target_permissions.target_mode {
-                    assert_eq!(mode, metadata.mode() % 0o1000);
-                };
+            let metadata = dest.metadata()?;
+            if let Some(mode) = obj.target_permissions.target_mode {
+                assert_eq!(mode, metadata.mode() % 0o1000);
+            };
 
-                if let Some(uid) = obj.target_permissions.target_uid {
-                    let uid = uid.as_u32();
-                    assert_eq!(uid, metadata.uid());
-                };
+            if let Some(uid) = obj.target_permissions.target_uid {
+                let uid = uid.as_u32();
+                assert_eq!(uid, metadata.uid());
+            };
 
-                if let Some(gid) = obj.target_permissions.target_gid {
-                    let gid = gid.as_u32();
-                    assert_eq!(gid, metadata.gid());
-                };
+            if let Some(gid) = obj.target_permissions.target_gid {
+                let gid = gid.as_u32();
+                assert_eq!(gid, metadata.gid());
+            };
 
-                Ok(())
-            },
-        )?;
+            Ok(())
+        })?;
 
         loopdev.detach()?;
 

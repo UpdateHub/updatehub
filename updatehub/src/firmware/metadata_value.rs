@@ -60,9 +60,7 @@ impl FromStr for MetadataValue {
 
         let mut mv = Self::default();
         for (k, v) in values {
-            mv.entry(k)
-                .and_modify(|e| e.push(v.clone()))
-                .or_insert_with(|| vec![v]);
+            mv.entry(k).and_modify(|e| e.push(v.clone())).or_insert_with(|| vec![v]);
         }
 
         Ok(mv)
@@ -101,10 +99,7 @@ fn serialize() {
     use pretty_assertions::assert_eq;
     let v = MetadataValue::from_str("key1=v1\nkey=b\nnv=\nkey=a").unwrap();
 
-    assert_eq!(
-        serde_json::to_string(&v).unwrap(),
-        r#"{"key":["a","b"],"key1":"v1","nv":""}"#
-    );
+    assert_eq!(serde_json::to_string(&v).unwrap(), r#"{"key":["a","b"],"key1":"v1","nv":""}"#);
 }
 
 #[test]

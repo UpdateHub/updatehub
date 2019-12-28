@@ -81,10 +81,9 @@ where
 
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress(shared_state)?),
-            Transition::Cancel => Ok((
-                StateMachine::Idle(self.into()),
-                actor::StepTransition::Immediate,
-            )),
+            Transition::Cancel => {
+                Ok((StateMachine::Idle(self.into()), actor::StepTransition::Immediate))
+            }
         }
     }
 }
@@ -222,10 +221,7 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
         })
         .bind(listen_socket.clone())
         .unwrap_or_else(|_| {
-            panic!(
-                "Failed to bind listen socket, {:?}, for HTTP API",
-                listen_socket,
-            )
+            panic!("Failed to bind listen socket, {:?}, for HTTP API", listen_socket,)
         })
         .start();
     })?;

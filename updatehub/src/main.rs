@@ -35,9 +35,7 @@ fn run() -> Result<(), failure::Error> {
 fn main() {
     if let Err(ref e) = run() {
         eprintln!("{}", e);
-        e.iter_causes()
-            .skip(1)
-            .for_each(|e| eprintln!(" caused by: {}\n", e));
+        e.iter_causes().skip(1).for_each(|e| eprintln!(" caused by: {}\n", e));
 
         std::process::exit(1);
     }

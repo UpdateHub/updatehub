@@ -34,17 +34,11 @@ impl StateChangeImpl for State<Idle> {
 
         if !shared_state.settings.polling.enabled {
             debug!("Polling is disabled, staying on Idle state.");
-            return Ok((
-                StateMachine::Park(self.into()),
-                actor::StepTransition::Immediate,
-            ));
+            return Ok((StateMachine::Park(self.into()), actor::StepTransition::Immediate));
         }
 
         debug!("Polling is enabled, moving to Poll state.");
-        Ok((
-            StateMachine::Poll(self.into()),
-            actor::StepTransition::Immediate,
-        ))
+        Ok((StateMachine::Poll(self.into()), actor::StepTransition::Immediate))
     }
 }
 
@@ -60,16 +54,10 @@ fn polling_disable() {
     settings.polling.enabled = false;
     let runtime_settings = RuntimeSettings::default();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    let mut shared_state = SharedState {
-        settings,
-        runtime_settings,
-        firmware,
-    };
+    let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-    let machine = StateMachine::Idle(State(Idle {}))
-        .move_to_next_state(&mut shared_state)
-        .unwrap()
-        .0;
+    let machine =
+        StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state).unwrap().0;
 
     assert_state!(machine, Park);
 }
@@ -83,16 +71,10 @@ fn polling_enabled() {
     settings.polling.enabled = true;
     let runtime_settings = RuntimeSettings::default();
     let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    let mut shared_state = SharedState {
-        settings,
-        runtime_settings,
-        firmware,
-    };
+    let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-    let machine = StateMachine::Idle(State(Idle {}))
-        .move_to_next_state(&mut shared_state)
-        .unwrap()
-        .0;
+    let machine =
+        StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state).unwrap().0;
 
     assert_state!(machine, Poll);
 }

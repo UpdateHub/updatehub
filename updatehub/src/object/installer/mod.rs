@@ -96,9 +96,7 @@ mod tests {
             format!(
                 "{}{}",
                 mocks_dir.display(),
-                &env::var("PATH")
-                    .map(|s| format!(":{}", s))
-                    .unwrap_or_default()
+                &env::var("PATH").map(|s| format!(":{}", s)).unwrap_or_default()
             ),
         );
 

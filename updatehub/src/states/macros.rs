@@ -13,9 +13,7 @@ macro_rules! create_state_step {
     ($source:ident => $dest:ident($field:ident)) => {
         impl From<State<$source>> for State<$dest> {
             fn from(from: State<$source>) -> State<$dest> {
-                Self($dest {
-                    $field: (from.0).$field,
-                })
+                Self($dest { $field: (from.0).$field })
             }
         }
     };
@@ -25,11 +23,7 @@ macro_rules! create_state_step {
 macro_rules! assert_state {
     ($machine:ident, $state:ident) => {
         assert!(
-            if let StateMachine::$state(_) = $machine {
-                true
-            } else {
-                false
-            },
+            if let StateMachine::$state(_) = $machine { true } else { false },
             "Failed to get to {} state.",
             stringify!($state),
         );

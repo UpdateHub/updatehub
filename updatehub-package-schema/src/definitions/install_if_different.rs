@@ -12,10 +12,7 @@ pub enum InstallIfDifferent {
     /// Use checksum to check.
     CheckSum,
     /// Use a predefined (known) pattern to check.
-    KnownPattern {
-        version: String,
-        pattern: KnownPatternKind,
-    },
+    KnownPattern { version: String, pattern: KnownPatternKind },
     /// Use a custom pattern to check.
     CustomPattern { version: String, pattern: Pattern },
 }
@@ -65,11 +62,7 @@ mod test {
         assert_eq!(
             InstallIfDifferent::CustomPattern {
                 version: "2.0".to_string(),
-                pattern: Pattern {
-                    regexp: "[0-9.]+".to_string(),
-                    seek: 1024,
-                    buffer_size: 2048,
-                }
+                pattern: Pattern { regexp: "[0-9.]+".to_string(), seek: 1024, buffer_size: 2048 }
             },
             serde_json::from_value::<InstallIfDifferent>(json!({
                 "version": "2.0",

@@ -57,11 +57,7 @@ impl Machine {
     ) -> Self {
         Machine {
             state: Some(state),
-            shared_state: SharedState {
-                settings,
-                runtime_settings,
-                firmware,
-            },
+            shared_state: SharedState { settings, runtime_settings, firmware },
             stepper: stepper::Controller::default(),
         }
     }

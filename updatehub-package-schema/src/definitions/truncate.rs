@@ -31,9 +31,7 @@ mod test {
     fn deserialize() {
         assert_eq!(
             serde_json::from_value::<Payload>(json!({ "truncate": false })).ok(),
-            Some(Payload {
-                truncate: Truncate(false)
-            })
+            Some(Payload { truncate: Truncate(false) })
         );
     }
 
@@ -41,9 +39,7 @@ mod test {
     fn default() {
         assert_eq!(
             serde_json::from_value::<Payload>(json!({})).ok(),
-            Some(Payload {
-                truncate: Truncate(true)
-            })
+            Some(Payload { truncate: Truncate(true) })
         );
     }
 }

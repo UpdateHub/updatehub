@@ -54,11 +54,7 @@ impl Installer for objects::Raw {
             input.seek(SeekFrom::Start(skip))?;
             let mut output = utils::io::timed_buf_writer(
                 chunk_size,
-                fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .truncate(truncate)
-                    .open(device)?,
+                fs::OpenOptions::new().read(true).write(true).truncate(truncate).open(device)?,
             );
             output.seek(SeekFrom::Start(seek))?;
 
@@ -102,19 +98,11 @@ mod tests {
         let download_dir = tempdir()?;
 
         let mut source = NamedTempFile::new_in(download_dir.path())?;
-        source.write_all(
-            &iter::repeat(ORIGINAL_BYTE)
-                .take(size as usize)
-                .collect::<Vec<_>>(),
-        )?;
+        source.write_all(&iter::repeat(ORIGINAL_BYTE).take(size as usize).collect::<Vec<_>>())?;
         source.seek(SeekFrom::Start(0))?;
 
         let mut dest = NamedTempFile::new_in(download_dir.path())?;
-        dest.write_all(
-            &iter::repeat(DEFAULT_BYTE)
-                .take(size as usize)
-                .collect::<Vec<_>>(),
-        )?;
+        dest.write_all(&iter::repeat(DEFAULT_BYTE).take(size as usize).collect::<Vec<_>>())?;
         dest.seek(SeekFrom::Start(0))?;
 
         Ok((

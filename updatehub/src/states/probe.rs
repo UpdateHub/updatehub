@@ -53,23 +53,15 @@ impl StateChangeImpl for State<Probe> {
 
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
-                Ok((
-                    StateMachine::Idle(self.into()),
-                    actor::StepTransition::Immediate,
-                ))
+                Ok((StateMachine::Idle(self.into()), actor::StepTransition::Immediate))
             }
 
             ProbeResponse::ExtraPoll(s) => {
                 info!("Delaying the probing as requested by the server.");
-                shared_state
-                    .runtime_settings
-                    .set_polling_extra_interval(Duration::seconds(s))?;
+                shared_state.runtime_settings.set_polling_extra_interval(Duration::seconds(s))?;
 
                 debug!("Moving to Poll state due the extra polling interval.");
-                Ok((
-                    StateMachine::Poll(self.into()),
-                    actor::StepTransition::Immediate,
-                ))
+                Ok((StateMachine::Poll(self.into()), actor::StepTransition::Immediate))
             }
 
             ProbeResponse::Update(u) => {
@@ -83,10 +75,7 @@ impl StateChangeImpl for State<Probe> {
                         "Not applying the update package. Same package has already been installed."
                     );
                     debug!("Moving to Idle state as this update package is already installed.");
-                    Ok((
-                        StateMachine::Idle(self.into()),
-                        actor::StepTransition::Immediate,
-                    ))
+                    Ok((StateMachine::Idle(self.into()), actor::StepTransition::Immediate))
                 } else {
                     debug!("Moving to PrepareDownload state to process the update package.");
                     Ok((
@@ -123,20 +112,12 @@ mod tests {
         let mock = create_mock_server(FakeServer::NoUpdate);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap();
+        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        };
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine = StateMachine::Probe(State(Probe {}))
-            .move_to_next_state(&mut shared_state)
-            .unwrap()
-            .0;
+        let machine =
+            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).unwrap().0;
 
         mock.assert();
 
@@ -152,20 +133,12 @@ mod tests {
         let mock = create_mock_server(FakeServer::HasUpdate);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap();
+        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-        let mut shared_state = SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        };
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine = StateMachine::Probe(State(Probe {}))
-            .move_to_next_state(&mut shared_state)
-            .unwrap()
-            .0;
+        let machine =
+            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).unwrap().0;
 
         mock.assert();
 
@@ -181,16 +154,10 @@ mod tests {
         let mock = create_mock_server(FakeServer::InvalidHardware);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap();
+        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
         let firmware =
             Metadata::from_path(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap();
-        let mut shared_state = SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        };
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
         let machine = StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state);
 
@@ -208,20 +175,12 @@ mod tests {
         let mock = create_mock_server(FakeServer::ExtraPoll);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap();
+        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap();
-        let mut shared_state = SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        };
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine = StateMachine::Probe(State(Probe {}))
-            .move_to_next_state(&mut shared_state)
-            .unwrap()
-            .0;
+        let machine =
+            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).unwrap().0;
 
         mock.assert();
 
@@ -236,9 +195,7 @@ mod tests {
 
         let mock = create_mock_server(FakeServer::HasUpdate).expect(2);
 
-        let mut runtime_settings = RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap();
+        let mut runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
 
         // We first get the package_uid that will be returned so we can
         // use it for the upcoming test.
@@ -253,23 +210,15 @@ mod tests {
             .unwrap();
 
         if let ProbeResponse::Update(u) = probe {
-            runtime_settings
-                .set_applied_package_uid(&u.package_uid())
-                .unwrap();
+            runtime_settings.set_applied_package_uid(&u.package_uid()).unwrap();
         }
 
         let settings = Settings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-        let mut shared_state = SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        };
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine = StateMachine::Probe(State(Probe {}))
-            .move_to_next_state(&mut shared_state)
-            .unwrap()
-            .0;
+        let machine =
+            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).unwrap().0;
 
         mock.assert();
 
@@ -287,15 +236,9 @@ mod tests {
         let mock = create_mock_server(FakeServer::ErrorOnce);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new()
-            .load(tmpfile.to_str().unwrap())
-            .unwrap();
+        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        };
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
         let machine = StateMachine::Probe(State(Probe {}))
             .move_to_next_state(&mut shared_state)

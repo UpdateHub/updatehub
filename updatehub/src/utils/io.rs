@@ -13,18 +13,12 @@ pub(crate) fn timed_buf_reader<R>(chunk_size: usize, reader: R) -> BufReader<Tim
 where
     R: Read + Seek + AsRawFd,
 {
-    BufReader::with_capacity(
-        chunk_size,
-        TimeoutReader::new(reader, Duration::from_secs(5)),
-    )
+    BufReader::with_capacity(chunk_size, TimeoutReader::new(reader, Duration::from_secs(5)))
 }
 
 pub(crate) fn timed_buf_writer<W>(chunk_size: usize, writer: W) -> BufWriter<TimeoutWriter<W>>
 where
     W: Write + Seek + AsRawFd,
 {
-    BufWriter::with_capacity(
-        chunk_size,
-        TimeoutWriter::new(writer, Duration::from_secs(5)),
-    )
+    BufWriter::with_capacity(chunk_size, TimeoutWriter::new(writer, Duration::from_secs(5)))
 }

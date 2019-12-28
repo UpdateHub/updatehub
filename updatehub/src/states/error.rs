@@ -29,10 +29,7 @@ impl StateChangeImpl for State<Error> {
         error!("Error state reached: {:?}", self.0.error);
 
         info!("Returning to idle state");
-        Ok((
-            StateMachine::Idle(State(Idle {})),
-            actor::StepTransition::Immediate,
-        ))
+        Ok((StateMachine::Idle(State(Idle {})), actor::StepTransition::Immediate))
     }
 }
 

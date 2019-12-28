@@ -130,14 +130,8 @@ fn run_multiple_hooks_in_a_dir() {
     let tmpdir = tempdir().unwrap().path().to_path_buf();
 
     // create two scripts so we can test the parsing of output
-    create_hook(
-        tmpdir.join("hook1"),
-        "#!/bin/sh\necho key2=val2\necho key1=val1",
-    );
-    create_hook(
-        tmpdir.join("hook2"),
-        "#!/bin/sh\necho key2=val4\necho key1=val3",
-    );
+    create_hook(tmpdir.join("hook1"), "#!/bin/sh\necho key2=val2\necho key1=val1");
+    create_hook(tmpdir.join("hook2"), "#!/bin/sh\necho key2=val4\necho key1=val3");
 
     let fv = run_hooks_from_dir(&tmpdir).unwrap();
 

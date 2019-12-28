@@ -46,15 +46,9 @@ impl StateChangeImpl for State<Reboot> {
         info!("Triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
-            info!(
-                "  reboot output: stdout: {}, stderr: {}",
-                output.stdout, output.stderr
-            );
+            info!("  reboot output: stdout: {}, stderr: {}", output.stdout, output.stderr);
         }
-        Ok((
-            StateMachine::Idle(self.into()),
-            actor::StepTransition::Immediate,
-        ))
+        Ok((StateMachine::Idle(self.into()), actor::StepTransition::Immediate))
     }
 }
 
@@ -78,18 +72,9 @@ mod test {
         let settings = Settings::default();
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let shared_state = SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        };
+        let shared_state = SharedState { settings, runtime_settings, firmware };
 
-        (
-            State(Reboot {
-                update_package: get_update_package(),
-            }),
-            shared_state,
-        )
+        (State(Reboot { update_package: get_update_package() }), shared_state)
     }
 
     fn create_reboot(path: &Path) {
@@ -122,10 +107,7 @@ mod test {
         env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
         let (state, mut shared_state) = fake_reboot_state();
-        let machine = StateMachine::Reboot(state)
-            .move_to_next_state(&mut shared_state)
-            .unwrap()
-            .0;
+        let machine = StateMachine::Reboot(state).move_to_next_state(&mut shared_state).unwrap().0;
 
         assert_state!(machine, Idle);
     }

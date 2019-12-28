@@ -101,8 +101,7 @@ impl StateChangeImpl for State<PrepareDownload> {
                     api.download_object(&product_uid, &package_uid, &download_dir, &shasum)
                 })
                 .collect();
-            sndr.send(results)
-                .expect("Unable to send response about object downlod");
+            sndr.send(results).expect("Unable to send response about object downlod");
         });
 
         Ok((

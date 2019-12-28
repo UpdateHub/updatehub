@@ -25,10 +25,7 @@ pub fn init(verbose: usize) {
     let terminal_drain = Mutex::new(slog_term::term_full().filter_level(level)).fuse();
     let terminal_drain = slog_async::Async::new(terminal_drain).build().fuse();
 
-    let log = Logger::root(
-        slog::Duplicate::new(buffer_drain, terminal_drain).fuse(),
-        o!(),
-    );
+    let log = Logger::root(slog::Duplicate::new(buffer_drain, terminal_drain).fuse(), o!());
 
     // FIXME: Drop the use of Box::leak here (issue #23).
     let guard = slog_scope::set_global_logger(log);

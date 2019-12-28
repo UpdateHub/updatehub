@@ -16,10 +16,7 @@ impl API {
             .route("/info", web::get().to(API::info))
             .route("/log", web::get().to(API::log))
             .route("/probe", web::post().to(API::probe))
-            .route(
-                "/update/download/abort",
-                web::post().to(API::download_abort),
-            );
+            .route("/update/download/abort", web::post().to(API::download_abort));
     }
 
     fn info(agent: web::Data<API>) -> impl Responder {

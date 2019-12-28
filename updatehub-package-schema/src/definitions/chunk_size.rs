@@ -44,9 +44,7 @@ mod test {
     fn deserialize() {
         assert_eq!(
             serde_json::from_value::<Payload>(json!({ "chunk_size": 313 })).ok(),
-            Some(Payload {
-                chunk_size: ChunkSize(313)
-            })
+            Some(Payload { chunk_size: ChunkSize(313) })
         );
         assert!(serde_json::from_value::<Payload>(json!({ "chunk_size": 0 })).is_err())
     }
@@ -55,9 +53,7 @@ mod test {
     fn default() {
         assert_eq!(
             serde_json::from_value::<Payload>(json!({})).ok(),
-            Some(Payload {
-                chunk_size: ChunkSize(131_072)
-            })
+            Some(Payload { chunk_size: ChunkSize(131_072) })
         );
     }
 }

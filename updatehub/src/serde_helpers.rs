@@ -48,11 +48,7 @@ pub mod de {
         D: Deserializer<'de>,
     {
         let i = i64::deserialize(deserializer)?;
-        Ok(if i > 0 {
-            Some(Duration::seconds(i))
-        } else {
-            None
-        })
+        Ok(if i > 0 { Some(Duration::seconds(i)) } else { None })
     }
 
     pub fn bool_from_str<'de, D>(deserializer: D) -> Result<bool, D::Error>

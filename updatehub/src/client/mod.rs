@@ -42,10 +42,7 @@ impl<'a> Api<'a> {
             "application/vnd.updatehub-v1+json".parse()?,
         );
 
-        Ok(Client::builder()
-            .timeout(Duration::from_secs(10))
-            .default_headers(headers)
-            .build()?)
+        Ok(Client::builder().timeout(Duration::from_secs(10)).default_headers(headers).build()?)
     }
 
     pub fn probe(
@@ -56,10 +53,7 @@ impl<'a> Api<'a> {
         let mut response = self
             .client()?
             .post(&format!("{}/upgrades", &self.server))
-            .header(
-                HeaderName::from_static("api-retries"),
-                runtime_settings.retries(),
-            )
+            .header(HeaderName::from_static("api-retries"), runtime_settings.retries())
             .json(firmware)
             .send()?;
 
@@ -73,9 +67,7 @@ impl<'a> Api<'a> {
                     .and_then(|extra_poll| extra_poll.parse().ok())
                 {
                     Some(extra_poll) => Ok(ProbeResponse::ExtraPoll(extra_poll)),
-                    None => Ok(ProbeResponse::Update(UpdatePackage::parse(
-                        &response.text()?,
-                    )?)),
+                    None => Ok(ProbeResponse::Update(UpdatePackage::parse(&response.text()?)?)),
                 }
             }
             _ => bail!("Invalid response. Status: {}", response.status()),
@@ -106,10 +98,7 @@ impl<'a> Api<'a> {
         if file.exists() {
             client = client.header(
                 RANGE,
-                format!(
-                    "bytes={}-",
-                    file.metadata()?.len().checked_sub(1).unwrap_or(0)
-                ),
+                format!("bytes={}-", file.metadata()?.len().checked_sub(1).unwrap_or(0)),
             );
         }
 
@@ -148,19 +137,10 @@ impl<'a> Api<'a> {
             current_log: Option<String>,
         }
 
-        let payload = Payload {
-            state,
-            firmware,
-            package_uid,
-            previous_state,
-            error_message,
-            current_log,
-        };
+        let payload =
+            Payload { state, firmware, package_uid, previous_state, error_message, current_log };
 
-        self.client()?
-            .post(&format!("{}/report", &self.server))
-            .json(&payload)
-            .send()?;
+        self.client()?.post(&format!("{}/report", &self.server)).json(&payload).send()?;
         Ok(())
     }
 }

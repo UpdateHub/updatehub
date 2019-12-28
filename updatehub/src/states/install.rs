@@ -77,8 +77,7 @@ impl StateChangeImpl for State<Install> {
         //   different rule.
 
         let objs = self.0.update_package.objects_mut(installation_set);
-        objs.iter()
-            .try_for_each(object::Installer::check_requirements)?;
+        objs.iter().try_for_each(object::Installer::check_requirements)?;
         objs.iter_mut().try_for_each(object::Installer::setup)?;
         objs.iter_mut().try_for_each(|obj| {
             obj.install(&shared_state.settings.update.download_dir)?;
@@ -90,9 +89,7 @@ impl StateChangeImpl for State<Install> {
         shared_state.runtime_settings.force_poll()?;
 
         // Avoid installing same package twice.
-        shared_state
-            .runtime_settings
-            .set_applied_package_uid(&package_uid)?;
+        shared_state.runtime_settings.set_applied_package_uid(&package_uid)?;
 
         // Swap installation set so it is used next device boot.
         installation_set::swap_active()?;
@@ -102,10 +99,7 @@ impl StateChangeImpl for State<Install> {
         let buffer = crate::logger::buffer();
         buffer.lock().unwrap().stop_logging();
         buffer.lock().unwrap().clear();
-        Ok((
-            StateMachine::Reboot(self.into()),
-            actor::StepTransition::Immediate,
-        ))
+        Ok((StateMachine::Reboot(self.into()), actor::StepTransition::Immediate))
     }
 }
 
@@ -138,27 +132,15 @@ mod test {
 
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let shared_state = SharedState {
-            settings,
-            runtime_settings,
-            firmware,
-        };
+        let shared_state = SharedState { settings, runtime_settings, firmware };
 
-        (
-            State(Install {
-                update_package: get_update_package(),
-            }),
-            shared_state,
-        )
+        (State(Install { update_package: get_update_package() }), shared_state)
     }
 
     #[test]
     fn has_package_uid_if_succeed() {
         let (state, mut shared_state) = fake_install_state();
-        let machine = StateMachine::Install(state)
-            .move_to_next_state(&mut shared_state)
-            .unwrap()
-            .0;
+        let machine = StateMachine::Install(state).move_to_next_state(&mut shared_state).unwrap().0;
 
         match machine {
             StateMachine::Reboot(_) => assert_eq!(
@@ -172,10 +154,7 @@ mod test {
     #[test]
     fn polling_now_if_succeed() {
         let (state, mut shared_state) = fake_install_state();
-        let machine = StateMachine::Install(state)
-            .move_to_next_state(&mut shared_state)
-            .unwrap()
-            .0;
+        let machine = StateMachine::Install(state).move_to_next_state(&mut shared_state).unwrap().0;
 
         match machine {
             StateMachine::Reboot(_) => {

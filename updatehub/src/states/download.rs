@@ -60,10 +60,7 @@ impl StateChangeImpl for State<Download> {
         match self.0.download_chan.try_recv() {
             Ok(vec) => vec.into_iter().try_for_each(|res| res)?,
             Err(mpsc::TryRecvError::Empty) => {
-                return Ok((
-                    StateMachine::Download(self),
-                    actor::StepTransition::Immediate,
-                ))
+                return Ok((StateMachine::Download(self), actor::StepTransition::Immediate));
             }
             Err(e) => return Err(format_err!("Failed to read from channel: {:?}", e)),
         }
@@ -76,10 +73,7 @@ impl StateChangeImpl for State<Download> {
             .iter()
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
-            Ok((
-                StateMachine::Install(self.into()),
-                actor::StepTransition::Immediate,
-            ))
+            Ok((StateMachine::Install(self.into()), actor::StepTransition::Immediate))
         } else {
             Err(format_err!("Not all objects are ready for use"))
         }
@@ -124,14 +118,8 @@ mod test {
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
 
         (
-            State(PrepareDownload {
-                update_package: get_update_package_with_shasum(shasum),
-            }),
-            SharedState {
-                settings,
-                runtime_settings,
-                firmware,
-            },
+            State(PrepareDownload { update_package: get_update_package_with_shasum(shasum) }),
+            SharedState { settings, runtime_settings, firmware },
         )
     }
 

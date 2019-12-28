@@ -53,11 +53,7 @@ pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf, failure
             re.captures(&line).and_then(|re_match| {
                 let re_dev = re_match.name("dev").unwrap().as_str();
                 let re_name = re_match.name("name").unwrap().as_str();
-                if re_name == name {
-                    Some(PathBuf::from(format!("/dev/{}", re_dev)))
-                } else {
-                    None
-                }
+                if re_name == name { Some(PathBuf::from(format!("/dev/{}", re_dev))) } else { None }
             })
         })
         .ok_or_else(|| format_err!("Unable to find match for mtd device: {}", name))
@@ -152,21 +148,10 @@ pub(crate) mod tests {
 
             // FakeMtd created here so if any subsequent command fails the drop will still
             // be called to cleanup mtd devices
-            let mut mtd = FakeMtd {
-                devices: vec![],
-                kind,
-            };
+            let mut mtd = FakeMtd { devices: vec![], kind };
             names.iter().enumerate().try_for_each(|(i, name)| {
-                easy_process::run(&format!(
-                    "mtdpart add /dev/mtd0 {} {} {}",
-                    name,
-                    i * 100,
-                    100
-                ))
-                .map(|_| {
-                    mtd.devices
-                        .push(PathBuf::from(format!("/dev/mtd{}", i + 1)))
-                })
+                easy_process::run(&format!("mtdpart add /dev/mtd0 {} {} {}", name, i * 100, 100))
+                    .map(|_| mtd.devices.push(PathBuf::from(format!("/dev/mtd{}", i + 1))))
             })?;
 
             Ok(mtd)

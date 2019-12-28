@@ -36,11 +36,7 @@ impl Installer for objects::Ubifs {
         if self.compressed {
             unimplemented!("FIXME: handle compressed installation");
         } else {
-            easy_process::run(&format!(
-                "ubiupdatevol {} {}",
-                target.display(),
-                source.display()
-            ))?;
+            easy_process::run(&format!("ubiupdatevol {} {}", target.display(), source.display()))?;
         }
 
         Ok(())

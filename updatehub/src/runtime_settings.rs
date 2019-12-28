@@ -36,10 +36,7 @@ impl RuntimeSettings {
         let path = Path::new(path);
 
         if path.exists() {
-            debug!(
-                "Loading runtime settings from '{}'...",
-                path.to_string_lossy()
-            );
+            debug!("Loading runtime settings from '{}'...", path.to_string_lossy());
 
             let mut content = String::new();
             File::open(path)?.read_to_string(&mut content)?;
@@ -226,10 +223,7 @@ struct RuntimeUpdate {
 
 impl Default for RuntimeUpdate {
     fn default() -> Self {
-        Self {
-            upgrading_to: -1,
-            applied_package_uid: None,
-        }
+        Self { upgrading_to: -1, applied_package_uid: None }
     }
 }
 
@@ -254,18 +248,12 @@ UpgradeToInstallation=1
             now: false,
             server_address: ServerAddress::Default,
         },
-        update: RuntimeUpdate {
-            upgrading_to: 1,
-            applied_package_uid: None,
-        },
+        update: RuntimeUpdate { upgrading_to: 1, applied_package_uid: None },
         ..Default::default()
     };
 
     assert_eq!(
-        serde_ini::from_str::<RuntimeSettings>(ini)
-            .map_err(|e| println!("{}", e))
-            .as_ref()
-            .ok(),
+        serde_ini::from_str::<RuntimeSettings>(ini).map_err(|e| println!("{}", e)).as_ref().ok(),
         Some(&expected)
     );
     assert_eq!(RuntimeSettings::parse(ini).as_ref().ok(), Some(&expected));
@@ -283,10 +271,7 @@ fn default() {
             now: false,
             server_address: ServerAddress::Default,
         },
-        update: RuntimeUpdate {
-            upgrading_to: -1,
-            applied_package_uid: None,
-        },
+        update: RuntimeUpdate { upgrading_to: -1, applied_package_uid: None },
         path: PathBuf::new(),
         persistent: false,
     };
@@ -312,10 +297,7 @@ fn ser() {
         ..Default::default()
     };
 
-    assert_eq!(
-        serde_ini::from_str(&settings.serialize().unwrap()).ok(),
-        Some(settings)
-    );
+    assert_eq!(serde_ini::from_str(&settings.serialize().unwrap()).ok(), Some(settings));
 }
 
 #[test]
@@ -328,21 +310,15 @@ fn load_and_save() {
     let settings_file = tempfile.path();
     fs::remove_file(&settings_file).unwrap();
 
-    let mut settings = RuntimeSettings::new()
-        .load(settings_file.to_str().unwrap())
-        .unwrap();
+    let mut settings = RuntimeSettings::new().load(settings_file.to_str().unwrap()).unwrap();
 
     assert_eq!(settings.polling.now, false);
     settings.polling.now = true;
 
     assert_eq!(settings.polling.now, true);
-    settings
-        .save()
-        .expect("Failed to save the runtime settings");
+    settings.save().expect("Failed to save the runtime settings");
 
-    let new_settings = RuntimeSettings::new()
-        .load(settings_file.to_str().unwrap())
-        .unwrap();
+    let new_settings = RuntimeSettings::new().load(settings_file.to_str().unwrap()).unwrap();
 
     assert_eq!(settings.update, new_settings.update);
 }

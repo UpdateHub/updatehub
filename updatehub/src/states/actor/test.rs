@@ -67,9 +67,7 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
         Probe::Enabled => true,
         Probe::Disabled => false,
     };
-    let runtime_settings = RuntimeSettings::new()
-        .load(tmpfile.to_str().unwrap())
-        .unwrap();
+    let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
     let firmware = Metadata::from_path(&create_fake_metadata(match kind {
         Setup::HasUpdate => FakeDevice::HasUpdate,
         Setup::NoUpdate => FakeDevice::NoUpdate,
@@ -133,23 +131,17 @@ fn step_sequence() {
             })
             .and_then(|addr| {
                 let f1 = addr.send(Step);
-                let f2 = addr
-                    .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "poll"));
+                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "poll"));
                 f1.then(|_| f2).then(|_| future::ok(addr))
             })
             .and_then(|addr| {
                 let f1 = addr.send(Step);
-                let f2 = addr
-                    .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "probe"));
+                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "probe"));
                 f1.then(|_| f2).then(|_| future::ok(addr))
             })
             .and_then(|addr| {
                 let f1 = addr.send(Step);
-                let f2 = addr
-                    .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "idle"));
+                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "idle"));
                 f1.then(|_| f2).then(|_| future::ok(addr))
             })
             .then(move |_| {
@@ -173,19 +165,13 @@ fn download_abort() {
                 let f1 = addr.send(Step);
                 let f2 = addr.send(Step);
                 let f3 = addr.send(Step);
-                let f4 = addr
-                    .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "prepare_download"));
-                f1.then(|_| f2)
-                    .then(|_| f3)
-                    .then(|_| f4)
-                    .then(|_| future::ok(addr))
+                let f4 =
+                    addr.send(info::Request).map(|res| assert_eq!(res.state, "prepare_download"));
+                f1.then(|_| f2).then(|_| f3).then(|_| f4).then(|_| future::ok(addr))
             })
             .and_then(|addr| {
                 let f1 = addr.send(download_abort::Request);
-                let f2 = addr
-                    .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "idle"));
+                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "idle"));
                 f1.then(|_| f2).then(|_| future::ok(addr))
             })
             .then(move |_| {
@@ -207,16 +193,12 @@ fn trigger_probe() {
         future::ok::<_, failure::Error>(addr)
             .and_then(|addr| {
                 let f1 = addr.send(Step);
-                let f2 = addr
-                    .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "park"));
+                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "park"));
                 f1.then(|_| f2).then(|_| future::ok(addr))
             })
             .and_then(|addr| {
                 let f1 = addr.send(probe::Request(None));
-                let f2 = addr
-                    .send(info::Request)
-                    .map(|res| assert_eq!(res.state, "probe"));
+                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "probe"));
                 f1.then(|_| f2).then(|_| future::ok(addr))
             })
             .then(move |_| {
@@ -232,10 +214,7 @@ fn trigger_probe() {
 fn stepper_with_never() {
     let system = System::new("test");
 
-    let mock = actix::Actor::start(FakeMachine {
-        step_expect: 15,
-        ..FakeMachine::default()
-    });
+    let mock = actix::Actor::start(FakeMachine { step_expect: 15, ..FakeMachine::default() });
     let mut stepper = super::stepper::Controller::default();
 
     stepper.start(mock);

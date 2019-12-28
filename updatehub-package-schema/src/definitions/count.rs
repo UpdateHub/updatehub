@@ -65,9 +65,7 @@ mod test {
     fn deserialize() {
         assert_eq!(
             serde_json::from_value::<Payload>(json!({ "count": 0 })).unwrap(),
-            Payload {
-                count: Count::Limited(0)
-            }
+            Payload { count: Count::Limited(0) }
         );
     }
 

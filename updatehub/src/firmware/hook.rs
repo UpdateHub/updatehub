@@ -20,11 +20,7 @@ pub(crate) fn run_hook(path: &Path) -> Result<String, failure::Error> {
 
 pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, failure::Error> {
     let mut outputs: Vec<String> = Vec::new();
-    for entry in WalkDir::new(path)
-        .follow_links(true)
-        .min_depth(1)
-        .max_depth(1)
-    {
+    for entry in WalkDir::new(path).follow_links(true).min_depth(1).max_depth(1) {
         outputs.push(run_hook(entry?.path())?);
     }
 
@@ -34,10 +30,7 @@ pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue, failure::
 pub(crate) fn run_script(cmd: &str) -> Result<String, failure::Error> {
     let output = easy_process::run(cmd).context(format!("Running {:?}", cmd))?;
     if !output.stderr.is_empty() {
-        output
-            .stderr
-            .lines()
-            .for_each(|err| error!("{} (stderr): {}", cmd, err))
+        output.stderr.lines().for_each(|err| error!("{} (stderr): {}", cmd, err))
     }
 
     Ok(output.stdout.trim().into())

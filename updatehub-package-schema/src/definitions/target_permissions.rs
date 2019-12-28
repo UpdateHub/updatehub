@@ -40,8 +40,7 @@ where
     D: Deserializer<'de>,
 {
     Option::<String>::deserialize(deserializer).and_then(|opt| {
-        opt.map(|s| u32::from_str_radix(&s, 8).map_err(de::Error::custom))
-            .transpose()
+        opt.map(|s| u32::from_str_radix(&s, 8).map_err(de::Error::custom)).transpose()
     })
 }
 

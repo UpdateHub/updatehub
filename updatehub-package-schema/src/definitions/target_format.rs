@@ -19,10 +19,7 @@ fn deserialize() {
     use serde_json::json;
 
     assert_eq!(
-        TargetFormat {
-            should_format: true,
-            format_options: Some("-fs ext2".to_string()),
-        },
+        TargetFormat { should_format: true, format_options: Some("-fs ext2".to_string()) },
         serde_json::from_value::<TargetFormat>(json!({
             "format?": true,
             "format-options": "-fs ext2"
@@ -31,10 +28,7 @@ fn deserialize() {
     );
 
     assert_eq!(
-        TargetFormat {
-            should_format: false,
-            format_options: None,
-        },
+        TargetFormat { should_format: false, format_options: None },
         serde_json::from_value::<TargetFormat>(json!({
             "format?": false,
         }))
@@ -47,10 +41,7 @@ fn default() {
     use pretty_assertions::assert_eq;
 
     assert_eq!(
-        TargetFormat {
-            should_format: false,
-            format_options: None,
-        },
+        TargetFormat { should_format: false, format_options: None },
         TargetFormat::default(),
     );
 }

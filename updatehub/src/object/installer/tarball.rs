@@ -32,10 +32,7 @@ impl Installer for objects::Tarball {
         let mount_options = &self.mount_options;
         let format_options = &self.target_format.format_options;
         let sha256sum = self.sha256sum();
-        let target_path = self
-            .target_path
-            .strip_prefix("/")
-            .unwrap_or(&self.target_path);
+        let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
         let source = download_dir.join(sha256sum);
 
         if self.target_format.should_format {
@@ -121,26 +118,21 @@ mod tests {
         obj.install(&PathBuf::from("test/fixtures"))?;
 
         // Validade File
-        utils::fs::mount_map(
-            &device,
-            obj.filesystem,
-            &obj.mount_options.clone(),
-            |path| {
-                let assert_metadata = |p: &Path| -> Result<(), failure::Error> {
-                    let metadata = p.metadata()?;
-                    assert_eq!(metadata.mode() % 0o1000, 0o664);
-                    assert_eq!(metadata.uid(), 1000);
-                    assert_eq!(metadata.gid(), 1000);
-
-                    Ok(())
-                };
-                let dest = path.join(&obj.target_path.strip_prefix("/")?);
-                assert_metadata(&dest.join("tree/branch1/leaf"))?;
-                assert_metadata(&dest.join("tree/branch2/leaf"))?;
+        utils::fs::mount_map(&device, obj.filesystem, &obj.mount_options.clone(), |path| {
+            let assert_metadata = |p: &Path| -> Result<(), failure::Error> {
+                let metadata = p.metadata()?;
+                assert_eq!(metadata.mode() % 0o1000, 0o664);
+                assert_eq!(metadata.uid(), 1000);
+                assert_eq!(metadata.gid(), 1000);
 
                 Ok(())
-            },
-        )?;
+            };
+            let dest = path.join(&obj.target_path.strip_prefix("/")?);
+            assert_metadata(&dest.join("tree/branch1/leaf"))?;
+            assert_metadata(&dest.join("tree/branch2/leaf"))?;
+
+            Ok(())
+        })?;
 
         loopdev.detach()?;
 
