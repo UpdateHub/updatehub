@@ -22,7 +22,7 @@ futures = "0.1"
 hex = "0.4"
 infer = "0.1"
 lazy_static = "1"
-nix = "0.15"
+nix = "0.16"
 parse_duration = "2"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
@@ -47,6 +47,6 @@ git-version = "0.3"
 
 [dev-dependencies]
 loopdev = "0.2"
-mockito = "0.21"
+mockito = "0.22"
 pretty_assertions = "0.6"
 tempfile = "3"
