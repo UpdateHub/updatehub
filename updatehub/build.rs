@@ -5,7 +5,7 @@
 use git_version::git_version;
 
 fn main() {
-    println!("cargo:rustc-env={}={}", "VERSION", git_version!());
+    println!("cargo:rustc-env=VERSION={}", git_version!());
 
     // Run in single thread due the active/inactive tests not
     // supporting to run in parallel for now.
