@@ -21,6 +21,7 @@ pub(super) struct PrepareDownload {
     pub(super) update_package: UpdatePackage,
 }
 
+#[async_trait::async_trait]
 impl StateChangeImpl for State<PrepareDownload> {
     fn name(&self) -> &'static str {
         "prepare_download"
@@ -30,7 +31,7 @@ impl StateChangeImpl for State<PrepareDownload> {
         download_abort::Response::RequestAccepted
     }
 
-    fn handle(
+    async fn handle(
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -93,14 +94,14 @@ impl StateChangeImpl for State<PrepareDownload> {
         let (sndr, recv) = mpsc::channel();
 
         // Download the missing or incomplete objects
-        std::thread::spawn(move || {
+        actix::Arbiter::spawn(async move {
             let api = Api::new(&server);
-            let results = shasum_list
-                .into_iter()
-                .map(|shasum| {
-                    api.download_object(&product_uid, &package_uid, &download_dir, &shasum)
-                })
-                .collect();
+            let mut results = Vec::default();
+            for shasum in shasum_list.iter() {
+                results.push(
+                    api.download_object(&product_uid, &package_uid, &download_dir, &shasum).await,
+                );
+            }
             sndr.send(results).expect("Unable to send response about object downlod");
         });
 

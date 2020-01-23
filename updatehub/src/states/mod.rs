@@ -21,14 +21,16 @@ use self::{
     prepare_download::PrepareDownload, probe::Probe, reboot::Reboot,
 };
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
-use actix::System;
+use async_trait::async_trait;
 use slog_scope::info;
 
+#[async_trait]
 trait StateChangeImpl {
-    fn handle(
+    async fn handle(
         self,
         shared_state: &mut actor::SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error>;
+
     fn name(&self) -> &'static str;
 
     fn handle_download_abort(&self) -> actor::download_abort::Response {
@@ -70,7 +72,7 @@ impl<S> State<S>
 where
     State<S>: TransitionCallback + ProgressReporter,
 {
-    fn handle_with_callback_and_report_progress(
+    async fn handle_with_callback_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -80,7 +82,7 @@ where
             state_change_callback(&shared_state.settings.firmware.metadata_path, self.name())?;
 
         match transition {
-            Transition::Continue => Ok(self.handle_and_report_progress(shared_state)?),
+            Transition::Continue => Ok(self.handle_and_report_progress(shared_state).await?),
             Transition::Cancel => {
                 Ok((StateMachine::Idle(self.into()), actor::StepTransition::Immediate))
             }
@@ -92,7 +94,7 @@ impl<S> State<S>
 where
     State<S>: ProgressReporter,
 {
-    fn handle_and_report_progress(
+    async fn handle_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -101,33 +103,29 @@ where
         let package_uid = &self.package_uid();
         let enter_state = self.report_enter_state_name();
         let leave_state = self.report_leave_state_name();
+        let api = crate::client::Api::new(&server);
 
         let report = |state, previous_state, error_message, current_log| {
-            crate::client::Api::new(&server).report(
-                state,
-                firmware,
-                package_uid,
-                previous_state,
-                error_message,
-                current_log,
-            )
+            api.report(state, firmware, package_uid, previous_state, error_message, current_log)
         };
 
-        report(enter_state, None, None, None)?;
-        self.handle(shared_state)
-            .and_then(|(state, trans)| {
-                report(leave_state, None, None, None)?;
+        report(enter_state, None, None, None).await?;
+        match self.handle(shared_state).await {
+            Ok((state, trans)) => {
+                report(leave_state, None, None, None).await?;
                 Ok((state, trans))
-            })
-            .or_else(|e| {
+            }
+            Err(e) => {
                 report(
                     "error",
                     Some(enter_state),
                     Some(e.to_string()),
                     Some(crate::logger::buffer().lock().unwrap().to_string()),
-                )?;
+                )
+                .await?;
                 Err(e)
-            })
+            }
+        }
     }
 }
 
@@ -136,20 +134,26 @@ impl StateMachine {
         StateMachine::Idle(State(Idle {}))
     }
 
-    fn move_to_next_state(
+    async fn move_to_next_state(
         self,
         shared_state: &mut actor::SharedState,
     ) -> Result<(Self, actor::StepTransition), failure::Error> {
         match self {
-            StateMachine::Error(s) => s.handle(shared_state),
-            StateMachine::Park(s) => s.handle(shared_state),
-            StateMachine::Idle(s) => s.handle(shared_state),
-            StateMachine::Poll(s) => s.handle(shared_state),
-            StateMachine::Probe(s) => s.handle(shared_state),
-            StateMachine::PrepareDownload(s) => s.handle(shared_state),
-            StateMachine::Download(s) => s.handle_with_callback_and_report_progress(shared_state),
-            StateMachine::Install(s) => s.handle_with_callback_and_report_progress(shared_state),
-            StateMachine::Reboot(s) => s.handle_with_callback_and_report_progress(shared_state),
+            StateMachine::Error(s) => s.handle(shared_state).await,
+            StateMachine::Park(s) => s.handle(shared_state).await,
+            StateMachine::Idle(s) => s.handle(shared_state).await,
+            StateMachine::Poll(s) => s.handle(shared_state).await,
+            StateMachine::Probe(s) => s.handle(shared_state).await,
+            StateMachine::PrepareDownload(s) => s.handle(shared_state).await,
+            StateMachine::Download(s) => {
+                s.handle_with_callback_and_report_progress(shared_state).await
+            }
+            StateMachine::Install(s) => {
+                s.handle_with_callback_and_report_progress(shared_state).await
+            }
+            StateMachine::Reboot(s) => {
+                s.handle_with_callback_and_report_progress(shared_state).await
+            }
         }
     }
 
@@ -194,16 +198,16 @@ impl StateMachine {
 /// # extern crate failure;
 /// # extern crate updatehub;
 /// # use failure;
-/// # fn run() -> Result<(), failure::Error> {
+/// # async fn run() -> Result<(), failure::Error> {
 /// use updatehub;
 ///
 /// updatehub::logger::init(0);
 /// let settings = updatehub::Settings::load()?;
-/// updatehub::run(settings)?;
+/// updatehub::run(settings).await?;
 /// # Ok(())
 /// # }
 /// ```
-pub fn run(settings: Settings) -> Result<(), failure::Error> {
+pub async fn run(settings: Settings) -> Result<(), failure::Error> {
     let listen_socket = settings.network.listen_socket.clone();
     let mut runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
     if !settings.storage.read_only {
@@ -211,20 +215,15 @@ pub fn run(settings: Settings) -> Result<(), failure::Error> {
     }
     let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
 
-    System::run(move || {
-        let machine_addr =
-            actor::Machine::new(StateMachine::new(), settings, runtime_settings, firmware).start();
-
-        actix_web::HttpServer::new(move || {
-            actix_web::App::new()
-                .configure(|cfg| http_api::API::configure(cfg, machine_addr.clone()))
-        })
-        .bind(listen_socket.clone())
-        .unwrap_or_else(|_| {
-            panic!("Failed to bind listen socket, {:?}, for HTTP API", listen_socket,)
-        })
-        .start();
-    })?;
+    let machine_addr =
+        actor::Machine::new(StateMachine::new(), settings, runtime_settings, firmware).start();
+    actix_web::HttpServer::new(move || {
+        actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, machine_addr.clone()))
+    })
+    .bind(listen_socket.clone())
+    .unwrap_or_else(|_| panic!("Failed to bind listen socket, {:?}, for HTTP API", listen_socket,))
+    .run()
+    .await?;
 
     info!("actix System has stopped");
     Ok(())

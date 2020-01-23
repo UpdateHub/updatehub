@@ -56,12 +56,13 @@ pub(crate) trait ObjectInstaller {
     fn install(&self, download_dir: std::path::PathBuf) -> Result<(), failure::Error>;
 }
 
+#[async_trait::async_trait]
 impl StateChangeImpl for State<Install> {
     fn name(&self) -> &'static str {
         "install"
     }
 
-    fn handle(
+    async fn handle(
         mut self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -137,10 +138,11 @@ mod test {
         (State(Install { update_package: get_update_package() }), shared_state)
     }
 
-    #[test]
-    fn has_package_uid_if_succeed() {
+    #[actix_rt::test]
+    async fn has_package_uid_if_succeed() {
         let (state, mut shared_state) = fake_install_state();
-        let machine = StateMachine::Install(state).move_to_next_state(&mut shared_state).unwrap().0;
+        let machine =
+            StateMachine::Install(state).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         match machine {
             StateMachine::Reboot(_) => assert_eq!(
@@ -151,10 +153,11 @@ mod test {
         }
     }
 
-    #[test]
-    fn polling_now_if_succeed() {
+    #[actix_rt::test]
+    async fn polling_now_if_succeed() {
         let (state, mut shared_state) = fake_install_state();
-        let machine = StateMachine::Install(state).move_to_next_state(&mut shared_state).unwrap().0;
+        let machine =
+            StateMachine::Install(state).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         match machine {
             StateMachine::Reboot(_) => {

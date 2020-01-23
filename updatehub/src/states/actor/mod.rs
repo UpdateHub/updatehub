@@ -12,7 +12,7 @@ pub(crate) mod probe;
 pub(crate) mod stepper;
 
 use super::{Idle, Metadata, Probe, RuntimeSettings, Settings, State, StateMachine};
-use actix::{Actor, Addr, Arbiter, AsyncContext, Context, Handler, Message, MessageResult};
+use actix::{Actor, Addr, Arbiter, AsyncContext, Context, Handler, Message, ResponseFuture};
 use slog_scope::info;
 
 pub(crate) struct Machine {
@@ -70,6 +70,8 @@ impl Machine {
     }
 }
 
+#[derive(Message)]
+#[rtype(StepTransition)]
 struct Step;
 
 pub(crate) enum StepTransition {
@@ -78,21 +80,24 @@ pub(crate) enum StepTransition {
     Never,
 }
 
-impl Message for Step {
-    type Result = StepTransition;
-}
-
 impl Handler<Step> for Machine {
-    type Result = MessageResult<Step>;
+    type Result = ResponseFuture<StepTransition>;
 
     fn handle(&mut self, _: Step, _: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = self.state.take() {
-            let (state, transition) = machine
-                .move_to_next_state(&mut self.shared_state)
-                .unwrap_or_else(|e| (StateMachine::from(e), StepTransition::Immediate));
-            self.state = Some(state);
+            let this: *mut Self = self;
 
-            return MessageResult(transition);
+            return Box::pin(async move {
+                unsafe {
+                    let (state, transition) = machine
+                        .move_to_next_state(&mut (*this).shared_state)
+                        .await
+                        .unwrap_or_else(|e| (StateMachine::from(e), StepTransition::Immediate));
+                    (*this).state = Some(state);
+
+                    transition
+                }
+            });
         }
 
         unreachable!("Failed to take StateMachine from StateAgent")

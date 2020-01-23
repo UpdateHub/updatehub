@@ -18,12 +18,13 @@ create_state_step!(Poll => Probe);
 /// Implements the state change for `State<Poll>`.
 ///
 /// This state is used to control when to go to the `State<Probe>`.
+#[async_trait::async_trait]
 impl StateChangeImpl for State<Poll> {
     fn name(&self) -> &'static str {
         "poll"
     }
 
-    fn handle(
+    async fn handle(
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -66,8 +67,8 @@ impl StateChangeImpl for State<Poll> {
     }
 }
 
-#[test]
-fn extra_poll_in_past() {
+#[actix_rt::test]
+async fn extra_poll_in_past() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
@@ -82,13 +83,13 @@ fn extra_poll_in_past() {
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
     let machine =
-        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).unwrap().0;
+        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap().0;
 
     assert_state!(machine, Probe);
 }
 
-#[test]
-fn probe_now() {
+#[actix_rt::test]
+async fn probe_now() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
@@ -103,13 +104,13 @@ fn probe_now() {
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
     let machine =
-        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).unwrap().0;
+        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap().0;
 
     assert_state!(machine, Probe);
 }
 
-#[test]
-fn last_poll_in_future() {
+#[actix_rt::test]
+async fn last_poll_in_future() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
@@ -123,13 +124,13 @@ fn last_poll_in_future() {
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
     let machine =
-        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).unwrap().0;
+        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap().0;
 
     assert_state!(machine, Probe);
 }
 
-#[test]
-fn interval_1_second() {
+#[actix_rt::test]
+async fn interval_1_second() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
@@ -144,13 +145,13 @@ fn interval_1_second() {
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
     let machine =
-        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).unwrap().0;
+        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap().0;
 
     assert_state!(machine, Probe);
 }
 
-#[test]
-fn never_polled() {
+#[actix_rt::test]
+async fn never_polled() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
@@ -163,7 +164,7 @@ fn never_polled() {
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
     let machine =
-        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).unwrap().0;
+        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap().0;
 
     assert_state!(machine, Probe);
 }

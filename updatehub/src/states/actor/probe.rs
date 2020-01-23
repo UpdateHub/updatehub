@@ -5,14 +5,13 @@
 use super::{Probe, State, StateMachine};
 use actix::{AsyncContext, Context, Handler, Message, MessageResult};
 
+#[derive(Message)]
+#[rtype(Response)]
 pub(crate) struct Request(pub(crate) Option<String>);
+
 pub(crate) enum Response {
     RequestAccepted(String),
     InvalidState(String),
-}
-
-impl Message for Request {
-    type Result = Response;
 }
 
 impl Handler<Request> for super::Machine {

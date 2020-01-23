@@ -12,8 +12,7 @@ use crate::{
     runtime_settings::RuntimeSettings,
     settings::Settings,
 };
-use actix::{Addr, Arbiter, System};
-use futures::future::{self, Future};
+use actix::{Addr, MessageResult, System};
 use pretty_assertions::assert_eq;
 use std::fs;
 
@@ -82,8 +81,8 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
     });
 
     (
-        // We use the actix::Actor::start here instead of the Machine::start in order to not start
-        // the stepper and thus have control of how many steps are been sent to the Machine
+        // We use the actix::Actor::start here instead of the Machine::start in order to not
+        // start the stepper and thus have control of how many steps are been sent to the Machine
         actix::Actor::start(Machine::new(
             StateMachine::Idle(State(Idle {})),
             settings,
@@ -96,128 +95,68 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
     )
 }
 
-#[test]
-fn info_request() {
-    let system = System::new("test");
-
+#[actix_rt::test]
+async fn info_request() {
     let (addr, _, settings, firmware) = setup_actor(Setup::NoUpdate, Probe::Enabled);
-    Arbiter::spawn(
-        addr.send(info::Request)
-            .map(move |response| {
-                assert_eq!(response.state, "idle");
-                assert_eq!(response.version, crate::version().to_string());
-                assert_eq!(response.config, settings);
-                assert_eq!(response.firmware, firmware);
-            })
-            .then(|_| {
-                System::current().stop();
-                future::ok(())
-            }),
-    );
-
-    system.run().unwrap();
+    let response = addr.send(info::Request).await.unwrap();
+    assert_eq!(response.state, "idle");
+    assert_eq!(response.version, crate::version().to_string());
+    assert_eq!(response.config, settings);
+    assert_eq!(response.firmware, firmware);
 }
 
-#[test]
-fn step_sequence() {
-    let system = System::new("test");
-
+#[actix_rt::test]
+async fn step_sequence() {
     let (addr, mock, ..) = setup_actor(Setup::NoUpdate, Probe::Enabled);
-    Arbiter::spawn(
-        addr.send(info::Request)
-            .map(move |response| {
-                assert_eq!(response.state, "idle");
-                addr
-            })
-            .and_then(|addr| {
-                let f1 = addr.send(Step);
-                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "poll"));
-                f1.then(|_| f2).then(|_| future::ok(addr))
-            })
-            .and_then(|addr| {
-                let f1 = addr.send(Step);
-                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "probe"));
-                f1.then(|_| f2).then(|_| future::ok(addr))
-            })
-            .and_then(|addr| {
-                let f1 = addr.send(Step);
-                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "idle"));
-                f1.then(|_| f2).then(|_| future::ok(addr))
-            })
-            .then(move |_| {
-                mock.assert();
-                System::current().stop();
-                future::ok(())
-            }),
-    );
+    let response = addr.send(info::Request).await.unwrap();
+    assert_eq!(response.state, "idle");
 
-    system.run().unwrap();
+    addr.send(Step).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "poll");
+
+    addr.send(Step).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "probe");
+
+    addr.send(Step).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "idle");
+
+    mock.assert();
 }
 
-#[test]
-fn download_abort() {
-    let system = System::new("test");
-
+#[actix_rt::test]
+async fn download_abort() {
     let (addr, mock, ..) = setup_actor(Setup::HasUpdate, Probe::Enabled);
-    Arbiter::spawn(
-        future::ok::<_, failure::Error>(addr)
-            .and_then(|addr| {
-                let f1 = addr.send(Step);
-                let f2 = addr.send(Step);
-                let f3 = addr.send(Step);
-                let f4 =
-                    addr.send(info::Request).map(|res| assert_eq!(res.state, "prepare_download"));
-                f1.then(|_| f2).then(|_| f3).then(|_| f4).then(|_| future::ok(addr))
-            })
-            .and_then(|addr| {
-                let f1 = addr.send(download_abort::Request);
-                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "idle"));
-                f1.then(|_| f2).then(|_| future::ok(addr))
-            })
-            .then(move |_| {
-                mock.assert();
-                System::current().stop();
-                future::ok(())
-            }),
-    );
+    addr.send(Step).await.unwrap();
+    addr.send(Step).await.unwrap();
+    addr.send(Step).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "prepare_download");
 
-    system.run().unwrap();
+    addr.send(download_abort::Request).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "idle");
+
+    mock.assert();
 }
 
-#[test]
-fn trigger_probe() {
-    let system = System::new("test");
-
+#[actix_rt::test]
+async fn trigger_probe() {
     let (addr, ..) = setup_actor(Setup::NoUpdate, Probe::Disabled);
-    Arbiter::spawn(
-        future::ok::<_, failure::Error>(addr)
-            .and_then(|addr| {
-                let f1 = addr.send(Step);
-                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "park"));
-                f1.then(|_| f2).then(|_| future::ok(addr))
-            })
-            .and_then(|addr| {
-                let f1 = addr.send(probe::Request(None));
-                let f2 = addr.send(info::Request).map(|res| assert_eq!(res.state, "probe"));
-                f1.then(|_| f2).then(|_| future::ok(addr))
-            })
-            .then(move |_| {
-                System::current().stop();
-                future::ok(())
-            }),
-    );
+    addr.send(Step).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "park");
 
-    system.run().unwrap();
+    addr.send(probe::Request(None)).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "probe");
 }
 
-#[test]
-fn stepper_with_never() {
-    let system = System::new("test");
-
+#[actix_rt::test]
+async fn stepper_with_never() {
     let mock = actix::Actor::start(FakeMachine { step_expect: 15, ..FakeMachine::default() });
     let mut stepper = super::stepper::Controller::default();
-
     stepper.start(mock);
-
-    system.run().unwrap();
 }

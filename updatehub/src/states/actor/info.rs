@@ -6,6 +6,8 @@ use crate::{firmware::Metadata, settings::Settings};
 use actix::{Context, Handler, Message, MessageResult};
 use serde::Serialize;
 
+#[derive(Message)]
+#[rtype(Response)]
 pub(crate) struct Request;
 
 #[derive(Serialize)]
@@ -15,10 +17,6 @@ pub(crate) struct Response {
     pub(crate) version: String,
     pub(crate) config: Settings,
     pub(crate) firmware: Metadata,
-}
-
-impl Message for Request {
-    type Result = Response;
 }
 
 impl Handler<Request> for super::Machine {

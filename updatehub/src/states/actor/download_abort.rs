@@ -5,14 +5,13 @@
 use super::{Idle, State, StateMachine};
 use actix::{Context, Handler, Message, MessageResult};
 
+#[derive(Message)]
+#[rtype(Response)]
 pub struct Request;
+
 pub enum Response {
     RequestAccepted,
     InvalidState,
-}
-
-impl Message for Request {
-    type Result = Response;
 }
 
 impl Handler<Request> for super::Machine {

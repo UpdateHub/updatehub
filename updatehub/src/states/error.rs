@@ -17,12 +17,13 @@ pub(super) struct Error {
     error: failure::Error,
 }
 
+#[async_trait::async_trait]
 impl StateChangeImpl for State<Error> {
     fn name(&self) -> &'static str {
         "error"
     }
 
-    fn handle(
+    async fn handle(
         self,
         _: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {

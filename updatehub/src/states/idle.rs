@@ -16,6 +16,7 @@ pub(super) struct Idle {}
 ///
 /// If polling is disabled it stays in `State<Idle>`, otherwise, it moves
 /// to `State<Poll>` state.
+#[async_trait::async_trait]
 impl StateChangeImpl for State<Idle> {
     fn name(&self) -> &'static str {
         "idle"
@@ -25,7 +26,7 @@ impl StateChangeImpl for State<Idle> {
         actor::probe::Response::RequestAccepted(self.name().to_owned())
     }
 
-    fn handle(
+    async fn handle(
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -45,8 +46,8 @@ impl StateChangeImpl for State<Idle> {
 create_state_step!(Idle => Park);
 create_state_step!(Idle => Poll);
 
-#[test]
-fn polling_disable() {
+#[actix_rt::test]
+async fn polling_disable() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
@@ -57,13 +58,13 @@ fn polling_disable() {
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
     let machine =
-        StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state).unwrap().0;
+        StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state).await.unwrap().0;
 
     assert_state!(machine, Park);
 }
 
-#[test]
-fn polling_enabled() {
+#[actix_rt::test]
+async fn polling_enabled() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
@@ -74,7 +75,7 @@ fn polling_enabled() {
     let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
     let machine =
-        StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state).unwrap().0;
+        StateMachine::Idle(State(Idle {})).move_to_next_state(&mut shared_state).await.unwrap().0;
 
     assert_state!(machine, Poll);
 }

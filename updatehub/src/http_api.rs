@@ -4,7 +4,6 @@
 
 use crate::states::actor;
 use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
-use futures::future::Future;
 use serde::Serialize;
 use serde_json::json;
 
@@ -19,20 +18,25 @@ impl API {
             .route("/update/download/abort", web::post().to(API::download_abort));
     }
 
-    fn info(agent: web::Data<API>) -> impl Responder {
-        web::Json(agent.0.send(actor::info::Request).wait().unwrap())
+    async fn info(agent: web::Data<API>) -> Result<HttpResponse, failure::Error> {
+        Ok(HttpResponse::Ok().json(agent.0.send(actor::info::Request).await?))
     }
 
-    fn probe(agent: web::Data<API>, server_address: Option<String>) -> impl Responder {
-        agent.0.send(actor::probe::Request(server_address)).wait()
+    async fn probe(
+        agent: web::Data<API>,
+        server_address: Option<String>,
+    ) -> Result<actor::probe::Response, failure::Error> {
+        Ok(agent.0.send(actor::probe::Request(server_address)).await?)
     }
 
-    fn log() -> impl Responder {
-        web::Json(crate::logger::buffer())
+    async fn log() -> HttpResponse {
+        HttpResponse::Ok().json(crate::logger::buffer())
     }
 
-    fn download_abort(agent: web::Data<API>) -> impl Responder {
-        agent.0.send(actor::download_abort::Request).wait()
+    async fn download_abort(
+        agent: web::Data<API>,
+    ) -> Result<actor::download_abort::Response, failure::Error> {
+        Ok(agent.0.send(actor::download_abort::Request).await?)
     }
 }
 
