@@ -17,6 +17,7 @@ create_state_step!(Probe => Idle);
 create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
+#[async_trait::async_trait]
 impl StateChangeImpl for State<Probe> {
     fn name(&self) -> &'static str {
         "probe"
@@ -26,7 +27,7 @@ impl StateChangeImpl for State<Probe> {
         actor::probe::Response::RequestAccepted(self.name().to_owned())
     }
 
-    fn handle(
+    async fn handle(
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -34,6 +35,7 @@ impl StateChangeImpl for State<Probe> {
 
         let probe = match Api::new(&server_address)
             .probe(&shared_state.runtime_settings, &shared_state.firmware)
+            .await
         {
             Err(e) => {
                 error!("{}", e);
@@ -103,8 +105,8 @@ mod tests {
     use std::fs;
     use tempfile::NamedTempFile;
 
-    #[test]
-    fn update_not_available() {
+    #[actix_rt::test]
+    async fn update_not_available() {
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
@@ -116,16 +118,19 @@ mod tests {
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine =
-            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).unwrap().0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .await
+            .unwrap()
+            .0;
 
         mock.assert();
 
         assert_state!(machine, Idle);
     }
 
-    #[test]
-    fn update_available() {
+    #[actix_rt::test]
+    async fn update_available() {
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
@@ -137,16 +142,19 @@ mod tests {
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine =
-            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).unwrap().0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .await
+            .unwrap()
+            .0;
 
         mock.assert();
 
         assert_state!(machine, PrepareDownload);
     }
 
-    #[test]
-    fn invalid_hardware() {
+    #[actix_rt::test]
+    async fn invalid_hardware() {
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
@@ -159,15 +167,16 @@ mod tests {
             Metadata::from_path(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine = StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state);
+        let machine =
+            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).await;
 
         mock.assert();
 
         assert!(machine.is_err(), "Did not catch an incompatible hardware");
     }
 
-    #[test]
-    fn extra_poll_interval() {
+    #[actix_rt::test]
+    async fn extra_poll_interval() {
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
@@ -179,16 +188,19 @@ mod tests {
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine =
-            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).unwrap().0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .await
+            .unwrap()
+            .0;
 
         mock.assert();
 
         assert_state!(machine, Poll);
     }
 
-    #[test]
-    fn skip_same_package_uid() {
+    #[actix_rt::test]
+    async fn skip_same_package_uid() {
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
@@ -207,6 +219,7 @@ mod tests {
                 &RuntimeSettings::default(),
                 &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
             )
+            .await
             .unwrap();
 
         if let ProbeResponse::Update(u) = probe {
@@ -217,16 +230,19 @@ mod tests {
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-        let machine =
-            StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).unwrap().0;
+        let machine = StateMachine::Probe(State(Probe {}))
+            .move_to_next_state(&mut shared_state)
+            .await
+            .unwrap()
+            .0;
 
         mock.assert();
 
         assert_state!(machine, Idle);
     }
 
-    #[test]
-    fn error() {
+    #[actix_rt::test]
+    async fn error() {
         let tmpfile = NamedTempFile::new().unwrap();
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
@@ -242,9 +258,11 @@ mod tests {
 
         let machine = StateMachine::Probe(State(Probe {}))
             .move_to_next_state(&mut shared_state)
+            .await
             .unwrap()
             .0
             .move_to_next_state(&mut shared_state)
+            .await
             .unwrap()
             .0;
 

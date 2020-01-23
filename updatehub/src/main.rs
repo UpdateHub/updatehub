@@ -19,20 +19,21 @@ struct Opt {
     verbose: usize,
 }
 
-fn run() -> Result<(), failure::Error> {
+async fn run() -> Result<(), failure::Error> {
     let opt = Opt::from_args();
 
     updatehub::logger::init(opt.verbose);
     info!("Starting UpdateHub Agent {}", updatehub::version());
 
     let settings = updatehub::Settings::load()?;
-    updatehub::run(settings)?;
+    updatehub::run(settings).await?;
 
     Ok(())
 }
 
-fn main() {
-    if let Err(ref e) = run() {
+#[actix_rt::main]
+async fn main() {
+    if let Err(ref e) = run().await {
         eprintln!("{}", e);
         e.iter_causes().skip(1).for_each(|e| eprintln!(" caused by: {}\n", e));
 

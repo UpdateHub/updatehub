@@ -128,20 +128,22 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
     }
 }
 
-#[test]
-fn probe_requirements() {
+#[actix_rt::test]
+async fn probe_requirements() {
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mock = create_mock_server(FakeServer::NoUpdate);
-    let _ = Api::new(&Settings::default().network.server_address).probe(
-        &RuntimeSettings::default(),
-        &Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
-    );
+    let _ = Api::new(&Settings::default().network.server_address)
+        .probe(
+            &RuntimeSettings::default(),
+            &Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
+        )
+        .await;
     mock.assert();
 }
 
-#[test]
-fn download_object() {
+#[actix_rt::test]
+async fn download_object() {
     let metadata = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
     use pretty_assertions::assert_eq;
     use std::{fs::File, io::Read};
@@ -189,6 +191,7 @@ fn download_object() {
             &settings.update.download_dir,
             "object",
         )
+        .await
         .expect("Failed to download the object.");
 
     // Verify it has been downloaded successfully.
@@ -209,6 +212,7 @@ fn download_object() {
             &settings.update.download_dir,
             "object",
         )
+        .await
         .expect("Failed to download the object.");
 
     // Verify it has been downloaded successfully.
@@ -224,34 +228,38 @@ fn download_object() {
     tempdir.close().expect("Fail to cleanup the tempdir");
 }
 
-#[test]
-fn report_success() {
+#[actix_rt::test]
+async fn report_success() {
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mock = create_mock_server(FakeServer::ReportSuccess);
-    let _ = Api::new(&Settings::default().network.server_address).report(
-        "state",
-        &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-        "package-uid",
-        None,
-        None,
-        None,
-    );
+    let _ = Api::new(&Settings::default().network.server_address)
+        .report(
+            "state",
+            &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+            "package-uid",
+            None,
+            None,
+            None,
+        )
+        .await;
     mock.assert();
 }
 
-#[test]
-fn report_error() {
+#[actix_rt::test]
+async fn report_error() {
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
 
     let mock = create_mock_server(FakeServer::ReportError);
-    let _ = Api::new(&Settings::default().network.server_address).report(
-        "state",
-        &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
-        "package-uid",
-        Some("previous-state"),
-        Some("errorMessage".into()),
-        None,
-    );
+    let _ = Api::new(&Settings::default().network.server_address)
+        .report(
+            "state",
+            &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+            "package-uid",
+            Some("previous-state"),
+            Some("errorMessage".into()),
+            None,
+        )
+        .await;
     mock.assert();
 }

@@ -44,6 +44,7 @@ impl ProgressReporter for State<Download> {
     }
 }
 
+#[async_trait::async_trait]
 impl StateChangeImpl for State<Download> {
     fn name(&self) -> &'static str {
         "download"
@@ -53,7 +54,7 @@ impl StateChangeImpl for State<Download> {
         download_abort::Response::RequestAccepted
     }
 
-    fn handle(
+    async fn handle(
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -123,7 +124,7 @@ mod test {
         )
     }
 
-    fn test_object_download(size: usize) {
+    async fn test_object_download(size: usize) {
         let (obj, shasum) = fake_download_object(size);
         let (predownload_state, mut shared_state) = fake_download_state(&shasum);
         let tmpdir = shared_state.settings.update.download_dir.clone();
@@ -149,11 +150,12 @@ mod test {
 
         let mut machine = StateMachine::PrepareDownload(predownload_state)
             .move_to_next_state(&mut shared_state)
+            .await
             .unwrap()
             .0;
         assert_state!(machine, Download);
         loop {
-            machine = machine.move_to_next_state(&mut shared_state).unwrap().0;
+            machine = machine.move_to_next_state(&mut shared_state).await.unwrap().0;
             if let StateMachine::Install(_) = machine {
                 break;
             }
@@ -185,8 +187,8 @@ mod test {
         );
     }
 
-    #[test]
-    fn skip_download_if_ready() {
+    #[actix_rt::test]
+    async fn skip_download_if_ready() {
         use crate::update_package::tests::create_fake_object;
         let (obj, shasum) = fake_download_object(16);
         let (predownload_state, mut shared_state) = fake_download_state(&shasum);
@@ -196,10 +198,11 @@ mod test {
 
         let machine = StateMachine::PrepareDownload(predownload_state)
             .move_to_next_state(&mut shared_state)
+            .await
             .unwrap()
             .0;
         assert_state!(machine, Download);
-        let machine = machine.move_to_next_state(&mut shared_state).unwrap().0;
+        let machine = machine.move_to_next_state(&mut shared_state).await.unwrap().0;
         assert_state!(machine, Install);
 
         assert_eq!(
@@ -214,13 +217,13 @@ mod test {
         );
     }
 
-    #[test]
-    fn download_small_object() {
-        test_object_download(16)
+    #[actix_rt::test]
+    async fn download_small_object() {
+        test_object_download(16).await
     }
 
-    #[test]
-    fn download_large_object() {
-        test_object_download(100_000_000)
+    #[actix_rt::test]
+    async fn download_large_object() {
+        test_object_download(100_000_000).await
     }
 }

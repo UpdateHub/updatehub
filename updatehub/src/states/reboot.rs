@@ -34,12 +34,13 @@ impl ProgressReporter for State<Reboot> {
     }
 }
 
+#[async_trait::async_trait]
 impl StateChangeImpl for State<Reboot> {
     fn name(&self) -> &'static str {
         "reboot"
     }
 
-    fn handle(
+    async fn handle(
         self,
         _: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
@@ -95,8 +96,8 @@ mod test {
         file.set_permissions(permissions).unwrap();
     }
 
-    #[test]
-    fn runs() {
+    #[actix_rt::test]
+    async fn runs() {
         use std::env;
         use tempfile::tempdir;
 
@@ -107,7 +108,8 @@ mod test {
         env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
 
         let (state, mut shared_state) = fake_reboot_state();
-        let machine = StateMachine::Reboot(state).move_to_next_state(&mut shared_state).unwrap().0;
+        let machine =
+            StateMachine::Reboot(state).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         assert_state!(machine, Idle);
     }
