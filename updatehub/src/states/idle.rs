@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Park, Poll, State, StateChangeImpl, StateMachine,
+    Park, Poll, Result, State, StateChangeImpl, StateMachine,
 };
 use slog_scope::debug;
 
@@ -29,7 +29,7 @@ impl StateChangeImpl for State<Idle> {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         // Cleanup temporary settings from last installation
         shared_state.runtime_settings.reset_transient_settings();
 

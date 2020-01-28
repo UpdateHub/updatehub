@@ -4,7 +4,7 @@
 
 use self::hook::{run_hook, run_hooks_from_dir};
 
-use failure::Fail;
+use derive_more::{Display, From};
 use serde::Serialize;
 use std::path::Path;
 
@@ -22,14 +22,28 @@ const HARDWARE_HOOK: &str = "hardware";
 const DEVICE_IDENTITY_DIR: &str = "device-identity.d";
 const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
 
-#[derive(Fail, Debug)]
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Display, From)]
 pub enum Error {
-    #[fail(display = "Invalid product UID")]
+    #[display(fmt = "Invalid product UID")]
     InvalidProductUid,
-    #[fail(display = "Product UID is missing")]
+    #[display(fmt = "Product UID is missing")]
     MissingProductUid,
-    #[fail(display = "Device Identity is missing")]
+    #[display(fmt = "Device Identity is missing")]
     MissingDeviceIdentity,
+
+    #[display(fmt = "{} is a invalid value. The only know ones are 0 or 1", _0)]
+    #[from(ignore)]
+    InvalidInstallSet(u8),
+    #[display(fmt = "ParseInt: {}", _0)]
+    ParseInt(std::num::ParseIntError),
+    #[display(fmt = "Walkdir error: {}", _0)]
+    Walkdir(walkdir::Error),
+    #[display(fmt = "Io error: {}", _0)]
+    Io(std::io::Error),
+    #[display(fmt = "Process error: {}", _0)]
+    Process(easy_process::Error),
 }
 
 /// Metadata stores the firmware metadata information. It is
@@ -57,7 +71,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn from_path(path: &Path) -> Result<Self, failure::Error> {
+    pub fn from_path(path: &Path) -> Result<Self> {
         let product_uid_hook = path.join(PRODUCT_UID_HOOK);
         let version_hook = path.join(VERSION_HOOK);
         let hardware_hook = path.join(HARDWARE_HOOK);
@@ -73,15 +87,15 @@ impl Metadata {
         };
 
         if metadata.product_uid.is_empty() {
-            return Err(Error::MissingProductUid.into());
+            return Err(Error::MissingProductUid);
         }
 
         if metadata.product_uid.len() != 64 {
-            return Err(Error::InvalidProductUid.into());
+            return Err(Error::InvalidProductUid);
         }
 
         if metadata.device_identity.is_empty() {
-            return Err(Error::MissingDeviceIdentity.into());
+            return Err(Error::MissingDeviceIdentity);
         }
 
         Ok(metadata)

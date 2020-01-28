@@ -3,11 +3,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::states::actor;
-use actix_web::{web, Error, HttpRequest, HttpResponse, Responder};
+use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
+use derive_more::{Display, From};
 use serde::Serialize;
 use serde_json::json;
 
 pub(crate) struct API(actix::Addr<actor::Machine>);
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Display, From)]
+pub enum Error {
+    #[display(fmt = "Mailbox error: {}", _0)]
+    ActixMailbox(actix::MailboxError),
+}
 
 impl API {
     pub(crate) fn configure(cfg: &mut web::ServiceConfig, addr: actix::Addr<actor::Machine>) {
@@ -18,14 +27,14 @@ impl API {
             .route("/update/download/abort", web::post().to(API::download_abort));
     }
 
-    async fn info(agent: web::Data<API>) -> Result<HttpResponse, failure::Error> {
+    async fn info(agent: web::Data<API>) -> Result<HttpResponse> {
         Ok(HttpResponse::Ok().json(agent.0.send(actor::info::Request).await?))
     }
 
     async fn probe(
         agent: web::Data<API>,
         server_address: Option<String>,
-    ) -> Result<actor::probe::Response, failure::Error> {
+    ) -> Result<actor::probe::Response> {
         Ok(agent.0.send(actor::probe::Request(server_address)).await?)
     }
 
@@ -33,15 +42,13 @@ impl API {
         HttpResponse::Ok().json(crate::logger::buffer())
     }
 
-    async fn download_abort(
-        agent: web::Data<API>,
-    ) -> Result<actor::download_abort::Response, failure::Error> {
+    async fn download_abort(agent: web::Data<API>) -> Result<actor::download_abort::Response> {
         Ok(agent.0.send(actor::download_abort::Request).await?)
     }
 }
 
 impl Responder for actor::download_abort::Response {
-    type Error = Error;
+    type Error = actix_web::Error;
     type Future = HttpResponse;
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
@@ -59,7 +66,7 @@ impl Responder for actor::download_abort::Response {
 }
 
 impl Responder for actor::probe::Response {
-    type Error = Error;
+    type Error = actix_web::Error;
     type Future = HttpResponse;
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
@@ -78,5 +85,15 @@ impl Responder for actor::probe::Response {
                 HttpResponse::Ok().json(Payload { busy: true, state })
             }
         }
+    }
+}
+
+impl actix_web::ResponseError for Error {
+    fn status_code(&self) -> StatusCode {
+        StatusCode::INTERNAL_SERVER_ERROR
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::InternalServerError().finish()
     }
 }

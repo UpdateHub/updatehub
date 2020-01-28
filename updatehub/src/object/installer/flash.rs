@@ -2,16 +2,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
 };
-use failure::bail;
+
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
 impl Installer for objects::Flash {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> Result<()> {
         info!("'flash' handle checking requirements");
         utils::fs::is_executable_in_path("nandwrite")?;
         utils::fs::is_executable_in_path("flashcp")?;
@@ -19,13 +20,14 @@ impl Installer for objects::Flash {
 
         match self.target {
             definitions::TargetType::Device(_) | definitions::TargetType::MTDName(_) => {
-                self.target.valid().map(|_| ())
+                self.target.valid()?;
+                Ok(())
             }
-            _ => bail!("Unexpected target type, expected some device."),
+            _ => Err(Error::InvalidTargetType(self.target.clone())),
         }
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
         info!("'flash' handler Install");
 
         let target = self.target.get_target()?;

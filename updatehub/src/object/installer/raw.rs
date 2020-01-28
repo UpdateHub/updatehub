@@ -5,11 +5,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
 };
-use failure::bail;
+
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 use std::{
@@ -19,7 +20,7 @@ use std::{
 };
 
 impl Installer for objects::Raw {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> Result<()> {
         info!("'raw' handle checking requirements");
         if self.compressed {
             unimplemented!("FIXME: check the required_uncompressed_size");
@@ -29,10 +30,10 @@ impl Installer for objects::Raw {
             return Ok(());
         }
 
-        bail!("Unexpected target type, expected some device.")
+        Err(Error::InvalidTargetType(self.target_type.clone()))
     }
 
-    fn install(&self, download_dir: &Path) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &Path) -> Result<()> {
         info!("'raw' handler Install");
 
         let device = match self.target_type {
@@ -94,7 +95,7 @@ mod tests {
         seek: u64,
         count: definitions::Count,
         truncate: bool,
-    ) -> Result<(objects::Raw, PathBuf, NamedTempFile, NamedTempFile), failure::Error> {
+    ) -> std::io::Result<(objects::Raw, PathBuf, NamedTempFile, NamedTempFile)> {
         let download_dir = tempdir()?;
 
         let mut source = NamedTempFile::new_in(download_dir.path())?;

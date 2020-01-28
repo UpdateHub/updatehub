@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::Result;
 use slog_scope::error;
 use std::path::Path;
 
@@ -13,10 +14,7 @@ pub(super) enum Transition {
     Cancel,
 }
 
-pub(super) fn state_change_callback(
-    path: &Path,
-    state: &'static str,
-) -> Result<Transition, failure::Error> {
+pub(super) fn state_change_callback(path: &Path, state: &'static str) -> Result<Transition> {
     use std::io;
 
     let callback = path.join(STATE_CHANGE_CALLBACK);

@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::Result;
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
@@ -11,7 +12,7 @@ use slog_scope::info;
 use std::path::Path;
 
 impl Installer for objects::Tarball {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> Result<()> {
         info!("'tarball' handle checking requirements");
         if self.compressed {
             unimplemented!("FIXME: check the required_uncompressed_size");
@@ -20,11 +21,14 @@ impl Installer for objects::Tarball {
         match self.target {
             definitions::TargetType::Device(_)
             | definitions::TargetType::UBIVolume(_)
-            | definitions::TargetType::MTDName(_) => self.target.valid().map(|_| ()),
+            | definitions::TargetType::MTDName(_) => {
+                self.target.valid()?;
+                Ok(())
+            }
         }
     }
 
-    fn install(&self, download_dir: &Path) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &Path) -> Result<()> {
         info!("'tarball' handler Install");
 
         let device = self.target.get_target()?;
@@ -39,7 +43,7 @@ impl Installer for objects::Tarball {
             utils::fs::format(&device, filesystem, format_options)?;
         }
 
-        utils::fs::mount_map(&device, filesystem, mount_options, |path| {
+        Ok(utils::fs::mount_map(&device, filesystem, mount_options, |path| {
             let dest = path.join(target_path);
 
             compress_tools::uncompress(
@@ -47,7 +51,8 @@ impl Installer for objects::Tarball {
                 &dest,
                 utils::fs::find_compress_tarball_kind(&source)?,
             )
-        })
+            .map_err(|_| crate::utils::Error::Uncompress)
+        })?)
     }
 }
 
@@ -67,7 +72,7 @@ mod tests {
 
     const CONTENT_SIZE: usize = 10240;
 
-    fn exec_test_with_tarball<F>(mut f: F) -> Result<(), failure::Error>
+    fn exec_test_with_tarball<F>(mut f: F) -> Result<()>
     where
         F: FnMut(&mut objects::Tarball),
     {
@@ -119,7 +124,7 @@ mod tests {
 
         // Validade File
         utils::fs::mount_map(&device, obj.filesystem, &obj.mount_options.clone(), |path| {
-            let assert_metadata = |p: &Path| -> Result<(), failure::Error> {
+            let assert_metadata = |p: &Path| -> crate::utils::Result<()> {
                 let metadata = p.metadata()?;
                 assert_eq!(metadata.mode() % 0o1000, 0o664);
                 assert_eq!(metadata.uid(), 1000);

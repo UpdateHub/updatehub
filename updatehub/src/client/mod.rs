@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, update_package::UpdatePackage};
-
-use failure::bail;
+use derive_more::{Display, From};
 use reqwest::{
     header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
     Client, StatusCode,
@@ -27,12 +26,29 @@ pub(crate) enum ProbeResponse {
     ExtraPoll(i64),
 }
 
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Display, From)]
+pub enum Error {
+    #[display(fmt = "Invalid status code received: {}", _0)]
+    InvalidStatusResponse(reqwest::StatusCode),
+    #[display(fmt = "Update package error: {}", _0)]
+    UpdatePackage(crate::update_package::Error),
+
+    #[display(fmt = "Update package error: {}", _0)]
+    Io(std::io::Error),
+    #[display(fmt = "Client error: {}", _0)]
+    Client(reqwest::Error),
+    #[display(fmt = "Invalid header error: {}", _0)]
+    InvalidHeader(reqwest::header::InvalidHeaderValue),
+}
+
 impl<'a> Api<'a> {
     pub(crate) fn new(server: &'a str) -> Self {
         Self { server }
     }
 
-    fn client(&self) -> Result<Client, failure::Error> {
+    fn client(&self) -> Result<Client> {
         let mut headers = HeaderMap::new();
 
         headers.insert(USER_AGENT, "updatehub/next".parse()?);
@@ -49,7 +65,7 @@ impl<'a> Api<'a> {
         &self,
         runtime_settings: &RuntimeSettings,
         firmware: &Metadata,
-    ) -> Result<ProbeResponse, failure::Error> {
+    ) -> Result<ProbeResponse> {
         let response = self
             .client()?
             .post(&format!("{}/upgrades", &self.server))
@@ -73,7 +89,7 @@ impl<'a> Api<'a> {
                     }
                 }
             }
-            _ => bail!("Invalid response. Status: {}", response.status()),
+            s => Err(Error::InvalidStatusResponse(s)),
         }
     }
 
@@ -83,7 +99,7 @@ impl<'a> Api<'a> {
         package_uid: &str,
         download_dir: &Path,
         object: &str,
-    ) -> Result<(), failure::Error> {
+    ) -> Result<()> {
         use std::fs::create_dir_all;
         use tokio::{fs::OpenOptions, io::AsyncWriteExt};
 
@@ -113,7 +129,7 @@ impl<'a> Api<'a> {
             return Ok(());
         }
 
-        bail!("Couldn't download the object {}", object)
+        Err(Error::InvalidStatusResponse(response.status()))
     }
 
     pub async fn report(
@@ -124,7 +140,7 @@ impl<'a> Api<'a> {
         previous_state: Option<&str>,
         error_message: Option<String>,
         current_log: Option<String>,
-    ) -> Result<(), failure::Error> {
+    ) -> Result<()> {
         #[derive(Serialize)]
         #[serde(rename_all = "kebab-case")]
         struct Payload<'a> {

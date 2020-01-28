@@ -5,7 +5,7 @@
 use crate::serde_helpers::{de, ser};
 
 use chrono::{DateTime, Duration, Utc};
-use failure::{format_err, Fail};
+use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_ini;
 use slog_scope::debug;
@@ -25,12 +25,27 @@ pub(crate) struct RuntimeSettings {
     persistent: bool,
 }
 
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Display, From)]
+pub enum Error {
+    #[display(fmt = "IO error: {}", _0)]
+    Io(io::Error),
+    #[display(fmt = "Fail reading the INI file: {}", _0)]
+    IniDeserialize(serde_ini::de::Error),
+    #[display(fmt = "Fail generating the INI file: {}", _0)]
+    IniSerialize(serde_ini::ser::Error),
+
+    #[display(fmt = "Invalid runtime settings destination")]
+    InvalidDestination,
+}
+
 impl RuntimeSettings {
     pub(crate) fn new() -> Self {
         Self::default()
     }
 
-    pub(crate) fn load(mut self, path: &str) -> Result<Self, failure::Error> {
+    pub(crate) fn load(mut self, path: &str) -> Result<Self> {
         use std::{fs::File, io::Read};
 
         let path = Path::new(path);
@@ -52,11 +67,11 @@ impl RuntimeSettings {
         Ok(self)
     }
 
-    fn parse(content: &str) -> Result<Self, failure::Error> {
+    fn parse(content: &str) -> Result<Self> {
         Ok(serde_ini::from_str::<Self>(content)?)
     }
 
-    fn save(&self) -> Result<(), failure::Error> {
+    fn save(&self) -> Result<()> {
         use std::{
             fs::{self, File},
             io::Write,
@@ -67,17 +82,14 @@ impl RuntimeSettings {
             return Ok(());
         }
 
-        self.path
-            .parent()
-            .ok_or_else(|| format_err!("Invalid runtime settings destination"))
-            .and_then(|p| {
-                if !p.exists() {
-                    debug!("Creating runtime settings to store state.");
-                    fs::create_dir_all(p)?;
-                }
+        self.path.parent().ok_or_else(|| Error::InvalidDestination).and_then(|p| {
+            if !p.exists() {
+                debug!("Creating runtime settings to store state.");
+                fs::create_dir_all(p)?;
+            }
 
-                Ok(())
-            })?;
+            Ok(())
+        })?;
 
         debug!("Saving runtime settings from '{}'...", &self.path.display());
         File::create(&self.path)?.write_all(self.serialize()?.as_bytes())?;
@@ -85,7 +97,7 @@ impl RuntimeSettings {
         Ok(())
     }
 
-    fn serialize(&self) -> Result<String, failure::Error> {
+    fn serialize(&self) -> Result<String> {
         Ok(serde_ini::to_string(&self)?)
     }
 
@@ -97,7 +109,7 @@ impl RuntimeSettings {
         self.polling.now
     }
 
-    pub(crate) fn force_poll(&mut self) -> Result<(), failure::Error> {
+    pub(crate) fn force_poll(&mut self) -> Result<()> {
         self.polling.now = true;
         self.save()
     }
@@ -118,10 +130,7 @@ impl RuntimeSettings {
         self.polling.extra_interval
     }
 
-    pub(crate) fn set_polling_extra_interval(
-        &mut self,
-        extra_interval: Duration,
-    ) -> Result<(), failure::Error> {
+    pub(crate) fn set_polling_extra_interval(&mut self, extra_interval: Duration) -> Result<()> {
         self.polling.extra_interval = Some(extra_interval);
         self.save()
     }
@@ -130,10 +139,7 @@ impl RuntimeSettings {
         self.polling.last
     }
 
-    pub(crate) fn set_last_polling(
-        &mut self,
-        last_polling: DateTime<Utc>,
-    ) -> Result<(), failure::Error> {
+    pub(crate) fn set_last_polling(&mut self, last_polling: DateTime<Utc>) -> Result<()> {
         self.polling.last = Some(last_polling);
         self.save()
     }
@@ -142,10 +148,7 @@ impl RuntimeSettings {
         self.update.applied_package_uid.clone()
     }
 
-    pub(crate) fn set_applied_package_uid(
-        &mut self,
-        applied_package_uid: &str,
-    ) -> Result<(), failure::Error> {
+    pub(crate) fn set_applied_package_uid(&mut self, applied_package_uid: &str) -> Result<()> {
         self.update.applied_package_uid = Some(applied_package_uid.to_string());
         self.save()
     }
@@ -167,19 +170,6 @@ impl RuntimeSettings {
         // requested
         self.polling.server_address = ServerAddress::default();
     }
-}
-
-#[derive(Debug, Fail)]
-pub(crate) enum Error {
-    #[cause]
-    #[fail(display = "IO error")]
-    Io(io::Error),
-    #[cause]
-    #[fail(display = "Fail reading the INI file")]
-    IniDeserialize(serde_ini::de::Error),
-    #[cause]
-    #[fail(display = "Fail generating the INI file")]
-    IniSerialize(serde_ini::ser::Error),
 }
 
 #[derive(Debug, Default, Deserialize, PartialEq, Serialize)]

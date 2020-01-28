@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
 };
-use failure::bail;
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 use std::{
@@ -17,7 +17,7 @@ use std::{
 };
 
 impl Installer for objects::Copy {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> Result<()> {
         info!("'copy' handle checking requirements");
         if self.compressed {
             unimplemented!("FIXME: check the required_uncompressed_size");
@@ -27,10 +27,10 @@ impl Installer for objects::Copy {
             return Ok(());
         }
 
-        bail!("Unexpected target type, expected some device.")
+        Err(Error::InvalidTargetType(self.target_type.clone()))
     }
 
-    fn install(&self, download_dir: &Path) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &Path) -> Result<()> {
         info!("'copy' handler Install");
 
         let device = self.target_type.get_target()?;
@@ -83,6 +83,7 @@ impl Installer for objects::Copy {
 
             Ok(())
         })
+        .map_err(Error::from)
     }
 }
 
@@ -105,7 +106,7 @@ mod tests {
     fn exec_test_with_copy<F>(
         mut f: F,
         original_permissions: Option<definitions::TargetPermissions>,
-    ) -> Result<(), failure::Error>
+    ) -> Result<()>
     where
         F: FnMut(&mut objects::Copy),
     {

@@ -2,24 +2,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{Error, Result};
 use crate::{
     object::{Info, Installer},
     utils,
 };
 use easy_process;
-use failure::format_err;
+
 use pkg_schema::objects;
 use slog_scope::info;
 
 impl Installer for objects::Imxkobs {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> Result<()> {
         info!("'imxkobs' handle checking requirements");
         utils::fs::is_executable_in_path("kobs-ng")?;
 
         Ok(())
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
         info!("'imxkobs' handler Install");
         let mut cmd = String::from("kobs-ng init ");
 
@@ -27,10 +28,7 @@ impl Installer for objects::Imxkobs {
             cmd += "-x "
         };
 
-        cmd += download_dir
-            .join(self.sha256sum())
-            .to_str()
-            .ok_or_else(|| format_err!("Unable to get source path"))?;
+        cmd += download_dir.join(self.sha256sum()).to_str().ok_or_else(|| Error::InvalidPath)?;
 
         if self.search_exponent > 0 {
             cmd += &format!(" --search_exponent={}", self.search_exponent)

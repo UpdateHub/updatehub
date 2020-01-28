@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use failure::format_err;
+use super::{Error, Result};
 use std::{
     fs,
     io::{BufRead, BufReader},
@@ -11,7 +11,7 @@ use std::{
 
 pub(crate) use ffi::is_nand;
 
-pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf, failure::Error> {
+pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf> {
     let re = regex::Regex::new(r"^Volume ID:   (?P<volume>\d+) \(on ubi(\d+)\)$").unwrap();
     walkdir::WalkDir::new("/dev")
         .min_depth(1)
@@ -22,7 +22,7 @@ pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf
                 .map(|n| n.starts_with("ubi") && !n.contains('_'))
                 .unwrap_or(false)
         })
-        .filter_map(Result::ok)
+        .filter_map(std::result::Result::ok)
         .find_map(|entry| {
             let path = entry.path();
             let output =
@@ -37,10 +37,10 @@ pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf
                 &re_match.name("volume").unwrap().as_str()
             )))
         })
-        .ok_or_else(|| format_err!("Unable to find Ubi Volume"))
+        .ok_or_else(|| Error::NoUbiVolume(volume.to_owned()))
 }
 
-pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf, failure::Error> {
+pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf> {
     let re =
         regex::Regex::new(r#"^(?P<dev>mtd\d): ([[:xdigit:]]+) ([[:xdigit:]]+) "(?P<name>.*)"$"#)
             .unwrap();
@@ -48,7 +48,7 @@ pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf, failure
 
     BufReader::new(proc)
         .lines()
-        .filter_map(Result::ok)
+        .filter_map(std::result::Result::ok)
         .find_map(|line| {
             re.captures(&line).and_then(|re_match| {
                 let re_dev = re_match.name("dev").unwrap().as_str();
@@ -56,10 +56,11 @@ pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf, failure
                 if re_name == name { Some(PathBuf::from(format!("/dev/{}", re_dev))) } else { None }
             })
         })
-        .ok_or_else(|| format_err!("Unable to find match for mtd device: {}", name))
+        .ok_or_else(|| Error::NoMtdDevice(name.to_owned()))
 }
 
 mod ffi {
+    use crate::utils::Result;
     use nix::ioctl_read;
     use std::{mem::MaybeUninit, os::unix::io::AsRawFd, path::Path};
 
@@ -82,7 +83,7 @@ mod ffi {
 
     ioctl_read!(mtd_get_info, MEMGETINFO, MEMGETINFO_MODE, mtd_info_user);
 
-    pub fn is_nand(device: &Path) -> Result<bool, failure::Error> {
+    pub fn is_nand(device: &Path) -> Result<bool> {
         let device = std::fs::File::open(device)?;
         let info = unsafe {
             let mut info = MaybeUninit::<mtd_info_user>::uninit();
@@ -106,7 +107,7 @@ pub(crate) mod tests {
     }
 
     impl FakeUbi {
-        pub(crate) fn new(names: &[&str], kind: MtdKind) -> Result<FakeUbi, failure::Error> {
+        pub(crate) fn new(names: &[&str], kind: MtdKind) -> Result<FakeUbi> {
             let mtd = FakeMtd::new(&["system"], kind)?;
             easy_process::run("modprobe ubi mtd=0")?;
 
@@ -140,7 +141,7 @@ pub(crate) mod tests {
     }
 
     impl FakeMtd {
-        pub(crate) fn new(names: &[&str], kind: MtdKind) -> Result<FakeMtd, failure::Error> {
+        pub(crate) fn new(names: &[&str], kind: MtdKind) -> Result<FakeMtd> {
             match kind {
                 MtdKind::Nand => easy_process::run("modprobe nandsim second_id_byte=0x36"),
                 MtdKind::Nor => easy_process::run("modprobe mtdram total_size=20000"),

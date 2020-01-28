@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{Error, Result};
 use crate::utils::definitions::IdExt;
 use easy_process;
-use failure::format_err;
+
 use pkg_schema::definitions::{
     target_permissions::{Gid, Uid},
     Filesystem,
@@ -12,12 +13,10 @@ use pkg_schema::definitions::{
 use std::{io, path::Path};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
-pub(crate) fn find_compress_tarball_kind(
-    file: &Path,
-) -> Result<compress_tools::Kind, failure::Error> {
+pub(crate) fn find_compress_tarball_kind(file: &Path) -> Result<compress_tools::Kind> {
     match infer::Infer::new()
         .get_from_path(file)?
-        .ok_or_else(|| format_err!("Unknown type"))?
+        .ok_or_else(|| Error::UknownFileType)?
         .ext
         .as_str()
     {
@@ -26,14 +25,14 @@ pub(crate) fn find_compress_tarball_kind(
         "lz" => Ok(compress_tools::Kind::TarLZip),
         "xz" => Ok(compress_tools::Kind::TarXz),
         "tar" => Ok(compress_tools::Kind::Tar),
-        t => Err(format_err!("{} is not a valid archive type", t)),
+        t => Err(Error::InvalidFileType(t.to_owned())),
     }
 }
 
-pub(crate) fn find_compress_kind(file: &Path) -> Result<compress_tools::Kind, failure::Error> {
+pub(crate) fn find_compress_kind(file: &Path) -> Result<compress_tools::Kind> {
     match infer::Infer::new()
         .get_from_path(file)?
-        .ok_or_else(|| format_err!("Unknown archive type"))?
+        .ok_or_else(|| Error::UknownFileType)?
         .ext
         .as_str()
     {
@@ -41,22 +40,18 @@ pub(crate) fn find_compress_kind(file: &Path) -> Result<compress_tools::Kind, fa
         "bz2" => Ok(compress_tools::Kind::BZip2),
         "xz" => Ok(compress_tools::Kind::Xz),
         "lz" => Ok(compress_tools::Kind::LZip),
-        _ => Err(format_err!("Invalid archive type")),
+        t => Err(Error::InvalidFileType(t.to_owned())),
     }
 }
 
-pub(crate) fn is_executable_in_path(cmd: &str) -> Result<(), failure::Error> {
+pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
     match quale::which(cmd) {
         Some(_) => Ok(()),
-        None => Err(format_err!("'{}' not found on Path", cmd)),
+        None => Err(Error::ExecutableNotInPath(cmd.to_owned())),
     }
 }
 
-pub(crate) fn format(
-    target: &Path,
-    fs: Filesystem,
-    options: &Option<String>,
-) -> Result<(), failure::Error> {
+pub(crate) fn format(target: &Path, fs: Filesystem, options: &Option<String>) -> Result<()> {
     let target = target.display();
     let options = options.clone().unwrap_or_else(|| "".to_string());
 
@@ -76,14 +71,9 @@ pub(crate) fn format(
     Ok(())
 }
 
-pub(crate) fn mount_map<F>(
-    source: &Path,
-    fs: Filesystem,
-    options: &str,
-    f: F,
-) -> Result<(), failure::Error>
+pub(crate) fn mount_map<F>(source: &Path, fs: Filesystem, options: &str, f: F) -> Result<()>
 where
-    F: FnOnce(&Path) -> Result<(), failure::Error>,
+    F: FnOnce(&Path) -> Result<()>,
 {
     let tmpdir = tempfile::tempdir()?;
     let tmpdir = tmpdir.path();
@@ -111,7 +101,7 @@ pub(crate) fn mount(
     .into_unmount_drop(sys_mount::UnmountFlags::DETACH))
 }
 
-pub(crate) fn chmod(path: &Path, mode: u32) -> Result<(), failure::Error> {
+pub(crate) fn chmod(path: &Path, mode: u32) -> Result<()> {
     nix::sys::stat::fchmodat(
         None,
         path,
@@ -122,10 +112,10 @@ pub(crate) fn chmod(path: &Path, mode: u32) -> Result<(), failure::Error> {
     Ok(())
 }
 
-pub(crate) fn chown(path: &Path, uid: &Option<Uid>, gid: &Option<Gid>) -> nix::Result<()> {
-    nix::unistd::chown(
+pub(crate) fn chown(path: &Path, uid: &Option<Uid>, gid: &Option<Gid>) -> Result<()> {
+    Ok(nix::unistd::chown(
         path,
         uid.as_ref().map(|id| nix::unistd::Uid::from_raw(id.as_u32())),
         gid.as_ref().map(|id| nix::unistd::Gid::from_raw(id.as_u32())),
-    )
+    )?)
 }
