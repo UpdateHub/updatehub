@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, Poll, PrepareDownload, State, StateChangeImpl, StateMachine,
+    Idle, Poll, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
 };
 use crate::client::{Api, ProbeResponse};
 use chrono::{Duration, Utc};
@@ -30,7 +30,7 @@ impl StateChangeImpl for State<Probe> {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         let server_address = shared_state.server_address();
 
         let probe = match Api::new(&server_address)

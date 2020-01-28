@@ -22,14 +22,44 @@ use self::{
 };
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use async_trait::async_trait;
+use derive_more::{Display, From};
 use slog_scope::info;
+use std::sync::mpsc;
+
+pub type Result<T> = std::result::Result<T, TransitionError>;
+
+#[derive(Debug, Display, From)]
+pub enum TransitionError {
+    #[display(fmt = "Not all objects are ready for use")]
+    ObjectsNotReady,
+
+    #[display(fmt = "Failed to read from channel: {}", _0)]
+    MpscRecv(mpsc::TryRecvError),
+    #[display(fmt = "Client error: {}", _0)]
+    Client(crate::client::Error),
+    #[display(fmt = "Firmware error: {}", _0)]
+    Firmware(crate::firmware::Error),
+    #[display(fmt = "Installation error: {}", _0)]
+    Installation(crate::object::Error),
+    #[display(fmt = "Runtime settings error: {}", _0)]
+    RuntimeSettings(crate::runtime_settings::Error),
+    #[display(fmt = "Update package error: {}", _0)]
+    UpdatePackage(crate::update_package::Error),
+
+    #[display(fmt = "Update package error: {}", _0)]
+    Io(std::io::Error),
+    #[display(fmt = "Mailbox error: {}", _0)]
+    ActixMailbox(actix::MailboxError),
+    #[display(fmt = "Process error: {}", _0)]
+    Process(easy_process::Error),
+}
 
 #[async_trait]
 trait StateChangeImpl {
     async fn handle(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error>;
+    ) -> Result<(StateMachine, actor::StepTransition)>;
 
     fn name(&self) -> &'static str;
 
@@ -75,7 +105,7 @@ where
     async fn handle_with_callback_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         use transition::{state_change_callback, Transition};
 
         let transition =
@@ -97,7 +127,7 @@ where
     async fn handle_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         let server = shared_state.server_address().to_owned();
         let firmware = &shared_state.firmware.clone();
         let package_uid = &self.package_uid();
@@ -137,7 +167,7 @@ impl StateMachine {
     async fn move_to_next_state(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(Self, actor::StepTransition), failure::Error> {
+    ) -> Result<(Self, actor::StepTransition)> {
         match self {
             StateMachine::Error(s) => s.handle(shared_state).await,
             StateMachine::Park(s) => s.handle(shared_state).await,
@@ -195,10 +225,8 @@ impl StateMachine {
 ///
 /// # Example
 /// ```
-/// # extern crate failure;
 /// # extern crate updatehub;
-/// # use failure;
-/// # async fn run() -> Result<(), failure::Error> {
+/// # async fn run() -> Result<(), updatehub::Error> {
 /// use updatehub;
 ///
 /// updatehub::logger::init(0);
@@ -207,7 +235,7 @@ impl StateMachine {
 /// # Ok(())
 /// # }
 /// ```
-pub async fn run(settings: Settings) -> Result<(), failure::Error> {
+pub async fn run(settings: Settings) -> crate::Result<()> {
     let listen_socket = settings.network.listen_socket.clone();
     let mut runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
     if !settings.storage.read_only {

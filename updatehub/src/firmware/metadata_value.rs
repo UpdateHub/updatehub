@@ -38,7 +38,7 @@ impl Serialize for MetadataValue {
 impl FromStr for MetadataValue {
     type Err = io::Error;
 
-    fn from_str(s: &str) -> Result<Self, io::Error> {
+    fn from_str(s: &str) -> io::Result<Self> {
         let mut values = Vec::new();
         for line in s.lines() {
             let v: Vec<_> = line.splitn(2, '=').map(|v| v.trim().to_string()).collect();

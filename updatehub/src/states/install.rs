@@ -4,7 +4,8 @@
 
 use super::{
     actor::{self, SharedState},
-    Idle, ProgressReporter, Reboot, State, StateChangeImpl, StateMachine, TransitionCallback,
+    Idle, ProgressReporter, Reboot, Result, State, StateChangeImpl, StateMachine,
+    TransitionCallback,
 };
 use crate::{
     firmware::installation_set,
@@ -38,22 +39,22 @@ impl ProgressReporter for State<Install> {
 }
 
 pub(crate) trait ObjectInstaller {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> crate::Result<()> {
         debug!("running default check_requirements");
         Ok(())
     }
 
-    fn setup(&mut self) -> Result<(), failure::Error> {
+    fn setup(&mut self) -> crate::Result<()> {
         debug!("running default setup");
         Ok(())
     }
 
-    fn cleanup(&mut self) -> Result<(), failure::Error> {
+    fn cleanup(&mut self) -> crate::Result<()> {
         debug!("running default cleanup");
         Ok(())
     }
 
-    fn install(&self, download_dir: std::path::PathBuf) -> Result<(), failure::Error>;
+    fn install(&self, download_dir: std::path::PathBuf) -> crate::Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -65,7 +66,7 @@ impl StateChangeImpl for State<Install> {
     async fn handle(
         mut self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition), failure::Error> {
+    ) -> Result<(StateMachine, actor::StepTransition)> {
         let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 

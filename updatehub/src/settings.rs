@@ -5,7 +5,7 @@
 use crate::serde_helpers::{de, ser};
 
 use chrono::Duration;
-use failure::Fail;
+use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use serde_ini;
 use slog_scope::{debug, error};
@@ -29,11 +29,25 @@ pub struct Settings {
     pub(crate) update: Update,
 }
 
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Display, From)]
+pub enum Error {
+    #[display(fmt = "IO error: {}", _0)]
+    Io(io::Error),
+    #[display(fmt = "Invalid INI fail: {}", _0)]
+    Ini(serde_ini::de::Error),
+    #[display(fmt = "Invalid interval")]
+    InvalidInterval,
+    #[display(fmt = "Invalid server address")]
+    InvalidServerAddress,
+}
+
 impl Settings {
     /// Loads the settings from the filesystem. If
     /// `/etc/updatehub.conf` does not exists, it uses the default
     /// settings.
-    pub fn load() -> Result<Self, failure::Error> {
+    pub fn load() -> Result<Self> {
         use std::{fs::File, io::Read, path::Path};
 
         let path = Path::new(SYSTEM_SETTINGS_PATH);
@@ -57,14 +71,14 @@ impl Settings {
     // This parses the configuration file, taking into account the
     // needed validations for all fields, and returns either `Self` or
     // `Err`.
-    fn parse(content: &str) -> Result<Self, failure::Error> {
+    fn parse(content: &str) -> Result<Self> {
         let settings = serde_ini::from_str::<Self>(content)?;
 
         if settings.polling.interval < Duration::seconds(60) {
             error!(
                 "Invalid setting for polling interval. The interval cannot be less than 60 seconds"
             );
-            return Err(Error::InvalidInterval.into());
+            return Err(Error::InvalidInterval);
         }
 
         if !&settings.network.server_address.starts_with("http://")
@@ -73,25 +87,11 @@ impl Settings {
             error!(
                 "Invalid setting for server address. The server address must use the protocol prefix"
             );
-            return Err(Error::InvalidServerAddress.into());
+            return Err(Error::InvalidServerAddress);
         }
 
         Ok(settings)
     }
-}
-
-#[derive(Debug, Fail)]
-pub enum Error {
-    #[cause]
-    #[fail(display = "IO error")]
-    Io(io::Error),
-    #[cause]
-    #[fail(display = "Invalid INI fail")]
-    Ini(serde_ini::de::Error),
-    #[fail(display = "Invalid interval")]
-    InvalidInterval,
-    #[fail(display = "Invalid server address")]
-    InvalidServerAddress,
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]

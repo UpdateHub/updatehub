@@ -2,16 +2,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::{Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
 };
-use failure::bail;
+
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
 impl Installer for objects::Ubifs {
-    fn check_requirements(&self) -> Result<(), failure::Error> {
+    fn check_requirements(&self) -> Result<()> {
         info!("'ubifs' handle checking requirements");
         if self.compressed {
             unimplemented!("FIXME: check the required_uncompressed_size");
@@ -24,10 +25,10 @@ impl Installer for objects::Ubifs {
             return Ok(());
         }
 
-        bail!("Unexpected target type, expected some device.")
+        Err(Error::InvalidTargetType(self.target.clone()))
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<(), failure::Error> {
+    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
         info!("'ubifs' handler Install");
 
         let target = self.target.get_target()?;
