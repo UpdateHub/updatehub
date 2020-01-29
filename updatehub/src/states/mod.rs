@@ -23,7 +23,7 @@ use self::{
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use async_trait::async_trait;
 use derive_more::{Display, From};
-use slog_scope::info;
+use slog_scope::{info, warn};
 use std::sync::mpsc;
 
 pub type Result<T> = std::result::Result<T, TransitionError>;
@@ -139,20 +139,27 @@ where
             api.report(state, firmware, package_uid, previous_state, error_message, current_log)
         };
 
-        report(enter_state, None, None, None).await?;
+        if let Err(e) = report(enter_state, None, None, None).await {
+            warn!("Report failed: {}", e);
+        }
         match self.handle(shared_state).await {
             Ok((state, trans)) => {
-                report(leave_state, None, None, None).await?;
+                if let Err(e) = report(leave_state, None, None, None).await {
+                    warn!("Report failed: {}", e);
+                };
                 Ok((state, trans))
             }
             Err(e) => {
-                report(
+                if let Err(e) = report(
                     "error",
                     Some(enter_state),
                     Some(e.to_string()),
                     Some(crate::logger::buffer().lock().unwrap().to_string()),
                 )
-                .await?;
+                .await
+                {
+                    warn!("Report failed: {}", e);
+                }
                 Err(e)
             }
         }
