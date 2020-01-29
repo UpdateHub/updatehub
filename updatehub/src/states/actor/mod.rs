@@ -7,11 +7,14 @@ mod test;
 
 pub(crate) mod download_abort;
 pub(crate) mod info;
+pub(crate) mod local_install;
 pub(crate) mod probe;
 /// Used to send `Step` messages to the `Machine` actor.
 pub(crate) mod stepper;
 
-use super::{Idle, Metadata, Probe, RuntimeSettings, Settings, State, StateMachine};
+use super::{
+    Idle, Metadata, PrepareLocalInstall, Probe, RuntimeSettings, Settings, State, StateMachine,
+};
 use actix::{Actor, Addr, Arbiter, AsyncContext, Context, Handler, Message, ResponseFuture};
 use slog_scope::info;
 

@@ -18,12 +18,20 @@ pub enum Error {
     ActixMailbox(actix::MailboxError),
 }
 
+#[derive(Serialize)]
+struct StateChangeResponse {
+    busy: bool,
+    #[serde(rename = "current-state")]
+    state: String,
+}
+
 impl API {
     pub(crate) fn configure(cfg: &mut web::ServiceConfig, addr: actix::Addr<actor::Machine>) {
         cfg.data(Self(addr))
             .route("/info", web::get().to(API::info))
             .route("/log", web::get().to(API::log))
             .route("/probe", web::post().to(API::probe))
+            .route("/local_install", web::post().to(API::local_install))
             .route("/update/download/abort", web::post().to(API::download_abort));
     }
 
@@ -36,6 +44,13 @@ impl API {
         server_address: Option<String>,
     ) -> Result<actor::probe::Response> {
         Ok(agent.0.send(actor::probe::Request(server_address)).await?)
+    }
+
+    async fn local_install(
+        agent: web::Data<API>,
+        file_path: String,
+    ) -> Result<actor::local_install::Response> {
+        Ok(agent.0.send(actor::local_install::Request(std::path::PathBuf::from(file_path))).await?)
     }
 
     async fn log() -> HttpResponse {
@@ -70,19 +85,28 @@ impl Responder for actor::probe::Response {
     type Future = HttpResponse;
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
-        #[derive(Serialize)]
-        struct Payload {
-            busy: bool,
-            #[serde(rename = "current-state")]
-            state: String,
-        }
-
         match self {
             actor::probe::Response::RequestAccepted(state) => {
-                HttpResponse::Ok().json(Payload { busy: false, state })
+                HttpResponse::Ok().json(StateChangeResponse { busy: false, state })
             }
             actor::probe::Response::InvalidState(state) => {
-                HttpResponse::Ok().json(Payload { busy: true, state })
+                HttpResponse::Ok().json(StateChangeResponse { busy: true, state })
+            }
+        }
+    }
+}
+
+impl Responder for actor::local_install::Response {
+    type Error = actix_web::Error;
+    type Future = HttpResponse;
+
+    fn respond_to(self, _: &HttpRequest) -> Self::Future {
+        match self {
+            actor::local_install::Response::RequestAccepted(state) => {
+                HttpResponse::Ok().json(StateChangeResponse { busy: false, state })
+            }
+            actor::local_install::Response::InvalidState(state) => {
+                HttpResponse::UnprocessableEntity().json(StateChangeResponse { busy: true, state })
             }
         }
     }

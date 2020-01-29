@@ -155,6 +155,18 @@ async fn trigger_probe() {
 }
 
 #[actix_rt::test]
+async fn local_install_probe() {
+    let (addr, ..) = setup_actor(Setup::NoUpdate, Probe::Disabled);
+    addr.send(Step).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "park");
+
+    addr.send(local_install::Request(std::path::PathBuf::from("/foo/bar"))).await.unwrap();
+    let res = addr.send(info::Request).await.unwrap();
+    assert_eq!(res.state, "prepare_local_install");
+}
+
+#[actix_rt::test]
 async fn stepper_with_never() {
     let mock = actix::Actor::start(FakeMachine { step_expect: 15, ..FakeMachine::default() });
     let mut stepper = super::stepper::Controller::default();

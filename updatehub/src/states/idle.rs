@@ -26,6 +26,10 @@ impl StateChangeImpl for State<Idle> {
         actor::probe::Response::RequestAccepted(self.name().to_owned())
     }
 
+    fn handle_local_install(&self) -> actor::local_install::Response {
+        actor::local_install::Response::RequestAccepted(self.name().to_owned())
+    }
+
     async fn handle(
         self,
         shared_state: &mut SharedState,
