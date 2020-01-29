@@ -17,7 +17,6 @@ async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 compress-tools = "0.1"
 crypto-hash = "0.3"
-derivative = "1"
 derive_more = "0.99"
 easy_process = "0.1"
 hex = "0.4"
@@ -40,7 +39,7 @@ slog-term = "2"
 structopt = "0.3"
 sys-mount = "1"
 tempfile = "3"
-timeout-readwrite = "0.2"
+timeout-readwrite = "0.3"
 tokio = { version = "0.2", features = ["fs"] }
 walkdir = "2"
 
@@ -49,6 +48,6 @@ git-version = "0.3"
 
 [dev-dependencies]
 loopdev = "0.2"
-mockito = "0.22"
+mockito = "0.23"
 pretty_assertions = "0.6"
 tempfile = "3"

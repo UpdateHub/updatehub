@@ -7,14 +7,18 @@ use super::{
     Idle, Result, State, StateChangeImpl, StateMachine, TransitionError,
 };
 
-use derivative::Derivative;
 use slog_scope::{error, info};
 
-#[derive(Derivative)]
-#[derivative(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct Error {
-    #[derivative(PartialEq = "ignore")]
     error: TransitionError,
+}
+
+impl PartialEq for Error {
+    fn eq(&self, _other: &Self) -> bool {
+        // error field intentionally ignored
+        true
+    }
 }
 
 #[async_trait::async_trait]
