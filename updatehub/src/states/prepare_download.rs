@@ -13,8 +13,7 @@ use crate::{
     update_package::UpdatePackage,
 };
 use slog_scope::error;
-use std::{fs, sync::mpsc};
-use walkdir::WalkDir;
+use std::sync::mpsc;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct PrepareDownload {
@@ -39,34 +38,11 @@ impl StateChangeImpl for State<PrepareDownload> {
         let installation_set = installation_set::inactive()?;
         let download_dir = shared_state.settings.update.download_dir.to_owned();
 
-        // Prune left over from previous installations
-        for entry in WalkDir::new(&download_dir)
-            .follow_links(true)
-            .min_depth(1)
-            .into_iter()
-            .filter_entry(|e| e.file_type().is_file())
-            .filter_map(std::result::Result::ok)
-            .filter(|e| {
-                !self
-                    .0
-                    .update_package
-                    .objects(installation_set)
-                    .iter()
-                    .map(object::Info::sha256sum)
-                    .any(|x| x == e.file_name())
-            })
-        {
-            fs::remove_file(entry.path())?;
-        }
-
-        // Prune corrupted files
-        for object in self.0.update_package.filter_objects(
-            &shared_state.settings,
+        self.0.update_package.clear_unrelated_files(
+            &download_dir,
             installation_set,
-            object::info::Status::Corrupted,
-        ) {
-            fs::remove_file(download_dir.join(object.sha256sum()))?;
-        }
+            &shared_state.settings,
+        )?;
 
         // Get shasums of missing or incomplete objects
         let shasum_list: Vec<_> = self

@@ -15,7 +15,7 @@ actix-rt = "1"
 actix-web = "2"
 async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
-compress-tools = "0.1"
+compress-tools = { git = "https://github.com/OSSystems/compress-tools-rs.git" }
 crypto-hash = "0.3"
 derive_more = "0.99"
 easy_process = "0.1"

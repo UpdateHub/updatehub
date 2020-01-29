@@ -24,6 +24,10 @@ impl StateChangeImpl for State<Park> {
         actor::probe::Response::RequestAccepted(self.name().to_owned())
     }
 
+    fn handle_local_install(&self) -> actor::local_install::Response {
+        actor::local_install::Response::RequestAccepted(self.name().to_owned())
+    }
+
     async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
         debug!("Staying on Park state.");
         Ok((StateMachine::Park(self), actor::StepTransition::Never))

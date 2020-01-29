@@ -7,6 +7,7 @@ use crate::{
     object::{self, Info},
     settings::Settings,
 };
+use walkdir::WalkDir;
 
 use crypto_hash::{hex_digest, Algorithm};
 
@@ -15,6 +16,8 @@ use pkg_schema::Object;
 use serde::Deserialize;
 use serde_json;
 use slog_scope::error;
+
+use std::{fs, io, path::Path};
 
 mod supported_hardware;
 use self::supported_hardware::SupportedHardware;
@@ -100,5 +103,46 @@ impl UpdatePackage {
                     .eq(&filter)
             })
             .collect()
+    }
+
+    pub(crate) fn clear_unrelated_files(
+        &self,
+        dir: &Path,
+        installation_set: InstallationSet,
+        settings: &Settings,
+    ) -> io::Result<()> {
+        // Prune left over objects from previous installations
+        for entry in WalkDir::new(dir)
+            .follow_links(true)
+            .min_depth(1)
+            .into_iter()
+            .filter_entry(|e| e.file_type().is_file())
+            .filter_map(std::result::Result::ok)
+            .filter(|e| {
+                !self
+                    .objects(installation_set)
+                    .iter()
+                    .map(object::Info::sha256sum)
+                    .any(|x| x == e.file_name())
+            })
+        {
+            fs::remove_file(entry.path())?;
+        }
+
+        // Cleanup metadata and signature for older local local installation
+        for file in &[dir.join("metadata"), dir.join("signature")] {
+            if file.exists() {
+                fs::remove_file(file)?;
+            }
+        }
+
+        // Prune corrupted files
+        for object in
+            self.filter_objects(&settings, installation_set, object::info::Status::Corrupted)
+        {
+            fs::remove_file(dir.join(object.sha256sum()))?;
+        }
+
+        Ok(())
     }
 }
