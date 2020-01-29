@@ -12,17 +12,31 @@ use crate::{
     object::{self, Info},
     update_package::UpdatePackage,
 };
-use derivative::Derivative;
-use std::sync::mpsc;
+use std::{fmt, sync::mpsc};
 
-#[derive(Derivative)]
-#[derivative(Debug, PartialEq)]
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
     pub(super) installation_set: installation_set::Set,
-    #[derivative(PartialEq = "ignore")]
-    #[derivative(Debug = "ignore")]
     pub(super) download_chan: mpsc::Receiver<Vec<crate::client::Result<()>>>,
+}
+
+impl PartialEq for Download {
+    fn eq(&self, other: &Self) -> bool {
+        // download_chan intentionally ignored
+        self.update_package == other.update_package
+            && self.installation_set == other.installation_set
+    }
+}
+
+impl fmt::Debug for Download {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // download_chan intentionally ignored
+        write!(
+            f,
+            "Download {{ update_package: {:?}, installation_set: {:?} }}",
+            self.update_package, self.installation_set
+        )
+    }
 }
 
 create_state_step!(Download => Idle);
