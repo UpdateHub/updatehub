@@ -4,7 +4,6 @@
 use slog_scope::info;
 
 use structopt::StructOpt;
-use updatehub;
 
 #[derive(StructOpt, Debug)]
 #[structopt(
