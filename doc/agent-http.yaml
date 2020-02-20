@@ -1,0 +1,324 @@
+openapi: 3.0.0
+info:
+  title: UpdateHub Agent local HTTP API routes
+  description: |-
+    These are the routes available through HTTP on the device running the
+    UpdateHub Agent.
+  version: "1.0"
+servers:
+  - url: "http://localhost:8080"
+    variables: {}
+
+paths:
+  "/info":
+    get:
+      summary: "Get general information."
+      responses:
+        "200":
+          description: "Request accepted"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInfo"
+
+  "/probe":
+    post:
+      summary: "Actively probe the server."
+      description: |-
+        Probe the server and download the update metadata if  available.
+        Returns a json object containing the "update-available" boolean field.
+        It also may contain a "try-again-in" field which means the caller should
+        try the request again 'n' seconds from now, where 'n' is the value of
+        "try-again-in".
+
+        This request accepts a "server-address" parameter on POST. When it's present,
+        it will use the address for the triggered probe (and the update procedure too
+        in case there is an update available).
+
+        If agent is busy (e.g. downloading a object or installing an object) the
+        returned http code is 202.
+      requestBody:
+        required: false
+        description: "Server address which the update procedure will use for this request"
+        content:
+          text/plain:
+            schema:
+              type: string
+              example: "http://different-address:8080"
+      responses:
+        "200":
+          description: "Request accepted"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProbeInfo"
+        "202":
+          description: "Agent is busy"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentStatus"
+
+  "/update/download/abort":
+    post:
+      summary: "Abort download"
+      description: |-
+        Abort an update objects download (triggered by any command). On success, returns
+        HTTP 200 and a empty json object as body. On failure, returns HTTP 400 and the
+        error message inside a json object as body.
+      responses:
+        "200":
+          description: "Download Aborted"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AbortDownloadAccepted"
+        "400":
+          description: "No download to be aborted"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AbortDownloadRejected"
+
+  "/log":
+    post:
+      summary: "Abort download"
+      description: |-
+        Returns the agent log.
+      responses:
+        "200":
+          description: "Download Aborted"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LogEntry"
+
+components:
+  schemas:
+    AgentInfo:
+      description: "Information about the agent"
+      required:
+        - version
+        - config
+        - firmware
+      properties:
+        version:
+          type: string
+          example: "0.1.0-87-ga836b13"
+        config:
+          $ref: "#/components/schemas/AgentInfoConfig"
+        firmware:
+          $ref: "#/components/schemas/AgentInfoFirmware"
+
+    ProbeInfo:
+      description: "Response about requested probe"
+      type: object
+      required:
+        - update-available
+        - try-again-in
+      properties:
+        update-available:
+          type: boolean
+        try-again-in:
+          type: integer
+          example: 3600
+
+    AgentStatus:
+      description: "Agent state information"
+      type: object
+      required:
+        - busy
+        - current-state
+      properties:
+        busy:
+          type: boolean
+          example: false
+        current-state:
+          $ref: "#/components/schemas/AgentState"
+
+    AbortDownloadAccepted:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "request accepted, download aborted"
+
+    AbortDownloadRejected:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: "there is no download to be aborted"
+
+    LogEntry:
+      type: object
+      required:
+        - level
+        - message
+        - time
+        - data
+      properties:
+        level:
+          $ref: "#/components/schemas/LogLevel"
+        message:
+          type: string
+          example: "info 1"
+        time:
+          type: string
+          example: "2017-06-29 14:59:41.831111065 -0300 -03"
+        data:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            field1: "value1"
+            field2: "value2"
+
+    LogLevel:
+      type: string
+      enum: ["error", "info", "warning", "debug", "trace"]
+
+    SupportedInstallMode:
+      description: "Available install modes"
+      type: string
+      enum: ["copy", "raw"]
+
+    AgentState:
+      description: "Agent state"
+      type: string
+      enum: ["idle", "install", "park", "poll", "probe", "reboot"]
+
+    AgentInfoConfig:
+      type: object
+      required:
+        - polling
+        - storage
+        - update
+        - network
+        - firwamre
+      properties:
+        polling:
+          $ref: "#/components/schemas/AgentInfoConfigPolling"
+        storage:
+          $ref: "#/components/schemas/AgentInfoConfigStorage"
+        update:
+          $ref: "#/components/schemas/AgentInfoConfigUpdate"
+        network:
+          $ref: "#/components/schemas/AgentInfoConfigNetwork"
+        firwamre:
+          $ref: "#/components/schemas/AgentInfoConfigFirwamre"
+
+    AgentInfoConfigFirwamre:
+      type: object
+      required:
+        - metadata-path
+      properties:
+        metadata-path:
+          type: string
+          example: "/usr/share/updatehub"
+
+    AgentInfoConfigNetwork:
+      type: object
+      required:
+        - server-address
+      properties:
+        server-address:
+          type: string
+          example: "api.updatehub.io"
+
+    AgentInfoConfigUpdate:
+      type: object
+      required:
+        - download-dir
+        - auto-download-when-available
+        - auto-install-after-download
+        - auto-reboot-after-install
+        - supported-install-modes
+      properties:
+        download-dir:
+          type: string
+          example: "/tmp/download"
+        auto-download-when-available:
+          type: boolean
+        auto-install-after-download:
+          type: boolean
+        auto-reboot-after-install:
+          type: boolean
+        supported-install-modes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupportedInstallMode"
+
+    AgentInfoConfigStorage:
+      type: object
+      required:
+        - read-only
+      properties:
+        read-only:
+          type: boolean
+
+    AgentInfoConfigPolling:
+      type: object
+      required:
+        - enabled
+        - interval
+        - last-poll
+        - first-poll
+        - extra-interval
+        - retries
+      properties:
+        enabled:
+          type: boolean
+        interval:
+          type: integer
+          example: 3600
+        last-poll:
+          type: string
+          example: "2017-01-01T00:00:00Z"
+        first-poll:
+          type: string
+          example: "2017-02-02T00:00:00Z"
+        extra-interval:
+          type: integer
+          example: 300
+        retries:
+          type: integer
+
+    AgentInfoFirmware:
+      type: object
+      required:
+        - product-uid
+        - device-identity
+        - device-attributes
+        - hardware
+        - version
+      properties:
+        product-uid:
+          type: string
+          example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        device-identity:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "id1": "value1"
+            "id2": "value2"
+        device-attributes:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            "attr1": "value1"
+            "attr2": "value2"
+        hardware:
+          type: string
+          example: "board-name-revA"
+        version:
+          type: string
+          example: "1.2"
