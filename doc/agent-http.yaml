@@ -4,7 +4,7 @@ info:
   description: |-
     These are the routes available through HTTP on the device running the
     UpdateHub Agent.
-  version: "1.0"
+  version: "2.0"
 servers:
   - url: "http://localhost:8080"
     variables: {}
@@ -54,6 +54,33 @@ paths:
                 $ref: "#/components/schemas/ProbeInfo"
         "202":
           description: "Agent is busy"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentStatus"
+
+  "/local_install":
+    post:
+      summary: "Install local package"
+      description: |-
+        Request the agent for installation of a local package.
+      requestBody:
+        required: true
+        description: "Path for the file to be installed"
+        content:
+          text/plain:
+            schema:
+              type: string
+              example: "/tmp/update.uhupkg"
+      responses:
+        "200":
+          description: "Request accepted"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentStatus"
+        "422":
+          description: "Local instalation cond't start"
           content:
             application/json:
               schema:
