@@ -5,6 +5,7 @@
 #[macro_use]
 mod macros;
 pub(crate) mod actor;
+mod direct_download;
 mod download;
 mod error;
 mod idle;
@@ -18,9 +19,9 @@ mod reboot;
 mod transition;
 
 use self::{
-    download::Download, error::Error, idle::Idle, install::Install, park::Park, poll::Poll,
-    prepare_download::PrepareDownload, prepare_local_install::PrepareLocalInstall, probe::Probe,
-    reboot::Reboot,
+    direct_download::DirectDownload, download::Download, error::Error, idle::Idle,
+    install::Install, park::Park, poll::Poll, prepare_download::PrepareDownload,
+    prepare_local_install::PrepareLocalInstall, probe::Probe, reboot::Reboot,
 };
 use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
 use async_trait::async_trait;
@@ -32,6 +33,8 @@ pub type Result<T> = std::result::Result<T, TransitionError>;
 
 #[derive(Debug, Display, From)]
 pub enum TransitionError {
+    #[display(fmt = "Request to external link failed")]
+    InvalidRequest,
     #[display(fmt = "Not all objects are ready for use")]
     ObjectsNotReady,
 
@@ -80,6 +83,10 @@ trait StateChangeImpl {
     fn handle_local_install(&self) -> actor::local_install::Response {
         actor::local_install::Response::InvalidState(self.name().to_owned())
     }
+
+    fn handle_remote_install(&self) -> actor::remote_install::Response {
+        actor::remote_install::Response::InvalidState(self.name().to_owned())
+    }
 }
 
 trait TransitionCallback: StateChangeImpl + Into<State<Idle>> {}
@@ -102,6 +109,7 @@ enum StateMachine {
     Poll(State<Poll>),
     Probe(State<Probe>),
     PrepareDownload(State<PrepareDownload>),
+    DirectDownload(State<DirectDownload>),
     PrepareLocalInstall(State<PrepareLocalInstall>),
     Download(State<Download>),
     Install(State<Install>),
@@ -193,6 +201,7 @@ impl StateMachine {
             StateMachine::Poll(s) => s.handle(shared_state).await,
             StateMachine::Probe(s) => s.handle(shared_state).await,
             StateMachine::PrepareDownload(s) => s.handle(shared_state).await,
+            StateMachine::DirectDownload(s) => s.handle(shared_state).await,
             StateMachine::PrepareLocalInstall(s) => s.handle(shared_state).await,
             StateMachine::Download(s) => {
                 s.handle_with_callback_and_report_progress(shared_state).await
@@ -217,6 +226,7 @@ impl StateMachine {
             StateMachine::Poll(s) => f(s),
             StateMachine::Probe(s) => f(s),
             StateMachine::PrepareDownload(s) => f(s),
+            StateMachine::DirectDownload(s) => f(s),
             StateMachine::PrepareLocalInstall(s) => f(s),
             StateMachine::Download(s) => f(s),
             StateMachine::Install(s) => f(s),

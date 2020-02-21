@@ -30,6 +30,10 @@ impl StateChangeImpl for State<Idle> {
         actor::local_install::Response::RequestAccepted(self.name().to_owned())
     }
 
+    fn handle_remote_install(&self) -> actor::remote_install::Response {
+        actor::remote_install::Response::RequestAccepted(self.name().to_owned())
+    }
+
     async fn handle(
         self,
         shared_state: &mut SharedState,

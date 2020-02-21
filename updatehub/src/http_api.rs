@@ -32,6 +32,7 @@ impl API {
             .route("/log", web::get().to(API::log))
             .route("/probe", web::post().to(API::probe))
             .route("/local_install", web::post().to(API::local_install))
+            .route("/remote_install", web::post().to(API::remote_install))
             .route("/update/download/abort", web::post().to(API::download_abort));
     }
 
@@ -51,6 +52,13 @@ impl API {
         file_path: String,
     ) -> Result<actor::local_install::Response> {
         Ok(agent.0.send(actor::local_install::Request(std::path::PathBuf::from(file_path))).await?)
+    }
+
+    async fn remote_install(
+        agent: web::Data<API>,
+        url: String,
+    ) -> Result<actor::remote_install::Response> {
+        Ok(agent.0.send(actor::remote_install::Request(url)).await?)
     }
 
     async fn log() -> HttpResponse {
@@ -106,6 +114,22 @@ impl Responder for actor::local_install::Response {
                 HttpResponse::Ok().json(StateChangeResponse { busy: false, state })
             }
             actor::local_install::Response::InvalidState(state) => {
+                HttpResponse::UnprocessableEntity().json(StateChangeResponse { busy: true, state })
+            }
+        }
+    }
+}
+
+impl Responder for actor::remote_install::Response {
+    type Error = actix_web::Error;
+    type Future = HttpResponse;
+
+    fn respond_to(self, _: &HttpRequest) -> Self::Future {
+        match self {
+            actor::remote_install::Response::RequestAccepted(state) => {
+                HttpResponse::Ok().json(StateChangeResponse { busy: false, state })
+            }
+            actor::remote_install::Response::InvalidState(state) => {
                 HttpResponse::UnprocessableEntity().json(StateChangeResponse { busy: true, state })
             }
         }
