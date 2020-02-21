@@ -10,7 +10,7 @@ use serde::{de, Deserialize, Deserializer};
 #[derive(PartialEq, Debug, Clone)]
 pub enum Count {
     All,
-    Limited(usize),
+    Limited(isize),
 }
 
 impl Default for Count {
@@ -26,14 +26,14 @@ impl<'de> Deserialize<'de> for Count {
     {
         match isize::deserialize(deserializer)? {
             -1 => Ok(Count::All),
-            n if n >= 0 => Ok(Count::Limited(n as usize)),
+            n if n >= 0 => Ok(Count::Limited(n)),
             n => Err(de::Error::custom(format!("Invalid count: {}", n))),
         }
     }
 }
 
 impl std::iter::Iterator for Count {
-    type Item = usize;
+    type Item = isize;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
