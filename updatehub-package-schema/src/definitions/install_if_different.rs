@@ -18,7 +18,7 @@ pub enum InstallIfDifferent {
 }
 
 /// Known patterns to be used with
-/// [InstallIfDifferent](InstallIfDifferent::KnownPattern)
+/// [`InstallIfDifferent`](InstallIfDifferent::KnownPattern)
 #[derive(PartialEq, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum KnownPatternKind {
@@ -27,7 +27,7 @@ pub enum KnownPatternKind {
 }
 
 /// Custom pattern to use with
-/// [InstallIfDifferent](InstallIfDifferent::CustomPattern)
+/// [`InstallIfDifferent`](InstallIfDifferent::CustomPattern)
 #[derive(PartialEq, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Pattern {
