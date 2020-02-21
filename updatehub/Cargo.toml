@@ -10,7 +10,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-actix = { git = "https://github.com/OSSystems/actix.git", branch = "topic/messages_without_result" }
+actix = { git = "https://github.com/actix/actix" }
 actix-rt = "1"
 actix-web = "2"
 async-trait = "0.1"
@@ -22,7 +22,7 @@ easy_process = "0.1"
 hex = "0.4"
 infer = "0.1"
 lazy_static = "1"
-nix = "0.16"
+nix = "0.17"
 parse_duration = "2"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
