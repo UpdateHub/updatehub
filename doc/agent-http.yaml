@@ -136,7 +136,7 @@ paths:
 
   "/log":
     post:
-      summary: "Abort download"
+      summary: "Fetch agent log"
       description: |-
         Returns the agent log.
       responses:
