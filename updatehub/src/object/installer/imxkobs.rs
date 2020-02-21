@@ -7,8 +7,6 @@ use crate::{
     object::{Info, Installer},
     utils,
 };
-use easy_process;
-
 use pkg_schema::objects;
 use slog_scope::info;
 

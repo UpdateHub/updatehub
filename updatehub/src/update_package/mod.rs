@@ -14,7 +14,6 @@ use crypto_hash::{hex_digest, Algorithm};
 use derive_more::{Display, From};
 use pkg_schema::Object;
 use serde::Deserialize;
-use serde_json;
 use slog_scope::error;
 
 use std::{fs, io, path::Path};

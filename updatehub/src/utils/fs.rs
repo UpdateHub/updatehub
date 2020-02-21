@@ -4,8 +4,6 @@
 
 use super::{Error, Result};
 use crate::utils::definitions::IdExt;
-use easy_process;
-
 use pkg_schema::definitions::{
     target_permissions::{Gid, Uid},
     Filesystem,

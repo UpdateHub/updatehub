@@ -7,8 +7,6 @@ use super::{
     Idle, ProgressReporter, Result, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::update_package::UpdatePackage;
-
-use easy_process;
 use slog_scope::info;
 
 #[derive(Debug, PartialEq)]
