@@ -7,6 +7,7 @@ use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 use derive_more::{Display, From};
 use serde::Serialize;
 use serde_json::json;
+use slog_scope::debug;
 
 pub(crate) struct API(actix::Addr<actor::Machine>);
 
@@ -37,6 +38,7 @@ impl API {
     }
 
     async fn info(agent: web::Data<API>) -> Result<HttpResponse> {
+        debug!("Receiving info request");
         Ok(HttpResponse::Ok().json(agent.0.send(actor::info::Request).await?))
     }
 
@@ -44,6 +46,7 @@ impl API {
         agent: web::Data<API>,
         server_address: Option<String>,
     ) -> Result<actor::probe::Response> {
+        debug!("Receiving probe request with {:?}", server_address);
         Ok(agent.0.send(actor::probe::Request(server_address)).await?)
     }
 
@@ -51,6 +54,7 @@ impl API {
         agent: web::Data<API>,
         file_path: String,
     ) -> Result<actor::local_install::Response> {
+        debug!("Receiving local_install request with {:?}", file_path);
         Ok(agent.0.send(actor::local_install::Request(std::path::PathBuf::from(file_path))).await?)
     }
 
@@ -58,14 +62,17 @@ impl API {
         agent: web::Data<API>,
         url: String,
     ) -> Result<actor::remote_install::Response> {
+        debug!("Receiving remote_install request with {:?}", url);
         Ok(agent.0.send(actor::remote_install::Request(url)).await?)
     }
 
     async fn log() -> HttpResponse {
+        debug!("Receiving log request");
         HttpResponse::Ok().json(crate::logger::buffer())
     }
 
     async fn download_abort(agent: web::Data<API>) -> Result<actor::download_abort::Response> {
+        debug!("Receiving abort download request");
         Ok(agent.0.send(actor::download_abort::Request).await?)
     }
 }
