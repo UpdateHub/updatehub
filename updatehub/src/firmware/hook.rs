@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::firmware::{metadata_value::MetadataValue, Result};
-
-use easy_process;
 use slog_scope::error;
 use std::{path::Path, str::FromStr};
 use walkdir::WalkDir;

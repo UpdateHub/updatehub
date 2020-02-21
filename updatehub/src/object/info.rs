@@ -4,7 +4,6 @@
 
 use super::Result;
 use crypto_hash::{Algorithm, Hasher};
-use hex;
 use pkg_schema::{objects, Object};
 use std::{
     fs::File,
