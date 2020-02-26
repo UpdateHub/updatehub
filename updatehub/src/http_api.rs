@@ -36,8 +36,9 @@ impl API {
 
     async fn probe(
         agent: web::Data<API>,
-        server_address: Option<String>,
+        server_address: Option<web::Json<api::probe::Request>>,
     ) -> Result<actor::probe::Response> {
+        let server_address = server_address.map(|r| r.into_inner().custom_server);
         debug!("Receiving probe request with {:?}", server_address);
         Ok(agent.0.send(actor::probe::Request(server_address)).await?)
     }

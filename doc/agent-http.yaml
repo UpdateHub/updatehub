@@ -39,12 +39,11 @@ paths:
         returned http code is 202.
       requestBody:
         required: false
-        description: "Server address which the update procedure will use for this request"
+        description: "The custom server to probe"
         content:
-          text/plain:
-            schema:
-              type: string
-              example: "http://different-address:8080"
+          application/json:
+              schema:
+                $ref: "#/components/schemas/ProbeCustomServer"
       responses:
         "200":
           description: "Request accepted"
@@ -178,6 +177,14 @@ components:
         try-again-in:
           type: integer
           example: 3600
+
+    ProbeCustomServer:
+      description: "Server address which the update procedure will use for this request"
+      type: object
+      properties:
+        custom-server:
+          type: string
+          example: "http://different-address:8080"
 
     AgentStatus:
       description: "Agent state information"
