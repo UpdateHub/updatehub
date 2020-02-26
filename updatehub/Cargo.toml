@@ -10,7 +10,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-actix = { git = "https://github.com/actix/actix" }
+actix = "0.10.0-alpha.1"
 actix-rt = "1"
 actix-web = "2"
 async-trait = "0.1"
