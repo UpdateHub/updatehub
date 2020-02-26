@@ -8,6 +8,11 @@ pub mod probe {
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
+    pub struct Request {
+        pub custom_server: String,
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
     pub struct Response {
         pub update_available: bool,
         pub try_again_in: i32,
