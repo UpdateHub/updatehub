@@ -2,22 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{firmware::Metadata, settings::Settings};
 use actix::{Context, Handler, Message, MessageResult};
-use serde::Serialize;
 
 #[derive(Message)]
 #[rtype(Response)]
 pub(crate) struct Request;
 
-#[derive(Serialize)]
-pub(crate) struct Response {
-    #[serde(skip)]
-    pub(crate) state: String,
-    pub(crate) version: String,
-    pub(crate) config: Settings,
-    pub(crate) firmware: Metadata,
-}
+pub(crate) use sdk::api::info::Response;
 
 impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;
@@ -28,8 +19,9 @@ impl Handler<Request> for super::Machine {
             return MessageResult(Response {
                 state,
                 version: crate::version().to_string(),
-                config: self.shared_state.settings.clone(),
-                firmware: self.shared_state.firmware.clone(),
+                config: self.shared_state.settings.0.clone(),
+                firmware: self.shared_state.firmware.0.clone(),
+                runtime_settings: self.shared_state.runtime_settings.clone(),
             });
         }
 

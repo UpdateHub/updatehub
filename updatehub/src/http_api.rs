@@ -5,8 +5,7 @@
 use crate::states::actor;
 use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
 use derive_more::{Display, From};
-use serde::Serialize;
-use serde_json::json;
+use sdk::api;
 use slog_scope::debug;
 
 pub(crate) struct API(actix::Addr<actor::Machine>);
@@ -17,13 +16,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[display(fmt = "Mailbox error: {}", _0)]
     ActixMailbox(actix::MailboxError),
-}
-
-#[derive(Serialize)]
-struct StateChangeResponse {
-    busy: bool,
-    #[serde(rename = "current-state")]
-    state: String,
 }
 
 impl API {
@@ -83,13 +75,15 @@ impl Responder for actor::download_abort::Response {
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
         match self {
-            actor::download_abort::Response::RequestAccepted => HttpResponse::Ok().json(json!({
-                "message": "request accepted, download aborted"
-            })),
+            actor::download_abort::Response::RequestAccepted => {
+                HttpResponse::Ok().json(api::abort_download::Response {
+                    message: "request accepted, download aborted".to_owned(),
+                })
+            }
             actor::download_abort::Response::InvalidState => {
-                HttpResponse::BadRequest().json(json!({
-                    "error": "there is no download to be aborted"
-                }))
+                HttpResponse::BadRequest().json(api::abort_download::Refused {
+                    error: "there is no download to be aborted".to_owned(),
+                })
             }
         }
     }
@@ -101,11 +95,11 @@ impl Responder for actor::probe::Response {
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
         match self {
-            actor::probe::Response::RequestAccepted(state) => {
-                HttpResponse::Ok().json(StateChangeResponse { busy: false, state })
+            actor::probe::Response::RequestAccepted(current_state) => {
+                HttpResponse::Ok().json(api::state::Response { busy: false, current_state })
             }
-            actor::probe::Response::InvalidState(state) => {
-                HttpResponse::Ok().json(StateChangeResponse { busy: true, state })
+            actor::probe::Response::InvalidState(current_state) => {
+                HttpResponse::Ok().json(api::state::Response { busy: true, current_state })
             }
         }
     }
@@ -117,11 +111,12 @@ impl Responder for actor::local_install::Response {
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
         match self {
-            actor::local_install::Response::RequestAccepted(state) => {
-                HttpResponse::Ok().json(StateChangeResponse { busy: false, state })
+            actor::local_install::Response::RequestAccepted(current_state) => {
+                HttpResponse::Ok().json(api::state::Response { busy: false, current_state })
             }
-            actor::local_install::Response::InvalidState(state) => {
-                HttpResponse::UnprocessableEntity().json(StateChangeResponse { busy: true, state })
+            actor::local_install::Response::InvalidState(current_state) => {
+                HttpResponse::UnprocessableEntity()
+                    .json(api::state::Response { busy: true, current_state })
             }
         }
     }
@@ -133,11 +128,12 @@ impl Responder for actor::remote_install::Response {
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
         match self {
-            actor::remote_install::Response::RequestAccepted(state) => {
-                HttpResponse::Ok().json(StateChangeResponse { busy: false, state })
+            actor::remote_install::Response::RequestAccepted(current_state) => {
+                HttpResponse::Ok().json(api::state::Response { busy: false, current_state })
             }
-            actor::remote_install::Response::InvalidState(state) => {
-                HttpResponse::UnprocessableEntity().json(StateChangeResponse { busy: true, state })
+            actor::remote_install::Response::InvalidState(current_state) => {
+                HttpResponse::UnprocessableEntity()
+                    .json(api::state::Response { busy: true, current_state })
             }
         }
     }

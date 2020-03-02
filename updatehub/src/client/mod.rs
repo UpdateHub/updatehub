@@ -8,6 +8,7 @@ use reqwest::{
     header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
     Client, StatusCode,
 };
+use sdk::api::info::firmware as api;
 use serde::Serialize;
 use slog_scope::debug;
 use std::{path::Path, time::Duration};
@@ -43,6 +44,31 @@ pub enum Error {
     InvalidHeader(reqwest::header::InvalidHeaderValue),
 }
 
+// We redefine the metadata structure here because the cloud
+// uses a different serialization format than we use on
+// the local sdk.
+#[derive(Serialize)]
+#[serde(rename_all = "kebab-case")]
+struct FirmwareMetadata<'a> {
+    pub product_uid: &'a str,
+    pub version: &'a str,
+    pub hardware: &'a str,
+    pub device_identity: &'a api::MetadataValue,
+    pub device_attributes: &'a api::MetadataValue,
+}
+
+impl<'a> FirmwareMetadata<'a> {
+    fn from_sdk(metadata: &'a api::Metadata) -> Self {
+        FirmwareMetadata {
+            product_uid: &metadata.product_uid,
+            version: &metadata.version,
+            hardware: &metadata.hardware,
+            device_identity: &metadata.device_identity,
+            device_attributes: &metadata.device_attributes,
+        }
+    }
+}
+
 impl<'a> Api<'a> {
     pub(crate) fn new(server: &'a str) -> Self {
         Self { server }
@@ -70,7 +96,7 @@ impl<'a> Api<'a> {
             .client()?
             .post(&format!("{}/upgrades", &self.server))
             .header(HeaderName::from_static("api-retries"), runtime_settings.retries())
-            .json(firmware)
+            .json(&FirmwareMetadata::from_sdk(&firmware.0))
             .send()
             .await?;
 
@@ -147,7 +173,7 @@ impl<'a> Api<'a> {
             #[serde(rename = "status")]
             state: &'a str,
             #[serde(flatten)]
-            firmware: &'a Metadata,
+            firmware: FirmwareMetadata<'a>,
             package_uid: &'a str,
             #[serde(skip_serializing_if = "Option::is_none")]
             previous_state: Option<&'a str>,
@@ -157,6 +183,7 @@ impl<'a> Api<'a> {
             current_log: Option<String>,
         }
 
+        let firmware = FirmwareMetadata::from_sdk(&firmware.0);
         let payload =
             Payload { state, firmware, package_uid, previous_state, error_message, current_log };
 

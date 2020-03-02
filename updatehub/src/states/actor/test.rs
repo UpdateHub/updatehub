@@ -66,7 +66,7 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
         Probe::Enabled => true,
         Probe::Disabled => false,
     };
-    let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
+    let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
     let firmware = Metadata::from_path(&create_fake_metadata(match kind {
         Setup::HasUpdate => FakeDevice::HasUpdate,
         Setup::NoUpdate => FakeDevice::NoUpdate,
@@ -101,8 +101,8 @@ async fn info_request() {
     let response = addr.send(info::Request).await.unwrap();
     assert_eq!(response.state, "idle");
     assert_eq!(response.version, crate::version().to_string());
-    assert_eq!(response.config, settings);
-    assert_eq!(response.firmware, firmware);
+    assert_eq!(response.config, settings.0);
+    assert_eq!(response.firmware, firmware.0);
 }
 
 #[actix_rt::test]

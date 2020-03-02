@@ -32,7 +32,6 @@ regex = "1"
 reqwest = { version = "0.10", features = ["default-tls", "json"] }
 sdk = { path = "../updatehub-sdk", package = "updatehub-sdk" }
 serde = { version = "1", features = ["rc", "derive"] }
-serde_ini = "0.2"
 serde_json = "1"
 slog = { version = "2", features = ["max_level_trace", "release_max_level_trace"] }
 slog-async = "2"
@@ -42,6 +41,7 @@ sys-mount = "1"
 tempfile = "3"
 timeout-readwrite = "0.3"
 tokio = { version = "0.2", features = ["fs"] }
+toml = "0.5"
 walkdir = "2"
 
 [build-dependencies]
