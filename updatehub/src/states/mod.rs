@@ -128,7 +128,7 @@ where
         use transition::{state_change_callback, Transition};
 
         let transition =
-            state_change_callback(&shared_state.settings.firmware.metadata_path, self.name())?;
+            state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
 
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress(shared_state).await?),
@@ -267,11 +267,11 @@ impl StateMachine {
 /// ```
 pub async fn run(settings: Settings) -> crate::Result<()> {
     let listen_socket = settings.network.listen_socket.clone();
-    let mut runtime_settings = RuntimeSettings::new().load(&settings.storage.runtime_settings)?;
+    let mut runtime_settings = RuntimeSettings::load(&settings.storage.runtime_settings)?;
     if !settings.storage.read_only {
         runtime_settings.enable_persistency();
     }
-    let firmware = Metadata::from_path(&settings.firmware.metadata_path)?;
+    let firmware = Metadata::from_path(&settings.firmware.metadata)?;
 
     let machine_addr =
         actor::Machine::new(StateMachine::new(), settings, runtime_settings, firmware).start();

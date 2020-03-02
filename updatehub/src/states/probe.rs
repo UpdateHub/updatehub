@@ -114,7 +114,7 @@ mod tests {
         let mock = create_mock_server(FakeServer::NoUpdate);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
+        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
@@ -138,7 +138,7 @@ mod tests {
         let mock = create_mock_server(FakeServer::HasUpdate);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
+        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
@@ -162,7 +162,7 @@ mod tests {
         let mock = create_mock_server(FakeServer::InvalidHardware);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
+        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
         let firmware =
             Metadata::from_path(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
@@ -184,7 +184,7 @@ mod tests {
         let mock = create_mock_server(FakeServer::ExtraPoll);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
+        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
@@ -207,7 +207,7 @@ mod tests {
 
         let mock = create_mock_server(FakeServer::HasUpdate).expect(2);
 
-        let mut runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
+        let mut runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
 
         // We first get the package_uid that will be returned so we can
         // use it for the upcoming test.
@@ -252,7 +252,7 @@ mod tests {
         let mock = create_mock_server(FakeServer::ErrorOnce);
 
         let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::new().load(tmpfile.to_str().unwrap()).unwrap();
+        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
 

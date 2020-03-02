@@ -2,31 +2,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::serde_helpers::{de, ser};
-
 use chrono::Duration;
-use derive_more::{Display, From};
-use serde::{Deserialize, Serialize};
+use derive_more::{Deref, DerefMut, Display, From};
 use slog_scope::{debug, error};
-use std::{io, path::PathBuf};
+use std::{fs, io};
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 
-// When running inside a test environment we default to the mock
-// server
-#[cfg(test)]
-use mockito;
-
-#[derive(Debug, Default, PartialEq, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "PascalCase")]
-pub struct Settings {
-    #[serde(default)]
-    pub(crate) firmware: Firmware,
-    pub(crate) network: Network,
-    pub(crate) polling: Polling,
-    pub(crate) storage: Storage,
-    pub(crate) update: Update,
-}
+pub use sdk::api::info::settings as api;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -34,12 +17,46 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[display(fmt = "IO error: {}", _0)]
     Io(io::Error),
-    #[display(fmt = "Invalid INI fail: {}", _0)]
-    Ini(serde_ini::de::Error),
+    #[display(fmt = "Fail reading the file: {}", _0)]
+    Deserialize(toml::de::Error),
+    #[display(fmt = "Fail generating the file: {}", _0)]
+    Serialize(toml::ser::Error),
     #[display(fmt = "Invalid interval")]
     InvalidInterval,
     #[display(fmt = "Invalid server address")]
     InvalidServerAddress,
+}
+
+#[derive(Clone, Debug, Deref, DerefMut, From, PartialEq)]
+pub struct Settings(pub api::Settings);
+
+impl Default for Settings {
+    fn default() -> Self {
+        Settings(api::Settings {
+            polling: api::Polling { interval: Duration::days(1), enabled: true },
+            storage: api::Storage {
+                read_only: false,
+                runtime_settings: "/var/lib/updatehub/runtime_settings.conf".into(),
+            },
+            update: api::Update {
+                download_dir: "/tmp/updatehub".into(),
+                supported_install_modes: [
+                    "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
+                ]
+                .iter()
+                .map(|i| (*i).to_string())
+                .collect(),
+            },
+            network: api::Network {
+                #[cfg(test)]
+                server_address: mockito::server_url().to_string(),
+                #[cfg(not(test))]
+                server_address: "https://api.updatehub.io".to_string(),
+                listen_socket: "localhost:8080".to_string(),
+            },
+            firmware: api::Firmware { metadata: "/usr/share/updatehub".into() },
+        })
+    }
 }
 
 impl Settings {
@@ -47,21 +64,15 @@ impl Settings {
     /// `/etc/updatehub.conf` does not exists, it uses the default
     /// settings.
     pub fn load() -> Result<Self> {
-        use std::{fs::File, io::Read, path::Path};
-
-        let path = Path::new(SYSTEM_SETTINGS_PATH);
+        let path = std::path::Path::new(SYSTEM_SETTINGS_PATH);
 
         if path.exists() {
-            debug!("Loading system settings from '{}'...", path.to_string_lossy());
-
-            let mut content = String::new();
-            File::open(path)?.read_to_string(&mut content)?;
-
-            Ok(Self::parse(&content)?)
+            debug!("Loading system settings from {:?}...", path);
+            Ok(Self::parse(&fs::read_to_string(path)?)?)
         } else {
             debug!(
-                "System settings file {} does not exists. Using default system settings...",
-                path.to_string_lossy()
+                "System settings file {:?} does not exists. Using default system settings...",
+                path
             );
             Ok(Self::default())
         }
@@ -71,7 +82,7 @@ impl Settings {
     // needed validations for all fields, and returns either `Self` or
     // `Err`.
     fn parse(content: &str) -> Result<Self> {
-        let settings = serde_ini::from_str::<Self>(content)?;
+        let settings = Settings(toml::from_str::<api::Settings>(content)?);
 
         if settings.polling.interval < Duration::seconds(60) {
             error!(
@@ -93,236 +104,103 @@ impl Settings {
     }
 }
 
-#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
-#[serde(rename_all = "PascalCase")]
-pub struct Polling {
-    #[serde(deserialize_with = "de::duration_from_str", serialize_with = "ser::duration_to_int")]
-    /// Inverval to automatically poll the server for update. By
-    /// default, it uses 1 day of interval.
-    pub interval: Duration,
-    #[serde(deserialize_with = "de::bool_from_str")]
-    /// Defines if automatic polling is enabled or not. By default it
-    /// is enabled.
-    pub enabled: bool,
-}
-
-impl Default for Polling {
-    fn default() -> Self {
-        Self { interval: Duration::days(1), enabled: true }
-    }
-}
-
-#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
-#[serde(rename_all = "PascalCase")]
-pub struct Storage {
-    /// Determine if it should run on read-only mode or not. By
-    /// default, read-only mode is disabled.
-    #[serde(deserialize_with = "de::bool_from_str")]
-    #[serde(default)]
-    pub read_only: bool,
-    /// Define where the runtime settings are stored. By default,
-    /// those are stored in
-    /// `/var/lib/updatehub/runtime_settings.conf`.
-    #[serde(rename = "RuntimeSettingsPath")]
-    pub runtime_settings: String,
-}
-
-impl Default for Storage {
-    fn default() -> Self {
-        Self {
-            read_only: false,
-            runtime_settings: "/var/lib/updatehub/runtime_settings.conf".into(),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
-#[serde(rename_all = "PascalCase")]
-pub struct Update {
-    pub download_dir: PathBuf,
-    #[serde(rename = "SupportedInstallModes")]
-    #[serde(deserialize_with = "de::vec_from_str")]
-    pub install_modes: Vec<String>,
-}
-
-impl Default for Update {
-    fn default() -> Self {
-        Self {
-            download_dir: "/tmp/updatehub".into(),
-            install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"]
-                .iter()
-                .map(|i| (*i).to_string())
-                .collect(),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
-#[serde(rename_all = "PascalCase")]
-pub struct Network {
-    pub server_address: String,
-    #[serde(default = "default_listen_socket")]
-    pub listen_socket: String,
-}
-
-fn default_listen_socket() -> String {
-    "localhost:8080".to_string()
-}
-
-impl Default for Network {
-    fn default() -> Self {
-        #[cfg(test)]
-        let server_address = mockito::server_url().to_string();
-        #[cfg(not(test))]
-        let server_address = "https://api.updatehub.io".to_string();
-
-        Self { server_address, listen_socket: default_listen_socket() }
-    }
-}
-
-#[derive(Debug, Deserialize, PartialEq, Serialize, Clone)]
-#[serde(rename_all = "PascalCase")]
-#[serde(default)]
-pub struct Firmware {
-    pub metadata_path: PathBuf,
-}
-
-impl Default for Firmware {
-    fn default() -> Self {
-        Self { metadata_path: "/usr/share/updatehub".into() }
-    }
-}
-
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]
-    fn ok() {
-        use pretty_assertions::assert_eq;
-        let ini = r"
-[Polling]
-Interval=60s
-Enabled=false
+    fn basic_config() {
+        let sample = r#"
+[network]
+server_address="https://api.updatehub.io"
+listen_socket="localhost:8080"
 
-[Storage]
-RuntimeSettingsPath=/run/updatehub/state
+[storage]
+read_only = false
+runtime_settings="/data/updatehub/state.data"
 
-[Update]
-DownloadDir=/tmp/download
-SupportedInstallModes=mode1,mode2
+[polling]
+enabled=true
+interval="60s"
 
-[Network]
-ServerAddress=http://localhost
-";
+[update]
+download_dir="/tmp/updatehub"
+supported_install_modes=["copy", "tarball"]
 
-        let expected = Settings {
-            polling: Polling { interval: Duration::seconds(60), enabled: false },
-            storage: Storage { read_only: false, runtime_settings: "/run/updatehub/state".into() },
-            update: Update {
-                download_dir: "/tmp/download".into(),
-                install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(),
+[firmware]
+metadata="/usr/share/updatehub"
+"#;
+        let expected = Settings(api::Settings {
+            polling: api::Polling { interval: Duration::minutes(1), enabled: true },
+            storage: api::Storage {
+                read_only: false,
+                runtime_settings: "/data/updatehub/state.data".into(),
             },
-            network: Network {
-                server_address: "http://localhost".into(),
-                listen_socket: "localhost:8080".into(),
+            update: api::Update {
+                download_dir: "/tmp/updatehub".into(),
+                supported_install_modes: ["copy", "tarball"]
+                    .iter()
+                    .map(|i| (*i).to_string())
+                    .collect(),
             },
-            firmware: Firmware { metadata_path: "/usr/share/updatehub".into() },
-        };
-
-        assert_eq!(
-            serde_ini::from_str::<Settings>(ini).map_err(|e| println!("{}", e)).unwrap(),
-            expected
-        );
-    }
-
-    #[test]
-    fn custom_listen_socket() {
-        use pretty_assertions::assert_eq;
-        let ini = r"
-[Polling]
-Interval=60s
-Enabled=false
-
-[Storage]
-RuntimeSettingsPath=/run/updatehub/state
-
-[Update]
-DownloadDir=/tmp/download
-SupportedInstallModes=mode1,mode2
-
-[Network]
-ServerAddress=http://localhost
-ListenSocket=localhost:8313
-";
-
-        let expected = Settings {
-            polling: Polling { interval: Duration::seconds(60), enabled: false },
-            storage: Storage { read_only: false, runtime_settings: "/run/updatehub/state".into() },
-            update: Update {
-                download_dir: "/tmp/download".into(),
-                install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(),
+            network: api::Network {
+                server_address: "https://api.updatehub.io".to_string(),
+                listen_socket: "localhost:8080".to_string(),
             },
-            network: Network {
-                server_address: "http://localhost".into(),
-                listen_socket: "localhost:8313".into(),
-            },
-            firmware: Firmware { metadata_path: "/usr/share/updatehub".into() },
-        };
-
-        assert_eq!(
-            serde_ini::from_str::<Settings>(ini).map_err(|e| println!("{}", e)).unwrap(),
-            expected
-        );
+            firmware: api::Firmware { metadata: "/usr/share/updatehub".into() },
+        });
+        assert_eq!(Settings::parse(sample).unwrap(), expected);
     }
 
     #[test]
     fn invalid_polling_interval() {
-        let ini = r"
-[Polling]
-Interval=59s
-Enabled=false
+        let sample = r#"
+[network]
+server_address="https://api.updatehub.io"
+listen_socket="localhost:8080"
 
-[Storage]
-ReadOnly=true
-RuntimeSettings=/run/updatehub/state
+[storage]
+read_only = false
+runtime_settings="/data/updatehub/state.data"
 
-[Update]
-DownloadDir=/tmp/download
-SupportedInstallModes=mode1,mode2
+[polling]
+enabled=true
+interval="59s"
 
-[Network]
-ServerAddress=http://localhost
+[update]
+download_dir="/tmp/updatehub"
+supported_install_modes=["copy", "tarball"]
 
-[Firmware]
-MetadataPath=/tmp/metadata
-";
-        assert!(Settings::parse(ini).is_err());
+[firmware]
+metadata="/usr/share/updatehub"
+"#;
+        assert!(Settings::parse(sample).is_err());
     }
 
     #[test]
     fn invalid_network_server_address() {
-        let ini = r"
-[Polling]
-Interval=60s
-Enabled=false
+        let sample = r#"
+[network]
+server_address="api.updatehub.io"
+listen_socket="localhost:8080"
 
-[Storage]
-ReadOnly=true
-RuntimeSettings=/run/updatehub/state
+[storage]
+read_only = false
+runtime_settings="/data/updatehub/state.data"
 
-[Update]
-DownloadDir=/tmp/download
-SupportedInstallModes=mode1,mode2
+[polling]
+enabled=true
+interval=60s
 
-[Network]
-ServerAddress=localhost
+[update]
+download_dir="/tmp/updatehub"
+supported_install_modes=["copy", "tarball"]
 
-[Firmware]
-MetadataPath=/tmp/metadata
-";
+[firmware]
+metadata="/usr/share/updatehub"
+"#;
 
-        assert!(Settings::parse(ini).is_err());
+        assert!(Settings::parse(sample).is_err());
     }
 
     #[test]
@@ -331,25 +209,27 @@ MetadataPath=/tmp/metadata
         let mut settings = Settings::default();
         settings.network.server_address = "https://api.updatehub.io".to_string();
 
-        let expected = Settings {
-            polling: Polling { interval: Duration::days(1), enabled: true },
-            storage: Storage {
+        let expected = Settings(api::Settings {
+            polling: api::Polling { interval: Duration::days(1), enabled: true },
+            storage: api::Storage {
                 read_only: false,
                 runtime_settings: "/var/lib/updatehub/runtime_settings.conf".into(),
             },
-            update: Update {
+            update: api::Update {
                 download_dir: "/tmp/updatehub".into(),
-                install_modes: ["dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs"]
-                    .iter()
-                    .map(|i| i.to_string())
-                    .collect(),
+                supported_install_modes: [
+                    "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
+                ]
+                .iter()
+                .map(|i| i.to_string())
+                .collect(),
             },
-            network: Network {
+            network: api::Network {
                 server_address: "https://api.updatehub.io".to_string(),
                 listen_socket: "localhost:8080".to_string(),
             },
-            firmware: Firmware { metadata_path: "/usr/share/updatehub".into() },
-        };
+            firmware: api::Firmware { metadata: "/usr/share/updatehub".into() },
+        });
 
         assert_eq!(Some(settings), Some(expected));
     }
