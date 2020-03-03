@@ -259,7 +259,7 @@ impl StateMachine {
 /// # async fn run() -> Result<(), updatehub::Error> {
 /// use updatehub;
 ///
-/// updatehub::logger::init(0);
+/// updatehub::logger::init(slog::Level::Info);
 /// let settings = updatehub::Settings::load()?;
 /// updatehub::run(settings).await?;
 /// # Ok(())
