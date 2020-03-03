@@ -1,0 +1,16 @@
+# Copyright (C) 2019, 2020 O.S. Systems Sofware LTDA
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "updatehub-sdk"
+version = "0.1.0"
+authors = ["asakiz <asakizin@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+derive_more = "0.99"
+parse_duration = "2"
+reqwest = { version = "0.10", features = ["default-tls", "json"] }
+serde = { version = "1", features = ["derive"] }

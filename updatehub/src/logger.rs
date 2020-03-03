@@ -14,13 +14,7 @@ lazy_static! {
     static ref BUFFER: Arc<Mutex<MemDrain>> = Arc::new(Mutex::new(MemDrain::default()));
 }
 
-pub fn init(verbose: usize) {
-    let level = match verbose {
-        0 => slog::Level::Info,
-        1 => slog::Level::Debug,
-        _ => slog::Level::Trace,
-    };
-
+pub fn init(level: slog::Level) {
     let buffer_drain = buffer().filter_level(level).fuse();
     let terminal_drain = Mutex::new(slog_term::term_full().filter_level(level)).fuse();
     let terminal_drain = slog_async::Async::new(terminal_drain).build().fuse();
