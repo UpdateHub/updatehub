@@ -23,6 +23,7 @@ impl Handler<Request> for super::Machine {
             return match res {
                 Response::InvalidState(_) => MessageResult(res),
                 Response::RequestAccepted(_) => {
+                    self.shared_state.runtime_settings.reset_transient_settings();
                     if let Some(server_address) = req.0 {
                         self.shared_state
                             .runtime_settings
