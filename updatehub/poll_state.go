@@ -36,6 +36,11 @@ func (state *PollState) Cancel(ok bool, nextState State) bool {
 
 // Handle for PollState encapsulates the polling logic
 func (state *PollState) Handle(uh *UpdateHub) (State, bool) {
+	if !uh.Settings.PollingEnabled && !uh.Settings.ProbeASAP {
+		state.Wait()
+		return state.NextState(), false
+	}
+
 	var nextState State
 
 	nextState = state
