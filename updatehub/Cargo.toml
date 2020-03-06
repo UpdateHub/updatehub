@@ -10,7 +10,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-actix = "0.10.0-alpha.1"
+actix = "0.10.0-alpha.2"
 actix-rt = "1"
 actix-web = "2"
 argh = "0.1.3"
