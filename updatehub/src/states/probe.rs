@@ -6,7 +6,7 @@ use super::{
     actor::{self, SharedState},
     Idle, Poll, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
 };
-use crate::client::{Api, ProbeResponse};
+use crate::client::{self, Api, ProbeResponse};
 use chrono::{Duration, Utc};
 use slog_scope::{debug, error, info};
 
@@ -37,8 +37,11 @@ impl StateChangeImpl for State<Probe> {
             .probe(&shared_state.runtime_settings, &shared_state.firmware)
             .await
         {
+            Err(client::Error::Client(e)) if e.is_builder() => {
+                return Err(client::Error::Client(e).into());
+            }
             Err(e) => {
-                error!("{}", e);
+                error!("Probe failed: {}", e);
                 shared_state.runtime_settings.inc_retries();
                 return Ok((
                     StateMachine::Probe(self),
