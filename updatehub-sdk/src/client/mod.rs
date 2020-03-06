@@ -56,7 +56,7 @@ impl Client {
         let response = self
             .client
             .post(&format!("{}/local_install", self.server_address))
-            .body(format!("{:?}", file))
+            .body(format!("{}", file.display()))
             .send()
             .await?;
 
