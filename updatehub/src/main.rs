@@ -100,7 +100,7 @@ async fn cli_main(cmd: CliCommands) -> updatehub::Result<()> {
 
     let res = match cmd {
         CliCommands::Info(_) => client.info().await,
-        CliCommands::Probe(_) => client.probe(None).await,
+        CliCommands::Probe(_) => todo!("probe"),
         CliCommands::Log(_) => todo!("log"),
         CliCommands::Abort(_) => todo!("abort"),
         CliCommands::Download(_) => todo!("Download"),
