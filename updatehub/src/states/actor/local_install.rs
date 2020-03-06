@@ -24,6 +24,7 @@ impl Handler<Request> for super::Machine {
             return match res {
                 Response::InvalidState(_) => MessageResult(res),
                 Response::RequestAccepted(_) => {
+                    crate::logger::buffer().lock().unwrap().start_logging();
                     self.stepper.restart(ctx.address());
                     self.state.replace(StateMachine::PrepareLocalInstall(State(
                         PrepareLocalInstall { update_file: req.0 },
