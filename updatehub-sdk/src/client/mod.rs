@@ -37,7 +37,7 @@ impl Client {
     pub async fn probe(&self, custom: Option<String>) -> Result<api::probe::Response> {
         let request = self.client.post(&format!("{}/probe", self.server_address));
         let response = match custom {
-            Some(custom) => request.body(custom),
+            Some(custom_server) => request.json(&api::probe::Request { custom_server }),
             None => request,
         }
         .send()
