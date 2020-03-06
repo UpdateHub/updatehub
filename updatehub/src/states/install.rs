@@ -98,9 +98,6 @@ impl StateChangeImpl for State<Install> {
         info!("Swapping active installation set");
 
         info!("Update installed successfully");
-        let buffer = crate::logger::buffer();
-        buffer.lock().unwrap().stop_logging();
-        buffer.lock().unwrap().clear();
         Ok((StateMachine::Reboot(self.into()), actor::StepTransition::Immediate))
     }
 }

@@ -26,11 +26,8 @@ struct LogRecord {
 }
 
 impl MemDrain {
-    pub fn clear(&self) {
-        self.records.lock().unwrap().clear();
-    }
-
     pub fn start_logging(&mut self) {
+        self.records.lock().unwrap().clear();
         self.logging = true;
     }
 

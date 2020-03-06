@@ -34,7 +34,6 @@ impl StateChangeImpl for State<PrepareDownload> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        crate::logger::buffer().lock().unwrap().start_logging();
         let installation_set = installation_set::inactive()?;
         let download_dir = shared_state.settings.update.download_dir.to_owned();
 

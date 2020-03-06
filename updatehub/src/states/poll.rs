@@ -28,6 +28,7 @@ impl StateChangeImpl for State<Poll> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
+        crate::logger::buffer().lock().unwrap().start_logging();
         let current_time: DateTime<Utc> = Utc::now();
 
         if shared_state.runtime_settings.is_polling_forced() {

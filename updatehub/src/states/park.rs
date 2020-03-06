@@ -34,6 +34,7 @@ impl StateChangeImpl for State<Park> {
 
     async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
         debug!("Staying on Park state.");
+        crate::logger::buffer().lock().unwrap().stop_logging();
         Ok((StateMachine::Park(self), actor::StepTransition::Never))
     }
 }
