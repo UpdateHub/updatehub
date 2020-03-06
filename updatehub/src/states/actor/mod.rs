@@ -17,7 +17,9 @@ use super::{
     DirectDownload, Idle, Metadata, PrepareLocalInstall, Probe, RuntimeSettings, Settings, State,
     StateMachine,
 };
-use actix::{Actor, Addr, Arbiter, AsyncContext, Context, Handler, Message, ResponseFuture};
+use actix::{
+    fut::WrapFuture, Actor, Addr, Arbiter, AsyncContext, AtomicResponse, Context, Handler, Message,
+};
 use slog_scope::info;
 
 pub(crate) struct Machine {
@@ -86,23 +88,25 @@ pub(crate) enum StepTransition {
 }
 
 impl Handler<Step> for Machine {
-    type Result = ResponseFuture<StepTransition>;
+    type Result = AtomicResponse<Self, StepTransition>;
 
     fn handle(&mut self, _: Step, _: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = self.state.take() {
             let this: *mut Self = self;
 
-            return Box::pin(async move {
-                unsafe {
+            return AtomicResponse::new(Box::pin(
+                async move {
+                    let this = unsafe { this.as_mut().unwrap() };
                     let (state, transition) = machine
-                        .move_to_next_state(&mut (*this).shared_state)
+                        .move_to_next_state(&mut this.shared_state)
                         .await
                         .unwrap_or_else(|e| (StateMachine::from(e), StepTransition::Immediate));
-                    (*this).state = Some(state);
+                    this.state = Some(state);
 
                     transition
                 }
-            });
+                .into_actor(self),
+            ));
         }
 
         unreachable!("Failed to take StateMachine from StateAgent")
