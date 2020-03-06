@@ -28,7 +28,7 @@ impl StateChangeImpl for State<Error> {
     }
 
     async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
-        error!("Error state reached: {:?}", self.0.error);
+        error!("Error state reached: {}", self.0.error);
 
         info!("Returning to idle state");
         Ok((StateMachine::Idle(State(Idle {})), actor::StepTransition::Immediate))
