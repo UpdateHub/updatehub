@@ -198,3 +198,52 @@ fn check_load_metadata() {
         assert_eq!(2, metadata.device_attributes.len());
     }
 }
+
+const CALLBACK_STATE_NAME: &str = "test_state";
+
+fn create_state_change_callback_hook(content: &str) -> tempfile::TempDir {
+    let tmpdir = tempfile::tempdir().unwrap();
+    create_hook(tmpdir.path().join(STATE_CHANGE_CALLBACK), content);
+    tmpdir
+}
+
+#[test]
+fn state_callback_cancel() {
+    let script = "#!/bin/sh\necho cancel";
+    let tmpdir = create_state_change_callback_hook(&script);
+    assert_eq!(
+        state_change_callback(&tmpdir.path(), CALLBACK_STATE_NAME).unwrap(),
+        Transition::Cancel,
+        "Unexpected result using content {:?}",
+        script,
+    );
+}
+
+#[test]
+fn state_callback_continue_transition() {
+    let script = "#!/bin/sh\necho ";
+    let tmpdir = create_state_change_callback_hook(&script);
+    assert_eq!(
+        state_change_callback(&tmpdir.path(), CALLBACK_STATE_NAME).unwrap(),
+        Transition::Continue,
+        "Unexpected result using content {:?}",
+        script,
+    );
+}
+
+#[test]
+fn state_callback_non_existing_hook() {
+    assert_eq!(
+        state_change_callback(&Path::new("/NaN"), CALLBACK_STATE_NAME).unwrap(),
+        Transition::Continue,
+        "Unexpected result for non-existing hook",
+    );
+}
+
+#[test]
+fn state_callback_is_error() {
+    for script in &["#!/bin/sh\necho 123", "#!/bin/sh\necho 123\ncancel"] {
+        let tmpdir = create_state_change_callback_hook(script);
+        assert!(state_change_callback(&tmpdir.path(), CALLBACK_STATE_NAME).is_err());
+    }
+}

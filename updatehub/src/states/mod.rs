@@ -16,7 +16,6 @@ mod prepare_download;
 mod prepare_local_install;
 mod probe;
 mod reboot;
-mod transition;
 
 use self::{
     direct_download::DirectDownload, download::Download, entry_point::EntryPoint, error::Error,
@@ -125,7 +124,7 @@ where
         self,
         shared_state: &mut actor::SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        use transition::{state_change_callback, Transition};
+        use crate::firmware::{state_change_callback, Transition};
 
         let transition =
             state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
