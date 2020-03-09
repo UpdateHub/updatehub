@@ -79,7 +79,7 @@ fn missing_object_file() {
 
     assert_eq!(
         update_package
-            .filter_objects(&settings, InstallationSet::A, object::info::Status::Missing)
+            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Missing)
             .len(),
         1
     );
@@ -94,25 +94,25 @@ fn complete_object_file() {
 
     assert!(
         update_package
-            .filter_objects(&settings, InstallationSet::A, object::info::Status::Missing)
+            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Missing)
             .is_empty()
     );
 
     assert!(
         update_package
-            .filter_objects(&settings, InstallationSet::A, object::info::Status::Incomplete)
+            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Incomplete)
             .is_empty()
     );
 
     assert!(
         update_package
-            .filter_objects(&settings, InstallationSet::A, object::info::Status::Corrupted)
+            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Corrupted)
             .is_empty()
     );
 
     assert_eq!(
         update_package
-            .filter_objects(&settings, InstallationSet::A, object::info::Status::Ready)
+            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Ready)
             .iter()
             .count(),
         1
