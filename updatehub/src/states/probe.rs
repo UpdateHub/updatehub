@@ -31,7 +31,6 @@ impl StateChangeImpl for State<Probe> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        crate::logger::buffer().lock().unwrap().start_logging();
         let server_address = shared_state.server_address();
 
         let probe = match Api::new(&server_address)

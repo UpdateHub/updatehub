@@ -173,7 +173,7 @@ where
                     "error",
                     Some(enter_state),
                     Some(e.to_string()),
-                    Some(crate::logger::buffer().lock().unwrap().to_string()),
+                    Some(crate::logger::get_memory_log()),
                 )
                 .await
                 {
@@ -266,7 +266,7 @@ impl StateMachine {
 /// # }
 /// ```
 pub async fn run(settings: Settings) -> crate::Result<()> {
-    crate::logger::buffer().lock().unwrap().start_logging();
+    crate::logger::start_memory_logging();
     let listen_socket = settings.network.listen_socket.clone();
     let mut runtime_settings = RuntimeSettings::load(&settings.storage.runtime_settings)?;
     if !settings.storage.read_only {

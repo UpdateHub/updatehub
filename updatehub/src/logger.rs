@@ -29,3 +29,15 @@ pub fn init(level: slog::Level) {
 pub fn buffer() -> Arc<Mutex<MemDrain>> {
     BUFFER.clone()
 }
+
+pub fn start_memory_logging() {
+    BUFFER.lock().unwrap().start_logging()
+}
+
+pub fn stop_memory_logging() {
+    BUFFER.lock().unwrap().stop_logging()
+}
+
+pub fn get_memory_log() -> String {
+    BUFFER.lock().unwrap().to_string()
+}
