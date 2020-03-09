@@ -5,6 +5,7 @@
 use self::hook::{run_hook, run_hooks_from_dir};
 use derive_more::{Deref, DerefMut, Display, From};
 pub use sdk::api::info::firmware as api;
+use slog_scope::error;
 use std::path::Path;
 
 mod hook;
@@ -19,6 +20,7 @@ const VERSION_HOOK: &str = "version";
 const HARDWARE_HOOK: &str = "hardware";
 const DEVICE_IDENTITY_DIR: &str = "device-identity.d";
 const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
+const STATE_CHANGE_CALLBACK: &str = "state-change-callback";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -42,6 +44,12 @@ pub enum Error {
     Io(std::io::Error),
     #[display(fmt = "Process error: {}", _0)]
     Process(easy_process::Error),
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum Transition {
+    Continue,
+    Cancel,
 }
 
 #[derive(Clone, Debug, Deref, DerefMut, From, PartialEq)]
@@ -76,5 +84,33 @@ impl Metadata {
         }
 
         Ok(metadata)
+    }
+}
+
+pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transition> {
+    use std::io;
+
+    let callback = path.join(STATE_CHANGE_CALLBACK);
+    if !callback.exists() {
+        return Ok(Transition::Continue);
+    }
+
+    let output = easy_process::run(&format!("{} {}", &callback.to_string_lossy(), &state))?;
+    for err in output.stderr.lines() {
+        error!("{} (stderr): {}", path.display(), err);
+    }
+
+    match output.stdout.trim() {
+        "cancel" => Ok(Transition::Cancel),
+        "" => Ok(Transition::Continue),
+        _ => Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!(
+                "Invalid format found while running 'state-change-callback' \
+                 hook for state '{}'",
+                &state
+            ),
+        )
+        .into()),
     }
 }
