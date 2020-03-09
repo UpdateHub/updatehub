@@ -106,8 +106,26 @@ mod tests {
         runtime_settings::RuntimeSettings,
         settings::Settings,
     };
+    use sdk::api::info::runtime_settings::ServerAddress;
     use std::fs;
     use tempfile::NamedTempFile;
+
+    #[actix_rt::test]
+    async fn invalid_url() {
+        let settings = Settings::default();
+        let mut runtime_settings = RuntimeSettings::default();
+        runtime_settings.polling.server_address = ServerAddress::Custom("FOO".to_string());
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+
+        let res = StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).await;
+
+        match res {
+            Err(crate::states::TransitionError::Client(_)) => {}
+            Err(e) => panic!("Unexpected error returned: {:?}", e),
+            Ok(s) => panic!("Unexpected ok state reached: {:?}", s),
+        }
+    }
 
     #[actix_rt::test]
     async fn update_not_available() {
