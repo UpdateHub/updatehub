@@ -81,6 +81,7 @@ impl Machine {
 #[rtype(StepTransition)]
 struct Step;
 
+#[derive(Debug)]
 pub(crate) enum StepTransition {
     Delayed(std::time::Duration),
     Immediate,
