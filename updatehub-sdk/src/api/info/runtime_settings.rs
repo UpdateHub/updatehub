@@ -40,7 +40,7 @@ pub struct RuntimeUpdate {
     pub applied_package_uid: Option<String>,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub enum InstallationSet {
     A,
     B,
