@@ -4,24 +4,22 @@
 
 use crate::firmware::hook::run_script;
 
+use sdk::api::info::runtime_settings::InstallationSet;
 use std::{fmt, str::FromStr};
 
 const GET_SCRIPT: &str = "updatehub-active-get";
 const SET_SCRIPT: &str = "updatehub-active-set";
 
 #[derive(PartialEq, Debug, Copy, Clone)]
-pub enum Set {
-    A,
-    B,
-}
+pub struct Set(pub InstallationSet);
 
 impl FromStr for Set {
     type Err = super::Error;
 
     fn from_str(s: &str) -> super::Result<Self> {
         match s.parse::<u8>() {
-            Ok(0) => Ok(Set::A),
-            Ok(1) => Ok(Set::B),
+            Ok(0) => Ok(Set(InstallationSet::A)),
+            Ok(1) => Ok(Set(InstallationSet::B)),
             Ok(v) => Err(super::Error::InvalidInstallSet(v)),
             Err(e) => Err(e.into()),
         }
@@ -34,8 +32,8 @@ impl fmt::Display for Set {
             f,
             "{}",
             match self {
-                Set::A => "0",
-                Set::B => "1",
+                Set(InstallationSet::A) => "0",
+                Set(InstallationSet::B) => "1",
             }
         )
     }
@@ -47,8 +45,8 @@ pub fn active() -> super::Result<Set> {
 
 pub fn inactive() -> super::Result<Set> {
     match active()? {
-        Set::A => Ok(Set::B),
-        Set::B => Ok(Set::A),
+        Set(InstallationSet::A) => Ok(Set(InstallationSet::B)),
+        Set(InstallationSet::B) => Ok(Set(InstallationSet::A)),
     }
 }
 
@@ -60,8 +58,8 @@ pub fn swap_active() -> super::Result<()> {
 #[test]
 fn as_str() {
     use pretty_assertions::assert_eq;
-    assert_eq!("0", format!("{}", Set::A));
-    assert_eq!("1", format!("{}", Set::B));
+    assert_eq!("0", format!("{}", Set(InstallationSet::A)));
+    assert_eq!("1", format!("{}", Set(InstallationSet::B)));
 }
 
 #[test]
@@ -82,8 +80,8 @@ fn works() {
     // - inactive is B
     // - swap works
     create_fake_installation_set(&tmpdir, 0);
-    assert_eq!(active().unwrap(), Set::A);
-    assert_eq!(inactive().unwrap(), Set::B);
+    assert_eq!(active().unwrap(), Set(InstallationSet::A));
+    assert_eq!(inactive().unwrap(), Set(InstallationSet::B));
     assert!(swap_active().is_ok());
 
     // Create a fake backend using 1 as active. It must test the
@@ -92,7 +90,7 @@ fn works() {
     // - inactive is A
     // - swap works
     create_fake_installation_set(&tmpdir, 1);
-    assert_eq!(active().unwrap(), Set::B);
-    assert_eq!(inactive().unwrap(), Set::A);
+    assert_eq!(active().unwrap(), Set(InstallationSet::B));
+    assert_eq!(inactive().unwrap(), Set(InstallationSet::A));
     assert!(swap_active().is_ok());
 }

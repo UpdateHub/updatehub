@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    firmware::{installation_set::Set as InstallationSet, Metadata},
+    firmware::{installation_set::Set, Metadata},
     object::{self, Info},
     settings::Settings,
 };
+use sdk::api::info::runtime_settings::InstallationSet;
 use walkdir::WalkDir;
 
 use crypto_hash::{hex_digest, Algorithm};
@@ -71,15 +72,15 @@ impl UpdatePackage {
         self.supported_hardware.compatible_with(&firmware.hardware)
     }
 
-    pub(crate) fn objects(&self, installation_set: InstallationSet) -> &Vec<Object> {
-        match installation_set {
+    pub(crate) fn objects(&self, installation_set: Set) -> &Vec<Object> {
+        match installation_set.0 {
             InstallationSet::A => &self.objects.0,
             InstallationSet::B => &self.objects.1,
         }
     }
 
-    pub(crate) fn objects_mut(&mut self, installation_set: InstallationSet) -> &mut Vec<Object> {
-        match installation_set {
+    pub(crate) fn objects_mut(&mut self, installation_set: Set) -> &mut Vec<Object> {
+        match installation_set.0 {
             InstallationSet::A => &mut self.objects.0,
             InstallationSet::B => &mut self.objects.1,
         }
@@ -88,7 +89,7 @@ impl UpdatePackage {
     pub(crate) fn filter_objects(
         &self,
         settings: &Settings,
-        installation_set: InstallationSet,
+        installation_set: Set,
         filter: object::info::Status,
     ) -> Vec<&Object> {
         self.objects(installation_set)
@@ -107,7 +108,7 @@ impl UpdatePackage {
     pub(crate) fn clear_unrelated_files(
         &self,
         dir: &Path,
-        installation_set: InstallationSet,
+        installation_set: Set,
         settings: &Settings,
     ) -> io::Result<()> {
         // Prune left over objects from previous installations
