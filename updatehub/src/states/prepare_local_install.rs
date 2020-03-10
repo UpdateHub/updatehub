@@ -6,7 +6,10 @@ use super::{
     actor::{self, SharedState},
     Install, Result, State, StateChangeImpl, StateMachine,
 };
-use crate::{firmware::installation_set, update_package::UpdatePackage};
+use crate::{
+    firmware::installation_set,
+    update_package::{Signature, UpdatePackage},
+};
 use slog_scope::{debug, info};
 use std::{fs, path::PathBuf};
 
@@ -34,6 +37,16 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
 
         let metadata = fs::read(dest_path.join("metadata"))?;
         let update_package = UpdatePackage::parse(&metadata)?;
+        let signature = Some(dest_path.join("signature"))
+            .and_then(|p| if p.exists() { Some(p) } else { None })
+            .map(|p| Signature::from_str(&fs::read_to_string(p)?))
+            .transpose()?;
+
+        if let (Some(sign), Some(key)) = (signature, shared_state.firmware.pub_key.as_ref()) {
+            debug!("Validating signature");
+            sign.validate(key, &update_package)?;
+        }
+
         debug!("Update package extracted: {:?}", update_package);
 
         update_package.clear_unrelated_files(

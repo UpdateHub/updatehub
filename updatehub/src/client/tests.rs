@@ -15,6 +15,7 @@ use serde_json::json;
 pub(crate) enum FakeServer {
     NoUpdate,
     HasUpdate,
+    HasSignedUpdate,
     ExtraPoll,
     ErrorOnce,
     InvalidHardware,
@@ -57,6 +58,14 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .match_body(fake_device_reply_body(2, "board"))
             .with_status(200)
             .with_body(&get_update_json(SHA256SUM).to_string())
+            .create(),
+        FakeServer::HasSignedUpdate => mock("POST", "/upgrades")
+            .match_header("Content-Type", "application/json")
+            .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+            .match_body(fake_device_reply_body(2, "board"))
+            .with_status(200)
+            .with_body(&get_update_json(SHA256SUM).to_string())
+            .with_header("UH-Signature", &openssl::base64::encode_block(b"some_signature"))
             .create(),
         FakeServer::ExtraPoll => mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
@@ -139,6 +148,26 @@ async fn probe_requirements() {
             &Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap(),
         )
         .await;
+    mock.assert();
+}
+
+#[actix_rt::test]
+async fn probe_response_with_signature() {
+    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
+
+    let mock = create_mock_server(FakeServer::HasSignedUpdate);
+    let response = Api::new(&Settings::default().network.server_address)
+        .probe(
+            &RuntimeSettings::default(),
+            &Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap(),
+        )
+        .await
+        .unwrap();
+    match response {
+        ProbeResponse::Update(_up, Some(signature)) => assert_eq!(&signature.0, b"some_signature"),
+        ProbeResponse::Update(_up, None) => panic!("No signature extracted from update response"),
+        r => panic!("Unexpected probe response: {:?}", r),
+    }
     mock.assert();
 }
 

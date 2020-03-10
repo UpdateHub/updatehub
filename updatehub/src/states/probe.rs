@@ -69,7 +69,11 @@ impl StateChangeImpl for State<Probe> {
                 Ok((StateMachine::Poll(self.into()), actor::StepTransition::Immediate))
             }
 
-            ProbeResponse::Update(u) => {
+            ProbeResponse::Update(u, sign) => {
+                if let (Some(sign), Some(key)) = (sign, shared_state.firmware.pub_key.as_ref()) {
+                    debug!("Validating signature");
+                    sign.validate(key, &u)?;
+                }
                 // Ensure the package is compatible
                 u.compatible_with(&shared_state.firmware)?;
                 // Store timestamp of last polling
@@ -243,7 +247,7 @@ mod tests {
             .await
             .unwrap();
 
-        if let ProbeResponse::Update(u) = probe {
+        if let ProbeResponse::Update(u, _) = probe {
             runtime_settings.set_applied_package_uid(&u.package_uid()).unwrap();
         }
 
