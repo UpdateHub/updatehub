@@ -37,15 +37,24 @@ pub(crate) struct UpdatePackage {
     raw: Vec<u8>,
 }
 
+#[derive(Debug)]
+pub(crate) struct Signature(pub(crate) Vec<u8>);
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Json parsing error: {0}")]
     JsonParsing(#[from] serde_json::Error),
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("OpenSSL error: {0}")]
+    OpenSsl(#[from] openssl::error::ErrorStack),
 
     #[error("Incompatible with hardware: {0}")]
     IncompatibleHardware(String),
+    #[error("Package's signature validation has failed")]
+    InvalidSignature,
 }
 
 impl UpdatePackage {
@@ -151,5 +160,20 @@ impl UpdatePackage {
         }
 
         Ok(())
+    }
+}
+
+impl Signature {
+    pub(crate) fn from_str(bytes: &str) -> Result<Self> {
+        Ok(Signature(openssl::base64::decode_block(bytes)?.to_vec()))
+    }
+
+    pub(crate) fn validate(&self, key: &Path, package: &UpdatePackage) -> Result<()> {
+        use openssl::{hash::MessageDigest, pkey::PKey, rsa::Rsa, sign::Verifier};
+        let key = PKey::from_rsa(Rsa::public_key_from_pem(&fs::read(key)?)?)?;
+        if Verifier::new(MessageDigest::sha256(), &key)?.verify_oneshot(&self.0, &package.raw)? {
+            return Ok(());
+        }
+        Err(Error::InvalidSignature)
     }
 }

@@ -19,6 +19,7 @@ pub mod tests;
 const PRODUCT_UID_HOOK: &str = "product-uid";
 const VERSION_HOOK: &str = "version";
 const HARDWARE_HOOK: &str = "hardware";
+const PUB_KEY: &str = "key.pub";
 const DEVICE_IDENTITY_DIR: &str = "device-identity.d";
 const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
 const STATE_CHANGE_CALLBACK: &str = "state-change-callback";
@@ -71,11 +72,13 @@ impl Metadata {
         let hardware_hook = path.join(HARDWARE_HOOK);
         let device_identity_dir = path.join(DEVICE_IDENTITY_DIR);
         let device_attributes_dir = path.join(DEVICE_ATTRIBUTES_DIR);
+        let pub_key_path = path.join(PUB_KEY);
 
         let metadata = Metadata(api::Metadata {
             product_uid: run_hook(&product_uid_hook)?,
             version: run_hook(&version_hook)?,
             hardware: run_hook(&hardware_hook)?,
+            pub_key: if pub_key_path.exists() { Some(pub_key_path) } else { None },
             device_identity: run_hooks_from_dir(&device_identity_dir)?,
             device_attributes: run_hooks_from_dir(&device_attributes_dir).unwrap_or_default(),
         });

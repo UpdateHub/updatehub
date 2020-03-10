@@ -2,7 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, update_package::UpdatePackage};
+use crate::{
+    firmware::Metadata,
+    runtime_settings::RuntimeSettings,
+    update_package::{Signature, UpdatePackage},
+};
 use reqwest::{
     header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
     Client, StatusCode,
@@ -10,7 +14,11 @@ use reqwest::{
 use sdk::api::info::firmware as api;
 use serde::Serialize;
 use slog_scope::debug;
-use std::{path::Path, time::Duration};
+use std::{
+    convert::{TryFrom, TryInto},
+    path::Path,
+    time::Duration,
+};
 use thiserror::Error;
 
 #[cfg(test)]
@@ -23,7 +31,7 @@ pub(crate) struct Api<'a> {
 #[derive(Debug)]
 pub(crate) enum ProbeResponse {
     NoUpdate,
-    Update(UpdatePackage),
+    Update(UpdatePackage, Option<Signature>),
     ExtraPoll(i64),
 }
 
@@ -45,6 +53,8 @@ pub enum Error {
 
     #[error("Invalid header error: {0}")]
     InvalidHeader(#[from] reqwest::header::InvalidHeaderValue),
+    #[error("Non str header error: {0}")]
+    NonStrHeader(#[from] reqwest::header::ToStrError),
 }
 
 // We redefine the metadata structure here because the cloud
@@ -114,7 +124,15 @@ impl<'a> Api<'a> {
                 {
                     Some(extra_poll) => Ok(ProbeResponse::ExtraPoll(extra_poll)),
                     None => {
-                        Ok(ProbeResponse::Update(UpdatePackage::parse(&response.bytes().await?)?))
+                        let signature = response
+                            .headers()
+                            .get("UH-Signature")
+                            .map(TryInto::try_into)
+                            .transpose()?;
+                        Ok(ProbeResponse::Update(
+                            UpdatePackage::parse(&response.bytes().await?)?,
+                            signature,
+                        ))
                     }
                 }
             }
@@ -192,5 +210,13 @@ impl<'a> Api<'a> {
 
         self.client()?.post(&format!("{}/report", &self.server)).json(&payload).send().await?;
         Ok(())
+    }
+}
+
+impl TryFrom<&reqwest::header::HeaderValue> for Signature {
+    type Error = Error;
+
+    fn try_from(value: &reqwest::header::HeaderValue) -> Result<Self> {
+        Ok(Self::from_str(value.to_str()?)?)
     }
 }

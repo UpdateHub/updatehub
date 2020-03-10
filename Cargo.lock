@@ -2213,6 +2213,7 @@ dependencies = [
  "loopdev 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "mockito 0.23.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "openssl 0.10.28 (registry+https://github.com/rust-lang/crates.io-index)",
  "parse_duration 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_assertions 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "quale 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -14,6 +14,7 @@ use std::{
     },
     fmt,
     ops::Index,
+    path::PathBuf,
 };
 
 /// Metadata stores the firmware metadata information. It is
@@ -29,6 +30,8 @@ pub struct Metadata {
     pub version: String,
     /// Hardware where the firmware is running
     pub hardware: String,
+    /// Path for the pub key beeing used
+    pub pub_key: Option<PathBuf>,
     /// Device Identity
     pub device_identity: MetadataValue,
     /// Device Attributes
