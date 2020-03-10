@@ -7,6 +7,7 @@ use super::{
     EntryPoint, Result, State, StateChangeImpl, StateMachine, TransitionError,
 };
 
+use crate::firmware;
 use slog_scope::{error, info};
 
 #[derive(Debug)]
@@ -27,8 +28,12 @@ impl StateChangeImpl for State<Error> {
         "error"
     }
 
-    async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
+    async fn handle(self, st: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
         error!("Error state reached: {}", self.0.error);
+
+        if let Err(err) = firmware::error_callback(&st.settings.firmware.metadata) {
+            error!("Failed to run error callback script: {}", err);
+        }
 
         info!("Returning to machine's entry point");
         Ok((StateMachine::EntryPoint(State(EntryPoint {})), actor::StepTransition::Immediate))

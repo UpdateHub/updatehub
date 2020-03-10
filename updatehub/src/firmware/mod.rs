@@ -23,6 +23,7 @@ const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
 const STATE_CHANGE_CALLBACK: &str = "state-change-callback";
 const VALIDATE_CALLBACK: &str = "validate-callback";
 const ROLLBACK_CALLBACK: &str = "rollback-callback";
+const ERROR_CALLBACK: &str = "error-callback";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -146,6 +147,20 @@ pub(crate) fn rollback_callback(path: &Path) -> Result<()> {
     }
 
     let output = easy_process::run(&rollback.to_string_lossy())?;
+    for err in output.stderr.lines() {
+        error!("{} (stderr): {}", path.display(), err);
+    }
+
+    Ok(())
+}
+
+pub(crate) fn error_callback(path: &Path) -> Result<()> {
+    let error = path.join(ERROR_CALLBACK);
+    if !error.exists() {
+        return Ok(());
+    }
+
+    let output = easy_process::run(&error.to_string_lossy())?;
     for err in output.stderr.lines() {
         error!("{} (stderr): {}", path.display(), err);
     }
