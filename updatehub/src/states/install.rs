@@ -93,6 +93,9 @@ impl StateChangeImpl for State<Install> {
         // Avoid installing same package twice.
         shared_state.runtime_settings.set_applied_package_uid(&package_uid)?;
 
+        // Set upgrading to the new installation set
+        shared_state.runtime_settings.set_upgrading_to(installation_set)?;
+
         // Swap installation set so it is used next device boot.
         installation_set::swap_active()?;
         info!("Swapping active installation set");

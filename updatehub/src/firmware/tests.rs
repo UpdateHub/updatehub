@@ -106,6 +106,7 @@ pub fn create_fake_installation_set(tmpdir: &Path, active: usize) {
 
     const GET_SCRIPT: &str = "updatehub-active-get";
     const SET_SCRIPT: &str = "updatehub-active-set";
+    const VALIDATE_SCRIPT: &str = "updatehub-active-validated";
 
     create_dir_all(&tmpdir).unwrap();
 
@@ -123,6 +124,30 @@ pub fn create_fake_installation_set(tmpdir: &Path, active: usize) {
     let mut permissions = metadata(tmpdir).unwrap().permissions();
     permissions.set_mode(0o755);
     file.set_permissions(permissions).unwrap();
+
+    let mut file = File::create(&tmpdir.join(VALIDATE_SCRIPT)).unwrap();
+    writeln!(file, "#!/bin/sh\nexit 0").unwrap();
+
+    let mut permissions = metadata(tmpdir).unwrap().permissions();
+
+    permissions.set_mode(0o755);
+    file.set_permissions(permissions).unwrap();
+}
+
+pub fn create_fake_starup_callbacks(metadata_dir: &Path, output_file: &Path) {
+    use std::{
+        fs::{metadata, File},
+        io::Write,
+        os::unix::fs::PermissionsExt,
+    };
+
+    for script in &[VALIDATE_CALLBACK, ROLLBACK_CALLBACK] {
+        let mut file = File::create(&metadata_dir.join(script)).unwrap();
+        writeln!(file, "#!/bin/sh\necho $0 >> {}", output_file.to_string_lossy()).unwrap();
+        let mut permissions = metadata(metadata_dir).unwrap().permissions();
+        permissions.set_mode(0o755);
+        file.set_permissions(permissions).unwrap();
+    }
 }
 
 #[test]
