@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::firmware::installation_set::Set;
 use chrono::{DateTime, Duration, Utc};
 use derive_more::{Deref, DerefMut, Display, From};
 use sdk::api::info::runtime_settings as api;
@@ -136,6 +137,11 @@ impl RuntimeSettings {
         self.save()
     }
 
+    pub(crate) fn set_upgrading_to(&mut self, new_install_set: Set) -> Result<()> {
+        self.update.upgrade_to_installation = Some(new_install_set.0);
+        self.save()
+    }
+
     pub(crate) fn custom_server_address(&self) -> Option<&str> {
         match &self.polling.server_address {
             api::ServerAddress::Custom(s) => Some(s),
@@ -152,6 +158,12 @@ impl RuntimeSettings {
         // Server address is reset so it doesn't keep probing the last custom server
         // requested
         self.polling.server_address = api::ServerAddress::Default;
+    }
+
+    pub(crate) fn reset_installation_settings(&mut self) -> Result<()> {
+        self.update.upgrade_to_installation = None;
+        self.update.applied_package_uid = None;
+        self.save()
     }
 }
 

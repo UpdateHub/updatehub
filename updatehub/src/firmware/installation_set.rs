@@ -9,6 +9,7 @@ use std::{fmt, str::FromStr};
 
 const GET_SCRIPT: &str = "updatehub-active-get";
 const SET_SCRIPT: &str = "updatehub-active-set";
+const VALIDATE_SCRIPT: &str = "updatehub-active-validated";
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Set(pub InstallationSet);
@@ -52,6 +53,11 @@ pub fn inactive() -> super::Result<Set> {
 
 pub fn swap_active() -> super::Result<()> {
     let _ = run_script(&format!("{} {}", SET_SCRIPT, inactive()?))?;
+    Ok(())
+}
+
+pub fn validate() -> super::Result<()> {
+    let _ = run_script(VALIDATE_SCRIPT)?;
     Ok(())
 }
 

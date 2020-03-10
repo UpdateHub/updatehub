@@ -37,4 +37,6 @@ pub enum Error {
     Client(crate::client::Error),
     #[display(fmt = "Io error: {}", _0)]
     Io(std::io::Error),
+    #[display(fmt = "Process error: {}", _0)]
+    Process(easy_process::Error),
 }

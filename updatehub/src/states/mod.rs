@@ -17,15 +17,23 @@ mod prepare_local_install;
 mod probe;
 mod reboot;
 
+#[cfg(test)]
+mod tests;
+
 use self::{
     direct_download::DirectDownload, download::Download, entry_point::EntryPoint, error::Error,
     install::Install, park::Park, poll::Poll, prepare_download::PrepareDownload,
     prepare_local_install::PrepareLocalInstall, probe::Probe, reboot::Reboot,
 };
-use crate::{firmware::Metadata, http_api, runtime_settings::RuntimeSettings, settings::Settings};
+use crate::{
+    firmware::{self, Metadata, Transition},
+    http_api,
+    runtime_settings::RuntimeSettings,
+    settings::Settings,
+};
 use async_trait::async_trait;
 use derive_more::{Display, From};
-use slog_scope::{info, warn};
+use slog_scope::{error, info, warn};
 use std::sync::mpsc;
 
 pub type Result<T> = std::result::Result<T, TransitionError>;
@@ -124,10 +132,8 @@ where
         self,
         shared_state: &mut actor::SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        use crate::firmware::{state_change_callback, Transition};
-
         let transition =
-            state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
+            firmware::state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
 
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress(shared_state).await?),
@@ -182,6 +188,33 @@ where
             }
         }
     }
+}
+
+fn handle_startup_callbacks(
+    settings: &Settings,
+    runtime_settings: &mut RuntimeSettings,
+) -> crate::Result<()> {
+    if let Some(expected_set) = runtime_settings.update.upgrade_to_installation {
+        info!("Booting from a recent installation");
+        if expected_set == firmware::installation_set::active()?.0 {
+            match firmware::validate_callback(&settings.firmware.metadata)? {
+                Transition::Cancel => {
+                    warn!("Validate callback has failed");
+                    firmware::installation_set::swap_active()?;
+                    warn!("Swapped active installation set and rebooting");
+                    easy_process::run("reboot")?;
+                }
+                Transition::Continue => firmware::installation_set::validate()?,
+            }
+            return Ok(());
+        } else {
+            warn!("Agent is not running on expected installation set, running rollback callback");
+            firmware::rollback_callback(&settings.firmware.metadata)?;
+        }
+
+        runtime_settings.reset_installation_settings()?;
+    }
+    Ok(())
 }
 
 impl StateMachine {
@@ -272,6 +305,10 @@ pub async fn run(settings: Settings) -> crate::Result<()> {
         runtime_settings.enable_persistency();
     }
     let firmware = Metadata::from_path(&settings.firmware.metadata)?;
+
+    if let Err(e) = handle_startup_callbacks(&settings, &mut runtime_settings) {
+        error!("Failed to handle startup callbacks: {}", e);
+    }
 
     let machine_addr =
         actor::Machine::new(StateMachine::new(), settings, runtime_settings, firmware).start();

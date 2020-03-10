@@ -6,7 +6,7 @@ use self::hook::{run_hook, run_hooks_from_dir};
 use derive_more::{Deref, DerefMut, Display, From};
 pub use sdk::api::info::firmware as api;
 use slog_scope::error;
-use std::path::Path;
+use std::{io, path::Path};
 
 mod hook;
 
@@ -21,6 +21,8 @@ const HARDWARE_HOOK: &str = "hardware";
 const DEVICE_IDENTITY_DIR: &str = "device-identity.d";
 const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
 const STATE_CHANGE_CALLBACK: &str = "state-change-callback";
+const VALIDATE_CALLBACK: &str = "validate-callback";
+const ROLLBACK_CALLBACK: &str = "rollback-callback";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -41,7 +43,7 @@ pub enum Error {
     #[display(fmt = "Walkdir error: {}", _0)]
     Walkdir(walkdir::Error),
     #[display(fmt = "Io error: {}", _0)]
-    Io(std::io::Error),
+    Io(io::Error),
     #[display(fmt = "Process error: {}", _0)]
     Process(easy_process::Error),
 }
@@ -88,8 +90,6 @@ impl Metadata {
 }
 
 pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transition> {
-    use std::io;
-
     let callback = path.join(STATE_CHANGE_CALLBACK);
     if !callback.exists() {
         return Ok(Transition::Continue);
@@ -113,4 +113,42 @@ pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transiti
         )
         .into()),
     }
+}
+
+pub(crate) fn validate_callback(path: &Path) -> Result<Transition> {
+    let callback = path.join(VALIDATE_CALLBACK);
+    if !callback.exists() {
+        return Ok(Transition::Continue);
+    }
+
+    match easy_process::run(&callback.to_string_lossy()) {
+        Ok(output) => {
+            for err in output.stderr.lines() {
+                error!("{} (stderr): {}", path.display(), err);
+            }
+            Ok(Transition::Continue)
+        }
+        Err(easy_process::Error::Failure(status, output)) => {
+            error!("Validation callback has failed with status: {:?}", status);
+            for err in output.stderr.lines() {
+                error!("{} (stderr): {}", path.display(), err);
+            }
+            Ok(Transition::Cancel)
+        }
+        Err(e) => Err(e.into()),
+    }
+}
+
+pub(crate) fn rollback_callback(path: &Path) -> Result<()> {
+    let rollback = path.join(ROLLBACK_CALLBACK);
+    if !rollback.exists() {
+        return Ok(());
+    }
+
+    let output = easy_process::run(&rollback.to_string_lossy())?;
+    for err in output.stderr.lines() {
+        error!("{} (stderr): {}", path.display(), err);
+    }
+
+    Ok(())
 }
