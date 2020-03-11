@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{api, Result};
+use crate::{api, Error, Result};
 use std::path::PathBuf;
 
 #[derive(Clone)]
@@ -30,7 +30,7 @@ impl Client {
 
         match response.status() {
             reqwest::StatusCode::OK => Ok(response.json().await?),
-            _ => Err(response.into()),
+            _ => Err(Error::UnexpectedResponse(response)),
         }
     }
 
@@ -46,9 +46,9 @@ impl Client {
         match response.status() {
             reqwest::StatusCode::OK => Ok(response.json().await?),
             reqwest::StatusCode::ACCEPTED => {
-                Err(response.json::<api::state::Response>().await?.into())
+                Err(Error::AgentIsBusy(response.json::<api::state::Response>().await?))
             }
-            _ => Err(response.into()),
+            _ => Err(Error::UnexpectedResponse(response)),
         }
     }
 
@@ -63,9 +63,9 @@ impl Client {
         match response.status() {
             reqwest::StatusCode::OK => Ok(response.json().await?),
             reqwest::StatusCode::UNPROCESSABLE_ENTITY => {
-                Err(response.json::<api::state::Response>().await?.into())
+                Err(Error::AgentIsBusy(response.json::<api::state::Response>().await?))
             }
-            _ => Err(response.into()),
+            _ => Err(Error::UnexpectedResponse(response)),
         }
     }
 
@@ -80,9 +80,9 @@ impl Client {
         match response.status() {
             reqwest::StatusCode::OK => Ok(response.json().await?),
             reqwest::StatusCode::UNPROCESSABLE_ENTITY => {
-                Err(response.json::<api::state::Response>().await?.into())
+                Err(Error::AgentIsBusy(response.json::<api::state::Response>().await?))
             }
-            _ => Err(response.into()),
+            _ => Err(Error::UnexpectedResponse(response)),
         }
     }
 
@@ -95,10 +95,10 @@ impl Client {
 
         match response.status() {
             reqwest::StatusCode::OK => Ok(response.json().await?),
-            reqwest::StatusCode::BAD_REQUEST => {
-                Err(response.json::<api::abort_download::Refused>().await?.into())
-            }
-            _ => Err(response.into()),
+            reqwest::StatusCode::BAD_REQUEST => Err(Error::AbortDownloadRefused(
+                response.json::<api::abort_download::Refused>().await?,
+            )),
+            _ => Err(Error::UnexpectedResponse(response)),
         }
     }
 
@@ -107,7 +107,7 @@ impl Client {
 
         match response.status() {
             reqwest::StatusCode::OK => Ok(response.json().await?),
-            _ => Err(response.into()),
+            _ => Err(Error::UnexpectedResponse(response)),
         }
     }
 }

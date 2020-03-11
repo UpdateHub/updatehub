@@ -32,42 +32,54 @@ use crate::{
     settings::Settings,
 };
 use async_trait::async_trait;
-use derive_more::{Display, From};
 use slog_scope::{error, info, warn};
 use std::sync::mpsc;
+use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, TransitionError>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum TransitionError {
-    #[display(fmt = "Request to external link failed")]
+    #[error("Request to external link failed")]
     InvalidRequest,
-    #[display(fmt = "Not all objects are ready for use")]
+
+    #[error("Not all objects are ready for use")]
     ObjectsNotReady,
 
-    #[display(fmt = "Failed to read from channel: {}", _0)]
+    #[error("Failed to read from channel: {0}")]
     MpscRecv(mpsc::TryRecvError),
-    #[display(fmt = "Client error: {}", _0)]
-    Client(crate::client::Error),
-    #[display(fmt = "Firmware error: {}", _0)]
-    Firmware(crate::firmware::Error),
-    #[display(fmt = "Installation error: {}", _0)]
-    Installation(crate::object::Error),
-    #[display(fmt = "Runtime settings error: {}", _0)]
-    RuntimeSettings(crate::runtime_settings::Error),
-    #[display(fmt = "Update package error: {}", _0)]
-    UpdatePackage(crate::update_package::Error),
-    #[display(fmt = "Uncompress error: {}", _0)]
-    Uncompress(compress_tools::Error),
-    #[display(fmt = "Serde error: {}", _0)]
-    SerdeJson(serde_json::error::Error),
 
-    #[display(fmt = "Update package error: {}", _0)]
-    Io(std::io::Error),
-    #[display(fmt = "Mailbox error: {}", _0)]
-    ActixMailbox(actix::MailboxError),
-    #[display(fmt = "Process error: {}", _0)]
-    Process(easy_process::Error),
+    #[error("Client error: {0}")]
+    Client(#[from] crate::client::Error),
+
+    #[error("Firmware error: {0}")]
+    Firmware(#[from] crate::firmware::Error),
+
+    #[error("Installation error: {0}")]
+    Installation(#[from] crate::object::Error),
+
+    #[error("Runtime settings error: {0}")]
+    RuntimeSettings(#[from] crate::runtime_settings::Error),
+
+    #[error("Update package error: {0}")]
+    UpdatePackage(#[from] crate::update_package::Error),
+
+    #[error("Uncompress error: {0}")]
+    // FIXME: compress_tools does not implement error, so we should rework this
+    // in future.
+    Uncompress(compress_tools::Error),
+
+    #[error("Serde error: {0}")]
+    SerdeJson(#[from] serde_json::error::Error),
+
+    #[error("Update package error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Mailbox error: {0}")]
+    ActixMailbox(#[from] actix::MailboxError),
+
+    #[error("Process error: {0}")]
+    Process(#[from] easy_process::Error),
 }
 
 #[async_trait]

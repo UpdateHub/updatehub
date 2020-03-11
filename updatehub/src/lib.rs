@@ -19,24 +19,24 @@ mod update_package;
 mod utils;
 
 pub use crate::{build_info::version, settings::Settings, states::run};
-use derive_more::{Display, From};
+use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "Update package error: {}", _0)]
-    UpdatePackage(crate::update_package::Error),
-    #[display(fmt = "Runtime settings error: {}", _0)]
-    RuntimeSettings(crate::runtime_settings::Error),
-    #[display(fmt = "Settings error: {}", _0)]
-    Settings(crate::settings::Error),
-    #[display(fmt = "Firmware error: {}", _0)]
-    Firmware(crate::firmware::Error),
-    #[display(fmt = "Client error: {}", _0)]
-    Client(crate::client::Error),
-    #[display(fmt = "Io error: {}", _0)]
-    Io(std::io::Error),
-    #[display(fmt = "Process error: {}", _0)]
-    Process(easy_process::Error),
+    #[error("Runtime settings error: {0}")]
+    RuntimeSettings(#[from] crate::runtime_settings::Error),
+
+    #[error("Settings error: {0}")]
+    Settings(#[from] crate::settings::Error),
+
+    #[error("Firmware error: {0}")]
+    Firmware(#[from] crate::firmware::Error),
+
+    #[error("Io error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Process error: {0}")]
+    Process(#[from] easy_process::Error),
 }

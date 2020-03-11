@@ -4,18 +4,18 @@
 
 use crate::states::actor;
 use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
-use derive_more::{Display, From};
 use sdk::api;
 use slog_scope::debug;
+use thiserror::Error;
 
 pub(crate) struct API(actix::Addr<actor::Machine>);
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "Mailbox error: {}", _0)]
-    ActixMailbox(actix::MailboxError),
+    #[error("Mailbox error: {0}")]
+    ActixMailbox(#[from] actix::MailboxError),
 }
 
 impl API {

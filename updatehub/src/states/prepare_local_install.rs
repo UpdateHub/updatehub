@@ -28,7 +28,8 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
         info!("Prepare local install: {:?}", self.0.update_file);
         let dest_path = shared_state.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
-        compress_tools::uncompress(self.0.update_file, &dest_path, compress_tools::Kind::Zip)?;
+        compress_tools::uncompress(self.0.update_file, &dest_path, compress_tools::Kind::Zip)
+            .map_err(super::TransitionError::Uncompress)?;
         debug!("Successfuly uncompressed the update package");
 
         let metadata = io::BufReader::new(fs::File::open(dest_path.join("metadata"))?);

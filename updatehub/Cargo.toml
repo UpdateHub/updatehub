@@ -18,7 +18,7 @@ async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
 compress-tools = { git = "https://github.com/OSSystems/compress-tools-rs.git" }
 crypto-hash = "0.3"
-derive_more = "0.99"
+derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut"] }
 easy_process = "0.1"
 hex = "0.4"
 infer = "0.1"
@@ -39,6 +39,7 @@ slog-scope = "4"
 slog-term = "2"
 sys-mount = "1"
 tempfile = "3"
+thiserror = "1"
 timeout-readwrite = "0.3"
 tokio = { version = "0.2", features = ["fs"] }
 toml = "0.5"

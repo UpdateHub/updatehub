@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use chrono::Duration;
-use derive_more::{Deref, DerefMut, Display, From};
+use derive_more::{Deref, DerefMut};
 use slog_scope::{debug, error};
 use std::{fs, io};
+use thiserror::Error;
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 
@@ -13,21 +14,21 @@ pub use sdk::api::info::settings as api;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "IO error: {}", _0)]
-    Io(io::Error),
-    #[display(fmt = "Fail reading the file: {}", _0)]
-    Deserialize(toml::de::Error),
-    #[display(fmt = "Fail generating the file: {}", _0)]
-    Serialize(toml::ser::Error),
-    #[display(fmt = "Invalid interval")]
+    #[error("IO error: {0}")]
+    Io(#[from] io::Error),
+    #[error("Fail reading the file: {0}")]
+    Deserialize(#[from] toml::de::Error),
+    #[error("Fail generating the file: {0}")]
+    Serialize(#[from] toml::ser::Error),
+    #[error("Invalid interval")]
     InvalidInterval,
-    #[display(fmt = "Invalid server address")]
+    #[error("Invalid server address")]
     InvalidServerAddress,
 }
 
-#[derive(Clone, Debug, Deref, DerefMut, From, PartialEq)]
+#[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
 pub struct Settings(pub api::Settings);
 
 impl Default for Settings {
