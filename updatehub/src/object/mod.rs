@@ -10,21 +10,24 @@ pub(crate) mod installer;
 
 pub(crate) use self::{info::Info, installer::Installer};
 
-use derive_more::{Display, From};
+use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "Invalid path formed")]
+    #[error("Invalid path formed")]
     InvalidPath,
-    #[display(fmt = "Unsupported target type: {:?}", _0)]
+
+    #[error("Unsupported target type: {0:?}")]
     InvalidTargetType(pkg_schema::definitions::TargetType),
 
-    #[display(fmt = "Utils error: {}", _0)]
-    Utils(crate::utils::Error),
-    #[display(fmt = "Io error: {}", _0)]
-    Io(std::io::Error),
-    #[display(fmt = "Process error: {}", _0)]
-    Process(easy_process::Error),
+    #[error("Utils error: {0}")]
+    Utils(#[from] crate::utils::Error),
+
+    #[error("Io error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Process error: {0}")]
+    Process(#[from] easy_process::Error),
 }

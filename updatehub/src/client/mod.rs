@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{firmware::Metadata, runtime_settings::RuntimeSettings, update_package::UpdatePackage};
-use derive_more::{Display, From};
 use reqwest::{
     header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
     Client, StatusCode,
@@ -12,6 +11,7 @@ use sdk::api::info::firmware as api;
 use serde::Serialize;
 use slog_scope::debug;
 use std::{path::Path, time::Duration};
+use thiserror::Error;
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -29,19 +29,22 @@ pub(crate) enum ProbeResponse {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "Invalid status code received: {}", _0)]
+    #[error("Invalid status code received: {0}")]
     InvalidStatusResponse(reqwest::StatusCode),
-    #[display(fmt = "Update package error: {}", _0)]
-    UpdatePackage(crate::update_package::Error),
 
-    #[display(fmt = "Update package error: {}", _0)]
-    Io(std::io::Error),
-    #[display(fmt = "Client error: {}", _0)]
-    Client(reqwest::Error),
-    #[display(fmt = "Invalid header error: {}", _0)]
-    InvalidHeader(reqwest::header::InvalidHeaderValue),
+    #[error("Update package error: {0}")]
+    UpdatePackage(#[from] crate::update_package::Error),
+
+    #[error("Update package error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Client error: {0}")]
+    Client(#[from] reqwest::Error),
+
+    #[error("Invalid header error: {0}")]
+    InvalidHeader(#[from] reqwest::header::InvalidHeaderValue),
 }
 
 // We redefine the metadata structure here because the cloud

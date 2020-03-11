@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use self::hook::{run_hook, run_hooks_from_dir};
-use derive_more::{Deref, DerefMut, Display, From};
+use derive_more::{Deref, DerefMut};
 pub use sdk::api::info::firmware as api;
 use slog_scope::error;
 use std::{io, path::Path};
+use thiserror::Error;
 
 mod hook;
 
@@ -27,26 +28,31 @@ const ERROR_CALLBACK: &str = "error-callback";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "Invalid product UID")]
+    #[error("Invalid product UID")]
     InvalidProductUid,
-    #[display(fmt = "Product UID is missing")]
+
+    #[error("Product UID is missing")]
     MissingProductUid,
-    #[display(fmt = "Device Identity is missing")]
+
+    #[error("Device Identity is missing")]
     MissingDeviceIdentity,
 
-    #[display(fmt = "{} is a invalid value. The only know ones are 0 or 1", _0)]
-    #[from(ignore)]
+    #[error("{0} is a invalid value. The only know ones are 0 or 1")]
     InvalidInstallSet(u8),
-    #[display(fmt = "ParseInt: {}", _0)]
-    ParseInt(std::num::ParseIntError),
-    #[display(fmt = "Walkdir error: {}", _0)]
-    Walkdir(walkdir::Error),
-    #[display(fmt = "Io error: {}", _0)]
-    Io(io::Error),
-    #[display(fmt = "Process error: {}", _0)]
-    Process(easy_process::Error),
+
+    #[error("ParseInt: {0}")]
+    ParseInt(#[from] std::num::ParseIntError),
+
+    #[error("Walkdir error: {0}")]
+    Walkdir(#[from] walkdir::Error),
+
+    #[error("Io error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("Process error: {0}")]
+    Process(#[from] easy_process::Error),
 }
 
 #[derive(Debug, PartialEq)]
@@ -55,7 +61,7 @@ pub(crate) enum Transition {
     Cancel,
 }
 
-#[derive(Clone, Debug, Deref, DerefMut, From, PartialEq)]
+#[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
 pub(crate) struct Metadata(pub(crate) api::Metadata);
 
 impl Metadata {

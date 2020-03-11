@@ -2,18 +2,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use derive_more::{Display, From};
+use thiserror::Error;
 
 pub type Result<A> = std::result::Result<A, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "Agent is busy: {:?}", _0)]
+    #[error("Agent is busy: {0:?}")]
     AgentIsBusy(crate::api::state::Response),
-    #[display(fmt = "Abort download was refused: {:?}", _0)]
+
+    #[error("Abort download was refused: {0:?}")]
     AbortDownloadRefused(crate::api::abort_download::Refused),
 
-    #[display(fmt = "Unexpected response: {:?}", _0)]
+    #[error("Unexpected response: {0:?}")]
     UnexpectedResponse(reqwest::Response),
-    ClientError(reqwest::Error),
+
+    #[error("Client error: {0}")]
+    ClientError(#[from] reqwest::Error),
 }

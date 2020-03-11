@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use derive_more::{Display, From};
+use thiserror::Error;
 
 pub(crate) mod definitions;
 pub(crate) mod fs;
@@ -11,36 +11,41 @@ pub(crate) mod mtd;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "Io: {}", _0)]
-    Io(std::io::Error),
-    #[display(fmt = "Nix error: {}", _0)]
-    Nix(nix::Error),
-    #[display(fmt = "Uncompress error")]
-    Uncompress,
-    #[display(fmt = "Process error: {}", _0)]
-    Process(easy_process::Error),
-    #[display(fmt = "Strip prefix error: {}", _0)]
-    StripPrefix(std::path::StripPrefixError),
+    #[error("Io: {0}")]
+    Io(#[from] std::io::Error),
 
-    #[display(fmt = "Target device does not exists")]
+    #[error("Nix error: {0}")]
+    Nix(#[from] nix::Error),
+
+    #[error("Uncompress error")]
+    Uncompress,
+
+    #[error("Process error: {0}")]
+    Process(#[from] easy_process::Error),
+
+    #[error("Strip prefix error: {0}")]
+    StripPrefix(#[from] std::path::StripPrefixError),
+
+    #[error("Target device does not exists")]
     DeviceDoesNotExist,
-    #[display(fmt = "User doesn't have write permission on target device: {:?}", _0)]
-    #[from(ignore)]
+
+    #[error("User doesn't have write permission on target device: {0}")]
     MissingWritePermission(std::path::PathBuf),
-    #[display(fmt = "Unknown file type")]
+
+    #[error("Unknown file type")]
     UknownFileType,
-    #[display(fmt = "{} is not a valid archive type", _0)]
-    #[from(ignore)]
+
+    #[error("{0} is not a valid archive type")]
     InvalidFileType(String),
-    #[display(fmt = "'{}' not found on PATH", _0)]
-    #[from(ignore)]
+
+    #[error("'{0}' not found on PATH")]
     ExecutableNotInPath(String),
-    #[display(fmt = "Unable to find Ubi Volume: {}", _0)]
-    #[from(ignore)]
+
+    #[error("Unable to find Ubi Volume: {0}")]
     NoUbiVolume(String),
-    #[display(fmt = "Unable to find match for mtd device: {}", _0)]
-    #[from(ignore)]
+
+    #[error("Unable to find match for mtd device: {0}")]
     NoMtdDevice(String),
 }

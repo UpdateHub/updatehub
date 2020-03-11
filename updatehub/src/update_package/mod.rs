@@ -12,10 +12,10 @@ use walkdir::WalkDir;
 
 use crypto_hash::{hex_digest, Algorithm};
 
-use derive_more::{Display, From};
 use pkg_schema::Object;
 use serde::Deserialize;
 use slog_scope::error;
+use thiserror::Error;
 
 use std::{fs, io, path::Path};
 
@@ -46,13 +46,12 @@ pub(crate) struct UpdatePackage {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Display, From)]
+#[derive(Debug, Error)]
 pub enum Error {
-    #[display(fmt = "Json parsing error: {}", _0)]
-    JsonParsing(serde_json::Error),
+    #[error("Json parsing error: {0}")]
+    JsonParsing(#[from] serde_json::Error),
 
-    #[display(fmt = "Incompatible with hardware: {}", _0)]
-    #[from(ignore)]
+    #[error("Incompatible with hardware: {0}")]
     IncompatibleHardware(String),
 }
 
