@@ -43,11 +43,13 @@ pub(crate) fn get_update_json(sha256sum: &str) -> serde_json::Value {
 }
 
 pub(crate) fn get_update_package() -> UpdatePackage {
-    serde_json::from_value(get_update_json(SHA256SUM)).map_err(|e| println!("{:?}", e)).unwrap()
+    UpdatePackage::parse(&get_update_json(SHA256SUM).to_string().into_bytes())
+        .map_err(|e| println!("{:?}", e))
+        .unwrap()
 }
 
 pub(crate) fn get_update_package_with_shasum(shasum: &str) -> UpdatePackage {
-    serde_json::from_value(get_update_json(shasum)).unwrap()
+    UpdatePackage::parse(&get_update_json(shasum).to_string().into_bytes()).unwrap()
 }
 
 pub(crate) fn create_fake_object(body: &[u8], shasum: &str, settings: &Settings) {

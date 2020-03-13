@@ -114,7 +114,7 @@ impl<'a> Api<'a> {
                 {
                     Some(extra_poll) => Ok(ProbeResponse::ExtraPoll(extra_poll)),
                     None => {
-                        Ok(ProbeResponse::Update(UpdatePackage::parse(&response.text().await?)?))
+                        Ok(ProbeResponse::Update(UpdatePackage::parse(&response.bytes().await?)?))
                     }
                 }
             }

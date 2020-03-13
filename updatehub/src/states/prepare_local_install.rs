@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{firmware::installation_set, update_package::UpdatePackage};
 use slog_scope::{debug, info};
-use std::{fs, io, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct PrepareLocalInstall {
@@ -32,8 +32,8 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
             .map_err(super::TransitionError::Uncompress)?;
         debug!("Successfuly uncompressed the update package");
 
-        let metadata = io::BufReader::new(fs::File::open(dest_path.join("metadata"))?);
-        let update_package: UpdatePackage = serde_json::from_reader(metadata)?;
+        let metadata = fs::read(dest_path.join("metadata"))?;
+        let update_package = UpdatePackage::parse(&metadata)?;
         debug!("Update package extracted: {:?}", update_package);
 
         update_package.clear_unrelated_files(
