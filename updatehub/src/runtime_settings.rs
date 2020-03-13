@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::firmware::installation_set::Set;
+use crate::firmware::{
+    self,
+    installation_set::{self, Set},
+};
 use chrono::{DateTime, Duration, Utc};
 use derive_more::{Deref, DerefMut};
 use sdk::api::info::runtime_settings as api;
@@ -16,9 +19,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("IO error: {0}")]
     Io(#[from] io::Error),
-
     #[error("Fail with serialization/deserialization: {0}")]
     SerdeJson(#[from] serde_json::Error),
+    #[error("Firmware error: {0}")]
+    FirmwareError(#[from] firmware::Error),
 
     #[error("Invalid runtime settings destination")]
     InvalidDestination,
@@ -85,6 +89,18 @@ impl RuntimeSettings {
 
     fn serialize(&self) -> Result<String> {
         Ok(serde_json::to_string(&self.0)?)
+    }
+
+    pub(crate) fn get_inactive_installation_set(&self) -> Result<Set> {
+        Ok(match self.update.upgrade_to_installation {
+            // If upgrade_to_installation has already been set
+            // the current inactive installation_set will already be swapped
+            // so we can just install over the same one as before
+            Some(s) => Set(s),
+            // If no installation has been made so far we can check
+            // the system for the current inactive installation set
+            None => installation_set::inactive()?,
+        })
     }
 
     pub(crate) fn enable_persistency(&mut self) {

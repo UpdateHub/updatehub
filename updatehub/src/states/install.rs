@@ -70,7 +70,7 @@ impl StateChangeImpl for State<Install> {
         let package_uid = self.0.update_package.package_uid();
         info!("Installing update: {}", &package_uid);
 
-        let installation_set = installation_set::inactive()?;
+        let installation_set = shared_state.runtime_settings.get_inactive_installation_set()?;
         info!("Using installation set as target {}", installation_set);
 
         // FIXME: What is missing:
