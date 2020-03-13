@@ -11,8 +11,11 @@ mod test;
 mod ubifs;
 
 use super::{Error, Result};
-use pkg_schema::Object;
+use crypto_hash::{hex_digest, Algorithm};
+use find_binary_version::{self as fbv, BinaryKind};
+use pkg_schema::{definitions, Object};
 use slog_scope::debug;
+use std::io;
 
 pub(crate) trait Installer {
     fn check_requirements(&self) -> Result<()> {
@@ -51,8 +54,49 @@ impl Installer for Object {
     }
 }
 
+fn check_if_different<R: io::Read + io::Seek>(
+    handle: &mut R,
+    rule: &definitions::InstallIfDifferent,
+    sha256sum: &str,
+) -> Result<bool> {
+    match rule {
+        definitions::InstallIfDifferent::CheckSum => {
+            let mut buffer = Vec::default();
+            handle.read_to_end(&mut buffer)?;
+            let calculated = &hex_digest(Algorithm::SHA256, &buffer);
+            if calculated == sha256sum {
+                return Ok(true);
+            }
+        }
+        definitions::InstallIfDifferent::KnownPattern { version, pattern } => {
+            let pattern = match pattern {
+                definitions::install_if_different::KnownPatternKind::UBoot => BinaryKind::UBoot,
+                definitions::install_if_different::KnownPatternKind::LinuxKernel => {
+                    BinaryKind::LinuxKernel
+                }
+            };
+            if let Some(ref cur_version) = fbv::version(handle, pattern) {
+                if version == cur_version {
+                    return Ok(true);
+                }
+            }
+        }
+        definitions::InstallIfDifferent::CustomPattern { version, pattern } => {
+            io::Seek::seek(handle, io::SeekFrom::Start(pattern.seek))?;
+            let mut src = io::BufReader::with_capacity(pattern.buffer_size as usize, handle);
+            if let Some(ref cur_version) = fbv::version_with_pattern(&mut src, &pattern.regexp) {
+                if version == cur_version {
+                    return Ok(true);
+                }
+            }
+        }
+    }
+    Ok(false)
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use lazy_static::lazy_static;
     use std::{
         env, fs,
@@ -102,5 +146,36 @@ mod tests {
         );
 
         Ok((mocks, calls))
+    }
+
+    #[test]
+    fn unmatched_checksum() {
+        let mut f = tempfile::NamedTempFile::new().unwrap();
+        assert_eq!(
+            check_if_different(
+                &mut f,
+                &definitions::InstallIfDifferent::CheckSum,
+                "some_sha256sum"
+            )
+            .unwrap(),
+            false,
+            "Empty fille should not be validated to the checksum"
+        );
+    }
+
+    #[test]
+    fn checksum() {
+        let mut f = tempfile::NamedTempFile::new().unwrap();
+        io::Write::write_all(&mut f, b"some_sha256sum").unwrap();
+        assert_eq!(
+            check_if_different(
+                &mut f,
+                &definitions::InstallIfDifferent::CheckSum,
+                "7dc201ce54a835790d78835363a0bce4db704dd23c0c05e399d2a7d1f8fcef19",
+            )
+            .unwrap(),
+            false,
+            "Empty fille should not be validated to the checksum"
+        );
     }
 }

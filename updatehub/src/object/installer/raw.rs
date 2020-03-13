@@ -47,6 +47,18 @@ impl Installer for objects::Raw {
         let truncate = self.truncate.0;
         let count = self.count.clone();
 
+        handle_install_if_different!(self.install_if_different, &self.sha256sum, {
+            fs::OpenOptions::new()
+                .read(true)
+                .open(device)
+                .map(|h| utils::io::timed_buf_reader(chunk_size, h))
+                .and_then(|mut h| {
+                    h.seek(SeekFrom::Start(seek))?;
+                    Ok(h)
+                })
+                .map_err(Error::from)
+        });
+
         if self.compressed {
             unimplemented!("FIXME: handle compressed installation");
         } else {

@@ -9,6 +9,7 @@ use crate::{
 };
 use pkg_schema::objects;
 use slog_scope::info;
+use std::path::PathBuf;
 
 impl Installer for objects::Imxkobs {
     fn check_requirements(&self) -> Result<()> {
@@ -20,6 +21,19 @@ impl Installer for objects::Imxkobs {
 
     fn install(&self, download_dir: &std::path::Path) -> Result<()> {
         info!("'imxkobs' handler Install {} ({})", self.filename, self.sha256sum);
+
+        handle_install_if_different!(self.install_if_different, &self.sha256sum, {
+            let path = self
+                .chip_0_device_path
+                .as_ref()
+                .map(PathBuf::clone)
+                .unwrap_or_else(|| PathBuf::from("/dev/mtd0"));
+            path.file_name().ok_or(Error::InvalidPath).and_then(|f| {
+                let mut file_name = f.to_os_string();
+                file_name.push("ro");
+                std::fs::File::open(path.with_file_name(file_name)).map_err(Error::from)
+            })
+        });
 
         let mut cmd = String::from("kobs-ng init ");
 

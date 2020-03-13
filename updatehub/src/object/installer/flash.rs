@@ -32,6 +32,11 @@ impl Installer for objects::Flash {
 
         let target = self.target.get_target()?;
         let source = download_dir.join(self.sha256sum());
+
+        handle_install_if_different!(self.install_if_different, &self.sha256sum, {
+            std::fs::File::open(&target).map_err(Error::from)
+        });
+
         let is_nand = utils::mtd::is_nand(&target)?;
 
         easy_process::run(&format!("flash_erase {:?} 0 0", target))?;

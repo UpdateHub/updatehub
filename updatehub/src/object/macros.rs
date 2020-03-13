@@ -63,3 +63,28 @@ macro_rules! for_any_object {
         }
     };
 }
+
+// This wil execute the block only if the $rule is present, if so, the block
+// must return a `R` that implements `Read` and `Seek`. If the
+// `check_if_different` reports `Ok(true)` for `R` return is called.
+macro_rules! handle_install_if_different {
+    ($rule:expr, $sha256sum:expr, $handler:block) => {
+        match $rule {
+            Some(ref rule) => match $handler.and_then(|mut h| {
+                crate::object::installer::check_if_different(&mut h, rule, $sha256sum)
+            }) {
+                Ok(true) => {
+                    slog_scope::info!("Skipping installation due to install if different rule");
+                    return Ok(());
+                }
+                Ok(false) => {
+                    slog_scope::debug!("Install if different reported difference");
+                }
+                Err(e) => {
+                    slog_scope::info!("Install if different reported error: {}", e);
+                }
+            },
+            None => slog_scope::debug!("No install if different rule set, proceeding"),
+        }
+    };
+}
