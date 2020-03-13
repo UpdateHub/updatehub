@@ -28,20 +28,13 @@ pub(crate) mod tests;
 // CHECK: https://play.rust-lang.org/?gist=b7bc6ad2c073692f96007928aac75768&version=stable
 // It does show how to match the different object types
 
-#[derive(Debug, PartialEq, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+#[derive(Debug, PartialEq)]
 pub(crate) struct UpdatePackage {
-    #[serde(rename = "product")]
     product_uid: String,
     version: String,
-
-    #[serde(default)]
     supported_hardware: SupportedHardware,
-
     objects: (Vec<Object>, Vec<Object>),
-
-    #[serde(skip_deserializing)]
-    raw: String,
+    raw: Vec<u8>,
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -56,15 +49,30 @@ pub enum Error {
 }
 
 impl UpdatePackage {
-    pub(crate) fn parse(content: &str) -> Result<Self> {
-        let mut update_package = serde_json::from_str::<Self>(content)?;
-        update_package.raw = content.into();
+    pub(crate) fn parse(content: &[u8]) -> Result<Self> {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "kebab-case")]
+        struct UpdatePackageAux {
+            #[serde(rename = "product")]
+            product_uid: String,
+            version: String,
+            #[serde(default)]
+            supported_hardware: SupportedHardware,
+            objects: (Vec<Object>, Vec<Object>),
+        }
 
-        Ok(update_package)
+        let update_package = serde_json::from_slice::<UpdatePackageAux>(content)?;
+        Ok(UpdatePackage {
+            product_uid: update_package.product_uid,
+            version: update_package.version,
+            supported_hardware: update_package.supported_hardware,
+            objects: update_package.objects,
+            raw: content.to_vec(),
+        })
     }
 
     pub(crate) fn package_uid(&self) -> String {
-        hex_digest(Algorithm::SHA256, self.raw.as_bytes())
+        hex_digest(Algorithm::SHA256, &self.raw)
     }
 
     pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<()> {
