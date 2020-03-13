@@ -42,6 +42,14 @@ impl Installer for objects::Copy {
         let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
         let source = download_dir.join(sha256sum);
 
+        handle_install_if_different!(self.install_if_different, sha256sum, {
+            utils::fs::mount_map(&device, filesystem, mount_options, |path| {
+                fs::File::open(&path.join(&target_path)).map_err(Error::from)
+            })
+            .map_err(Error::from)
+            .and_then(|r| r)
+        });
+
         if self.target_format.should_format {
             utils::fs::format(&device, filesystem, &format_options)?;
         }
