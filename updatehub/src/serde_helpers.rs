@@ -37,10 +37,10 @@ pub mod de {
     where
         D: Deserializer<'de>,
     {
-        use parse_duration::parse;
+        use ms_converter::ms;
 
         let s = String::deserialize(deserializer)?;
-        Ok(Duration::from_std(parse(&s).map_err(de::Error::custom)?).map_err(de::Error::custom)?)
+        Ok(Duration::milliseconds(ms(&s).map_err(de::Error::custom)?))
     }
 
     pub fn duration_from_int<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
