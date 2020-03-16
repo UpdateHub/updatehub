@@ -34,7 +34,7 @@ impl Installer for objects::Raw {
     }
 
     fn install(&self, download_dir: &Path) -> Result<()> {
-        info!("'raw' handler Install");
+        info!("'raw' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = match self.target_type {
             definitions::TargetType::Device(ref p) => p,

@@ -29,7 +29,7 @@ impl Installer for objects::Ubifs {
     }
 
     fn install(&self, download_dir: &std::path::Path) -> Result<()> {
-        info!("'ubifs' handler Install");
+        info!("'ubifs' handler Install {} ({})", self.filename, self.sha256sum);
 
         let target = self.target.get_target()?;
         let source = download_dir.join(self.sha256sum());

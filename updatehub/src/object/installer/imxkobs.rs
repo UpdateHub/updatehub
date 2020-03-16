@@ -19,7 +19,8 @@ impl Installer for objects::Imxkobs {
     }
 
     fn install(&self, download_dir: &std::path::Path) -> Result<()> {
-        info!("'imxkobs' handler Install");
+        info!("'imxkobs' handler Install {} ({})", self.filename, self.sha256sum);
+
         let mut cmd = String::from("kobs-ng init ");
 
         if self.padding_1k {

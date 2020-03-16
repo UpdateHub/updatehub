@@ -29,7 +29,7 @@ impl Installer for objects::Tarball {
     }
 
     fn install(&self, download_dir: &Path) -> Result<()> {
-        info!("'tarball' handler Install");
+        info!("'tarball' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = self.target.get_target()?;
         let filesystem = self.filesystem;

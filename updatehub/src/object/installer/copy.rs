@@ -31,7 +31,7 @@ impl Installer for objects::Copy {
     }
 
     fn install(&self, download_dir: &Path) -> Result<()> {
-        info!("'copy' handler Install");
+        info!("'copy' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = self.target_type.get_target()?;
         let filesystem = self.filesystem;
