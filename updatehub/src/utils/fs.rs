@@ -69,9 +69,9 @@ pub(crate) fn format(target: &Path, fs: Filesystem, options: &Option<String>) ->
     Ok(())
 }
 
-pub(crate) fn mount_map<F>(source: &Path, fs: Filesystem, options: &str, f: F) -> Result<()>
+pub(crate) fn mount_map<F, T>(source: &Path, fs: Filesystem, options: &str, f: F) -> Result<T>
 where
-    F: FnOnce(&Path) -> Result<()>,
+    F: FnOnce(&Path) -> T,
 {
     let tmpdir = tempfile::tempdir()?;
     let tmpdir = tmpdir.path();
@@ -80,7 +80,7 @@ where
     // closure is run.
     let _guard = mount(source, &tmpdir, fs, options)?;
 
-    f(tmpdir)
+    Ok(f(tmpdir))
 }
 
 pub(crate) fn mount(

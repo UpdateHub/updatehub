@@ -84,6 +84,7 @@ impl Installer for objects::Copy {
             Ok(())
         })
         .map_err(Error::from)
+        .and_then(|r| r)
     }
 }
 
@@ -147,8 +148,8 @@ mod tests {
 
                 utils::fs::chown(&file, &perm.target_uid, &perm.target_gid)?;
 
-                Ok(())
-            })?;
+                utils::Result::Ok(())
+            })??;
         }
 
         // Generate base copy object
@@ -212,8 +213,8 @@ mod tests {
                 assert_eq!(gid, metadata.gid());
             };
 
-            Ok(())
-        })?;
+            std::io::Result::Ok(())
+        })??;
 
         loopdev.detach()?;
 

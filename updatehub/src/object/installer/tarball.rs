@@ -52,7 +52,7 @@ impl Installer for objects::Tarball {
                 utils::fs::find_compress_tarball_kind(&source)?,
             )
             .map_err(|_| crate::utils::Error::Uncompress)
-        })?)
+        })??)
     }
 }
 
@@ -114,8 +114,8 @@ mod tests {
         // Setup preinstall structure
         utils::fs::mount_map(&device, definitions::Filesystem::Ext4, &"", |path| {
             fs::create_dir(path.join("existing_dir"))?;
-            Ok(())
-        })?;
+            utils::Result::Ok(())
+        })??;
 
         // Peform Install
         obj.check_requirements()?;
@@ -136,8 +136,8 @@ mod tests {
             assert_metadata(&dest.join("tree/branch1/leaf"))?;
             assert_metadata(&dest.join("tree/branch2/leaf"))?;
 
-            Ok(())
-        })?;
+            utils::Result::Ok(())
+        })??;
 
         loopdev.detach()?;
 
