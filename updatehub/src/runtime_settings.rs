@@ -6,7 +6,7 @@ use crate::firmware::{
     self,
     installation_set::{self, Set},
 };
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use derive_more::{Deref, DerefMut};
 use sdk::api::info::runtime_settings as api;
 use slog_scope::debug;
@@ -35,7 +35,7 @@ impl Default for RuntimeSettings {
     fn default() -> Self {
         RuntimeSettings(api::RuntimeSettings {
             polling: api::RuntimePolling {
-                last: None,
+                last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
                 extra_interval: None,
                 retries: 0,
                 now: false,
@@ -137,12 +137,12 @@ impl RuntimeSettings {
         self.save()
     }
 
-    pub(crate) fn last_polling(&self) -> Option<DateTime<Utc>> {
+    pub(crate) fn last_polling(&self) -> DateTime<Utc> {
         self.polling.last
     }
 
     pub(crate) fn set_last_polling(&mut self, last_polling: DateTime<Utc>) -> Result<()> {
-        self.polling.last = Some(last_polling);
+        self.polling.last = last_polling;
         self.save()
     }
 
@@ -191,7 +191,7 @@ fn default() {
     let settings = RuntimeSettings::default();
     let expected = RuntimeSettings(api::RuntimeSettings {
         polling: api::RuntimePolling {
-            last: None,
+            last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
             extra_interval: None,
             retries: 0,
             now: false,

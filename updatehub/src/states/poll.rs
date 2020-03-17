@@ -7,7 +7,6 @@ use super::{
     Probe, Result, State, StateChangeImpl, StateMachine,
 };
 use chrono::{DateTime, Duration, Utc};
-use rand::Rng;
 use slog_scope::{debug, info};
 
 #[derive(Debug, PartialEq)]
@@ -36,16 +35,7 @@ impl StateChangeImpl for State<Poll> {
             return Ok((StateMachine::Probe(self.into()), actor::StepTransition::Immediate));
         }
 
-        let last_poll = shared_state.runtime_settings.last_polling().unwrap_or_else(|| {
-            // When no polling has been done before, we choose an
-            // offset between current time and the intended polling
-            // interval and use it as last_poll
-            let mut rnd = rand::thread_rng();
-            let interval = shared_state.settings.polling.interval.num_seconds();
-            let offset = Duration::seconds(rnd.gen_range(0, interval));
-
-            current_time + offset
-        });
+        let last_poll = shared_state.runtime_settings.last_polling();
 
         if last_poll > current_time {
             info!("Forcing to Probe state as last polling seems to happened in future.");
