@@ -17,8 +17,7 @@ pub struct RuntimeSettings {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct RuntimePolling {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub last: Option<DateTime<Utc>>,
+    pub last: DateTime<Utc>,
     #[serde(with = "serde_helpers::duration_option")]
     pub extra_interval: Option<Duration>,
     pub retries: usize,

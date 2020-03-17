@@ -27,7 +27,6 @@ nix = "0.17"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
-rand = "0.7"
 regex = "1"
 reqwest = { version = "0.10", features = ["default-tls", "json"] }
 sdk = { path = "../updatehub-sdk", package = "updatehub-sdk" }
