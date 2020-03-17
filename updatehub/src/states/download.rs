@@ -106,8 +106,8 @@ mod test {
         runtime_settings::RuntimeSettings,
         states::PrepareDownload,
         update_package::tests::{create_fake_settings, get_update_package_with_shasum},
+        utils,
     };
-    use crypto_hash::{hex_digest, Algorithm};
     use mockito::mock;
     use pretty_assertions::assert_eq;
     use std::{
@@ -119,7 +119,7 @@ mod test {
 
     fn fake_download_object(size: usize) -> (Vec<u8>, String) {
         let vec = std::iter::repeat(0xF).take(size).collect::<Vec<_>>();
-        let shasum = hex_digest(Algorithm::SHA256, &vec);
+        let shasum = utils::sha256sum(&vec);
         (vec, shasum)
     }
 
@@ -194,11 +194,7 @@ mod test {
             .expect("Fail to open the temporary directory.")
             .read_to_string(&mut object_content);
 
-        assert_eq!(
-            &hex_digest(Algorithm::SHA256, object_content.as_bytes()),
-            &shasum,
-            "Checksum mismatch"
-        );
+        assert_eq!(&utils::sha256sum(&object_content.as_bytes()), &shasum, "Checksum mismatch");
     }
 
     #[actix_rt::test]

@@ -6,16 +6,14 @@ use crate::{
     firmware::{installation_set::Set, Metadata},
     object::{self, Info},
     settings::Settings,
+    utils,
 };
-use sdk::api::info::runtime_settings::InstallationSet;
-use walkdir::WalkDir;
-
-use crypto_hash::{hex_digest, Algorithm};
-
 use pkg_schema::Object;
+use sdk::api::info::runtime_settings::InstallationSet;
 use serde::Deserialize;
 use slog_scope::error;
 use thiserror::Error;
+use walkdir::WalkDir;
 
 use std::{fs, io, path::Path};
 
@@ -81,7 +79,7 @@ impl UpdatePackage {
     }
 
     pub(crate) fn package_uid(&self) -> String {
-        hex_digest(Algorithm::SHA256, &self.raw)
+        utils::sha256sum(&self.raw)
     }
 
     pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<()> {

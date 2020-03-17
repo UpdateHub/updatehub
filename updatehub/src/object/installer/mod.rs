@@ -11,7 +11,7 @@ mod test;
 mod ubifs;
 
 use super::{Error, Result};
-use crypto_hash::{hex_digest, Algorithm};
+use crate::utils;
 use find_binary_version::{self as fbv, BinaryKind};
 use pkg_schema::{definitions, Object};
 use slog_scope::debug;
@@ -63,8 +63,7 @@ fn check_if_different<R: io::Read + io::Seek>(
         definitions::InstallIfDifferent::CheckSum => {
             let mut buffer = Vec::default();
             handle.read_to_end(&mut buffer)?;
-            let calculated = &hex_digest(Algorithm::SHA256, &buffer);
-            if calculated == sha256sum {
+            if utils::sha256sum(&buffer) == sha256sum {
                 return Ok(true);
             }
         }

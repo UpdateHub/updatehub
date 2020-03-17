@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::Result;
-use crypto_hash::{Algorithm, Hasher};
+use crate::utils;
+use openssl::sha::Sha256;
 use pkg_schema::{objects, Object};
 use std::{
     fs::File,
-    io::{BufReader, Read, Write},
+    io::{BufReader, Read},
     path::Path,
 };
 
@@ -43,17 +44,17 @@ pub(crate) trait Info {
 
         let mut buf = [0; 1024];
         let mut reader = BufReader::new(File::open(object)?);
-        let mut hasher = Hasher::new(Algorithm::SHA256);
+        let mut hasher = Sha256::new();
         loop {
             let len = reader.read(&mut buf)?;
-            hasher.write_all(&buf[..len])?;
+            hasher.update(&buf[..len]);
 
             if len == 0 {
                 break;
             }
         }
 
-        if hex::encode(hasher.finish()) != self.sha256sum() {
+        if utils::hex_encode(&hasher.finish()) != self.sha256sum() {
             return Ok(Status::Corrupted);
         }
 
