@@ -7,8 +7,9 @@ use super::{
     EntryPoint, Poll, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
 };
 use crate::client::{self, Api, ProbeResponse};
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use slog_scope::{debug, error, info};
+use std::time::Duration;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Probe;
@@ -45,7 +46,7 @@ impl StateChangeImpl for State<Probe> {
                 shared_state.runtime_settings.inc_retries();
                 return Ok((
                     StateMachine::Probe(self),
-                    actor::StepTransition::Delayed(std::time::Duration::from_secs(1)),
+                    actor::StepTransition::Delayed(Duration::from_secs(1)),
                 ));
             }
             Ok(probe) => probe,
@@ -63,10 +64,10 @@ impl StateChangeImpl for State<Probe> {
 
             ProbeResponse::ExtraPoll(s) => {
                 info!("Delaying the probing as requested by the server.");
-                shared_state.runtime_settings.set_polling_extra_interval(Duration::seconds(s))?;
-
-                debug!("Moving to Poll state due the extra polling interval.");
-                Ok((StateMachine::Poll(self.into()), actor::StepTransition::Immediate))
+                Ok((
+                    StateMachine::Probe(self),
+                    actor::StepTransition::Delayed(Duration::from_secs(s as u64)),
+                ))
             }
 
             ProbeResponse::Update(u, sign) => {
@@ -221,7 +222,7 @@ mod tests {
 
         mock.assert();
 
-        assert_state!(machine, Poll);
+        assert_state!(machine, Probe);
     }
 
     #[actix_rt::test]
