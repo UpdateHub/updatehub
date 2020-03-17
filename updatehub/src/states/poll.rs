@@ -6,7 +6,7 @@ use super::{
     actor::{self, SharedState},
     Probe, Result, State, StateChangeImpl, StateMachine,
 };
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use slog_scope::{debug, info};
 
 #[derive(Debug, PartialEq)]
@@ -42,12 +42,6 @@ impl StateChangeImpl for State<Poll> {
             return Ok((StateMachine::Probe(self.into()), actor::StepTransition::Immediate));
         }
 
-        let extra_interval = shared_state.runtime_settings.polling_extra_interval();
-        if last_poll + extra_interval.unwrap_or_else(|| Duration::seconds(0)) > current_time {
-            debug!("Moving to Probe state as the polling's due extra interval.");
-            return Ok((StateMachine::Probe(self.into()), actor::StepTransition::Immediate));
-        }
-
         debug!("Moving to Probe state after delay.");
         Ok((
             StateMachine::Probe(self.into()),
@@ -56,27 +50,6 @@ impl StateChangeImpl for State<Poll> {
             ),
         ))
     }
-}
-
-#[actix_rt::test]
-async fn extra_poll_in_past() {
-    use super::*;
-    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
-
-    let mut settings = Settings::default();
-    settings.polling.enabled = true;
-
-    let mut runtime_settings = RuntimeSettings::default();
-    runtime_settings.set_last_polling(Utc::now() - Duration::seconds(10)).unwrap();
-    runtime_settings.set_polling_extra_interval(Duration::seconds(20)).unwrap();
-
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    let mut shared_state = SharedState { settings, runtime_settings, firmware };
-
-    let machine =
-        StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap().0;
-
-    assert_state!(machine, Probe);
 }
 
 #[actix_rt::test]
@@ -104,6 +77,7 @@ async fn probe_now() {
 async fn last_poll_in_future() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
+    use chrono::Duration;
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;
@@ -124,6 +98,7 @@ async fn last_poll_in_future() {
 async fn interval_1_second() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
+    use chrono::Duration;
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;
@@ -145,6 +120,7 @@ async fn interval_1_second() {
 async fn never_polled() {
     use super::*;
     use crate::firmware::tests::{create_fake_metadata, FakeDevice};
+    use chrono::Duration;
 
     let mut settings = Settings::default();
     settings.polling.enabled = true;

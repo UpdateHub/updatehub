@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::serde_helpers;
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -18,8 +17,6 @@ pub struct RuntimeSettings {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct RuntimePolling {
     pub last: DateTime<Utc>,
-    #[serde(with = "serde_helpers::duration_option")]
-    pub extra_interval: Option<Duration>,
     pub retries: usize,
     pub now: bool,
     pub server_address: ServerAddress,
