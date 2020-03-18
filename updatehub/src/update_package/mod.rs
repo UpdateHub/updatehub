@@ -35,7 +35,7 @@ pub(crate) struct UpdatePackage {
     raw: Vec<u8>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) struct Signature(pub(crate) Vec<u8>);
 
 pub type Result<T> = std::result::Result<T, Error>;
