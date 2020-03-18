@@ -7,9 +7,12 @@ use crate::{
     runtime_settings::RuntimeSettings,
     update_package::{Signature, UpdatePackage},
 };
-use reqwest::{
-    header::{HeaderMap, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
-    Client, StatusCode,
+use awc::{
+    http::{
+        header::{self, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
+        StatusCode,
+    },
+    Client, ClientBuilder,
 };
 use sdk::api::info::firmware as api;
 use serde::Serialize;
@@ -25,6 +28,7 @@ use thiserror::Error;
 pub(crate) mod tests;
 
 pub(crate) struct Api<'a> {
+    client: Client,
     server: &'a str,
 }
 
@@ -40,7 +44,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("Invalid status code received: {0}")]
-    InvalidStatusResponse(reqwest::StatusCode),
+    InvalidStatusResponse(StatusCode),
 
     #[error("Update package error: {0}")]
     UpdatePackage(#[from] crate::update_package::Error),
@@ -48,13 +52,35 @@ pub enum Error {
     #[error("Update package error: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("Client error: {0}")]
-    Client(#[from] reqwest::Error),
+    #[error(transparent)]
+    ConnectError(#[from] awc::error::ConnectError),
+
+    #[error("Send Request Error: {0}")]
+    SendRequestError(String),
+
+    #[error(transparent)]
+    Http(awc::error::HttpError),
+
+    #[error(transparent)]
+    PayloadError(#[from] awc::error::PayloadError),
+
+    #[error(transparent)]
+    JsonPayloadError(#[from] awc::error::JsonPayloadError),
 
     #[error("Invalid header error: {0}")]
-    InvalidHeader(#[from] reqwest::header::InvalidHeaderValue),
+    InvalidHeader(#[from] awc::http::header::InvalidHeaderValue),
+
     #[error("Non str header error: {0}")]
-    NonStrHeader(#[from] reqwest::header::ToStrError),
+    NonStrHeader(#[from] awc::http::header::ToStrError),
+}
+
+impl From<awc::error::SendRequestError> for Error {
+    fn from(err: awc::error::SendRequestError) -> Self {
+        if let awc::error::SendRequestError::Http(err) = err {
+            return Error::Http(err);
+        }
+        Error::SendRequestError(format!("{}", err))
+    }
 }
 
 // We redefine the metadata structure here because the cloud
@@ -84,20 +110,16 @@ impl<'a> FirmwareMetadata<'a> {
 
 impl<'a> Api<'a> {
     pub(crate) fn new(server: &'a str) -> Self {
-        Self { server }
-    }
-
-    fn client(&self) -> Result<Client> {
-        let mut headers = HeaderMap::new();
-
-        headers.insert(USER_AGENT, "updatehub/next".parse()?);
-        headers.insert(CONTENT_TYPE, "application/json".parse()?);
-        headers.insert(
-            HeaderName::from_static("api-content-type"),
-            "application/vnd.updatehub-v1+json".parse()?,
-        );
-
-        Ok(Client::builder().timeout(Duration::from_secs(10)).default_headers(headers).build()?)
+        let client = ClientBuilder::new()
+            .timeout(Duration::from_secs(10))
+            .header(USER_AGENT, "updatehub/next")
+            .header(CONTENT_TYPE, "application/json")
+            .header(
+                HeaderName::from_static("api-content-type"),
+                "application/vnd.updatehub-v1+json",
+            )
+            .finish();
+        Self { server, client }
     }
 
     pub async fn probe(
@@ -105,12 +127,11 @@ impl<'a> Api<'a> {
         runtime_settings: &RuntimeSettings,
         firmware: &Metadata,
     ) -> Result<ProbeResponse> {
-        let response = self
-            .client()?
+        let mut response = self
+            .client
             .post(&format!("{}/upgrades", &self.server))
             .header(HeaderName::from_static("api-retries"), runtime_settings.retries())
-            .json(&FirmwareMetadata::from_sdk(&firmware.0))
-            .send()
+            .send_json(&FirmwareMetadata::from_sdk(&firmware.0))
             .await?;
 
         match response.status() {
@@ -130,7 +151,7 @@ impl<'a> Api<'a> {
                             .map(TryInto::try_into)
                             .transpose()?;
                         Ok(ProbeResponse::Update(
-                            UpdatePackage::parse(&response.bytes().await?)?,
+                            UpdatePackage::parse(&response.body().await?)?,
                             signature,
                         ))
                     }
@@ -148,10 +169,10 @@ impl<'a> Api<'a> {
         object: &str,
     ) -> Result<()> {
         use std::fs::create_dir_all;
-        use tokio::{fs::OpenOptions, io::AsyncWriteExt};
+        use tokio::{fs::OpenOptions, io::AsyncWriteExt, stream::StreamExt};
 
         // FIXME: Discuss the need of packages inside the route
-        let mut client = self.client()?.get(&format!(
+        let mut client = self.client.get(&format!(
             "{}/products/{}/packages/{}/objects/{}",
             &self.server, product_uid, package_uid, object
         ));
@@ -169,8 +190,10 @@ impl<'a> Api<'a> {
 
         let mut file = OpenOptions::new().create(true).append(true).open(&file).await?;
         let mut response = client.send().await?;
+
         if response.status().is_success() {
-            while let Some(chunk) = response.chunk().await? {
+            while let Some(chunk) = response.next().await {
+                let chunk = &chunk?;
                 file.write_all(&chunk).await?;
             }
             return Ok(());
@@ -208,15 +231,15 @@ impl<'a> Api<'a> {
         let payload =
             Payload { state, firmware, package_uid, previous_state, error_message, current_log };
 
-        self.client()?.post(&format!("{}/report", &self.server)).json(&payload).send().await?;
+        self.client.post(&format!("{}/report", &self.server)).send_json(&payload).await?;
         Ok(())
     }
 }
 
-impl TryFrom<&reqwest::header::HeaderValue> for Signature {
+impl TryFrom<&header::HeaderValue> for Signature {
     type Error = Error;
 
-    fn try_from(value: &reqwest::header::HeaderValue) -> Result<Self> {
+    fn try_from(value: &header::HeaderValue) -> Result<Self> {
         Ok(Self::from_str(value.to_str()?)?)
     }
 }
