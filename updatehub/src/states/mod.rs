@@ -16,6 +16,7 @@ mod prepare_download;
 mod prepare_local_install;
 mod probe;
 mod reboot;
+mod validation;
 
 #[cfg(test)]
 mod tests;
@@ -24,6 +25,7 @@ use self::{
     direct_download::DirectDownload, download::Download, entry_point::EntryPoint, error::Error,
     install::Install, park::Park, poll::Poll, prepare_download::PrepareDownload,
     prepare_local_install::PrepareLocalInstall, probe::Probe, reboot::Reboot,
+    validation::Validation,
 };
 use crate::{
     firmware::{self, Metadata, Transition},
@@ -127,6 +129,7 @@ enum StateMachine {
     EntryPoint(State<EntryPoint>),
     Poll(State<Poll>),
     Probe(State<Probe>),
+    Validation(State<Validation>),
     PrepareDownload(State<PrepareDownload>),
     DirectDownload(State<DirectDownload>),
     PrepareLocalInstall(State<PrepareLocalInstall>),
@@ -244,6 +247,7 @@ impl StateMachine {
             StateMachine::EntryPoint(s) => s.handle(shared_state).await,
             StateMachine::Poll(s) => s.handle(shared_state).await,
             StateMachine::Probe(s) => s.handle(shared_state).await,
+            StateMachine::Validation(s) => s.handle(shared_state).await,
             StateMachine::PrepareDownload(s) => s.handle(shared_state).await,
             StateMachine::DirectDownload(s) => s.handle(shared_state).await,
             StateMachine::PrepareLocalInstall(s) => s.handle(shared_state).await,
@@ -269,6 +273,7 @@ impl StateMachine {
             StateMachine::EntryPoint(s) => f(s),
             StateMachine::Poll(s) => f(s),
             StateMachine::Probe(s) => f(s),
+            StateMachine::Validation(s) => f(s),
             StateMachine::PrepareDownload(s) => f(s),
             StateMachine::DirectDownload(s) => f(s),
             StateMachine::PrepareLocalInstall(s) => f(s),

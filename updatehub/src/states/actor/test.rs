@@ -129,9 +129,10 @@ async fn step_sequence() {
 #[actix_rt::test]
 async fn download_abort() {
     let (addr, mock, ..) = setup_actor(Setup::HasUpdate, Probe::Enabled);
-    addr.send(Step).await.unwrap();
-    addr.send(Step).await.unwrap();
-    addr.send(Step).await.unwrap();
+    addr.send(Step).await.unwrap(); // Idle -> Poll
+    addr.send(Step).await.unwrap(); // Poll -> Probe
+    addr.send(Step).await.unwrap(); // Probe -> Validation
+    addr.send(Step).await.unwrap(); // Validation -> PrepareDownload
     let res = addr.send(info::Request).await.unwrap();
     assert_eq!(res.state, "prepare_download");
 
