@@ -60,8 +60,7 @@ dependencies = [
 [[package]]
 name = "actix-http"
 version = "2.0.0-alpha.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65f194bcd786457b736d6b04ba7501af31e9961d24567dfcb3dc4cffc149cbdb"
+source = "git+https://github.com/actix/actix-web#206733188478f4d18df376a72fac3a4938b99bd6"
 dependencies = [
  "actix-codec",
  "actix-connect",
@@ -71,11 +70,13 @@ dependencies = [
  "actix-utils",
  "base64",
  "bitflags",
+ "brotli2",
  "bytes",
  "copyless",
  "derive_more",
  "either",
  "encoding_rs",
+ "flate2",
  "futures-channel",
  "futures-core",
  "futures-util",
@@ -99,6 +100,13 @@ dependencies = [
  "slab",
  "time 0.2.9",
 ]
+
+[[package]]
+name = "actix-http"
+version = "2.0.0-alpha.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65f194bcd786457b736d6b04ba7501af31e9961d24567dfcb3dc4cffc149cbdb"
+replace = "actix-http 2.0.0-alpha.2 (git+https://github.com/actix/actix-web)"
 
 [[package]]
 name = "actix-macros"
@@ -236,7 +244,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80e6d4c344acb10ceb89ba0d0bb6bf67fea56cd68444b1166d78d218e0f06013"
 dependencies = [
  "actix-codec",
- "actix-http",
+ "actix-http 2.0.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-macros",
  "actix-router",
  "actix-rt",
@@ -247,7 +255,7 @@ dependencies = [
  "actix-tls",
  "actix-utils",
  "actix-web-codegen",
- "awc",
+ "awc 2.0.0-alpha.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes",
  "derive_more",
  "encoding_rs",
@@ -400,11 +408,10 @@ checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
 [[package]]
 name = "awc"
 version = "2.0.0-alpha.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18faab57a9a1e4c59e38a998784bc3d9b4fdd9464faed77feb6046cc67b95e17"
+source = "git+https://github.com/actix/actix-web#206733188478f4d18df376a72fac3a4938b99bd6"
 dependencies = [
  "actix-codec",
- "actix-http",
+ "actix-http 2.0.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "actix-rt",
  "actix-service",
  "base64",
@@ -419,6 +426,13 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
 ]
+
+[[package]]
+name = "awc"
+version = "2.0.0-alpha.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18faab57a9a1e4c59e38a998784bc3d9b4fdd9464faed77feb6046cc67b95e17"
+replace = "awc 2.0.0-alpha.1 (git+https://github.com/actix/actix-web)"
 
 [[package]]
 name = "backtrace"
@@ -490,6 +504,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa79dedbb091f449f1f39e53edf88d5dbe95f895dae6135a8d7b881fb5af73f5"
 dependencies = [
  "byte-tools",
+]
+
+[[package]]
+name = "brotli-sys"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4445dea95f4c2b41cde57cc9fee236ae4dbae88d8fcbdb4750fc1bb5d86aaecd"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
+name = "brotli2"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0cb036c3eade309815c15ddbacec5b22c4d1f3983a774ab2eac2e3e9ea85568e"
+dependencies = [
+ "brotli-sys",
+ "libc",
 ]
 
 [[package]]
@@ -2359,19 +2393,7 @@ dependencies = [
  "pin-project-lite",
  "signal-hook-registry",
  "slab",
- "tokio-macros",
  "winapi 0.3.8",
-]
-
-[[package]]
-name = "tokio-macros"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
-dependencies = [
- "proc-macro2 1.0.9",
- "quote 1.0.3",
- "syn 1.0.16",
 ]
 
 [[package]]
@@ -2566,14 +2588,14 @@ dependencies = [
 name = "updatehub-sdk"
 version = "0.1.0"
 dependencies = [
+ "actix-rt",
+ "awc 2.0.0-alpha.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono",
  "ms-converter",
- "reqwest",
  "serde",
  "tempfile",
  "testcontainers",
  "thiserror",
- "tokio",
 ]
 
 [[package]]

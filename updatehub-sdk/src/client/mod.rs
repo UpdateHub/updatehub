@@ -3,20 +3,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{api, Error, Result};
+use awc::http::{header::CONTENT_TYPE, StatusCode};
 use std::path::Path;
 
 #[derive(Clone)]
 pub struct Client {
     server_address: String,
-    client: reqwest::Client,
+    client: awc::Client,
 }
 
 impl Default for Client {
     fn default() -> Self {
-        Client {
-            server_address: "http://localhost:8080".to_string(),
-            client: reqwest::Client::new(),
-        }
+        Client { server_address: "http://localhost:8080".to_string(), client: awc::Client::new() }
     }
 }
 
@@ -26,90 +24,84 @@ impl Client {
     }
 
     pub async fn info(&self) -> Result<api::info::Response> {
-        let response = self.client.get(&format!("{}/info", self.server_address)).send().await?;
+        let mut response = self.client.get(&format!("{}/info", self.server_address)).send().await?;
 
         match response.status() {
-            reqwest::StatusCode::OK => Ok(response.json().await?),
-            _ => Err(Error::UnexpectedResponse(response)),
+            StatusCode::OK => Ok(response.json().await?),
+            s => Err(Error::UnexpectedResponse(s)),
         }
     }
 
     pub async fn probe(&self, custom: Option<String>) -> Result<api::probe::Response> {
         let request = self.client.post(&format!("{}/probe", self.server_address));
-        let response = match custom {
-            Some(custom_server) => request.json(&api::probe::Request { custom_server }),
-            None => request,
+        let mut response = match custom {
+            Some(custom_server) => request.send_json(&api::probe::Request { custom_server }),
+            None => request.send(),
         }
-        .send()
         .await?;
 
         match response.status() {
-            reqwest::StatusCode::OK => Ok(response.json().await?),
-            reqwest::StatusCode::ACCEPTED => {
+            StatusCode::OK => Ok(response.json().await?),
+            StatusCode::ACCEPTED => {
                 Err(Error::AgentIsBusy(response.json::<api::state::Response>().await?))
             }
-            _ => Err(Error::UnexpectedResponse(response)),
+            s => Err(Error::UnexpectedResponse(s)),
         }
     }
 
     pub async fn local_install(&self, file: &Path) -> Result<api::state::Response> {
-        let response = self
+        let mut response = self
             .client
             .post(&format!("{}/local_install", self.server_address))
-            .header(reqwest::header::CONTENT_TYPE, "text/plain")
-            .body(format!("{}", file.display()))
-            .send()
+            .header(CONTENT_TYPE, "text/plain")
+            .send_body(format!("{}", file.display()))
             .await?;
 
         match response.status() {
-            reqwest::StatusCode::OK => Ok(response.json().await?),
-            reqwest::StatusCode::UNPROCESSABLE_ENTITY => {
+            StatusCode::OK => Ok(response.json().await?),
+            StatusCode::UNPROCESSABLE_ENTITY => {
                 Err(Error::AgentIsBusy(response.json::<api::state::Response>().await?))
             }
-            _ => Err(Error::UnexpectedResponse(response)),
+            s => Err(Error::UnexpectedResponse(s)),
         }
     }
 
     pub async fn remote_install(&self, url: String) -> Result<api::state::Response> {
-        let response = self
+        let mut response = self
             .client
             .post(&format!("{}/remote_install", self.server_address))
-            .header(reqwest::header::CONTENT_TYPE, "text/plain")
-            .body(url)
-            .send()
+            .header(CONTENT_TYPE, "text/plain")
+            .send_body(url)
             .await?;
 
         match response.status() {
-            reqwest::StatusCode::OK => Ok(response.json().await?),
-            reqwest::StatusCode::UNPROCESSABLE_ENTITY => {
-                Err(Error::AgentIsBusy(response.json::<api::state::Response>().await?))
-            }
-            _ => Err(Error::UnexpectedResponse(response)),
+            StatusCode::OK => Ok(response.json().await?),
+            s => Err(Error::UnexpectedResponse(s)),
         }
     }
 
     pub async fn abort_download(&self) -> Result<api::abort_download::Response> {
-        let response = self
+        let mut response = self
             .client
             .post(&format!("{}/update/download/abort", self.server_address))
             .send()
             .await?;
 
         match response.status() {
-            reqwest::StatusCode::OK => Ok(response.json().await?),
-            reqwest::StatusCode::BAD_REQUEST => Err(Error::AbortDownloadRefused(
+            StatusCode::OK => Ok(response.json().await?),
+            StatusCode::BAD_REQUEST => Err(Error::AbortDownloadRefused(
                 response.json::<api::abort_download::Refused>().await?,
             )),
-            _ => Err(Error::UnexpectedResponse(response)),
+            s => Err(Error::UnexpectedResponse(s)),
         }
     }
 
     pub async fn log(&self) -> Result<Vec<api::log::Entry>> {
-        let response = self.client.get(&format!("{}/log", self.server_address)).send().await?;
+        let mut response = self.client.get(&format!("{}/log", self.server_address)).send().await?;
 
         match response.status() {
-            reqwest::StatusCode::OK => Ok(response.json().await?),
-            _ => Err(Error::UnexpectedResponse(response)),
+            StatusCode::OK => Ok(response.json().await?),
+            s => Err(Error::UnexpectedResponse(s)),
         }
     }
 }
