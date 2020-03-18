@@ -38,8 +38,8 @@ impl StateChangeImpl for State<Probe> {
             .probe(&shared_state.runtime_settings, &shared_state.firmware)
             .await
         {
-            Err(client::Error::Client(e)) if e.is_builder() => {
-                return Err(client::Error::Client(e).into());
+            Err(client::Error::Http(e)) if e.is::<awc::http::uri::InvalidUri>() => {
+                return Err(client::Error::Http(e).into());
             }
             Err(e) => {
                 error!("Probe failed: {}", e);
@@ -101,7 +101,7 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[actix_rt::test]
-    async fn invalid_url() {
+    async fn invalid_uri() {
         let settings = Settings::default();
         let mut runtime_settings = RuntimeSettings::default();
         runtime_settings.polling.server_address = ServerAddress::Custom("FOO".to_string());

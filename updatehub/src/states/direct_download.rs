@@ -6,8 +6,10 @@ use super::{
     actor::{self, SharedState},
     PrepareLocalInstall, Result, State, StateChangeImpl, StateMachine, TransitionError,
 };
+use awc::http::header;
 use slog_scope::{debug, error, info};
-use tokio::io::AsyncWriteExt;
+use std::str::FromStr;
+use tokio::{io::AsyncWriteExt, stream::StreamExt};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct DirectDownload {
@@ -27,23 +29,26 @@ impl StateChangeImpl for State<DirectDownload> {
         info!("Fetching update package directly from url: {:?}", self.0.url);
 
         let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
-        let mut response = reqwest::get(&self.0.url).await.map_err(|e| {
-            error!("Request error: {}", e);
-            TransitionError::InvalidRequest
-        })?;
-        let length = response.content_length().ok_or_else(|| {
-            error!("Invalid response: {:?}", response);
-            TransitionError::InvalidRequest
-        })?;
-        let percent = (length / 100) as usize;
+        let mut response = awc::Client::new().get(&self.0.url).send().await?;
+
+        let length = usize::from_str(
+            response
+                .headers()
+                .get(header::CONTENT_LENGTH)
+                .ok_or_else(|| {
+                    error!("Invalid response: {:?}", response);
+                    TransitionError::InvalidRequest
+                })?
+                .to_str()?,
+        )?;
+
         let mut written: f32 = 0.;
         let mut threshold = 10;
         let mut file = tokio::fs::File::create(&update_file).await?;
-        while let Some(chunk) =
-            response.chunk().await.map_err(|_| TransitionError::InvalidRequest)?
-        {
+        while let Some(chunk) = response.next().await {
+            let chunk = &chunk?;
             file.write_all(&chunk).await?;
-            written += chunk.len() as f32 / percent as f32;
+            written += chunk.len() as f32 / (length / 100) as f32;
             if written as usize >= threshold {
                 threshold += 20;
                 debug!("{}% of the file has been downloaded", written as usize);
