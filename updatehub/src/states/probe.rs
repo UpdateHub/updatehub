@@ -71,14 +71,15 @@ impl StateChangeImpl for State<Probe> {
             }
 
             ProbeResponse::Update(u, sign) => {
+                // Store timestamp of last polling
+                shared_state.runtime_settings.set_last_polling(Utc::now())?;
+
                 if let (Some(sign), Some(key)) = (sign, shared_state.firmware.pub_key.as_ref()) {
                     debug!("Validating signature");
                     sign.validate(key, &u)?;
                 }
                 // Ensure the package is compatible
                 u.compatible_with(&shared_state.firmware)?;
-                // Store timestamp of last polling
-                shared_state.runtime_settings.set_last_polling(Utc::now())?;
 
                 if Some(u.package_uid()) == shared_state.runtime_settings.applied_package_uid() {
                     info!(
