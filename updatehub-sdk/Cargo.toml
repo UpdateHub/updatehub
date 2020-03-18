@@ -9,13 +9,13 @@ authors = ["asakiz <asakizin@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+awc = "2.0.0-alpha.1"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 ms-converter = "0.7"
-reqwest = { version = "0.10", default-features = false, features = ["json"] }
 serde = { version = "1", default-features = false, features = ["derive"] }
 thiserror = "1"
 
 [dev-dependencies]
 tempfile = "3"
 testcontainers = { git = "https://github.com/testcontainers/testcontainers-rs" }
-tokio = { version = "0.2", default-features = false, features = ["macros"] }
+actix-rt = { version = "1", default-features = false }
