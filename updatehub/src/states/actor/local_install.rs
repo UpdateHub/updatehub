@@ -20,7 +20,7 @@ impl Handler<Request> for super::Machine {
 
     fn handle(&mut self, req: Request, ctx: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = &self.state {
-            let res = machine.for_any_state(|s| s.handle_local_install());
+            let res = machine.for_current_state(|s| s.handle_local_install());
             return match res {
                 Response::InvalidState(_) => MessageResult(res),
                 Response::RequestAccepted(_) => {
