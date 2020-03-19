@@ -18,15 +18,13 @@ impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
-        if let Some(machine) = &self.state {
-            if machine.for_current_state(|s| s.can_run_download_abort()) {
-                self.state.replace(StateMachine::EntryPoint(State(EntryPoint {})));
-                return MessageResult(Response::RequestAccepted);
-            }
+        let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
 
-            return MessageResult(Response::InvalidState);
+        if machine.for_current_state(|s| s.can_run_download_abort()) {
+            self.state.replace(StateMachine::EntryPoint(State(EntryPoint {})));
+            return MessageResult(Response::RequestAccepted);
         }
 
-        unreachable!("Failed to take StateMachine's ownership");
+        MessageResult(Response::InvalidState)
     }
 }

@@ -14,17 +14,14 @@ impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
-        if let Some(machine) = &self.state {
-            let state = machine.for_current_state(|s| s.name().to_owned());
-            return MessageResult(Response {
-                state,
-                version: crate::version().to_string(),
-                config: self.shared_state.settings.0.clone(),
-                firmware: self.shared_state.firmware.0.clone(),
-                runtime_settings: self.shared_state.runtime_settings.clone(),
-            });
-        }
-
-        unreachable!("Failed to take StateMachine's ownership");
+        let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
+        let state = machine.for_current_state(|s| s.name().to_owned());
+        MessageResult(Response {
+            state,
+            version: crate::version().to_string(),
+            config: self.shared_state.settings.0.clone(),
+            firmware: self.shared_state.firmware.0.clone(),
+            runtime_settings: self.shared_state.runtime_settings.clone(),
+        })
     }
 }
