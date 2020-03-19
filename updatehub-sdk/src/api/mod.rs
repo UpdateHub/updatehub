@@ -15,7 +15,8 @@ pub mod probe {
     #[derive(Clone, Debug, Deserialize, Serialize)]
     pub struct Response {
         pub update_available: bool,
-        pub try_again_in: i32,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub try_again_in: Option<i64>,
     }
 }
 
