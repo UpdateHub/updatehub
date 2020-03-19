@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, download_abort, SharedState},
+    actor::{self, SharedState},
     Download, Result, State, StateChangeImpl, StateMachine,
 };
 use crate::{
@@ -26,8 +26,8 @@ impl StateChangeImpl for State<PrepareDownload> {
         "prepare_download"
     }
 
-    fn handle_download_abort(&self) -> download_abort::Response {
-        download_abort::Response::RequestAccepted
+    fn can_run_download_abort(&self) -> bool {
+        true
     }
 
     async fn handle(

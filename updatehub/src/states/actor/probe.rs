@@ -19,21 +19,18 @@ impl Handler<Request> for super::Machine {
 
     fn handle(&mut self, req: Request, ctx: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = &self.state {
-            let res = machine.for_current_state(|s| s.handle_trigger_probe());
-            return match res {
-                Response::InvalidState(_) => MessageResult(res),
-                Response::RequestAccepted(_) => {
-                    self.shared_state.runtime_settings.reset_transient_settings();
-                    if let Some(server_address) = req.0 {
-                        self.shared_state
-                            .runtime_settings
-                            .set_custom_server_address(&server_address);
-                    }
-                    self.stepper.restart(ctx.address());
-                    self.state.replace(StateMachine::Probe(State(Probe {})));
-                    MessageResult(res)
+            let state = machine.for_current_state(|s| s.name().to_owned());
+            if machine.for_current_state(|s| s.can_run_trigger_probe()) {
+                self.shared_state.runtime_settings.reset_transient_settings();
+                if let Some(server_address) = req.0 {
+                    self.shared_state.runtime_settings.set_custom_server_address(&server_address);
                 }
-            };
+                self.stepper.restart(ctx.address());
+                self.state.replace(StateMachine::Probe(State(Probe {})));
+                return MessageResult(Response::RequestAccepted(state));
+            }
+
+            return MessageResult(Response::InvalidState(state));
         }
 
         unreachable!("Failed to take StateMachine's ownership");

@@ -24,8 +24,8 @@ impl StateChangeImpl for State<Validation> {
         "validation"
     }
 
-    fn handle_trigger_probe(&self) -> actor::probe::Response {
-        actor::probe::Response::RequestAccepted(self.name().to_owned())
+    fn can_run_trigger_probe(&self) -> bool {
+        true
     }
 
     async fn handle(
