@@ -263,7 +263,7 @@ impl StateMachine {
         }
     }
 
-    fn for_any_state<F, A>(&self, f: F) -> A
+    fn for_current_state<F, A>(&self, f: F) -> A
     where
         F: Fn(&dyn StateChangeImpl) -> A,
     {

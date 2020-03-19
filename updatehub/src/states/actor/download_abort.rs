@@ -19,7 +19,7 @@ impl Handler<Request> for super::Machine {
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = &self.state {
-            let res = machine.for_any_state(|s| s.handle_download_abort());
+            let res = machine.for_current_state(|s| s.handle_download_abort());
             return match res {
                 Response::InvalidState => MessageResult(res),
                 Response::RequestAccepted => {

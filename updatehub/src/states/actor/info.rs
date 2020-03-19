@@ -15,7 +15,7 @@ impl Handler<Request> for super::Machine {
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = &self.state {
-            let state = machine.for_any_state(|s| s.name().to_owned());
+            let state = machine.for_current_state(|s| s.name().to_owned());
             return MessageResult(Response {
                 state,
                 version: crate::version().to_string(),
