@@ -10,10 +10,10 @@ use thiserror::Error;
 
 pub(crate) struct API(actix::Addr<actor::Machine>);
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
-pub enum Error {
+pub(crate) enum Error {
     #[error("Mailbox error: {0}")]
     ActixMailbox(#[from] actix::MailboxError),
 }
