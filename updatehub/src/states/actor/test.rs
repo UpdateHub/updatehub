@@ -145,14 +145,16 @@ async fn download_abort() {
 
 #[actix_rt::test]
 async fn trigger_probe() {
-    let (addr, ..) = setup_actor(Setup::NoUpdate, Probe::Disabled);
+    let (addr, mock, ..) = setup_actor(Setup::NoUpdate, Probe::Disabled);
     addr.send(Step).await.unwrap();
     let res = addr.send(info::Request).await.unwrap();
     assert_eq!(res.state, "park");
 
-    addr.send(probe::Request(None)).await.unwrap();
+    addr.send(probe::Request(None)).await.unwrap().unwrap();
     let res = addr.send(info::Request).await.unwrap();
-    assert_eq!(res.state, "probe");
+    assert_eq!(res.state, "entry_point");
+
+    mock.assert();
 }
 
 #[actix_rt::test]

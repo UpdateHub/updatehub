@@ -16,6 +16,8 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 pub(crate) enum Error {
     #[error("Mailbox error: {0}")]
     ActixMailbox(#[from] actix::MailboxError),
+    #[error("Failed to handle the request: {0}")]
+    RequestError(#[from] actor::Error),
 }
 
 impl API {
@@ -40,7 +42,7 @@ impl API {
     ) -> Result<actor::probe::Response> {
         let server_address = server_address.map(|r| r.into_inner().custom_server);
         debug!("Receiving probe request with {:?}", server_address);
-        Ok(agent.0.send(actor::probe::Request(server_address)).await?)
+        Ok(agent.0.send(actor::probe::Request(server_address)).await??)
     }
 
     async fn local_install(
@@ -96,10 +98,13 @@ impl Responder for actor::probe::Response {
 
     fn respond_to(self, _: &HttpRequest) -> Self::Future {
         match self {
-            actor::probe::Response::RequestAccepted(current_state) => {
-                HttpResponse::Ok().json(api::state::Response { busy: false, current_state })
-            }
-            actor::probe::Response::InvalidState(current_state) => {
+            actor::probe::Response::Available => HttpResponse::Ok()
+                .json(api::probe::Response { update_available: true, try_again_in: None }),
+            actor::probe::Response::Unavailable => HttpResponse::Ok()
+                .json(api::probe::Response { update_available: false, try_again_in: None }),
+            actor::probe::Response::Delayed(d) => HttpResponse::Ok()
+                .json(api::probe::Response { update_available: false, try_again_in: Some(d) }),
+            actor::probe::Response::Busy(current_state) => {
                 HttpResponse::Ok().json(api::state::Response { busy: true, current_state })
             }
         }
