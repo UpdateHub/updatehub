@@ -20,18 +20,17 @@ impl Handler<Request> for super::Machine {
 
     fn handle(&mut self, req: Request, ctx: &mut Context<Self>) -> Self::Result {
         if let Some(machine) = &self.state {
-            let res = machine.for_current_state(|s| s.handle_local_install());
-            return match res {
-                Response::InvalidState(_) => MessageResult(res),
-                Response::RequestAccepted(_) => {
-                    crate::logger::start_memory_logging();
-                    self.stepper.restart(ctx.address());
-                    self.state.replace(StateMachine::PrepareLocalInstall(State(
-                        PrepareLocalInstall { update_file: req.0 },
-                    )));
-                    MessageResult(res)
-                }
-            };
+            let state = machine.for_current_state(|s| s.name().to_owned());
+            if machine.for_current_state(|s| s.can_run_local_install()) {
+                crate::logger::start_memory_logging();
+                self.stepper.restart(ctx.address());
+                self.state.replace(StateMachine::PrepareLocalInstall(State(PrepareLocalInstall {
+                    update_file: req.0,
+                })));
+                return MessageResult(Response::RequestAccepted(state));
+            }
+
+            return MessageResult(Response::InvalidState(state));
         }
 
         unreachable!("Failed to take StateMachine's ownership");

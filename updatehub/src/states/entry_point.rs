@@ -22,16 +22,16 @@ impl StateChangeImpl for State<EntryPoint> {
         "entry_point"
     }
 
-    fn handle_trigger_probe(&self) -> actor::probe::Response {
-        actor::probe::Response::RequestAccepted(self.name().to_owned())
+    fn can_run_trigger_probe(&self) -> bool {
+        true
     }
 
-    fn handle_local_install(&self) -> actor::local_install::Response {
-        actor::local_install::Response::RequestAccepted(self.name().to_owned())
+    fn can_run_local_install(&self) -> bool {
+        true
     }
 
-    fn handle_remote_install(&self) -> actor::remote_install::Response {
-        actor::remote_install::Response::RequestAccepted(self.name().to_owned())
+    fn can_run_remote_install(&self) -> bool {
+        true
     }
 
     async fn handle(

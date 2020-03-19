@@ -93,20 +93,20 @@ trait StateChangeImpl {
 
     fn name(&self) -> &'static str;
 
-    fn handle_download_abort(&self) -> actor::download_abort::Response {
-        actor::download_abort::Response::InvalidState
+    fn can_run_download_abort(&self) -> bool {
+        false
     }
 
-    fn handle_trigger_probe(&self) -> actor::probe::Response {
-        actor::probe::Response::InvalidState(self.name().to_owned())
+    fn can_run_trigger_probe(&self) -> bool {
+        false
     }
 
-    fn handle_local_install(&self) -> actor::local_install::Response {
-        actor::local_install::Response::InvalidState(self.name().to_owned())
+    fn can_run_local_install(&self) -> bool {
+        false
     }
 
-    fn handle_remote_install(&self) -> actor::remote_install::Response {
-        actor::remote_install::Response::InvalidState(self.name().to_owned())
+    fn can_run_remote_install(&self) -> bool {
+        false
     }
 }
 
