@@ -2,34 +2,79 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Probe, State, StateMachine};
-use actix::{AsyncContext, Context, Handler, Message, MessageResult};
+use super::{EntryPoint, State, StateMachine, Validation};
+use crate::client::{Api, ProbeResponse};
+use actix::{fut::WrapFuture, Addr, AsyncContext, AtomicResponse, Context, Handler, Message};
+use chrono::Utc;
 
 #[derive(Message)]
-#[rtype(Response)]
+#[rtype(result = "super::Result<Response>")]
 pub(crate) struct Request(pub(crate) Option<String>);
 
 pub(crate) enum Response {
-    RequestAccepted(String),
-    InvalidState(String),
+    Available,
+    Unavailable,
+    Delayed(i64),
+    Busy(String),
 }
 
 impl Handler<Request> for super::Machine {
-    type Result = MessageResult<Request>;
+    type Result = AtomicResponse<Self, super::Result<Response>>;
 
     fn handle(&mut self, req: Request, ctx: &mut Context<Self>) -> Self::Result {
+        let addr = ctx.address();
+        let this: *mut Self = self;
+
+        AtomicResponse::new(Box::pin(
+            async move {
+                let this = unsafe { this.as_mut().unwrap() };
+                this.external_probe(addr, req.0).await
+            }
+            .into_actor(self),
+        ))
+    }
+}
+
+impl super::Machine {
+    async fn external_probe(
+        &mut self,
+        addr: Addr<Self>,
+        custom_server: Option<String>,
+    ) -> super::Result<Response> {
         let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
-        let state = machine.for_current_state(|s| s.name().to_owned());
+
         if machine.for_current_state(|s| s.can_run_trigger_probe()) {
             self.shared_state.runtime_settings.reset_transient_settings();
-            if let Some(server_address) = req.0 {
+            if let Some(server_address) = custom_server {
                 self.shared_state.runtime_settings.set_custom_server_address(&server_address);
             }
-            self.stepper.restart(ctx.address());
-            self.state.replace(StateMachine::Probe(State(Probe {})));
-            return MessageResult(Response::RequestAccepted(state));
+
+            return match Api::new(&self.shared_state.server_address())
+                .probe(&self.shared_state.runtime_settings, &self.shared_state.firmware)
+                .await?
+            {
+                ProbeResponse::ExtraPoll(s) => Ok(Response::Delayed(s)),
+
+                ProbeResponse::NoUpdate => {
+                    // Store timestamp of last polling
+                    self.shared_state.runtime_settings.set_last_polling(Utc::now())?;
+                    self.stepper.restart(addr);
+                    self.state.replace(StateMachine::EntryPoint(State(EntryPoint {})));
+                    Ok(Response::Unavailable)
+                }
+
+                ProbeResponse::Update(package, sign) => {
+                    // Store timestamp of last polling
+                    self.shared_state.runtime_settings.set_last_polling(Utc::now())?;
+                    self.stepper.restart(addr);
+                    self.state
+                        .replace(StateMachine::Validation(State(Validation { package, sign })));
+                    Ok(Response::Available)
+                }
+            };
         }
 
-        MessageResult(Response::InvalidState(state))
+        let state = machine.for_current_state(|s| s.name().to_owned());
+        Ok(Response::Busy(state))
     }
 }

@@ -14,18 +14,29 @@ pub(crate) mod remote_install;
 pub(crate) mod stepper;
 
 use super::{
-    DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, Probe, RuntimeSettings, Settings,
-    State, StateMachine,
+    DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, RuntimeSettings, Settings, State,
+    StateMachine, Validation,
 };
 use actix::{
     fut::WrapFuture, Actor, Addr, Arbiter, AsyncContext, AtomicResponse, Context, Handler, Message,
 };
 use slog_scope::info;
+use thiserror::Error;
 
 pub(crate) struct Machine {
     state: Option<StateMachine>,
     shared_state: SharedState,
     stepper: stepper::Controller,
+}
+
+pub(crate) type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Error)]
+pub(crate) enum Error {
+    #[error("Client Error: {0}")]
+    Client(#[from] crate::client::Error),
+    #[error("Runtime Settings Error: {0}")]
+    RuntimeSettings(#[from] crate::runtime_settings::Error),
 }
 
 #[derive(Debug, PartialEq)]
