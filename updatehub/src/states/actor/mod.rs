@@ -92,24 +92,21 @@ impl Handler<Step> for Machine {
     type Result = AtomicResponse<Self, StepTransition>;
 
     fn handle(&mut self, _: Step, _: &mut Context<Self>) -> Self::Result {
-        if let Some(machine) = self.state.take() {
-            let this: *mut Self = self;
+        let this: *mut Self = self;
 
-            return AtomicResponse::new(Box::pin(
-                async move {
-                    let this = unsafe { this.as_mut().unwrap() };
-                    let (state, transition) = machine
-                        .move_to_next_state(&mut this.shared_state)
-                        .await
-                        .unwrap_or_else(|e| (StateMachine::from(e), StepTransition::Immediate));
-                    this.state = Some(state);
+        AtomicResponse::new(Box::pin(
+            async move {
+                let this = unsafe { this.as_mut().unwrap() };
+                let machine = this.state.take().expect("Failed to take StateMachine's ownership");
+                let (state, transition) = machine
+                    .move_to_next_state(&mut this.shared_state)
+                    .await
+                    .unwrap_or_else(|e| (StateMachine::from(e), StepTransition::Immediate));
+                this.state = Some(state);
 
-                    transition
-                }
-                .into_actor(self),
-            ));
-        }
-
-        unreachable!("Failed to take StateMachine from StateAgent")
+                transition
+            }
+            .into_actor(self),
+        ))
     }
 }
