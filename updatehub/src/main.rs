@@ -117,7 +117,7 @@ async fn client_main(cmd: ClientCommands) -> updatehub::Result<()> {
         ClientCommands::LocalInstall(LocalInstall { file }) => {
             let file =
                 if file.is_absolute() { file } else { std::env::current_dir().unwrap().join(file) };
-            println!("{:#?}", client.local_install(file).await)
+            println!("{:#?}", client.local_install(&file).await)
         }
         ClientCommands::RemoteInstall(RemoteInstall { url }) => {
             println!("{:#?}", client.remote_install(url).await)
