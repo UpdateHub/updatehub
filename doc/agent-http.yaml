@@ -170,7 +170,6 @@ components:
       type: object
       required:
         - update_available
-        - try_again_in
       properties:
         update_available:
           type: boolean
