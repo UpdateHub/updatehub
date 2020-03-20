@@ -26,12 +26,12 @@ paths:
       summary: "Actively probe the server."
       description: |-
         Probe the server and download the update metadata if  available.
-        Returns a json object containing the "update-available" boolean field.
-        It also may contain a "try-again-in" field which means the caller should
+        Returns a json object containing the "update_available" boolean field.
+        It also may contain a "try_again_in" field which means the caller should
         try the request again 'n' seconds from now, where 'n' is the value of
-        "try-again-in".
+        "try_again_in".
 
-        This request accepts a "server-address" parameter on POST. When it's present,
+        This request accepts a "server_address" parameter on POST. When it's present,
         it will use the address for the triggered probe (and the update procedure too
         in case there is an update available).
 
@@ -169,12 +169,12 @@ components:
       description: "Response about requested probe"
       type: object
       required:
-        - update-available
-        - try-again-in
+        - update_available
+        - try_again_in
       properties:
-        update-available:
+        update_available:
           type: boolean
-        try-again-in:
+        try_again_in:
           type: integer
           example: 3600
 
@@ -182,7 +182,7 @@ components:
       description: "Server address which the update procedure will use for this request"
       type: object
       properties:
-        custom-server:
+        custom_server:
           type: string
           example: "http://different-address:8080"
 
@@ -191,12 +191,12 @@ components:
       type: object
       required:
         - busy
-        - current-state
+        - current_state
       properties:
         busy:
           type: boolean
           example: false
-        current-state:
+        current_state:
           $ref: "#/components/schemas/AgentState"
 
     AbortDownloadAccepted:
@@ -278,40 +278,40 @@ components:
     AgentInfoConfigFirwamre:
       type: object
       required:
-        - metadata-path
+        - metadata_path
       properties:
-        metadata-path:
+        metadata_path:
           type: string
           example: "/usr/share/updatehub"
 
     AgentInfoConfigNetwork:
       type: object
       required:
-        - server-address
+        - server_address
       properties:
-        server-address:
+        server_address:
           type: string
           example: "api.updatehub.io"
 
     AgentInfoConfigUpdate:
       type: object
       required:
-        - download-dir
-        - auto-download-when-available
-        - auto-install-after-download
-        - auto-reboot-after-install
-        - supported-install-modes
+        - download_dir
+        - auto_download_when_available
+        - auto_install_after_download
+        - auto_reboot_after_install
+        - supported_install_modes
       properties:
-        download-dir:
+        download_dir:
           type: string
           example: "/tmp/download"
-        auto-download-when-available:
+        auto_download_when_available:
           type: boolean
-        auto-install-after-download:
+        auto_install_after_download:
           type: boolean
-        auto-reboot-after-install:
+        auto_reboot_after_install:
           type: boolean
-        supported-install-modes:
+        supported_install_modes:
           type: array
           items:
             $ref: "#/components/schemas/SupportedInstallMode"
@@ -319,9 +319,9 @@ components:
     AgentInfoConfigStorage:
       type: object
       required:
-        - read-only
+        - read_only
       properties:
-        read-only:
+        read_only:
           type: boolean
 
     AgentInfoConfigPolling:
@@ -329,9 +329,9 @@ components:
       required:
         - enabled
         - interval
-        - last-poll
-        - first-poll
-        - extra-interval
+        - last_poll
+        - first_poll
+        - extra_interval
         - retries
       properties:
         enabled:
@@ -339,13 +339,13 @@ components:
         interval:
           type: integer
           example: 3600
-        last-poll:
+        last_poll:
           type: string
           example: "2017-01-01T00:00:00Z"
-        first-poll:
+        first_poll:
           type: string
           example: "2017-02-02T00:00:00Z"
-        extra-interval:
+        extra_interval:
           type: integer
           example: 300
         retries:
@@ -354,23 +354,23 @@ components:
     AgentInfoFirmware:
       type: object
       required:
-        - product-uid
-        - device-identity
-        - device-attributes
+        - product_uid
+        - device_identity
+        - device_attributes
         - hardware
         - version
       properties:
-        product-uid:
+        product_uid:
           type: string
           example: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-        device-identity:
+        device_identity:
           type: object
           additionalProperties:
             type: string
           example:
             "id1": "value1"
             "id2": "value2"
-        device-attributes:
+        device_attributes:
           type: object
           additionalProperties:
             type: string
