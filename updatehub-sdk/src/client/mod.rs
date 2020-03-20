@@ -52,10 +52,11 @@ impl Client {
         }
     }
 
-    pub async fn local_install(&self, file: &Path) -> Result<api::info::Response> {
+    pub async fn local_install(&self, file: &Path) -> Result<api::state::Response> {
         let response = self
             .client
             .post(&format!("{}/local_install", self.server_address))
+            .header(reqwest::header::CONTENT_TYPE, "text/plain")
             .body(format!("{}", file.display()))
             .send()
             .await?;
@@ -69,10 +70,11 @@ impl Client {
         }
     }
 
-    pub async fn remote_install(&self, url: String) -> Result<api::info::Response> {
+    pub async fn remote_install(&self, url: String) -> Result<api::state::Response> {
         let response = self
             .client
             .post(&format!("{}/remote_install", self.server_address))
+            .header(reqwest::header::CONTENT_TYPE, "text/plain")
             .body(url)
             .send()
             .await?;
