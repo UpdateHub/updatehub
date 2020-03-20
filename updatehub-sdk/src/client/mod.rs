@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{api, Error, Result};
-use std::path::PathBuf;
+use std::path::Path;
 
 #[derive(Clone)]
 pub struct Client {
@@ -52,7 +52,7 @@ impl Client {
         }
     }
 
-    pub async fn local_install(&self, file: PathBuf) -> Result<api::info::Response> {
+    pub async fn local_install(&self, file: &Path) -> Result<api::info::Response> {
         let response = self
             .client
             .post(&format!("{}/local_install", self.server_address))
