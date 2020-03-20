@@ -10,7 +10,7 @@ edition = "2018"
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
-ms-converter = "0.5"
+ms-converter = "0.7"
 reqwest = { version = "0.10", default-features = false, features = ["json"] }
 serde = { version = "1", default-features = false, features = ["derive"] }
 thiserror = "1"
