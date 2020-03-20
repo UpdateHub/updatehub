@@ -86,7 +86,7 @@ impl Client {
         }
     }
 
-    pub async fn abort_download(&self) -> Result<api::info::Response> {
+    pub async fn abort_download(&self) -> Result<api::abort_download::Response> {
         let response = self
             .client
             .post(&format!("{}/update/download/abort", self.server_address))
