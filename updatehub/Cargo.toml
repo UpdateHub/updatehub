@@ -22,7 +22,7 @@ easy_process = "0.1"
 find-binary-version = "0.2"
 infer = "0.1"
 lazy_static = "1"
-ms-converter = "0.5"
+ms-converter = "0.7"
 nix = "0.17"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
