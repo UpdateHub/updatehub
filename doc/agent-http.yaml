@@ -134,13 +134,13 @@ paths:
                 $ref: "#/components/schemas/AbortDownloadRejected"
 
   "/log":
-    post:
+    get:
       summary: "Fetch agent log"
       description: |-
         Returns the agent log.
       responses:
         "200":
-          description: "Download Aborted"
+          description: "Log of last execution"
           content:
             application/json:
               schema:
