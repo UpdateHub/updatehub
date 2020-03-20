@@ -14,3 +14,8 @@ ms-converter = "0.7"
 reqwest = { version = "0.10", default-features = false, features = ["json"] }
 serde = { version = "1", default-features = false, features = ["derive"] }
 thiserror = "1"
+
+[dev-dependencies]
+tempfile = "3"
+testcontainers = { git = "https://github.com/testcontainers/testcontainers-rs" }
+tokio = { version = "0.2", default-features = false, features = ["macros"] }
