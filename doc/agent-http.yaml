@@ -161,7 +161,7 @@ components:
           type: string
           example: "0.1.0-87-ga836b13"
         config:
-          $ref: "#/components/schemas/AgentInfoConfig"
+          $ref: "#/components/schemas/AgentInfoSettings"
         firmware:
           $ref: "#/components/schemas/AgentInfoFirmware"
 
@@ -254,7 +254,7 @@ components:
       type: string
       enum: ["idle", "install", "park", "poll", "probe", "reboot"]
 
-    AgentInfoConfig:
+    AgentInfoSettings:
       type: object
       required:
         - polling
@@ -264,17 +264,17 @@ components:
         - firmware
       properties:
         polling:
-          $ref: "#/components/schemas/AgentInfoConfigPolling"
+          $ref: "#/components/schemas/AgentInfoSettingsPolling"
         storage:
-          $ref: "#/components/schemas/AgentInfoConfigStorage"
+          $ref: "#/components/schemas/AgentInfoSettingsStorage"
         update:
-          $ref: "#/components/schemas/AgentInfoConfigUpdate"
+          $ref: "#/components/schemas/AgentInfoSettingsUpdate"
         network:
-          $ref: "#/components/schemas/AgentInfoConfigNetwork"
+          $ref: "#/components/schemas/AgentInfoSettingsNetwork"
         firmware:
-          $ref: "#/components/schemas/AgentInfoConfigFirmware"
+          $ref: "#/components/schemas/AgentInfoSettingsFirmware"
 
-    AgentInfoConfigFirmware:
+    AgentInfoSettingsFirmware:
       type: object
       required:
         - metadata
@@ -283,7 +283,7 @@ components:
           type: string
           example: "/usr/share/updatehub"
 
-    AgentInfoConfigNetwork:
+    AgentInfoSettingsNetwork:
       type: object
       required:
         - server_address
@@ -292,7 +292,7 @@ components:
           type: string
           example: "api.updatehub.io"
 
-    AgentInfoConfigUpdate:
+    AgentInfoSettingsUpdate:
       type: object
       required:
         - download_dir
@@ -315,7 +315,7 @@ components:
           items:
             $ref: "#/components/schemas/SupportedInstallMode"
 
-    AgentInfoConfigStorage:
+    AgentInfoSettingsStorage:
       type: object
       required:
         - read_only
@@ -323,7 +323,7 @@ components:
         read_only:
           type: boolean
 
-    AgentInfoConfigPolling:
+    AgentInfoSettingsPolling:
       type: object
       required:
         - enabled
