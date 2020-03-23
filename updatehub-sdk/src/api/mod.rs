@@ -8,11 +8,13 @@ pub mod probe {
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
     pub struct Request {
         pub custom_server: String,
     }
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
     pub struct Response {
         pub update_available: bool,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -24,6 +26,7 @@ pub mod state {
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
     pub struct Response {
         pub busy: bool,
         pub current_state: String,
@@ -34,11 +37,13 @@ pub mod abort_download {
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
     pub struct Response {
         pub message: String,
     }
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
     pub struct Refused {
         pub error: String,
     }
@@ -49,6 +54,7 @@ pub mod log {
     use std::collections::HashMap;
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
     pub struct Entry {
         pub level: Level,
         pub message: String,
