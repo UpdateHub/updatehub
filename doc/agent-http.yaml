@@ -337,8 +337,7 @@ components:
         enabled:
           type: boolean
         interval:
-          type: integer
-          example: 3600
+          $ref: "#/components/schemas/Duration"
         last_poll:
           type: string
           example: "2017-01-01T00:00:00Z"
@@ -383,3 +382,9 @@ components:
         version:
           type: string
           example: "1.2"
+
+    Duration:
+      type: string
+      description: |-
+        A integer followed by a letter to indicate the time unit
+      example: "3600s"
