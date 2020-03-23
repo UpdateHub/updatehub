@@ -262,7 +262,7 @@ components:
         - storage
         - update
         - network
-        - firwamre
+        - firmware
       properties:
         polling:
           $ref: "#/components/schemas/AgentInfoConfigPolling"
@@ -272,10 +272,10 @@ components:
           $ref: "#/components/schemas/AgentInfoConfigUpdate"
         network:
           $ref: "#/components/schemas/AgentInfoConfigNetwork"
-        firwamre:
-          $ref: "#/components/schemas/AgentInfoConfigFirwamre"
+        firmware:
+          $ref: "#/components/schemas/AgentInfoConfigFirmware"
 
-    AgentInfoConfigFirwamre:
+    AgentInfoConfigFirmware:
       type: object
       required:
         - metadata_path
