@@ -38,6 +38,7 @@ pub struct RuntimeUpdate {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum InstallationSet {
     A,
     B,
