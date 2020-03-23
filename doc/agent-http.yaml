@@ -153,10 +153,14 @@ components:
     AgentInfo:
       description: "Information about the agent"
       required:
+        - state
         - version
         - config
         - firmware
+        - runtime_settings
       properties:
+        state:
+          $ref: "#/components/schemas/AgentState"
         version:
           type: string
           example: "0.1.0-87-ga836b13"
@@ -164,6 +168,8 @@ components:
           $ref: "#/components/schemas/AgentInfoSettings"
         firmware:
           $ref: "#/components/schemas/AgentInfoFirmware"
+        runtime_settings:
+          $ref: "#/components/schemas/AgentInfoRuntimeSettings"
 
     ProbeInfo:
       description: "Response about requested probe"
@@ -287,10 +293,14 @@ components:
       type: object
       required:
         - server_address
+        - listen_socket
       properties:
         server_address:
           type: string
           example: "api.updatehub.io"
+        listen_socket:
+          type: string
+          example: "localhost:8080"
 
     AgentInfoSettingsUpdate:
       type: object
@@ -319,9 +329,13 @@ components:
       type: object
       required:
         - read_only
+        - runtime_settings
       properties:
         read_only:
           type: boolean
+        runtime_settings:
+          type: string
+          example: "/data/updatehub/state.data"
 
     AgentInfoSettingsPolling:
       type: object
@@ -381,6 +395,75 @@ components:
         version:
           type: string
           example: "1.2"
+
+    AgentInfoRuntimeSettings:
+      type: object
+      required:
+        - polling
+        - update
+        - path
+        - persistent
+      properties:
+        polling:
+          $ref: "#/components/schemas/AgentInfoRuntimeSettingsPolling"
+        update:
+          $ref: "#/components/schemas/AgentInfoRuntimeSettingsUpdate"
+        path:
+          type: string
+          example: "/data/updatehub/state.data"
+        persistent:
+          type: boolean
+          example: true
+
+    AgentInfoRuntimeSettingsPolling:
+      type: object
+      required:
+        - last
+        - retries
+        - now
+        - server_address
+      properties:
+        last:
+          type: string
+          example: "2017-01-01T00:00:00Z"
+        retries:
+          type: integer
+        now:
+          type: boolean
+        server_address:
+          $ref: "#/components/schemas/RuntimePollingServer"
+
+    AgentInfoRuntimeSettingsUpdate:
+      type: object
+      properties:
+        upgrade_to_installation:
+          $ref: "#/components/schemas/InstallationSet"
+        applied_package_uid:
+          type: string
+          example: "587f984393f04c63d8e0948ffcf3860500b1981b8496e5eb2a0d0f9a7ea356a5"
+
+
+    InstallationSet:
+      description: "The partitions used for boot or installation"
+      type: string
+      enum: ["a", "b"]
+
+    RuntimePollingServer:
+      description: |-
+        The server being used for the current running probe operation, if default then the probe
+        is being made to the server specified by the agent settings. This can be non default when
+        the user requests probe to a different server.
+      oneOf:
+        - type: string
+          enum: ["default"]
+        - type: object
+          required:
+            - custom
+          properties:
+            custom:
+              type: string
+      example:
+        custom: "http://localhost:8080"
 
     Duration:
       type: string
