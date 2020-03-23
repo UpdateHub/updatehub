@@ -9,6 +9,7 @@ pub mod runtime_settings;
 pub mod settings;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Response {
     pub state: String,
     pub version: String,

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct RuntimeSettings {
     pub polling: RuntimePolling,
     pub update: RuntimeUpdate,
@@ -15,6 +16,7 @@ pub struct RuntimeSettings {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct RuntimePolling {
     pub last: DateTime<Utc>,
     pub retries: usize,
@@ -30,6 +32,7 @@ pub enum ServerAddress {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct RuntimeUpdate {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub upgrade_to_installation: Option<InstallationSet>,

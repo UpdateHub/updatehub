@@ -23,6 +23,7 @@ use std::{
 /// The Metadata is created loading its information from the running
 /// firmware. It uses the `load` method for that.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct Metadata {
     /// Product UID which identifies the firmware on the management system
     pub product_uid: String,
