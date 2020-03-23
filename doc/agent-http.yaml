@@ -395,6 +395,9 @@ components:
         version:
           type: string
           example: "1.2"
+        pub_key:
+          type: string
+          example: "/usr/share/updatehub/key.pub"
 
     AgentInfoRuntimeSettings:
       type: object
