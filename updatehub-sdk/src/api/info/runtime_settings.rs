@@ -23,6 +23,7 @@ pub struct RuntimePolling {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ServerAddress {
     Default,
     Custom(String),
