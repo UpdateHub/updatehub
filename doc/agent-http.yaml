@@ -306,20 +306,11 @@ components:
       type: object
       required:
         - download_dir
-        - auto_download_when_available
-        - auto_install_after_download
-        - auto_reboot_after_install
         - supported_install_modes
       properties:
         download_dir:
           type: string
           example: "/tmp/download"
-        auto_download_when_available:
-          type: boolean
-        auto_install_after_download:
-          type: boolean
-        auto_reboot_after_install:
-          type: boolean
         supported_install_modes:
           type: array
           items:
@@ -342,26 +333,11 @@ components:
       required:
         - enabled
         - interval
-        - last_poll
-        - first_poll
-        - extra_interval
-        - retries
       properties:
         enabled:
           type: boolean
         interval:
           $ref: "#/components/schemas/Duration"
-        last_poll:
-          type: string
-          example: "2017-01-01T00:00:00Z"
-        first_poll:
-          type: string
-          example: "2017-02-02T00:00:00Z"
-        extra_interval:
-          type: integer
-          example: 300
-        retries:
-          type: integer
 
     AgentInfoFirmware:
       type: object
