@@ -278,9 +278,9 @@ components:
     AgentInfoConfigFirmware:
       type: object
       required:
-        - metadata_path
+        - metadata
       properties:
-        metadata_path:
+        metadata:
           type: string
           example: "/usr/share/updatehub"
 
