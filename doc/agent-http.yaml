@@ -222,44 +222,6 @@ components:
           type: string
           example: "there is no download to be aborted"
 
-    LogEntry:
-      type: object
-      required:
-        - level
-        - message
-        - time
-        - data
-      properties:
-        level:
-          $ref: "#/components/schemas/LogLevel"
-        message:
-          type: string
-          example: "info 1"
-        time:
-          type: string
-          example: "2017-06-29 14:59:41.831111065 -0300 -03"
-        data:
-          type: object
-          additionalProperties:
-            type: string
-          example:
-            field1: "value1"
-            field2: "value2"
-
-    LogLevel:
-      type: string
-      enum: ["error", "info", "warning", "debug", "trace"]
-
-    SupportedInstallMode:
-      description: "Available install modes"
-      type: string
-      enum: ["copy", "raw"]
-
-    AgentState:
-      description: "Agent state"
-      type: string
-      enum: ["idle", "install", "park", "poll", "probe", "reboot"]
-
     AgentInfoSettings:
       type: object
       required:
@@ -421,6 +383,43 @@ components:
           type: string
           example: "587f984393f04c63d8e0948ffcf3860500b1981b8496e5eb2a0d0f9a7ea356a5"
 
+    LogEntry:
+      type: object
+      required:
+        - level
+        - message
+        - time
+        - data
+      properties:
+        level:
+          $ref: "#/components/schemas/LogLevel"
+        message:
+          type: string
+          example: "info 1"
+        time:
+          type: string
+          example: "2017-06-29 14:59:41.831111065 -0300 -03"
+        data:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            field1: "value1"
+            field2: "value2"
+
+    LogLevel:
+      type: string
+      enum: ["error", "info", "warning", "debug", "trace"]
+
+    SupportedInstallMode:
+      description: "Available install modes"
+      type: string
+      enum: ["copy", "raw"]
+
+    AgentState:
+      description: "Agent state"
+      type: string
+      enum: ["idle", "install", "park", "poll", "probe", "reboot"]
 
     InstallationSet:
       description: "The partitions used for boot or installation"
