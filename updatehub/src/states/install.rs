@@ -57,7 +57,7 @@ pub(crate) trait ObjectInstaller {
     fn install(&self, download_dir: std::path::PathBuf) -> crate::Result<()>;
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<Install> {
     fn name(&self) -> &'static str {
         "install"

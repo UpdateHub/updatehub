@@ -14,7 +14,7 @@ pub(super) struct DirectDownload {
     pub(super) url: String,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<DirectDownload> {
     fn name(&self) -> &'static str {
         "direct_download"

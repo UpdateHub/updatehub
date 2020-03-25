@@ -20,7 +20,7 @@ pub(super) struct PrepareDownload {
     pub(super) update_package: UpdatePackage,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<PrepareDownload> {
     fn name(&self) -> &'static str {
         "prepare_download"

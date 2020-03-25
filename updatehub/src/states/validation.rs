@@ -18,7 +18,7 @@ pub(super) struct Validation {
 create_state_step!(Validation => EntryPoint);
 
 /// Implements the state change for State<Validation>.
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<Validation> {
     fn name(&self) -> &'static str {
         "validation"

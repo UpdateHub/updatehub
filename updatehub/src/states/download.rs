@@ -58,7 +58,7 @@ impl ProgressReporter for State<Download> {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<Download> {
     fn name(&self) -> &'static str {
         "download"
