@@ -84,7 +84,7 @@ pub enum TransitionError {
     Process(#[from] easy_process::Error),
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 trait StateChangeImpl {
     async fn handle(
         self,

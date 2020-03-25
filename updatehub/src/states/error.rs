@@ -22,7 +22,7 @@ impl PartialEq for Error {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<Error> {
     fn name(&self) -> &'static str {
         "error"

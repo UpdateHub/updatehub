@@ -18,7 +18,7 @@ create_state_step!(Probe => EntryPoint);
 create_state_step!(Probe => Poll);
 
 /// Implements the state change for State<Probe>.
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<Probe> {
     fn name(&self) -> &'static str {
         "probe"

@@ -17,7 +17,7 @@ create_state_step!(Poll => Probe);
 /// Implements the state change for `State<Poll>`.
 ///
 /// This state is used to control when to go to the `State<Probe>`.
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<Poll> {
     fn name(&self) -> &'static str {
         "poll"

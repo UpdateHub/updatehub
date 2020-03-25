@@ -18,7 +18,7 @@ pub(super) struct PrepareLocalInstall {
     pub(super) update_file: PathBuf,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for State<PrepareLocalInstall> {
     fn name(&self) -> &'static str {
         "prepare_local_install"
