@@ -1,25 +1,78 @@
-# updatehub [![Build Status](https://travis-ci.org/otavio/updatehub.svg?branch=next)](https://travis-ci.org/otavio/updatehub) [![Coverage Status](https://coveralls.io/repos/github/otavio/updatehub/badge.svg?branch=next)](https://coveralls.io/github/otavio/updatehub?branch=next) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fotavio%2Fupdatehub.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fotavio%2Fupdatehub?ref=badge_shield)
+<p align="center"><img src="doc/logo.png"></p>
 
-UpdateHub provides a generic and safe Firmware Over-The-Air agent for
-Embedded and Industrial Linux-based devices.
+[![Continuous integration](https://github.com/UpdateHub/updatehub/workflows/Continuous%20integration/badge.svg)](https://github.com/UpdateHub/updatehub/actions?query=workflow%3A%22Continuous+integration%22+branch%3Amaster)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FUpdateHub%2Fupdatehub.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FUpdateHub%2Fupdatehub?ref=badge_shield)
 
-This repository is a fork from the official UpdateHub agent, exploring
-the possibility of rewriting it on Rust. It is not close to completion and
-should not be used in production yet.
+**UpdateHub** is an enterprise-grade solution which makes simple to remotely
+update all your embedded devices in the field. It handles all aspects related to
+sending Firmware Over-the-Air (FOTA) updates with maximum security and
+efficiency, making your project the center of your attention.
 
-For the official UpdateHub agent, please use the
-https://github.com/UpdateHub/UpdateHub repository instead.
+<p align="center"><img src="doc/workflow.png"></p>
 
-## Running tests
+This repository provides the **UpdateHub** agent for Embedded and Industrial
+Linux-based devices.
 
-Some tests are marked as ignored because they require user previleges. There's 
-a Vagrant file that can be used to run them. To run tests on the virtual machine run:
+## Getting started
 
-```Bash
+To start using ShellHub, it is suggested that you follow the [Getting
+started](https://docs.updatehub.io/quick-starting-with-raspberrypi3/) guide in
+the **UpdateHub** documentation.
+
+## Features
+
+The support provided by the **UpdateHub** for the device includes:
+
+- Bootloader upgrade support (U-Boot and GRUB)
+- Flash support (NAND, NOR)
+- UBIFS support
+- Update package signature validation for security
+- Automated rollback in case of update fail
+- Conditional installation (content, version and custom pattern support)
+- Callback support for every update step
+- HTTP API to control and inquiry the local agent
+
+To learn more about UpdateHub, check out our [documentation](https://docs.updatehub.io).
+
+## Building and testing
+
+The **UpdateHub** agent is developed using Rust programing language due its
+focus in safety and system level integration. In case you wish to build it, you
+can:
+
+```bash
+cargo build --release
+```
+
+Some tests are marked as ignored because they require user previleges. There's a
+Vagrant file that can be used to run them. To run tests on the virtual machine
+run:
+
+```bash
 vagrant up
 vagrant ssh
+```
+
+and inside the SSH session, run:
+
+```bash
 sudo -i
 cd /vagrant
 cargo test
 cargo test -- --ignored
 ```
+
+## License
+
+Licensed under Apache License, Version 2.0 (LICENSE-APACHE or https://www.apache.org/licenses/LICENSE-2.0).
+
+## Contributing
+
+**UpdateHub** is an open source project and we love to receive contributions
+from our community. If you would like to contribute, please read our
+[contributing guide](CONTRIBUTING.md).
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
+
