@@ -23,6 +23,10 @@ use std::{
     time::Duration,
 };
 use thiserror::Error;
+use tokio::{
+    io::{self, AsyncWriteExt},
+    stream::StreamExt,
+};
 
 #[cfg(test)]
 pub(crate) mod tests;
@@ -43,6 +47,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error("Http response is missing Content Length")]
+    MissingContentLength,
+
+    #[error(transparent)]
+    ParseInt(#[from] std::num::ParseIntError),
+
     #[error("Invalid status code received: {0}")]
     InvalidStatusResponse(StatusCode),
 
@@ -108,6 +118,47 @@ impl<'a> FirmwareMetadata<'a> {
     }
 }
 
+pub(crate) async fn get<W>(url: &str, handle: &mut W) -> Result<()>
+where
+    W: io::AsyncWrite + Unpin,
+{
+    let req = awc::Client::new().get(url);
+    save_body_to(req, handle).await
+}
+
+async fn save_body_to<W>(req: awc::ClientRequest, handle: &mut W) -> Result<()>
+where
+    W: io::AsyncWrite + Unpin,
+{
+    use std::str::FromStr;
+
+    let mut rep = req.send().await?;
+    if !rep.status().is_success() {
+        return Err(Error::InvalidStatusResponse(rep.status()));
+    }
+    let length = usize::from_str(
+        rep.headers()
+            .get(header::CONTENT_LENGTH)
+            .ok_or_else(|| Error::MissingContentLength)?
+            .to_str()?,
+    )?;
+    let mut written: f32 = 0.;
+    let mut threshold = 10;
+
+    while let Some(chunk) = rep.next().await {
+        let chunk = &chunk?;
+        handle.write_all(&chunk).await?;
+        written += chunk.len() as f32 / (length / 100) as f32;
+        if written as usize >= threshold {
+            threshold += 20;
+            debug!("{}% of the file has been downloaded", written as usize);
+        }
+    }
+    debug!("100% of the file has been downloaded");
+
+    Ok(())
+}
+
 impl<'a> Api<'a> {
     pub(crate) fn new(server: &'a str) -> Self {
         let client = ClientBuilder::new()
@@ -168,38 +219,28 @@ impl<'a> Api<'a> {
         download_dir: &Path,
         object: &str,
     ) -> Result<()> {
-        use std::fs::create_dir_all;
-        use tokio::{fs::OpenOptions, io::AsyncWriteExt, stream::StreamExt};
+        use tokio::fs::{create_dir_all, OpenOptions};
 
         // FIXME: Discuss the need of packages inside the route
-        let mut client = self.client.get(&format!(
+        let mut request = self.client.get(&format!(
             "{}/products/{}/packages/{}/objects/{}",
             &self.server, product_uid, package_uid, object
         ));
 
         if !download_dir.exists() {
             debug!("Creating directory to store the downloads.");
-            create_dir_all(download_dir)?;
+            create_dir_all(download_dir).await?;
         }
 
         let file = download_dir.join(object);
         if file.exists() {
-            client = client
+            request = request
                 .header(RANGE, format!("bytes={}-", file.metadata()?.len().saturating_sub(1)));
         }
 
         let mut file = OpenOptions::new().create(true).append(true).open(&file).await?;
-        let mut response = client.send().await?;
 
-        if response.status().is_success() {
-            while let Some(chunk) = response.next().await {
-                let chunk = &chunk?;
-                file.write_all(&chunk).await?;
-            }
-            return Ok(());
-        }
-
-        Err(Error::InvalidStatusResponse(response.status()))
+        save_body_to(request, &mut file).await
     }
 
     pub async fn report(
