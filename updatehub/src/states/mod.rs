@@ -42,26 +42,11 @@ pub type Result<T> = std::result::Result<T, TransitionError>;
 
 #[derive(Debug, Error)]
 pub enum TransitionError {
-    #[error("Request to external link failed")]
-    InvalidRequest,
-
     #[error("Not all objects are ready for use")]
     ObjectsNotReady,
 
     #[error("Failed to read from channel: {0}")]
     MpscRecv(mpsc::TryRecvError),
-
-    #[error("Failed to download: {0}")]
-    ActixPayload(#[from] awc::error::PayloadError),
-
-    #[error(transparent)]
-    HttpValueToStr(#[from] awc::http::header::ToStrError),
-
-    #[error(transparent)]
-    ParseInt(#[from] std::num::ParseIntError),
-
-    #[error("Send Request Error: {0}")]
-    SendRequest(String),
 
     #[error("Client error: {0}")]
     Client(#[from] crate::client::Error),
@@ -94,12 +79,6 @@ pub enum TransitionError {
 
     #[error("Process error: {0}")]
     Process(#[from] easy_process::Error),
-}
-
-impl From<awc::error::SendRequestError> for TransitionError {
-    fn from(err: awc::error::SendRequestError) -> Self {
-        TransitionError::SendRequest(format!("{}", err))
-    }
 }
 
 #[async_trait(?Send)]

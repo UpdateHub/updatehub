@@ -4,12 +4,10 @@
 
 use super::{
     actor::{self, SharedState},
-    PrepareLocalInstall, Result, State, StateChangeImpl, StateMachine, TransitionError,
+    PrepareLocalInstall, Result, State, StateChangeImpl, StateMachine,
 };
-use awc::http::header;
-use slog_scope::{debug, error, info};
-use std::str::FromStr;
-use tokio::{io::AsyncWriteExt, stream::StreamExt};
+use crate::client;
+use slog_scope::info;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct DirectDownload {
@@ -29,32 +27,8 @@ impl StateChangeImpl for State<DirectDownload> {
         info!("Fetching update package directly from url: {:?}", self.0.url);
 
         let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
-        let mut response = awc::Client::new().get(&self.0.url).send().await?;
-
-        let length = usize::from_str(
-            response
-                .headers()
-                .get(header::CONTENT_LENGTH)
-                .ok_or_else(|| {
-                    error!("Invalid response: {:?}", response);
-                    TransitionError::InvalidRequest
-                })?
-                .to_str()?,
-        )?;
-
-        let mut written: f32 = 0.;
-        let mut threshold = 10;
         let mut file = tokio::fs::File::create(&update_file).await?;
-        while let Some(chunk) = response.next().await {
-            let chunk = &chunk?;
-            file.write_all(&chunk).await?;
-            written += chunk.len() as f32 / (length / 100) as f32;
-            if written as usize >= threshold {
-                threshold += 20;
-                debug!("{}% of the file has been downloaded", written as usize);
-            }
-        }
-        debug!("100% of the file has been downloaded");
+        client::get(&self.0.url, &mut file).await?;
 
         Ok((
             StateMachine::PrepareLocalInstall(State(PrepareLocalInstall { update_file })),
