@@ -65,12 +65,10 @@ paths:
         Request the agent for installation of a local package.
       requestBody:
         required: true
-        description: "Path for the file to be installed"
         content:
-          text/plain:
-            schema:
-              type: string
-              example: "/tmp/update.uhupkg"
+          application/json:
+              schema:
+                $ref: "#/components/schemas/LocalInstallRequest"
       responses:
         "200":
           description: "Request accepted"
@@ -92,12 +90,10 @@ paths:
         Request the agent for installation of a remote package.
       requestBody:
         required: true
-        description: "Remote url that offers the update pacakge"
         content:
-          text/plain:
-            schema:
-              type: string
-              example: "https://some_remote_url.domain/update.uhupkg"
+          application/json:
+              schema:
+                $ref: "#/components/schemas/RemoteInstallRequest"
       responses:
         "200":
           description: "Request accepted"
@@ -186,6 +182,8 @@ components:
     ProbeCustomServer:
       description: "Server address which the update procedure will use for this request"
       type: object
+      required:
+        - custom_server
       properties:
         custom_server:
           type: string
@@ -221,6 +219,26 @@ components:
         error:
           type: string
           example: "there is no download to be aborted"
+
+    LocalInstallRequest:
+      description: "The update file which will be used for this request"
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          example: "/tmp/updatehub-image-qa-uh-qemu-x86-64.uhupkg"
+
+    RemoteInstallRequest:
+      description: "URL to directly download the update file which will be used for this request"
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          example: "https://some_remote_url.domain/update.uhupkg"
 
     AgentInfoSettings:
       type: object

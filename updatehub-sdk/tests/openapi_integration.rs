@@ -88,7 +88,7 @@ async fn remote_install() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
     let client = sdk::Client::new(&addr);
-    let response = client.remote_install(String::from("http://foo.bar")).await;
+    let response = client.remote_install("http://foo.bar").await;
     match dbg!(response) {
         Ok(_) => {}
         Err(sdk::Error::AgentIsBusy(_)) => {}
