@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{api, Error, Result};
-use awc::http::{header::CONTENT_TYPE, StatusCode};
+use awc::http::StatusCode;
 use std::path::Path;
 
 #[derive(Clone)]
@@ -50,11 +50,17 @@ impl Client {
     }
 
     pub async fn local_install(&self, file: &Path) -> Result<api::state::Response> {
+        use serde::Serialize;
+        #[derive(Clone, Debug, Serialize)]
+        #[serde(deny_unknown_fields)]
+        pub struct Request<'a> {
+            pub file: &'a Path,
+        }
+
         let mut response = self
             .client
             .post(&format!("{}/local_install", self.server_address))
-            .header(CONTENT_TYPE, "text/plain")
-            .send_body(format!("{}", file.display()))
+            .send_json(&Request { file })
             .await?;
 
         match response.status() {
@@ -66,12 +72,18 @@ impl Client {
         }
     }
 
-    pub async fn remote_install(&self, url: String) -> Result<api::state::Response> {
+    pub async fn remote_install(&self, url: &str) -> Result<api::state::Response> {
+        use serde::Serialize;
+        #[derive(Clone, Debug, Serialize)]
+        #[serde(deny_unknown_fields)]
+        pub struct Request<'a> {
+            pub url: &'a str,
+        }
+
         let mut response = self
             .client
             .post(&format!("{}/remote_install", self.server_address))
-            .header(CONTENT_TYPE, "text/plain")
-            .send_body(url)
+            .send_json(&Request { url })
             .await?;
 
         match response.status() {
