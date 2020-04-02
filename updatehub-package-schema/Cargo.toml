@@ -14,4 +14,4 @@ serde = { version = "1", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
 pretty_assertions = "0.6"
-serde_json = { version = "1", default-features = false }
+serde_json = { version = "1", default-features = false, features = ["std"] }
