@@ -12,6 +12,8 @@ mod test;
 mod ubifs;
 mod zephyr;
 
+mod update_package;
+
 /// Internal structures in the Objects for some type validation
 pub mod definitions;
 /// Objects representing each possible install mode
@@ -21,6 +23,7 @@ pub mod objects {
         ubifs::Ubifs,
     };
 }
+pub use update_package::{SupportedHardware, UpdatePackage};
 
 use serde::Deserialize;
 
