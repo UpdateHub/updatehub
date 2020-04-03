@@ -27,6 +27,7 @@ pub(crate) fn find_compress_tarball_kind(file: &Path) -> Result<compress_tools::
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn find_compress_kind(file: &Path) -> Result<compress_tools::Kind> {
     match infer::Infer::new()
         .get_from_path(file)?

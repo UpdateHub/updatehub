@@ -16,7 +16,6 @@ pub(crate) enum FakeServer {
     HasSignedUpdate,
     ExtraPoll,
     ErrorOnce,
-    InvalidHardware,
     ReportSuccess,
     ReportError,
 }
@@ -78,13 +77,6 @@ pub(crate) fn create_mock_server(server: FakeServer) -> Mock {
             .match_header("Api-Retries", "1")
             .match_body(fake_device_reply_body(1, "board"))
             .with_status(404)
-            .create(),
-        FakeServer::InvalidHardware => mock("POST", "/upgrades")
-            .match_header("Content-Type", "application/json")
-            .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-            .match_body(fake_device_reply_body(4, "invalid"))
-            .with_status(200)
-            .with_body(&get_update_json(SHA256SUM).to_string())
             .create(),
         FakeServer::ReportSuccess => mock("POST", "/report")
             .match_header("Content-Type", "application/json")

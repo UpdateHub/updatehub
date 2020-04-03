@@ -102,16 +102,17 @@ pub(crate) mod tests {
     use std::sync::{Arc, Mutex};
 
     pub(crate) struct FakeUbi {
-        pub(crate) mtd: FakeMtd,
+        #[allow(dead_code)]
+        pub(crate) mtd_guard: FakeMtd,
     }
 
     impl FakeUbi {
         pub(crate) fn new(names: &[&str], kind: MtdKind) -> Result<FakeUbi> {
-            let mtd = FakeMtd::new(&["system"], kind)?;
+            let mtd_guard = FakeMtd::new(&["system"], kind)?;
             easy_process::run("modprobe ubi mtd=0")?;
 
             // Ubi created here so if anything fails the Drop will still be executed
-            let ubi = FakeUbi { mtd };
+            let ubi = FakeUbi { mtd_guard };
 
             for name in names {
                 easy_process::run(&format!("ubimkvol /dev/ubi0 -N {} -s 1MiB", name))?;
