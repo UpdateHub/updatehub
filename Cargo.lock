@@ -102,13 +102,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix-http"
-version = "2.0.0-alpha.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65f194bcd786457b736d6b04ba7501af31e9961d24567dfcb3dc4cffc149cbdb"
-replace = "actix-http 2.0.0-alpha.2 (git+https://github.com/actix/actix-web)"
-
-[[package]]
 name = "actix-macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -244,7 +237,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "80e6d4c344acb10ceb89ba0d0bb6bf67fea56cd68444b1166d78d218e0f06013"
 dependencies = [
  "actix-codec",
- "actix-http 2.0.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix-http",
  "actix-macros",
  "actix-router",
  "actix-rt",
@@ -255,7 +248,7 @@ dependencies = [
  "actix-tls",
  "actix-utils",
  "actix-web-codegen",
- "awc 2.0.0-alpha.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "awc",
  "bytes",
  "derive_more",
  "encoding_rs",
@@ -411,7 +404,7 @@ version = "2.0.0-alpha.1"
 source = "git+https://github.com/actix/actix-web#206733188478f4d18df376a72fac3a4938b99bd6"
 dependencies = [
  "actix-codec",
- "actix-http 2.0.0-alpha.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "actix-http",
  "actix-rt",
  "actix-service",
  "base64",
@@ -426,13 +419,6 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
 ]
-
-[[package]]
-name = "awc"
-version = "2.0.0-alpha.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18faab57a9a1e4c59e38a998784bc3d9b4fdd9464faed77feb6046cc67b95e17"
-replace = "awc 2.0.0-alpha.1 (git+https://github.com/actix/actix-web)"
 
 [[package]]
 name = "backtrace"
@@ -2336,7 +2322,7 @@ dependencies = [
  "actix-web",
  "argh",
  "async-trait",
- "awc 2.0.0-alpha.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "awc",
  "chrono",
  "compress-tools",
  "derive_more",
@@ -2384,7 +2370,7 @@ name = "updatehub-sdk"
 version = "0.1.0"
 dependencies = [
  "actix-rt",
- "awc 2.0.0-alpha.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "awc",
  "chrono",
  "ms-converter",
  "serde",

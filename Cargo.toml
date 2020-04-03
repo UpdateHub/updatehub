@@ -12,6 +12,6 @@ lto = true
 codegen-units = 1
 panic = 'abort'
 
-[replace]
-"actix-http:2.0.0-alpha.2" = { package = "actix-http", git = "https://github.com/actix/actix-web" }
-"awc:2.0.0-alpha.1" = { package = "awc", git = "https://github.com/actix/actix-web" }
+[patch.crates-io]
+actix-http = { package = "actix-http", git = "https://github.com/actix/actix-web" }
+awc = { package = "awc", git = "https://github.com/actix/actix-web" }
