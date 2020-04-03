@@ -7,7 +7,6 @@ use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
 };
-
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 

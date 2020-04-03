@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+mod supported_hardware;
+
+use self::supported_hardware::SupportedHardwareExt;
 use crate::{
     firmware::{installation_set::Set, Metadata},
     object::{self, Info},
@@ -11,13 +14,9 @@ use crate::{
 use pkg_schema::Object;
 use sdk::api::info::runtime_settings::InstallationSet;
 use slog_scope::error;
+use std::{fs, io, path::Path};
 use thiserror::Error;
 use walkdir::WalkDir;
-
-use std::{fs, io, path::Path};
-
-mod supported_hardware;
-use self::supported_hardware::SupportedHardwareExt;
 
 #[cfg(test)]
 pub(crate) mod tests;

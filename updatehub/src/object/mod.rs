@@ -9,7 +9,6 @@ pub(crate) mod info;
 pub(crate) mod installer;
 
 pub(crate) use self::{info::Info, installer::Installer};
-
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;

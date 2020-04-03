@@ -3,12 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-
 use crate::{
     firmware::tests::{create_fake_metadata, FakeDevice},
     settings::Settings,
 };
-
 use mockito::{mock, Mock};
 use serde_json::json;
 

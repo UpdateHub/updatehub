@@ -7,7 +7,7 @@ use std::{
     os::unix::io::AsRawFd,
     time::Duration,
 };
-pub(crate) use timeout_readwrite::{TimeoutReader, TimeoutWriter};
+use timeout_readwrite::{TimeoutReader, TimeoutWriter};
 
 pub(crate) fn timed_buf_reader<R>(chunk_size: usize, reader: R) -> BufReader<TimeoutReader<R>>
 where

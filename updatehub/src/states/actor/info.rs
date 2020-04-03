@@ -4,11 +4,11 @@
 
 use actix::{Context, Handler, Message, MessageResult};
 
+pub(crate) use sdk::api::info::Response;
+
 #[derive(Message)]
 #[rtype(Response)]
 pub(crate) struct Request;
-
-pub(crate) use sdk::api::info::Response;
 
 impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;

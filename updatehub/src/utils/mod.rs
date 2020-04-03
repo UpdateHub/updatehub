@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use thiserror::Error;
-
 pub(crate) mod definitions;
 pub(crate) mod fs;
 pub(crate) mod io;
 pub(crate) mod mtd;
+
+use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

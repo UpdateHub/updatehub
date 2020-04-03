@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::firmware::hook::run_script;
-
 use sdk::api::info::runtime_settings::InstallationSet;
 use std::{fmt, str::FromStr};
 

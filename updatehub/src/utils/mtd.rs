@@ -2,14 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+pub(crate) use self::ffi::is_nand;
 use super::{Error, Result};
 use std::{
     fs,
     io::{BufRead, BufReader},
     path::PathBuf,
 };
-
-pub(crate) use ffi::is_nand;
 
 pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf> {
     let re = regex::Regex::new(r"^Volume ID:   (?P<volume>\d+) \(on ubi(\d+)\)$").unwrap();
