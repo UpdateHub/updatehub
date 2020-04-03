@@ -10,7 +10,6 @@ use crate::{
 };
 use pkg_schema::Object;
 use sdk::api::info::runtime_settings::InstallationSet;
-use serde::Deserialize;
 use slog_scope::error;
 use thiserror::Error;
 use walkdir::WalkDir;
@@ -18,20 +17,14 @@ use walkdir::WalkDir;
 use std::{fs, io, path::Path};
 
 mod supported_hardware;
-use self::supported_hardware::SupportedHardware;
+use self::supported_hardware::SupportedHardwareExt;
 
 #[cfg(test)]
 pub(crate) mod tests;
 
-// CHECK: https://play.rust-lang.org/?gist=b7bc6ad2c073692f96007928aac75768&version=stable
-// It does show how to match the different object types
-
 #[derive(Debug, PartialEq)]
 pub(crate) struct UpdatePackage {
-    product_uid: String,
-    version: String,
-    supported_hardware: SupportedHardware,
-    objects: (Vec<Object>, Vec<Object>),
+    inner: pkg_schema::UpdatePackage,
     raw: Vec<u8>,
 }
 
@@ -57,25 +50,8 @@ pub enum Error {
 
 impl UpdatePackage {
     pub(crate) fn parse(content: &[u8]) -> Result<Self> {
-        #[derive(Deserialize)]
-        #[serde(rename_all = "kebab-case")]
-        struct UpdatePackageAux {
-            #[serde(rename = "product")]
-            product_uid: String,
-            version: String,
-            #[serde(default)]
-            supported_hardware: SupportedHardware,
-            objects: (Vec<Object>, Vec<Object>),
-        }
-
-        let update_package = serde_json::from_slice::<UpdatePackageAux>(content)?;
-        Ok(UpdatePackage {
-            product_uid: update_package.product_uid,
-            version: update_package.version,
-            supported_hardware: update_package.supported_hardware,
-            objects: update_package.objects,
-            raw: content.to_vec(),
-        })
+        let update_package = serde_json::from_slice(content)?;
+        Ok(UpdatePackage { inner: update_package, raw: content.to_vec() })
     }
 
     pub(crate) fn package_uid(&self) -> String {
@@ -83,20 +59,20 @@ impl UpdatePackage {
     }
 
     pub(crate) fn compatible_with(&self, firmware: &Metadata) -> Result<()> {
-        self.supported_hardware.compatible_with(&firmware.hardware)
+        self.inner.supported_hardware.compatible_with(&firmware.hardware)
     }
 
     pub(crate) fn objects(&self, installation_set: Set) -> &Vec<Object> {
         match installation_set.0 {
-            InstallationSet::A => &self.objects.0,
-            InstallationSet::B => &self.objects.1,
+            InstallationSet::A => &self.inner.objects.0,
+            InstallationSet::B => &self.inner.objects.1,
         }
     }
 
     pub(crate) fn objects_mut(&mut self, installation_set: Set) -> &mut Vec<Object> {
         match installation_set.0 {
-            InstallationSet::A => &mut self.objects.0,
-            InstallationSet::B => &mut self.objects.1,
+            InstallationSet::A => &mut self.inner.objects.0,
+            InstallationSet::B => &mut self.inner.objects.1,
         }
     }
 
