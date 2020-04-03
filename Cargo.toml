@@ -4,6 +4,7 @@ members = [
     "updatehub",
     "updatehub-package-schema",
     "updatehub-sdk",
+    "updatehub-cloud-sdk",
 ]
 
 [profile.release]

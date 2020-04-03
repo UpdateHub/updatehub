@@ -53,6 +53,8 @@ dependencies = [
  "futures",
  "http",
  "log",
+ "openssl",
+ "tokio-openssl",
  "trust-dns-proto",
  "trust-dns-resolver",
 ]
@@ -67,6 +69,7 @@ dependencies = [
  "actix-rt",
  "actix-service",
  "actix-threadpool",
+ "actix-tls",
  "actix-utils",
  "base64",
  "bitflags",
@@ -210,6 +213,8 @@ dependencies = [
  "either",
  "futures",
  "log",
+ "openssl",
+ "tokio-openssl",
 ]
 
 [[package]]
@@ -413,6 +418,7 @@ dependencies = [
  "futures-core",
  "log",
  "mime",
+ "openssl",
  "percent-encoding",
  "rand",
  "serde",
@@ -688,9 +694,9 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "0.99.3"
+version = "0.99.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a806e96c59a76a5ba6e18735b6cf833344671e61e7863f2edb5c518ea2cac95c"
+checksum = "e2323f3f47db9a0e77ce7a300605d8d2098597fc451ed1a97bb1f6411bb550a7"
 dependencies = [
  "proc-macro2 1.0.9",
  "quote 1.0.3",
@@ -2209,6 +2215,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-openssl"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c4b08c5f4208e699ede3df2520aca2e82401b2de33f45e96696a074480be594"
+dependencies = [
+ "openssl",
+ "tokio",
+]
+
+[[package]]
 name = "tokio-util"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2354,6 +2370,23 @@ dependencies = [
  "updatehub-package-schema",
  "updatehub-sdk",
  "walkdir",
+]
+
+[[package]]
+name = "updatehub-cloud-sdk"
+version = "0.1.0"
+dependencies = [
+ "actix-rt",
+ "awc",
+ "derive_more",
+ "mockito",
+ "openssl",
+ "serde",
+ "serde_json",
+ "slog-scope",
+ "tempfile",
+ "tokio",
+ "updatehub-package-schema",
 ]
 
 [[package]]
