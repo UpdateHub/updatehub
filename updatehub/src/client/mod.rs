@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(test)]
+pub(crate) mod tests;
+
 use crate::{
     firmware::Metadata,
     runtime_settings::RuntimeSettings,
@@ -27,9 +30,6 @@ use tokio::{
     io::{self, AsyncWriteExt},
     stream::StreamExt,
 };
-
-#[cfg(test)]
-pub(crate) mod tests;
 
 pub(crate) struct Api<'a> {
     client: Client,

@@ -4,13 +4,12 @@
 
 use chrono::Duration;
 use derive_more::{Deref, DerefMut};
+use sdk::api::info::settings as api;
 use slog_scope::{debug, error};
 use std::{fs, io};
 use thiserror::Error;
 
 const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
-
-pub use sdk::api::info::settings as api;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

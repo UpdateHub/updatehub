@@ -2,19 +2,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+mod hook;
+pub mod installation_set;
+
+#[cfg(test)]
+pub mod tests;
+
 use self::hook::{run_hook, run_hooks_from_dir};
 use derive_more::{Deref, DerefMut};
 pub use sdk::api::info::firmware as api;
 use slog_scope::error;
 use std::{io, path::Path};
 use thiserror::Error;
-
-mod hook;
-
-pub mod installation_set;
-
-#[cfg(test)]
-pub mod tests;
 
 const PRODUCT_UID_HOOK: &str = "product-uid";
 const VERSION_HOOK: &str = "version";
