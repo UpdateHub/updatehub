@@ -34,7 +34,7 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Error)]
 pub(crate) enum Error {
     #[error("Client Error: {0}")]
-    Client(#[from] crate::client::Error),
+    Client(#[from] cloud::Error),
     #[error("Runtime Settings Error: {0}")]
     RuntimeSettings(#[from] crate::runtime_settings::Error),
 }

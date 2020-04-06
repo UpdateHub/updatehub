@@ -6,8 +6,8 @@ use super::{
     actor::{self, SharedState},
     EntryPoint, Poll, Result, State, StateChangeImpl, StateMachine, Validation,
 };
-use crate::client::{self, Api, ProbeResponse};
 use chrono::Utc;
+use cloud::api::ProbeResponse;
 use slog_scope::{debug, error, info};
 use std::time::Duration;
 
@@ -34,12 +34,15 @@ impl StateChangeImpl for State<Probe> {
     ) -> Result<(StateMachine, actor::StepTransition)> {
         let server_address = shared_state.server_address();
 
-        let probe = match Api::new(&server_address)
-            .probe(&shared_state.runtime_settings, &shared_state.firmware)
+        let probe = match crate::CloudClient::new(&server_address)
+            .probe(
+                shared_state.runtime_settings.retries() as u64,
+                shared_state.firmware.as_cloud_metadata(),
+            )
             .await
         {
-            Err(client::Error::Http(e)) if e.is::<awc::http::uri::InvalidUri>() => {
-                return Err(client::Error::Http(e).into());
+            Err(cloud::Error::Http(e)) if e.is::<awc::http::uri::InvalidUri>() => {
+                return Err(cloud::Error::Http(e).into());
             }
             Err(e) => {
                 error!("Probe failed: {}", e);
@@ -88,7 +91,7 @@ impl StateChangeImpl for State<Probe> {
 mod tests {
     use super::*;
     use crate::{
-        client::tests::{create_mock_server, FakeServer},
+        cloud_mock,
         firmware::{
             tests::{create_fake_metadata, FakeDevice},
             Metadata,
@@ -96,17 +99,16 @@ mod tests {
         runtime_settings::RuntimeSettings,
         settings::Settings,
     };
-    use sdk::api::info::runtime_settings::ServerAddress;
     use std::fs;
     use tempfile::NamedTempFile;
 
     #[actix_rt::test]
     async fn invalid_uri() {
         let settings = Settings::default();
-        let mut runtime_settings = RuntimeSettings::default();
-        runtime_settings.polling.server_address = ServerAddress::Custom("FOO".to_string());
+        let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        cloud_mock::setup_fake_response(cloud_mock::FakeResponse::InvalidUri);
 
         let res = StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).await;
 
@@ -123,20 +125,17 @@ mod tests {
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
 
-        let mock = create_mock_server(FakeServer::NoUpdate);
-
         let settings = Settings::default();
         let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        cloud_mock::setup_fake_response(cloud_mock::FakeResponse::NoUpdate);
 
         let machine = StateMachine::Probe(State(Probe {}))
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
             .0;
-
-        mock.assert();
 
         assert_state!(machine, EntryPoint);
     }
@@ -147,20 +146,17 @@ mod tests {
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
 
-        let mock = create_mock_server(FakeServer::HasUpdate);
-
         let settings = Settings::default();
         let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        cloud_mock::setup_fake_response(cloud_mock::FakeResponse::HasUpdate);
 
         let machine = StateMachine::Probe(State(Probe {}))
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
             .0;
-
-        mock.assert();
 
         assert_state!(machine, Validation);
     }
@@ -171,7 +167,7 @@ mod tests {
         let tmpfile = tmpfile.path();
         fs::remove_file(&tmpfile).unwrap();
 
-        let mock = create_mock_server(FakeServer::ExtraPoll);
+        cloud_mock::setup_fake_response(cloud_mock::FakeResponse::ExtraPoll);
 
         let settings = Settings::default();
         let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
@@ -184,38 +180,6 @@ mod tests {
             .unwrap()
             .0;
 
-        mock.assert();
-
         assert_state!(machine, Probe);
-    }
-
-    #[actix_rt::test]
-    async fn error() {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        fs::remove_file(&tmpfile).unwrap();
-
-        // The server here waits for the second request which includes the
-        // retries to succeed.
-        let mock = create_mock_server(FakeServer::ErrorOnce);
-
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
-
-        let machine = StateMachine::Probe(State(Probe {}))
-            .move_to_next_state(&mut shared_state)
-            .await
-            .unwrap()
-            .0
-            .move_to_next_state(&mut shared_state)
-            .await
-            .unwrap()
-            .0;
-
-        mock.assert();
-
-        assert_state!(machine, EntryPoint);
     }
 }

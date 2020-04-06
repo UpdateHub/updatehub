@@ -6,7 +6,6 @@ use super::{
     actor::{self, SharedState},
     PrepareLocalInstall, Result, State, StateChangeImpl, StateMachine,
 };
-use crate::client;
 use slog_scope::info;
 
 #[derive(Debug, PartialEq)]
@@ -28,7 +27,7 @@ impl StateChangeImpl for State<DirectDownload> {
 
         let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
         let mut file = tokio::fs::File::create(&update_file).await?;
-        client::get(&self.0.url, &mut file).await?;
+        cloud::get(&self.0.url, &mut file).await?;
 
         Ok((
             StateMachine::PrepareLocalInstall(State(PrepareLocalInstall { update_file })),

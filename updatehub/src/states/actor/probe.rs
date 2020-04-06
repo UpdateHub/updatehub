@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{EntryPoint, State, StateMachine, Validation};
-use crate::client::{Api, ProbeResponse};
 use actix::{fut::WrapFuture, Addr, AsyncContext, AtomicResponse, Context, Handler, Message};
 use chrono::Utc;
+use cloud::api::ProbeResponse;
 
 #[derive(Message)]
 #[rtype(result = "super::Result<Response>")]
@@ -49,8 +49,11 @@ impl super::Machine {
                 self.shared_state.runtime_settings.set_custom_server_address(&server_address);
             }
 
-            return match Api::new(&self.shared_state.server_address())
-                .probe(&self.shared_state.runtime_settings, &self.shared_state.firmware)
+            return match crate::CloudClient::new(&self.shared_state.server_address())
+                .probe(
+                    self.shared_state.runtime_settings.retries() as u64,
+                    self.shared_state.firmware.as_cloud_metadata(),
+                )
                 .await?
             {
                 ProbeResponse::ExtraPoll(s) => Ok(Response::Delayed(s)),

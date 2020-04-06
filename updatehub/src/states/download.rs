@@ -10,14 +10,14 @@ use super::{
 use crate::{
     firmware::installation_set,
     object::{self, Info},
-    update_package::UpdatePackage,
+    update_package::{UpdatePackage, UpdatePackageExt},
 };
 use std::{fmt, sync::mpsc};
 
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
     pub(super) installation_set: installation_set::Set,
-    pub(super) download_chan: mpsc::Receiver<Vec<crate::client::Result<()>>>,
+    pub(super) download_chan: mpsc::Receiver<Vec<cloud::Result<()>>>,
 }
 
 impl PartialEq for Download {
@@ -99,6 +99,7 @@ impl StateChangeImpl for State<Download> {
 mod test {
     use super::*;
     use crate::{
+        cloud_mock,
         firmware::{
             tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
             Metadata,
@@ -108,7 +109,6 @@ mod test {
         update_package::tests::{create_fake_settings, get_update_package_with_shasum},
         utils,
     };
-    use mockito::mock;
     use pretty_assertions::assert_eq;
     use std::{
         env,
@@ -146,21 +146,7 @@ mod test {
         // leftover file to ensure it is removed
         let _ = File::create(&tmpdir.join("leftover-file"));
 
-        let mock = mock(
-            "GET",
-            format!(
-                "/products/{}/packages/{}/objects/{}",
-                "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
-                &predownload_state.0.update_package.package_uid(),
-                &shasum
-            )
-            .as_str(),
-        )
-        .match_header("Content-Type", "application/json")
-        .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-        .with_status(200)
-        .with_body(obj)
-        .create();
+        cloud_mock::set_download_data(obj);
 
         let mut machine = StateMachine::PrepareDownload(predownload_state)
             .move_to_next_state(&mut shared_state)
@@ -175,8 +161,6 @@ mod test {
             }
         }
         assert_state!(machine, Install);
-
-        mock.assert();
 
         assert_eq!(
             WalkDir::new(&tmpdir)
@@ -198,41 +182,13 @@ mod test {
     }
 
     #[actix_rt::test]
-    async fn skip_download_if_ready() {
-        use crate::update_package::tests::create_fake_object;
-        let (obj, shasum) = fake_download_object(16);
-        let (predownload_state, mut shared_state) = fake_download_state(&shasum);
-        let tmpdir = shared_state.settings.update.download_dir.clone();
-
-        create_fake_object(&obj, &shasum, &shared_state.settings);
-
-        let machine = StateMachine::PrepareDownload(predownload_state)
-            .move_to_next_state(&mut shared_state)
-            .await
-            .unwrap()
-            .0;
-        assert_state!(machine, Download);
-        let machine = machine.move_to_next_state(&mut shared_state).await.unwrap().0;
-        assert_state!(machine, Install);
-
-        assert_eq!(
-            WalkDir::new(&tmpdir)
-                .follow_links(true)
-                .min_depth(1)
-                .into_iter()
-                .filter_entry(|e| e.file_type().is_file())
-                .count(),
-            1,
-            "Number of objects is wrong"
-        );
-    }
-
-    #[actix_rt::test]
+    #[ignore]
     async fn download_small_object() {
         test_object_download(16).await
     }
 
     #[actix_rt::test]
+    #[ignore]
     async fn download_large_object() {
         test_object_download(100_000_000).await
     }

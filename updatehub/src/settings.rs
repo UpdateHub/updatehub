@@ -48,9 +48,6 @@ impl Default for Settings {
                 .collect(),
             },
             network: api::Network {
-                #[cfg(test)]
-                server_address: mockito::server_url().to_string(),
-                #[cfg(not(test))]
                 server_address: "https://api.updatehub.io".to_string(),
                 listen_socket: "localhost:8080".to_string(),
             },

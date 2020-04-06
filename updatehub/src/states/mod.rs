@@ -48,9 +48,6 @@ pub enum TransitionError {
     #[error("Failed to read from channel: {0}")]
     MpscRecv(mpsc::TryRecvError),
 
-    #[error("Client error: {0}")]
-    Client(#[from] crate::client::Error),
-
     #[error("Firmware error: {0}")]
     Firmware(#[from] crate::firmware::Error),
 
@@ -62,6 +59,9 @@ pub enum TransitionError {
 
     #[error("Update package error: {0}")]
     UpdatePackage(#[from] crate::update_package::Error),
+
+    #[error("Client error: {0}")]
+    Client(#[from] cloud::Error),
 
     #[error("Uncompress error: {0}")]
     // FIXME: compress_tools does not implement error, so we should rework this
@@ -169,10 +169,17 @@ where
         let package_uid = &self.package_uid();
         let enter_state = self.report_enter_state_name();
         let leave_state = self.report_leave_state_name();
-        let api = crate::client::Api::new(&server);
+        let api = crate::CloudClient::new(&server);
 
         let report = |state, previous_state, error_message, current_log| {
-            api.report(state, firmware, package_uid, previous_state, error_message, current_log)
+            api.report(
+                state,
+                firmware.as_cloud_metadata(),
+                package_uid,
+                previous_state,
+                error_message,
+                current_log,
+            )
         };
 
         if let Err(e) = report(enter_state, None, None, None).await {
