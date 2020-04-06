@@ -6,13 +6,13 @@ use super::{
     actor::{self, SharedState},
     EntryPoint, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
 };
-use crate::update_package::{Signature, UpdatePackage};
+use crate::update_package::UpdatePackageExt;
 use slog_scope::{debug, info};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Validation {
-    pub(super) package: UpdatePackage,
-    pub(super) sign: Option<Signature>,
+    pub(super) package: cloud::api::UpdatePackage,
+    pub(super) sign: Option<cloud::api::Signature>,
 }
 
 create_state_step!(Validation => EntryPoint);

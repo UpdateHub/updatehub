@@ -10,7 +10,7 @@ use super::{
 use crate::{
     firmware::installation_set,
     object::{self, Installer},
-    update_package::UpdatePackage,
+    update_package::{UpdatePackage, UpdatePackageExt},
 };
 use slog_scope::{debug, info};
 

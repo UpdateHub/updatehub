@@ -7,10 +7,9 @@ use super::{
     Download, Result, State, StateChangeImpl, StateMachine,
 };
 use crate::{
-    client::Api,
     firmware::installation_set,
     object::{self, Info},
-    update_package::UpdatePackage,
+    update_package::{UpdatePackage, UpdatePackageExt},
 };
 use slog_scope::error;
 use std::sync::mpsc;
@@ -70,7 +69,7 @@ impl StateChangeImpl for State<PrepareDownload> {
 
         // Download the missing or incomplete objects
         actix::Arbiter::spawn(async move {
-            let api = Api::new(&server);
+            let api = crate::CloudClient::new(&server);
             let mut results = Vec::default();
             for shasum in shasum_list.iter() {
                 results.push(

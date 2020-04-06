@@ -96,6 +96,16 @@ impl Metadata {
 
         Ok(metadata)
     }
+
+    pub(crate) fn as_cloud_metadata(&self) -> cloud::api::FirmwareMetadata<'_> {
+        cloud::api::FirmwareMetadata {
+            product_uid: &self.0.product_uid,
+            version: &self.0.version,
+            hardware: &self.0.hardware,
+            device_identity: cloud::api::MetadataValue(&self.0.device_identity.0),
+            device_attributes: cloud::api::MetadataValue(&self.0.device_attributes.0),
+        }
+    }
 }
 
 pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transition> {

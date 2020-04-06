@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod build_info;
-mod client;
 mod firmware;
 mod http_api;
 pub mod logger;
@@ -14,6 +13,14 @@ mod settings;
 mod states;
 mod update_package;
 mod utils;
+
+#[cfg(test)]
+mod cloud_mock;
+
+#[cfg(test)]
+pub(crate) use crate::cloud_mock::Client as CloudClient;
+#[cfg(not(test))]
+pub(crate) use cloud::Client as CloudClient;
 
 pub use crate::{build_info::version, settings::Settings, states::run};
 use thiserror::Error;

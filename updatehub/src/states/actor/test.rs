@@ -4,7 +4,7 @@
 
 use super::*;
 use crate::{
-    client::tests::{create_mock_server, FakeServer},
+    cloud_mock,
     firmware::{
         tests::{create_fake_metadata, FakeDevice},
         Metadata,
@@ -57,7 +57,7 @@ impl Handler<Step> for FakeMachine {
     }
 }
 
-fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Settings, Metadata) {
+fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, Settings, Metadata) {
     let tmpfile = tempfile::NamedTempFile::new().unwrap();
     let tmpfile = tmpfile.path();
     fs::remove_file(&tmpfile).unwrap();
@@ -75,10 +75,10 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
 
     let settings_clone = settings.clone();
     let firmware_clone = firmware.clone();
-    let mock = create_mock_server(match kind {
-        Setup::HasUpdate => FakeServer::HasUpdate,
-        Setup::NoUpdate => FakeServer::NoUpdate,
-    });
+    match kind {
+        Setup::HasUpdate => cloud_mock::setup_fake_response(cloud_mock::FakeResponse::HasUpdate),
+        Setup::NoUpdate => cloud_mock::setup_fake_response(cloud_mock::FakeResponse::NoUpdate),
+    }
 
     (
         // We use the actix::Actor::start here instead of the Machine::start in order to not
@@ -89,7 +89,6 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
             runtime_settings,
             firmware,
         )),
-        mock,
         settings_clone,
         firmware_clone,
     )
@@ -97,7 +96,7 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, mockito::Mock, Sett
 
 #[actix_rt::test]
 async fn info_request() {
-    let (addr, _, settings, firmware) = setup_actor(Setup::NoUpdate, Probe::Enabled);
+    let (addr, settings, firmware) = setup_actor(Setup::NoUpdate, Probe::Enabled);
     let response = addr.send(info::Request).await.unwrap();
     assert_eq!(response.state, "entry_point");
     assert_eq!(response.version, crate::version().to_string());
@@ -107,7 +106,7 @@ async fn info_request() {
 
 #[actix_rt::test]
 async fn step_sequence() {
-    let (addr, mock, ..) = setup_actor(Setup::NoUpdate, Probe::Enabled);
+    let (addr, ..) = setup_actor(Setup::NoUpdate, Probe::Enabled);
     let response = addr.send(info::Request).await.unwrap();
     assert_eq!(response.state, "entry_point");
 
@@ -122,13 +121,11 @@ async fn step_sequence() {
     addr.send(Step).await.unwrap();
     let res = addr.send(info::Request).await.unwrap();
     assert_eq!(res.state, "entry_point");
-
-    mock.assert();
 }
 
 #[actix_rt::test]
 async fn download_abort() {
-    let (addr, mock, ..) = setup_actor(Setup::HasUpdate, Probe::Enabled);
+    let (addr, ..) = setup_actor(Setup::HasUpdate, Probe::Enabled);
     addr.send(Step).await.unwrap(); // Idle -> Poll
     addr.send(Step).await.unwrap(); // Poll -> Probe
     addr.send(Step).await.unwrap(); // Probe -> Validation
@@ -139,13 +136,11 @@ async fn download_abort() {
     addr.send(download_abort::Request).await.unwrap();
     let res = addr.send(info::Request).await.unwrap();
     assert_eq!(res.state, "entry_point");
-
-    mock.assert();
 }
 
 #[actix_rt::test]
 async fn trigger_probe() {
-    let (addr, mock, ..) = setup_actor(Setup::NoUpdate, Probe::Disabled);
+    let (addr, ..) = setup_actor(Setup::NoUpdate, Probe::Disabled);
     addr.send(Step).await.unwrap();
     let res = addr.send(info::Request).await.unwrap();
     assert_eq!(res.state, "park");
@@ -153,8 +148,6 @@ async fn trigger_probe() {
     addr.send(probe::Request(None)).await.unwrap().unwrap();
     let res = addr.send(info::Request).await.unwrap();
     assert_eq!(res.state, "entry_point");
-
-    mock.assert();
 }
 
 #[actix_rt::test]
