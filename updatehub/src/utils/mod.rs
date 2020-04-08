@@ -19,8 +19,8 @@ pub enum Error {
     #[error("Nix error: {0}")]
     Nix(#[from] nix::Error),
 
-    #[error("Uncompress error")]
-    Uncompress,
+    #[error("Uncompress error: {0}")]
+    Uncompress(#[from] compress_tools::Error),
 
     #[error("Process error: {0}")]
     Process(#[from] easy_process::Error),
@@ -33,12 +33,6 @@ pub enum Error {
 
     #[error("User doesn't have write permission on target device: {0}")]
     MissingWritePermission(std::path::PathBuf),
-
-    #[error("Unknown file type")]
-    UknownFileType,
-
-    #[error("{0} is not a valid archive type")]
-    InvalidFileType(String),
 
     #[error("'{0}' not found on PATH")]
     ExecutableNotInPath(String),

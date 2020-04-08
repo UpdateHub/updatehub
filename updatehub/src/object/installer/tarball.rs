@@ -45,13 +45,13 @@ impl Installer for objects::Tarball {
 
         Ok(utils::fs::mount_map(&device, filesystem, mount_options, |path| {
             let dest = path.join(target_path);
-
-            compress_tools::uncompress(
-                &source,
+            let mut source = std::fs::File::open(source)?;
+            compress_tools::uncompress_archive(
+                &mut source,
                 &dest,
-                utils::fs::find_compress_tarball_kind(&source)?,
-            )
-            .map_err(|_| crate::utils::Error::Uncompress)
+                compress_tools::Ownership::Preserve,
+            )?;
+            utils::Result::Ok(())
         })??)
     }
 }

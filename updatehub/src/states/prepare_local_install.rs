@@ -11,7 +11,11 @@ use crate::{
     update_package::{Signature, UpdatePackage, UpdatePackageExt},
 };
 use slog_scope::{debug, info};
-use std::{fs, path::PathBuf};
+use std::{
+    fs,
+    io::{Seek, SeekFrom},
+    path::PathBuf,
+};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct PrepareLocalInstall {
@@ -28,23 +32,40 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        info!("Prepare local install: {:?}", self.0.update_file);
+        info!("Prepare local install: {}", self.0.update_file.display());
         let dest_path = shared_state.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
-        compress_tools::uncompress(self.0.update_file, &dest_path, compress_tools::Kind::Zip)
-            .map_err(super::TransitionError::Uncompress)?;
-        debug!("Successfuly uncompressed the update package");
 
-        let metadata = fs::read(dest_path.join("metadata"))?;
+        let mut metadata = Vec::with_capacity(1024);
+        let mut source = fs::File::open(self.0.update_file)?;
+        compress_tools::uncompress_archive_file(&mut source, &mut metadata, "metadata")?;
         let update_package = UpdatePackage::parse(&metadata)?;
-        let signature = Some(dest_path.join("signature"))
-            .and_then(|p| if p.exists() { Some(p) } else { None })
-            .map(|p| Signature::from_base64_str(&fs::read_to_string(p)?))
-            .transpose()?;
+        debug!("Successfuly uncompressed metadata file");
 
-        if let (Some(sign), Some(key)) = (signature, shared_state.firmware.pub_key.as_ref()) {
-            debug!("Validating signature");
-            sign.validate(key, &update_package)?;
+        if let Some(key) = shared_state.firmware.pub_key.as_ref() {
+            let mut sign = Vec::with_capacity(512);
+            source.seek(SeekFrom::Start(0))?;
+            match compress_tools::uncompress_archive_file(&mut source, &mut sign, "signature") {
+                Ok(()) => {
+                    let sign = String::from_utf8(sign)?;
+                    let sign = Signature::from_base64_str(&sign)?;
+                    debug!("Validating signature");
+                    sign.validate(key, &update_package)?;
+                }
+                Err(compress_tools::Error::FileNotFound) => {}
+                Err(e) => return Err(e.into()),
+            }
+        }
+
+        for object in update_package
+            .objects(installation_set::active()?)
+            .iter()
+            .map(crate::object::Info::sha256sum)
+        {
+            source.seek(SeekFrom::Start(0))?;
+
+            let mut target = fs::File::create(dest_path.join(object))?;
+            compress_tools::uncompress_archive_file(&mut source, &mut target, object)?;
         }
 
         debug!("Update package extracted: {:?}", update_package);

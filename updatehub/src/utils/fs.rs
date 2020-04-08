@@ -11,38 +11,6 @@ use pkg_schema::definitions::{
 use std::{io, path::Path};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
-pub(crate) fn find_compress_tarball_kind(file: &Path) -> Result<compress_tools::Kind> {
-    match infer::Infer::new()
-        .get_from_path(file)?
-        .ok_or_else(|| Error::UknownFileType)?
-        .ext
-        .as_str()
-    {
-        "bz2" => Ok(compress_tools::Kind::TarBZip2),
-        "gz" => Ok(compress_tools::Kind::TarGZip),
-        "lz" => Ok(compress_tools::Kind::TarLZip),
-        "xz" => Ok(compress_tools::Kind::TarXz),
-        "tar" => Ok(compress_tools::Kind::Tar),
-        t => Err(Error::InvalidFileType(t.to_owned())),
-    }
-}
-
-#[allow(dead_code)]
-pub(crate) fn find_compress_kind(file: &Path) -> Result<compress_tools::Kind> {
-    match infer::Infer::new()
-        .get_from_path(file)?
-        .ok_or_else(|| Error::UknownFileType)?
-        .ext
-        .as_str()
-    {
-        "gz" => Ok(compress_tools::Kind::GZip),
-        "bz2" => Ok(compress_tools::Kind::BZip2),
-        "xz" => Ok(compress_tools::Kind::Xz),
-        "lz" => Ok(compress_tools::Kind::LZip),
-        t => Err(Error::InvalidFileType(t.to_owned())),
-    }
-}
-
 pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
     match quale::which(cmd) {
         Some(_) => Ok(()),
