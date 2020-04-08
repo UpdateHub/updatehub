@@ -47,18 +47,18 @@ impl API {
 
     async fn local_install(
         agent: web::Data<API>,
-        file_path: String,
+        req: web::Json<api::local_install::Request>,
     ) -> Result<actor::local_install::Response> {
-        debug!("Receiving local_install request with {:?}", file_path);
-        Ok(agent.0.send(actor::local_install::Request(std::path::PathBuf::from(file_path))).await?)
+        debug!("Receiving local_install request with {:?}", req);
+        Ok(agent.0.send(actor::local_install::Request(req.into_inner().file)).await?)
     }
 
     async fn remote_install(
         agent: web::Data<API>,
-        url: String,
+        req: web::Json<api::remote_install::Request>,
     ) -> Result<actor::remote_install::Response> {
-        debug!("Receiving remote_install request with {:?}", url);
-        Ok(agent.0.send(actor::remote_install::Request(url)).await?)
+        debug!("Receiving remote_install request with {:?}", req);
+        Ok(agent.0.send(actor::remote_install::Request(req.into_inner().url)).await?)
     }
 
     async fn log() -> HttpResponse {
