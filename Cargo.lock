@@ -612,11 +612,12 @@ dependencies = [
 
 [[package]]
 name = "compress-tools"
-version = "0.2.1-alpha.0"
-source = "git+https://github.com/OSSystems/compress-tools-rs.git#234334afd3bfc846b38c73df1ea4d8b12af90762"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fdd7ef419fdf9149e7b8da1c0a097bc553b657e031e31a538a4445e903dfa259"
 dependencies = [
  "derive_more",
- "pipers",
+ "pkg-config",
 ]
 
 [[package]]
@@ -1505,12 +1506,6 @@ name = "pin-utils"
 version = "0.1.0-alpha.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5894c618ce612a3fa23881b152b608bafb8c56cfc22f434a3ba3120b40f7b587"
-
-[[package]]
-name = "pipers"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee5fc4ee2584767241d624644f8dc720b0e4a6fa7af22cd38dfb66b05304cc26"
 
 [[package]]
 name = "pkg-config"

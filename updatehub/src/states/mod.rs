@@ -64,15 +64,16 @@ pub enum TransitionError {
     Client(#[from] cloud::Error),
 
     #[error("Uncompress error: {0}")]
-    // FIXME: compress_tools does not implement error, so we should rework this
-    // in future.
-    Uncompress(compress_tools::Error),
+    Uncompress(#[from] compress_tools::Error),
 
     #[error("Serde error: {0}")]
     SerdeJson(#[from] serde_json::error::Error),
 
     #[error("Update package error: {0}")]
     Io(#[from] std::io::Error),
+
+    #[error("Non Utf8 error: {0}")]
+    NonUtf8(#[from] std::string::FromUtf8Error),
 
     #[error("Mailbox error: {0}")]
     ActixMailbox(#[from] actix::MailboxError),
