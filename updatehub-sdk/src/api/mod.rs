@@ -22,6 +22,26 @@ pub mod probe {
     }
 }
 
+pub mod local_install {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Deserialize, Clone, Debug, Serialize)]
+    #[serde(deny_unknown_fields)]
+    pub struct Request {
+        pub file: std::path::PathBuf,
+    }
+}
+
+pub mod remote_install {
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Deserialize, Clone, Debug, Serialize)]
+    #[serde(deny_unknown_fields)]
+    pub struct Request {
+        pub url: String,
+    }
+}
+
 pub mod state {
     use serde::{Deserialize, Serialize};
 

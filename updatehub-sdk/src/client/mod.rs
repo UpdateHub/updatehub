@@ -50,17 +50,10 @@ impl Client {
     }
 
     pub async fn local_install(&self, file: &Path) -> Result<api::state::Response> {
-        use serde::Serialize;
-        #[derive(Clone, Debug, Serialize)]
-        #[serde(deny_unknown_fields)]
-        pub struct Request<'a> {
-            pub file: &'a Path,
-        }
-
         let mut response = self
             .client
             .post(&format!("{}/local_install", self.server_address))
-            .send_json(&Request { file })
+            .send_json(&api::local_install::Request { file: file.to_owned() })
             .await?;
 
         match response.status() {
@@ -73,17 +66,10 @@ impl Client {
     }
 
     pub async fn remote_install(&self, url: &str) -> Result<api::state::Response> {
-        use serde::Serialize;
-        #[derive(Clone, Debug, Serialize)]
-        #[serde(deny_unknown_fields)]
-        pub struct Request<'a> {
-            pub url: &'a str,
-        }
-
         let mut response = self
             .client
             .post(&format!("{}/remote_install", self.server_address))
-            .send_json(&Request { url })
+            .send_json(&api::remote_install::Request { url: url.to_owned() })
             .await?;
 
         match response.status() {
