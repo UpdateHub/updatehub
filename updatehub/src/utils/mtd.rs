@@ -150,10 +150,10 @@ pub(crate) mod tests {
             // FakeMtd created here so if any subsequent command fails the drop will still
             // be called to cleanup mtd devices
             let mut mtd = FakeMtd { devices: vec![], kind };
-            names.iter().enumerate().try_for_each(|(i, name)| {
-                easy_process::run(&format!("mtdpart add /dev/mtd0 {} {} {}", name, i * 100, 100))
-                    .map(|_| mtd.devices.push(PathBuf::from(format!("/dev/mtd{}", i + 1))))
-            })?;
+            for (i, name) in names.iter().enumerate() {
+                easy_process::run(&format!("mtdpart add /dev/mtd0 {} {} {}", name, i * 100, 100))?;
+                mtd.devices.push(PathBuf::from(format!("/dev/mtd{}", i + 1)));
+            }
 
             Ok(mtd)
         }
