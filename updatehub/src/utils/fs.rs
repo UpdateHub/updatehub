@@ -11,6 +11,14 @@ use pkg_schema::definitions::{
 use std::{io, path::Path};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
+pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
+    let stat = nix::sys::statvfs::statvfs(target)?;
+    if required > stat.block_size() * stat.blocks_free() {
+        return Err(Error::NotEnoughSpace);
+    }
+    Ok(())
+}
+
 pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
     match quale::which(cmd) {
         Some(_) => Ok(()),

@@ -19,11 +19,9 @@ use std::{
 impl Installer for objects::Copy {
     fn check_requirements(&self) -> Result<()> {
         info!("'copy' handle checking requirements");
-        if self.compressed {
-            unimplemented!("FIXME: check the required_uncompressed_size");
-        }
 
-        if let definitions::TargetType::Device(_) = self.target_type.valid()? {
+        if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
+            utils::fs::ensure_disk_space(&dev, self.required_install_size())?;
             return Ok(());
         }
 

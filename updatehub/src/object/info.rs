@@ -20,12 +20,12 @@ pub(crate) enum Status {
     Ready,
 }
 
-impl_object_info!(objects::Copy);
+impl_compressed_object_info!(objects::Copy);
+impl_compressed_object_info!(objects::Raw);
+impl_compressed_object_info!(objects::Ubifs);
 impl_object_info!(objects::Flash);
 impl_object_info!(objects::Imxkobs);
 impl_object_info!(objects::Tarball);
-impl_object_info!(objects::Ubifs);
-impl_object_info!(objects::Raw);
 impl_object_info!(objects::Test);
 
 impl_object_for_object_types!(Copy, Flash, Imxkobs, Tarball, Ubifs, Raw, Test);
@@ -64,4 +64,5 @@ pub(crate) trait Info {
     fn filename(&self) -> &str;
     fn len(&self) -> u64;
     fn sha256sum(&self) -> &str;
+    fn required_install_size(&self) -> u64;
 }

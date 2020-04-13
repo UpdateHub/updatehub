@@ -14,14 +14,15 @@ use std::path::Path;
 impl Installer for objects::Tarball {
     fn check_requirements(&self) -> Result<()> {
         info!("'tarball' handle checking requirements");
-        if self.compressed {
-            unimplemented!("FIXME: check the required_uncompressed_size");
-        }
 
         match self.target {
             definitions::TargetType::Device(_)
             | definitions::TargetType::UBIVolume(_)
             | definitions::TargetType::MTDName(_) => {
+                utils::fs::ensure_disk_space(
+                    &self.target.get_target()?,
+                    self.required_install_size(),
+                )?;
                 self.target.valid()?;
                 Ok(())
             }

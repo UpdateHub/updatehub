@@ -21,6 +21,10 @@ impl Installer for objects::Flash {
         match self.target {
             definitions::TargetType::Device(_) | definitions::TargetType::MTDName(_) => {
                 self.target.valid()?;
+                utils::fs::ensure_disk_space(
+                    &self.target.get_target()?,
+                    self.required_install_size(),
+                )?;
                 Ok(())
             }
             _ => Err(Error::InvalidTargetType(self.target.clone())),

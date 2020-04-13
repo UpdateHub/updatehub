@@ -13,14 +13,12 @@ use slog_scope::info;
 impl Installer for objects::Ubifs {
     fn check_requirements(&self) -> Result<()> {
         info!("'ubifs' handle checking requirements");
-        if self.compressed {
-            unimplemented!("FIXME: check the required_uncompressed_size");
-        }
 
         utils::fs::is_executable_in_path("ubiupdatevol")?;
         utils::fs::is_executable_in_path("ubinfo")?;
 
         if let definitions::TargetType::UBIVolume(_) = self.target.valid()? {
+            utils::fs::ensure_disk_space(&self.target.get_target()?, self.required_install_size())?;
             return Ok(());
         }
 
