@@ -49,6 +49,7 @@ walkdir = "2"
 git-version = "0.3"
 
 [dev-dependencies]
+flate2 = "1"
 loopdev = "0.2"
 pretty_assertions = "0.6"
 tempfile = "3"

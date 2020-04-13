@@ -54,28 +54,30 @@ impl Installer for objects::Copy {
 
         utils::fs::mount_map(&device, filesystem, mount_options, |path| {
             let dest = path.join(&target_path);
+            let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
+            let mut output = utils::io::timed_buf_writer(
+                chunk_size,
+                fs::OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(&dest)?,
+            );
+
+            // File's access mode is changed here as we might not have write permission over
+            // it. It will be restored or overwritten later on by the target_mode parameter
+            let metadata = dest.metadata()?;
+            let orig_mode = metadata.permissions().mode();
+            metadata.permissions().set_mode(0o100_666);
 
             if self.compressed {
-                unimplemented!("FIXME: uncompress to dest");
+                compress_tools::uncompress_file(&mut input, &mut output)?;
             } else {
-                let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
-                let mut output = utils::io::timed_buf_writer(
-                    chunk_size,
-                    fs::OpenOptions::new()
-                        .read(true)
-                        .write(true)
-                        .create(true)
-                        .truncate(true)
-                        .open(&dest)?,
-                );
-
-                let metadata = dest.metadata()?;
-                let orig_mode = metadata.permissions().mode();
-                metadata.permissions().set_mode(0o100_666);
                 io::copy(&mut input, &mut output)?;
-                output.flush()?;
-                metadata.permissions().set_mode(orig_mode);
             }
+            output.flush()?;
+            metadata.permissions().set_mode(orig_mode);
 
             if let Some(mode) = self.target_permissions.target_mode {
                 utils::fs::chmod(&dest, mode)?;
@@ -98,6 +100,7 @@ impl Installer for objects::Copy {
 mod tests {
     use super::*;
     use crate::{object::installer::tests::SERIALIZE, utils::definitions::IdExt};
+    use flate2::{write::GzEncoder, Compression};
     use pretty_assertions::assert_eq;
     use std::{
         io::{BufRead, Seek, SeekFrom, Write},
@@ -113,6 +116,7 @@ mod tests {
     fn exec_test_with_copy<F>(
         mut f: F,
         original_permissions: Option<definitions::TargetPermissions>,
+        compressed: bool,
     ) -> Result<()>
     where
         F: FnMut(&mut objects::Copy),
@@ -139,7 +143,15 @@ mod tests {
         // Generate the source file
         let download_dir = tempfile::tempdir()?;
         let mut source = tempfile::NamedTempFile::new_in(download_dir.path())?;
-        source.write_all(&iter::repeat(DEFAULT_BYTE).take(FILE_SIZE).collect::<Vec<_>>())?;
+        let original_data = iter::repeat(DEFAULT_BYTE).take(FILE_SIZE).collect::<Vec<_>>();
+        let data = if compressed {
+            let mut e = GzEncoder::new(Vec::new(), Compression::default());
+            e.write_all(&original_data).unwrap();
+            e.finish().unwrap()
+        } else {
+            original_data.clone()
+        };
+        source.write_all(&data)?;
 
         // When needed, create a file inside the mounted device
         if let Some(perm) = original_permissions {
@@ -186,8 +198,7 @@ mod tests {
         utils::fs::mount_map(&device, obj.filesystem, &obj.mount_options.clone(), |path| {
             let chunk_size = definitions::ChunkSize::default().0;
             let dest = path.join(&obj.target_path);
-            let source = download_dir.path().join(&obj.sha256sum);
-            let mut rd1 = io::BufReader::with_capacity(chunk_size, fs::File::open(&source)?);
+            let mut rd1 = io::BufReader::with_capacity(chunk_size, original_data.as_slice());
             let mut rd2 = io::BufReader::with_capacity(chunk_size, fs::File::open(&dest)?);
 
             loop {
@@ -229,8 +240,14 @@ mod tests {
 
     #[test]
     #[ignore]
+    fn copy_compressed_file() {
+        exec_test_with_copy(|obj| obj.compressed = true, None, true).unwrap();
+    }
+
+    #[test]
+    #[ignore]
     fn copy_over_formated_partion() {
-        exec_test_with_copy(|obj| obj.target_format.should_format = true, None).unwrap();
+        exec_test_with_copy(|obj| obj.target_format.should_format = true, None, false).unwrap();
     }
 
     #[test]
@@ -243,6 +260,7 @@ mod tests {
                 target_gid: Some(definitions::target_permissions::Gid::Number(1000)),
                 target_uid: Some(definitions::target_permissions::Uid::Number(1000)),
             }),
+            false,
         )
         .unwrap();
     }
@@ -256,6 +274,7 @@ mod tests {
                     Some(definitions::target_permissions::Uid::Number(0))
             },
             None,
+            false,
         )
         .unwrap();
     }
@@ -273,6 +292,7 @@ mod tests {
                 target_gid: Some(definitions::target_permissions::Gid::Number(1000)),
                 target_uid: Some(definitions::target_permissions::Uid::Number(1000)),
             }),
+            false,
         )
         .unwrap();
     }
@@ -287,6 +307,7 @@ mod tests {
                 target_gid: Some(definitions::target_permissions::Gid::Number(1000)),
                 target_uid: Some(definitions::target_permissions::Uid::Number(1000)),
             }),
+            false,
         )
         .unwrap();
     }
