@@ -28,6 +28,12 @@ macro_rules! impl_object_for_object_types {
                     $( Object::$objtype(ref o) => o.sha256sum(), )*
                 }
             }
+
+            fn required_install_size(&self) -> u64 {
+                match *self {
+                    $( Object::$objtype(ref o) => o.required_install_size(), )*
+                }
+            }
         }
     };
 }
@@ -45,6 +51,32 @@ macro_rules! impl_object_info {
 
             fn sha256sum(&self) -> &str {
                 &self.sha256sum
+            }
+
+            fn required_install_size(&self) -> u64 {
+                self.size
+            }
+        }
+    };
+}
+
+macro_rules! impl_compressed_object_info {
+    ($objtype:ty) => {
+        impl Info for $objtype {
+            fn filename(&self) -> &str {
+                &self.filename
+            }
+
+            fn len(&self) -> u64 {
+                self.size
+            }
+
+            fn sha256sum(&self) -> &str {
+                &self.sha256sum
+            }
+
+            fn required_install_size(&self) -> u64 {
+                self.required_uncompressed_size
             }
         }
     };

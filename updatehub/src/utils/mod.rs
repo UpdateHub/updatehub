@@ -42,6 +42,9 @@ pub enum Error {
 
     #[error("Unable to find match for mtd device: {0}")]
     NoMtdDevice(String),
+
+    #[error("Not enough storage space for installation")]
+    NotEnoughSpace,
 }
 
 /// Encode a bytes stream in hex
