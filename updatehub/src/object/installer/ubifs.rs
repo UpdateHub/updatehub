@@ -32,7 +32,14 @@ impl Installer for objects::Ubifs {
         let source = download_dir.join(self.sha256sum());
 
         if self.compressed {
-            unimplemented!("FIXME: handle compressed installation");
+            easy_process::run_with_stdin(
+                &format!("ubiupdatevol {} -", target.display()),
+                |stdin| {
+                    let mut file = std::fs::File::open(source)?;
+                    compress_tools::uncompress_file(&mut file, stdin)?;
+                    Result::Ok(())
+                },
+            )?;
         } else {
             easy_process::run(&format!("ubiupdatevol {} {}", target.display(), source.display()))?;
         }

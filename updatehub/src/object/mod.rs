@@ -18,6 +18,9 @@ pub enum Error {
     #[error("Invalid path formed")]
     InvalidPath,
 
+    #[error("Uncompress error: {0}")]
+    Uncompress(#[from] compress_tools::Error),
+
     #[error("Unsupported target type: {0:?}")]
     InvalidTargetType(pkg_schema::definitions::TargetType),
 

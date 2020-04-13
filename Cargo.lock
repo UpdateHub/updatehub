@@ -2340,6 +2340,7 @@ dependencies = [
  "derive_more",
  "easy_process",
  "find-binary-version",
+ "flate2",
  "git-version",
  "infer",
  "lazy_static",

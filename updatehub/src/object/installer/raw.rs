@@ -14,7 +14,7 @@ use pkg_schema::{definitions, objects};
 use slog_scope::info;
 use std::{
     fs,
-    io::{BufRead, Seek, SeekFrom, Write},
+    io::{BufRead, Read, Seek, SeekFrom, Write},
     path::Path,
 };
 
@@ -56,18 +56,22 @@ impl Installer for objects::Raw {
                 .map_err(Error::from)
         });
 
+        let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
+        input.seek(SeekFrom::Start(skip))?;
+        let mut output = utils::io::timed_buf_writer(
+            chunk_size,
+            fs::OpenOptions::new().read(true).write(true).truncate(truncate).open(device)?,
+        );
+        output.seek(SeekFrom::Start(seek))?;
+
         if self.compressed {
-            unimplemented!("FIXME: handle compressed installation");
+            match count {
+                definitions::Count::All => compress_tools::uncompress_file(&mut input, &mut output),
+                definitions::Count::Limited(n) => {
+                    compress_tools::uncompress_file(&mut input.take(n as u64), &mut output)
+                }
+            }?;
         } else {
-            let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
-
-            input.seek(SeekFrom::Start(skip))?;
-            let mut output = utils::io::timed_buf_writer(
-                chunk_size,
-                fs::OpenOptions::new().read(true).write(true).truncate(truncate).open(device)?,
-            );
-            output.seek(SeekFrom::Start(seek))?;
-
             for _ in count {
                 let buf = input.fill_buf()?;
                 let len = buf.len();
@@ -90,6 +94,7 @@ impl Installer for objects::Raw {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use flate2::{write::GzEncoder, Compression};
     use pretty_assertions::assert_eq;
     use std::{io, iter, path::PathBuf};
     use tempfile::{tempdir, NamedTempFile};
@@ -104,11 +109,20 @@ mod tests {
         seek: u64,
         count: definitions::Count,
         truncate: bool,
-    ) -> std::io::Result<(objects::Raw, PathBuf, NamedTempFile, NamedTempFile)> {
+        compressed: bool,
+    ) -> Result<(objects::Raw, PathBuf, NamedTempFile, NamedTempFile, Vec<u8>)> {
         let download_dir = tempdir()?;
 
         let mut source = NamedTempFile::new_in(download_dir.path())?;
-        source.write_all(&iter::repeat(ORIGINAL_BYTE).take(size as usize).collect::<Vec<_>>())?;
+        let original_data = iter::repeat(ORIGINAL_BYTE).take(size as usize).collect::<Vec<_>>();
+        let data = if compressed {
+            let mut e = GzEncoder::new(Vec::new(), Compression::default());
+            e.write_all(&original_data).unwrap();
+            e.finish().unwrap()
+        } else {
+            original_data.clone()
+        };
+        source.write_all(&data)?;
         source.seek(SeekFrom::Start(0))?;
 
         let mut dest = NamedTempFile::new_in(download_dir.path())?;
@@ -123,7 +137,7 @@ mod tests {
                 target_type: definitions::TargetType::Device(dest.path().into()),
 
                 install_if_different: None,
-                compressed: false,
+                compressed,
                 required_uncompressed_size: 0,
                 chunk_size: definitions::ChunkSize(chunk_size),
                 skip: definitions::Skip(skip),
@@ -134,6 +148,7 @@ mod tests {
             download_dir.into_path(),
             source,
             dest,
+            original_data,
         ))
     }
 
@@ -151,17 +166,17 @@ mod tests {
         Ok(())
     }
 
-    fn compare_files(
-        f1: &mut fs::File,
-        f2: &mut fs::File,
+    fn validate_file(
+        data: Vec<u8>,
+        file: &mut fs::File,
         chunk_size: usize,
         skip: u64,
         seek: u64,
         count: definitions::Count,
     ) -> io::Result<()> {
-        let mut f1 = io::BufReader::with_capacity(chunk_size, f1);
-        f1.seek(SeekFrom::Start(skip * chunk_size as u64))?;
-        let mut f2 = io::BufReader::with_capacity(chunk_size, f2);
+        let skip = skip as usize * chunk_size;
+        let mut f1 = io::BufReader::with_capacity(chunk_size, &data[skip..]);
+        let mut f2 = io::BufReader::with_capacity(chunk_size, file);
         f2.seek(SeekFrom::Start(seek * chunk_size as u64))?;
 
         for _ in count {
@@ -176,11 +191,38 @@ mod tests {
             }
 
             assert_eq!(buf1, buf2);
-
             f1.consume(len1);
             f2.consume(len2);
         }
         Ok(())
+    }
+
+    #[test]
+    fn raw_full_copy_compressed() {
+        let size = 2048;
+        let chunk_size = 8;
+        let count = definitions::Count::All;
+        let seek = 0;
+        let skip = 0;
+        let truncate = false;
+        let compressed = true;
+
+        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
+                .unwrap();
+        obj.check_requirements().unwrap();
+        obj.setup().unwrap();
+        obj.install(&download_dir).unwrap();
+
+        validate_file(
+            original_data,
+            target_guard.as_file_mut(),
+            chunk_size,
+            skip,
+            seek,
+            count.clone(),
+        )
+        .unwrap();
     }
 
     #[test]
@@ -191,15 +233,17 @@ mod tests {
         let seek = 0;
         let skip = 0;
         let truncate = false;
+        let compressed = false;
 
-        let (mut obj, download_dir, mut source_guard, mut target_guard) =
-            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate).unwrap();
+        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
+                .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        compare_files(
-            source_guard.as_file_mut(),
+        validate_file(
+            original_data,
             target_guard.as_file_mut(),
             chunk_size,
             skip,
@@ -217,15 +261,17 @@ mod tests {
         let seek = 0;
         let skip = 8;
         let truncate = false;
+        let compressed = false;
 
-        let (mut obj, download_dir, mut source_guard, mut target_guard) =
-            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate).unwrap();
+        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
+                .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        compare_files(
-            source_guard.as_file_mut(),
+        validate_file(
+            original_data,
             target_guard.as_file_mut(),
             chunk_size,
             skip,
@@ -244,15 +290,17 @@ mod tests {
         let seek = 8;
         let skip = 0;
         let truncate = false;
+        let compressed = false;
 
-        let (mut obj, download_dir, mut source_guard, mut target_guard) =
-            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate).unwrap();
+        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
+                .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        compare_files(
-            source_guard.as_file_mut(),
+        validate_file(
+            original_data,
             target_guard.as_file_mut(),
             chunk_size,
             skip,
@@ -271,15 +319,17 @@ mod tests {
         let seek = 0;
         let skip = 0;
         let truncate = false;
+        let compressed = false;
 
-        let (mut obj, download_dir, mut source_guard, mut target_guard) =
-            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate).unwrap();
+        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+            fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
+                .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        compare_files(
-            source_guard.as_file_mut(),
+        validate_file(
+            original_data,
             target_guard.as_file_mut(),
             chunk_size,
             skip,
