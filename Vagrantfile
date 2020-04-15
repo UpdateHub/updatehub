@@ -5,7 +5,7 @@ Vagrant.configure("2") do |config|
   config.vm.box = "debian/buster64"
   config.vm.provision "shell",
     inline: <<-EOS
-      apt-get install -y curl git gcc libssl-dev pkg-config mtd-utils
+      apt-get install -y curl git gcc libssl-dev pkg-config mtd-utils libarchive-dev
       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 EOS
 end
