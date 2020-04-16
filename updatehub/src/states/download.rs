@@ -75,6 +75,9 @@ impl StateChangeImpl for State<Download> {
         match self.0.download_chan.try_recv() {
             Ok(vec) => vec.into_iter().try_for_each(|res| res)?,
             Err(mpsc::TryRecvError::Empty) => {
+                // Yield the transition so other futures in this arbiter (mainly the future
+                // downloading the objects itself) can process.
+                tokio::task::yield_now().await;
                 return Ok((StateMachine::Download(self), actor::StepTransition::Immediate));
             }
             Err(e) => return Err(TransitionError::MpscRecv(e)),

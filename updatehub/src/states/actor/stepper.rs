@@ -69,7 +69,7 @@ impl Controller {
                         Ok(super::StepTransition::Immediate) => {}
                         Ok(super::StepTransition::Delayed(t)) => {
                             debug!("Sleeping stepper thread for: {} seconds", t.as_secs());
-                            std::thread::sleep(t);
+                            actix::clock::delay_for(t).await;
                         }
                         Ok(super::StepTransition::Never) => {
                             info!("Stopping step messages");
