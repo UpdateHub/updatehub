@@ -595,9 +595,9 @@ dependencies = [
 
 [[package]]
 name = "cmdline_words_parser"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f82d4d9b75a0a6f8423e5d2b4572f35da7fe3fb196df01b335a4a66342109ea"
+checksum = "af9dbc4850158d031093007e4bdbf6fe277200edfc58b297a9c6d849f47ab4e3"
 
 [[package]]
 name = "colored"
@@ -755,12 +755,13 @@ checksum = "4358a9e11b9a09cf52383b451b49a169e8d797b68aa02301ff586d70d9661ea3"
 
 [[package]]
 name = "easy_process"
-version = "0.1.6"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db39385265f3de33862f28207dbd290440547353ec0ea8175efc94867b949a4d"
+checksum = "46f523b9f68c430f962e03160b7375c7960ec914e62ab19ce6f0982ff867d342"
 dependencies = [
  "checked_command",
  "cmdline_words_parser",
+ "derive_more",
 ]
 
 [[package]]

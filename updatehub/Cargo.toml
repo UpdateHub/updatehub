@@ -20,7 +20,7 @@ chrono = { version = "0.4", default-features = false, features = ["serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
 compress-tools = "0.3"
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut"] }
-easy_process = "0.1"
+easy_process = "0.2"
 find-binary-version = "0.2"
 infer = "0.1"
 lazy_static = "1"
