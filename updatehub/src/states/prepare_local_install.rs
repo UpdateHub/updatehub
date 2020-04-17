@@ -52,7 +52,9 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
                     debug!("Validating signature");
                     sign.validate(key, &update_package)?;
                 }
-                Err(compress_tools::Error::FileNotFound) => {}
+                Err(compress_tools::Error::FileNotFound) => {
+                    return Err(super::TransitionError::SignatureNotFound);
+                }
                 Err(e) => return Err(e.into()),
             }
         }

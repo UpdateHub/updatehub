@@ -7,7 +7,7 @@ use super::{
     EntryPoint, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
 };
 use crate::update_package::UpdatePackageExt;
-use slog_scope::{debug, info};
+use slog_scope::{debug, error, info};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Validation {
@@ -32,11 +32,17 @@ impl StateChangeImpl for State<Validation> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        if let (Some(sign), Some(key)) =
-            (self.0.sign.as_ref(), shared_state.firmware.pub_key.as_ref())
-        {
-            debug!("Validating signature");
-            sign.validate(key, &self.0.package)?;
+        if let Some(key) = shared_state.firmware.pub_key.as_ref() {
+            match self.0.sign.as_ref() {
+                Some(sign) => {
+                    debug!("Validating signature");
+                    sign.validate(key, &self.0.package)?;
+                }
+                None => {
+                    error!("Missing signature key");
+                    return Err(super::TransitionError::SignatureNotFound);
+                }
+            }
         }
 
         // Ensure the package is compatible
@@ -144,5 +150,31 @@ mod tests {
             .unwrap()
             .0;
         assert_state!(machine, EntryPoint);
+    }
+
+    #[actix_rt::test]
+    async fn missing_signature() {
+        let tmpfile = NamedTempFile::new().unwrap();
+        let tmpfile = tmpfile.path();
+        std::fs::remove_file(&tmpfile).unwrap();
+
+        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
+        let settings = Settings::default();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        shared_state.firmware.pub_key = Some("foo".into());
+
+        let package = get_update_package();
+        let sign = None;
+        shared_state.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
+
+        let res = StateMachine::Validation(State(Validation { package, sign }))
+            .move_to_next_state(&mut shared_state)
+            .await;
+        match res {
+            Err(crate::states::TransitionError::SignatureNotFound) => {}
+            Err(e) => panic!("Unexpected error returned: {}", e),
+            Ok(_) => panic!("Unexpected ok result returned"),
+        }
     }
 }
