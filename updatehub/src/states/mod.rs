@@ -45,6 +45,9 @@ pub enum TransitionError {
     #[error("Not all objects are ready for use")]
     ObjectsNotReady,
 
+    #[error("Signature not found")]
+    SignatureNotFound,
+
     #[error("Failed to read from channel: {0}")]
     MpscRecv(mpsc::TryRecvError),
 
