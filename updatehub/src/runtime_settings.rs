@@ -9,7 +9,7 @@ use crate::firmware::{
 use chrono::{DateTime, NaiveDateTime, Utc};
 use derive_more::{Deref, DerefMut};
 use sdk::api::info::runtime_settings as api;
-use slog_scope::debug;
+use slog_scope::{debug, warn};
 use std::{fs, io, path::Path};
 use thiserror::Error;
 
@@ -51,7 +51,21 @@ impl RuntimeSettings {
     pub(crate) fn load(path: &Path) -> Result<Self> {
         let mut this = if path.exists() {
             debug!("Loading runtime settings from {:?}...", path);
-            Self::parse(&fs::read_to_string(path)?)?
+            match fs::read_to_string(path).map_err(Error::from).and_then(|ref s| Self::parse(s)) {
+                Ok(v) => v,
+                Err(e) => {
+                    warn!("Failed to load current runtime settings: {}", e);
+                    let _ = fs::rename(
+                        path,
+                        path.with_file_name(format!(
+                            "{}.old",
+                            path.file_name().unwrap().to_str().unwrap()
+                        )),
+                    );
+                    debug!("Using default runtime settings...");
+                    Self::default()
+                }
+            }
         } else {
             debug!(
                 "Runtime settings file {:?} does not exists. Using default runtime settings...",
@@ -210,4 +224,27 @@ fn load_and_save() {
     let new_settings = RuntimeSettings::load(settings_file).unwrap();
 
     assert_eq!(settings.update, new_settings.update);
+}
+
+#[test]
+fn load_bad_formated_file() {
+    use pretty_assertions::assert_eq;
+    use std::fs;
+    use tempfile::NamedTempFile;
+
+    let tempfile = NamedTempFile::new().unwrap();
+    let settings_file = tempfile.path();
+    fs::write(&settings_file, "foo").unwrap();
+
+    let load_result = RuntimeSettings::load(settings_file);
+    assert!(load_result.is_ok(), "We should fail when reading a unformated formatted file");
+
+    let old_file = settings_file
+        .with_file_name(format!("{}.old", settings_file.file_name().unwrap().to_str().unwrap()));
+    let old_content = fs::read_to_string(&old_file).unwrap();
+    assert_eq!(
+        old_content, "foo",
+        "Old file should still be accessible as a .old file in the same directory"
+    );
+    fs::remove_file(old_file).unwrap();
 }
