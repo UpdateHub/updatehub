@@ -9,6 +9,12 @@ authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 license = "Apache-2.0"
 edition = "2018"
 
+[features]
+default = []
+
+# Feature to allow deserialization from v1 Settings
+v1-parsing = ["serde_ini"]
+
 [dependencies]
 actix = { version = "0.10.0-alpha.2", default-features = false }
 actix-rt = "1"
@@ -32,6 +38,7 @@ quale = "1"
 regex = { version = "1", default-features = false }
 sdk = { path = "../updatehub-sdk", package = "updatehub-sdk" }
 serde = { version = "1", default-features = false, features = ["rc", "derive"] }
+serde_ini = { version = "0.2", default-features = false, optional = true }
 serde_json = { version = "1", default-features = false }
 slog = { version = "2", default-features = false, features = ["max_level_trace", "release_max_level_trace"] }
 slog-async = { version = "2", default-features = false }
