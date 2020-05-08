@@ -1,7 +1,15 @@
 <p align="center"><img src="doc/logo.png"></p>
 
-[![Continuous integration](https://github.com/UpdateHub/updatehub/workflows/Continuous%20integration/badge.svg)](https://github.com/UpdateHub/updatehub/actions?query=workflow%3A%22Continuous+integration%22+branch%3Amaster)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FUpdateHub%2Fupdatehub.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FUpdateHub%2Fupdatehub?ref=badge_shield)
+[![Coverage Status](https://coveralls.io/repos/github/Updatehub/updatehub/badge.svg?branch=master)](https://coveralls.io/github/Updatehub/updatehub?branch=master)
+
+| Platform | Build Status |
+| -------- | ------------ |
+| Linux - x86_64 | [![build status](https://github.com/Updatehub/updatehub/workflows/CI%20-%20Linux%20-%20x86_64/badge.svg)](https://github.com/Updatehub/updatehub/actions) |
+| Linux - AArch64 | [![build status](https://github.com/Updatehub/updatehub/workflows/CI%20-%20Linux%20-%20AArch64/badge.svg)](https://github.com/Updatehub/updatehub/actions) |
+| Linux - ARMv7 | [![build status](https://github.com/Updatehub/updatehub/workflows/CI%20-%20Linux%20-%20ARMv7/badge.svg)](https://github.com/Updatehub/updatehub/actions) |
+
+---
 
 **UpdateHub** is an enterprise-grade solution which makes simple to remotely
 update all your embedded devices in the field. It handles all aspects related to

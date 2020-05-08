@@ -1,0 +1,99 @@
+name: CI - Linux - x86_64
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build_and_test:
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - 1.41.0 # MSRV
+          - stable
+          - nightly
+
+    name: Test ${{ matrix.version }} - x86_64-unknown-linux-gnu
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Dependencies
+        run: sudo apt-get update; sudo apt-get install libarchive-dev
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Install ${{ matrix.version }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.version }}-x86_64-unknown-linux-gnu
+          profile: minimal
+          override: true
+      - name: Install grcov tool
+        if: matrix.version == 'nightly'
+        uses: actions-rs/install@v0.1
+        with:
+          crate: grcov
+          use-tool-cache: true
+
+      - name: Generate Cargo.lock
+        uses: actions-rs/cargo@v1
+        with:
+          command: generate-lockfile
+      - name: Cache cargo registry
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-registry-trimmed-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo index
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/git
+          key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-index-trimmed-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo build
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-build-trimmed-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Check build
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --release --all --bins --examples --tests
+
+      - name: Tests
+        uses: actions-rs/cargo@v1
+        timeout-minutes: 10
+        with:
+          command: test
+          args: --release --all --all-features --no-fail-fast -- --nocapture
+
+      - name: Run cargo test with coverage
+        if: matrix.version == 'nightly'
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args:  --all --all-features --no-fail-fast -- --nocapture
+        env:
+          CARGO_INCREMENTAL: '0'
+          RUSTFLAGS: '-Zprofile -Zpanic_abort_tests -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort'
+      - id: coverage
+        if: matrix.version == 'nightly'
+        uses: actions-rs/grcov@master
+      - name: Coveralls upload
+        if: matrix.version == 'nightly'
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ${{ steps.coverage.outputs.report }}
+      - name: Clear the coverage files from cache
+        if: matrix.version == 'nightly'
+        run: |
+          find target/ -name "*.gcda" -exec rm {} +
+
+      - name: Clear the cargo caches
+        run: |
+          cargo install cargo-cache --no-default-features --features ci-autoclean
+          cargo-cache
