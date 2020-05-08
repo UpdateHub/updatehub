@@ -306,7 +306,7 @@ impl StateMachine {
 /// ```
 ///
 /// # Example
-/// ```
+/// ```no_run
 /// # extern crate updatehub;
 /// # async fn run() -> Result<(), updatehub::Error> {
 /// use updatehub;

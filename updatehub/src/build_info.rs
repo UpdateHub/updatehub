@@ -9,7 +9,7 @@
 /// number of changes since the last tag.
 ///
 /// # Example
-/// ```
+/// ```no_run
 /// use updatehub;
 ///
 /// println!("Running version: {}", updatehub::version());
