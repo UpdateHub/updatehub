@@ -162,9 +162,11 @@ async fn local_install_probe() {
     assert_eq!(res.state, "prepare_local_install");
 }
 
-#[actix_rt::test]
-async fn stepper_with_never() {
+#[test]
+fn stepper_with_never() {
+    let sys = actix_rt::System::new("stepper_with_never");
     let mock = actix::Actor::start(FakeMachine { step_expect: 15, ..FakeMachine::default() });
     let mut stepper = super::stepper::Controller::default();
     stepper.start(mock);
+    sys.run().unwrap();
 }
