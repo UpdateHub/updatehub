@@ -13,7 +13,11 @@ use sys_mount::{Mount, Unmount, UnmountDrop};
 
 pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
     let stat = nix::sys::statvfs::statvfs(target)?;
-    if required > stat.block_size() * stat.blocks_free() {
+
+    // stat fields might be 32 or 64 bytes depending on host arch
+    let available = stat.block_size() as u64 * stat.blocks_free() as u64;
+
+    if required > available {
         return Err(Error::NotEnoughSpace);
     }
     Ok(())
