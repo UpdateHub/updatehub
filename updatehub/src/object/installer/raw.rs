@@ -66,9 +66,9 @@ impl Installer for objects::Raw {
 
         if self.compressed {
             match count {
-                definitions::Count::All => compress_tools::uncompress_file(&mut input, &mut output),
+                definitions::Count::All => compress_tools::uncompress_data(&mut input, &mut output),
                 definitions::Count::Limited(n) => {
-                    compress_tools::uncompress_file(&mut input.take(n as u64), &mut output)
+                    compress_tools::uncompress_data(&mut input.take(n as u64), &mut output)
                 }
             }?;
         } else {

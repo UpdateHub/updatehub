@@ -612,12 +612,13 @@ dependencies = [
 
 [[package]]
 name = "compress-tools"
-version = "0.3.1"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdd7ef419fdf9149e7b8da1c0a097bc553b657e031e31a538a4445e903dfa259"
+checksum = "c18c99ebbc0b14624ea6f19b8ba4ddc7cc96824704369e54fddc688dcdf5e0e0"
 dependencies = [
  "derive_more",
  "pkg-config",
+ "vcpkg",
 ]
 
 [[package]]
