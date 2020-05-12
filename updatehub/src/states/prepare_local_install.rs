@@ -46,7 +46,7 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
             let mut sign = Vec::with_capacity(512);
             source.seek(SeekFrom::Start(0))?;
             match compress_tools::uncompress_archive_file(&mut source, &mut sign, "signature") {
-                Ok(()) => {
+                Ok(_) => {
                     let sign = String::from_utf8(sign)?;
                     let sign = Signature::from_base64_str(&sign)?;
                     debug!("Validating signature");

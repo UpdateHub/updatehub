@@ -36,7 +36,7 @@ impl Installer for objects::Ubifs {
                 &format!("ubiupdatevol {} -", target.display()),
                 |stdin| {
                     let mut file = std::fs::File::open(source)?;
-                    compress_tools::uncompress_file(&mut file, stdin)?;
+                    compress_tools::uncompress_data(&mut file, stdin)?;
                     Result::Ok(())
                 },
             )?;
