@@ -72,7 +72,7 @@ impl Installer for objects::Copy {
             metadata.permissions().set_mode(0o100_666);
 
             if self.compressed {
-                compress_tools::uncompress_file(&mut input, &mut output)?;
+                compress_tools::uncompress_data(&mut input, &mut output)?;
             } else {
                 io::copy(&mut input, &mut output)?;
             }
