@@ -1348,9 +1348,9 @@ dependencies = [
 
 [[package]]
 name = "ms-converter"
-version = "0.7.1"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48e90e98041d4bc08bfbcabf95ab8522f8be9d0c43b115d82531d6a129fc72c8"
+checksum = "c0bb99a99a389dde56f4f6cebf6dac1787730651e3427f0c16076624513fdae7"
 
 [[package]]
 name = "net2"
