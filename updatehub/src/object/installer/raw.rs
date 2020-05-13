@@ -214,15 +214,8 @@ mod tests {
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        validate_file(
-            original_data,
-            target_guard.as_file_mut(),
-            chunk_size,
-            skip,
-            seek,
-            count.clone(),
-        )
-        .unwrap();
+        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+            .unwrap();
     }
 
     #[test]
@@ -242,15 +235,8 @@ mod tests {
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        validate_file(
-            original_data,
-            target_guard.as_file_mut(),
-            chunk_size,
-            skip,
-            seek,
-            count.clone(),
-        )
-        .unwrap();
+        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+            .unwrap();
     }
 
     #[test]
@@ -270,15 +256,8 @@ mod tests {
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        validate_file(
-            original_data,
-            target_guard.as_file_mut(),
-            chunk_size,
-            skip,
-            seek,
-            count.clone(),
-        )
-        .unwrap();
+        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+            .unwrap();
         check_unwritten_blocks(target_guard.as_file_mut(), 1024, 1024).unwrap();
     }
 
@@ -299,15 +278,8 @@ mod tests {
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        validate_file(
-            original_data,
-            target_guard.as_file_mut(),
-            chunk_size,
-            skip,
-            seek,
-            count.clone(),
-        )
-        .unwrap();
+        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+            .unwrap();
         check_unwritten_blocks(target_guard.as_file_mut(), 0, 1024).unwrap();
     }
 
@@ -328,15 +300,8 @@ mod tests {
         obj.setup().unwrap();
         obj.install(&download_dir).unwrap();
 
-        validate_file(
-            original_data,
-            target_guard.as_file_mut(),
-            chunk_size,
-            skip,
-            seek,
-            count.clone(),
-        )
-        .unwrap();
+        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+            .unwrap();
         check_unwritten_blocks(target_guard.as_file_mut(), 1024, 1024).unwrap();
     }
 }

@@ -61,7 +61,6 @@ impl Installer for objects::Tarball {
 mod tests {
     use super::*;
     use crate::object::installer::tests::SERIALIZE;
-    use loopdev;
     use pretty_assertions::assert_eq;
     use std::{
         fs,
@@ -69,7 +68,6 @@ mod tests {
         os::unix::fs::MetadataExt,
         path::{Path, PathBuf},
     };
-    use tempfile;
 
     const CONTENT_SIZE: usize = 10240;
 

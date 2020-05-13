@@ -124,7 +124,7 @@ pub(crate) mod tests {
 
     impl Drop for FakeUbi {
         fn drop(&mut self) {
-            if let Err(e) = easy_process::run(&format!("rmmod ubi")) {
+            if let Err(e) = easy_process::run("rmmod ubi") {
                 eprintln!("Failed to cleanup FakeUbi, Error: {}", e);
             }
         }
