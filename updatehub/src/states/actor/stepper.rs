@@ -21,6 +21,7 @@ struct TerminateThread;
 impl Controller {
     /// Stops the current running stepper (if any) and starts a new one for the
     /// supplied Actor.
+    #[cfg(not(test))]
     pub(super) fn restart<A>(&mut self, addr: Addr<A>)
     where
         A: actix::Handler<super::Step>,
@@ -29,6 +30,16 @@ impl Controller {
         info!("Restarting stepper");
         self.stop();
         self.start(addr);
+    }
+
+    /// Most actor's tests relay on steppter not running, this should
+    /// ensure the stepper doesn't get restarted automatically.
+    #[cfg(test)]
+    pub(super) fn restart<A>(&mut self, _: Addr<A>)
+    where
+        A: actix::Handler<super::Step>,
+        A::Context: actix::dev::ToEnvelope<A, super::Step>,
+    {
     }
 
     /// Stops the stepper if it's currently running.
