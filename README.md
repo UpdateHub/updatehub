@@ -23,7 +23,7 @@ Linux-based devices.
 
 ## Getting started
 
-To start using ShellHub, it is suggested that you follow the [Getting
+To start using **UpdateHub**, it is suggested that you follow the [Getting
 started](https://docs.updatehub.io/quick-starting-with-raspberrypi3/) guide in
 the **UpdateHub** documentation.
 
