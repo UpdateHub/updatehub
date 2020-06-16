@@ -27,10 +27,10 @@ cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
 compress-tools = "0.5"
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut"] }
 easy_process = "0.2"
-find-binary-version = "0.2"
+find-binary-version = "0.3"
 infer = "0.1"
 lazy_static = "1"
-ms-converter = "0.7"
+ms-converter = "1"
 nix = "0.17"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
