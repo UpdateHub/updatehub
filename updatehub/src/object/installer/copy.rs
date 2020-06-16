@@ -195,6 +195,7 @@ mod tests {
         obj.install(&download_dir.path())?;
 
         // Validade File
+        #[allow(clippy::redundant_clone)]
         utils::fs::mount_map(&device, obj.filesystem, &obj.mount_options.clone(), |path| {
             let chunk_size = definitions::ChunkSize::default().0;
             let dest = path.join(&obj.target_path);

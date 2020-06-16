@@ -122,6 +122,7 @@ mod tests {
         obj.install(&PathBuf::from("test/fixtures"))?;
 
         // Validade File
+        #[allow(clippy::redundant_clone)]
         utils::fs::mount_map(&device, obj.filesystem, &obj.mount_options.clone(), |path| {
             let assert_metadata = |p: &Path| -> crate::utils::Result<()> {
                 let metadata = p.metadata()?;
