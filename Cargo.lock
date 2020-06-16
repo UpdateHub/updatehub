@@ -625,6 +625,16 @@ dependencies = [
 
 [[package]]
 name = "compress-tools"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27c5fe6b066f9c0066cce13fb3436ad30d2e54d30feb4fbcdba2c70ba760ba29"
+dependencies = [
+ "derive_more",
+ "pkg-config",
+]
+
+[[package]]
+name = "compress-tools"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c18c99ebbc0b14624ea6f19b8ba4ddc7cc96824704369e54fddc688dcdf5e0e0"
@@ -845,12 +855,12 @@ checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
 
 [[package]]
 name = "find-binary-version"
-version = "0.2.2"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39d6cd9f176ca8fc4902eeee2e718c50ad5a014128616b1c5d6ce5f18c197289"
+checksum = "46a456dfefdf5ffdc3f18bb1ae31f986d7586db08843f332962121c780d1e515"
 dependencies = [
  "byteorder",
- "flate2",
+ "compress-tools 0.4.0",
  "regex",
 ]
 
@@ -1370,9 +1380,9 @@ dependencies = [
 
 [[package]]
 name = "ms-converter"
-version = "0.7.4"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0bb99a99a389dde56f4f6cebf6dac1787730651e3427f0c16076624513fdae7"
+checksum = "83117e9c7aa5c8d7b438c8fc75e236aecbf7bd260724afb15374ef1f967fc4d5"
 
 [[package]]
 name = "net2"
@@ -2396,7 +2406,7 @@ dependencies = [
  "async-trait",
  "awc",
  "chrono",
- "compress-tools",
+ "compress-tools 0.5.1",
  "derive_more",
  "easy_process",
  "find-binary-version",

@@ -11,7 +11,7 @@ edition = "2018"
 [dependencies]
 awc = "2.0.0-alpha.1"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
-ms-converter = "0.7"
+ms-converter = "1"
 serde = { version = "1", default-features = false, features = ["derive"] }
 thiserror = "1"
 
