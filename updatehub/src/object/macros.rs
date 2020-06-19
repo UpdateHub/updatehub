@@ -106,17 +106,27 @@ macro_rules! handle_install_if_different {
                 crate::object::installer::check_if_different(&mut h, rule, $sha256sum)
             }) {
                 Ok(true) => {
-                    slog_scope::info!("Skipping installation due to install if different rule");
+                    slog_scope::info!(
+                        "installation has been skipped (install if different): {}",
+                        $rule.as_ref().unwrap()
+                    );
                     return Ok(());
                 }
                 Ok(false) => {
-                    slog_scope::debug!("Install if different reported difference");
+                    slog_scope::debug!(
+                        "installation will proceed (installation if different): {}",
+                        $rule.as_ref().unwrap()
+                    );
                 }
                 Err(e) => {
-                    slog_scope::info!("Install if different reported error: {}", e);
+                    slog_scope::error!(
+                        "install if different check ({}) check failed, error: {}",
+                        $rule.as_ref().unwrap(),
+                        e
+                    );
                 }
             },
-            None => slog_scope::debug!("No install if different rule set, proceeding"),
+            None => slog_scope::trace!("no install if different rule set, proceeding"),
         }
     };
 }
