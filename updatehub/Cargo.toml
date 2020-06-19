@@ -48,7 +48,7 @@ sys-mount = "1"
 tempfile = "3"
 thiserror = "1"
 timeout-readwrite = "0.3"
-tokio = { version = "0.2", default-features = false, features = ["fs"] }
+tokio = { version = "0.2", default-features = false, features = ["fs", "sync"] }
 toml = "0.5"
 walkdir = "2"
 
