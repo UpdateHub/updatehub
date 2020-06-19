@@ -222,13 +222,12 @@ fn handle_startup_callbacks(
                     firmware::installation_set::swap_active()?;
                     warn!("Swapped active installation set and running rollback");
                     firmware::rollback_callback(&settings.firmware.metadata)?;
+                    runtime_settings.reset_installation_settings()?;
                     easy_process::run("reboot")?;
                 }
                 Transition::Continue => firmware::installation_set::validate()?,
             }
-            return Ok(());
         }
-
         runtime_settings.reset_installation_settings()?;
     }
     Ok(())

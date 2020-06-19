@@ -29,11 +29,6 @@ impl StateChangeImpl for State<Poll> {
     ) -> Result<(StateMachine, actor::StepTransition)> {
         crate::logger::start_memory_logging();
 
-        if shared_state.runtime_settings.is_polling_forced() {
-            debug!("Moving to Probe state as soon as possible.");
-            return Ok((StateMachine::Probe(self.into()), actor::StepTransition::Immediate));
-        }
-
         let interval = shared_state.settings.polling.interval;
         let delay = interval
             - Utc::now().signed_duration_since(shared_state.runtime_settings.last_polling());
@@ -89,24 +84,6 @@ mod tests {
         let runtime_settings = RuntimeSettings::default();
         let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
         let mut shared_state = SharedState { settings, runtime_settings, firmware };
-
-        let (machine, trans) =
-            StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap();
-
-        assert_state!(machine, Probe);
-        match trans {
-            actor::StepTransition::Immediate => {}
-            _ => panic!("Unexpected StepTransition: {:?}", trans),
-        }
-    }
-
-    #[actix_rt::test]
-    async fn forced_probe() {
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
-        shared_state.runtime_settings.force_poll().unwrap();
 
         let (machine, trans) =
             StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap();

@@ -86,10 +86,6 @@ impl StateChangeImpl for State<Install> {
             obj.cleanup()
         })?;
 
-        // Ensure we do a probe as soon as possible so full update
-        // cycle can be finished.
-        shared_state.runtime_settings.force_poll()?;
-
         // Avoid installing same package twice.
         shared_state.runtime_settings.set_applied_package_uid(&package_uid)?;
 
@@ -150,20 +146,6 @@ mod test {
                 shared_state.runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),
-            s => panic!("Invalid success: {:?}", s),
-        }
-    }
-
-    #[actix_rt::test]
-    async fn polling_now_if_succeed() {
-        let (state, mut shared_state) = fake_install_state();
-        let machine =
-            StateMachine::Install(state).move_to_next_state(&mut shared_state).await.unwrap().0;
-
-        match machine {
-            StateMachine::Reboot(_) => {
-                assert_eq!(shared_state.runtime_settings.is_polling_forced(), true)
-            }
             s => panic!("Invalid success: {:?}", s),
         }
     }
