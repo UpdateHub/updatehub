@@ -54,22 +54,23 @@ where
     if !rep.status().is_success() {
         return Err(Error::InvalidStatusResponse(rep.status()));
     }
-    let length = usize::from_str(
-        rep.headers()
-            .get(header::CONTENT_LENGTH)
-            .ok_or_else(|| Error::MissingContentLength)?
-            .to_str()?,
-    )?;
+
     let mut written: f32 = 0.;
     let mut threshold = 10;
+    let length = match rep.headers().get(header::CONTENT_LENGTH) {
+        Some(v) => usize::from_str(v.to_str()?)?,
+        None => 0,
+    };
 
     while let Some(chunk) = rep.next().await {
         let chunk = &chunk?;
         handle.write_all(&chunk).await?;
-        written += chunk.len() as f32 / (length / 100) as f32;
-        if written as usize >= threshold {
-            threshold += 20;
-            debug!("{}% of the file has been downloaded", written as usize);
+        if length > 0 {
+            written += chunk.len() as f32 / (length / 100) as f32;
+            if written as usize >= threshold {
+                threshold += 20;
+                debug!("{}% of the file has been downloaded", std::cmp::max(written as usize, 100));
+            }
         }
     }
     debug!("100% of the file has been downloaded");
