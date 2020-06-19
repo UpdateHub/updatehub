@@ -12,7 +12,6 @@ use crate::{
     update_package::{UpdatePackage, UpdatePackageExt},
 };
 use slog_scope::error;
-use std::sync::mpsc;
 
 #[derive(Debug, PartialEq)]
 pub(super) struct PrepareDownload {
@@ -65,7 +64,7 @@ impl StateChangeImpl for State<PrepareDownload> {
         let server = shared_state.server_address().to_owned();
         let product_uid = shared_state.firmware.product_uid.to_owned();
         let package_uid = self.0.update_package.package_uid();
-        let (sndr, recv) = mpsc::channel();
+        let (mut sndr, recv) = tokio::sync::mpsc::channel(1);
 
         // Download the missing or incomplete objects
         actix::Arbiter::spawn(async move {
@@ -76,7 +75,7 @@ impl StateChangeImpl for State<PrepareDownload> {
                     api.download_object(&product_uid, &package_uid, &download_dir, &shasum).await,
                 );
             }
-            sndr.send(results).expect("Unable to send response about object downlod");
+            sndr.send(results).await.expect("Unable to send response about object downlod");
         });
 
         Ok((

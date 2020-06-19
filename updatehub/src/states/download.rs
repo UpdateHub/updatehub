@@ -12,12 +12,12 @@ use crate::{
     object::{self, Info},
     update_package::{UpdatePackage, UpdatePackageExt},
 };
-use std::{fmt, sync::mpsc};
+use std::fmt;
 
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
     pub(super) installation_set: installation_set::Set,
-    pub(super) download_chan: mpsc::Receiver<Vec<cloud::Result<()>>>,
+    pub(super) download_chan: tokio::sync::mpsc::Receiver<Vec<cloud::Result<()>>>,
 }
 
 impl PartialEq for Download {
@@ -69,18 +69,11 @@ impl StateChangeImpl for State<Download> {
     }
 
     async fn handle(
-        self,
+        mut self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        match self.0.download_chan.try_recv() {
-            Ok(vec) => vec.into_iter().try_for_each(|res| res)?,
-            Err(mpsc::TryRecvError::Empty) => {
-                // Yield the transition so other futures in this arbiter (mainly the future
-                // downloading the objects itself) can process.
-                tokio::task::yield_now().await;
-                return Ok((StateMachine::Download(self), actor::StepTransition::Immediate));
-            }
-            Err(e) => return Err(TransitionError::MpscRecv(e)),
+        if let Some(vec) = self.0.download_chan.recv().await {
+            vec.into_iter().try_for_each(|res| res)?;
         }
 
         let download_dir = &shared_state.settings.update.download_dir;
