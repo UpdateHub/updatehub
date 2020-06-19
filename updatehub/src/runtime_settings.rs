@@ -124,8 +124,8 @@ impl RuntimeSettings {
         self.polling.now
     }
 
-    pub(crate) fn force_poll(&mut self) -> Result<()> {
-        self.polling.now = true;
+    pub(crate) fn disable_force_poll(&mut self) -> Result<()> {
+        self.polling.now = false;
         self.save()
     }
 
@@ -185,6 +185,11 @@ impl RuntimeSettings {
     pub(crate) fn reset_installation_settings(&mut self) -> Result<()> {
         self.update.upgrade_to_installation = None;
         self.update.applied_package_uid = None;
+
+        // Ensure we do a probe as soon as possible so full update
+        // cycle can be finished.
+        self.polling.now = true;
+
         self.save()
     }
 }
@@ -219,7 +224,7 @@ fn load_and_save() {
     fs::remove_file(&settings_file).unwrap();
 
     let mut settings = RuntimeSettings::load(settings_file).unwrap();
-    settings.force_poll().unwrap();
+    settings.reset_installation_settings().unwrap();
 
     let new_settings = RuntimeSettings::load(settings_file).unwrap();
 
