@@ -185,6 +185,7 @@ impl RuntimeSettings {
     pub(crate) fn reset_installation_settings(&mut self) -> Result<()> {
         self.update.upgrade_to_installation = None;
         self.update.applied_package_uid = None;
+        self.polling.now = false;
         self.save()
     }
 }
