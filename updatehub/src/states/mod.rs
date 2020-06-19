@@ -35,7 +35,6 @@ use crate::{
 };
 use async_trait::async_trait;
 use slog_scope::{error, info, warn};
-use std::sync::mpsc;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, TransitionError>;
@@ -47,9 +46,6 @@ pub enum TransitionError {
 
     #[error("Signature not found")]
     SignatureNotFound,
-
-    #[error("Failed to read from channel: {0}")]
-    MpscRecv(mpsc::TryRecvError),
 
     #[error("Firmware error: {0}")]
     Firmware(#[from] crate::firmware::Error),
