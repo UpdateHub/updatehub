@@ -2,27 +2,35 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use derive_more::Display;
 use serde::Deserialize;
 
 /// Handles when an object should be installed on target.
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Deserialize, Display)]
 #[serde(untagged)]
 pub enum InstallIfDifferent {
     #[serde(deserialize_with = "deserialize_checksum")]
     /// Use checksum to check.
+    #[display(fmt = "checksum")]
     CheckSum,
     /// Use a predefined (known) pattern to check.
+    #[display(fmt = "pattern({} equal to '{}')", pattern, version)]
     KnownPattern { version: String, pattern: KnownPatternKind },
     /// Use a custom pattern to check.
+    #[display(fmt = "custom pattern({} uqual to '{}')", "pattern.regexp", version)]
     CustomPattern { version: String, pattern: Pattern },
 }
 
 /// Known patterns to be used with
 /// [`InstallIfDifferent`](InstallIfDifferent::KnownPattern)
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(PartialEq, Debug, Deserialize, Display)]
 #[serde(rename_all = "kebab-case")]
 pub enum KnownPatternKind {
+    /// Linux Kernel pattern.
+    #[display(fmt = "Linux Kernel")]
     LinuxKernel,
+    /// U-Boot pattern
+    #[display(fmt = "U-Boot")]
     UBoot,
 }
 

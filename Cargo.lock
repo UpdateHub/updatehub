@@ -2461,6 +2461,7 @@ dependencies = [
 name = "updatehub-package-schema"
 version = "0.1.0"
 dependencies = [
+ "derive_more",
  "pretty_assertions",
  "serde",
  "serde_json",
