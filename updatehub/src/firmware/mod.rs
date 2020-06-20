@@ -11,7 +11,7 @@ pub mod tests;
 use self::hook::{run_hook, run_hooks_from_dir};
 use derive_more::{Deref, DerefMut};
 pub use sdk::api::info::firmware as api;
-use slog_scope::error;
+use slog_scope::{error, trace};
 use std::{io, path::Path};
 use thiserror::Error;
 
@@ -135,53 +135,54 @@ pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transiti
 }
 
 pub(crate) fn validate_callback(path: &Path) -> Result<Transition> {
-    let callback = path.join(VALIDATE_CALLBACK);
-    if !callback.exists() {
-        return Ok(Transition::Continue);
-    }
+    match run_callback("validate callback", &path.join(VALIDATE_CALLBACK)) {
+        // We continue the transition in case the validation callback executes fine.
+        Ok(_) => Ok(Transition::Continue),
 
-    match easy_process::run(&callback.to_string_lossy()) {
-        Ok(output) => {
-            for err in output.stderr.lines() {
-                error!("{} (stderr): {}", path.display(), err);
-            }
-            Ok(Transition::Continue)
-        }
-        Err(easy_process::Error::Failure(status, output)) => {
-            error!("Validation callback has failed with status: {:?}", status);
-            for err in output.stderr.lines() {
-                error!("{} (stderr): {}", path.display(), err);
-            }
-            Ok(Transition::Cancel)
-        }
-        Err(e) => Err(e.into()),
+        // In the case of the validation callback exits with error, we cancel
+        // the transition so we can do a rollback of the update.
+        Err(Error::Process(_)) => Ok(Transition::Cancel),
+
+        // FIXME: We likely need to return Transition::Cancel here but we need
+        // to check what are the possible error cases and verify if we cannot
+        // handle some of them more gracefully.
+        Err(e) => Err(e),
     }
 }
 
 pub(crate) fn rollback_callback(path: &Path) -> Result<()> {
-    let rollback = path.join(ROLLBACK_CALLBACK);
-    if !rollback.exists() {
-        return Ok(());
-    }
-
-    let output = easy_process::run(&rollback.to_string_lossy())?;
-    for err in output.stderr.lines() {
-        error!("{} (stderr): {}", path.display(), err);
-    }
-
-    Ok(())
+    run_callback("rollback callback", &path.join(ROLLBACK_CALLBACK))
 }
 
 pub(crate) fn error_callback(path: &Path) -> Result<()> {
-    let error = path.join(ERROR_CALLBACK);
-    if !error.exists() {
+    run_callback("error callback", &path.join(ERROR_CALLBACK))
+}
+
+fn run_callback(name: &str, path: &Path) -> Result<()> {
+    let callback = path.join(path);
+    if !callback.exists() {
         return Ok(());
     }
 
-    let output = easy_process::run(&error.to_string_lossy())?;
-    for err in output.stderr.lines() {
-        error!("{} (stderr): {}", path.display(), err);
-    }
+    match easy_process::run(&callback.to_string_lossy()) {
+        Ok(output) => {
+            trace!("{} has exit with success", name);
+            for err in output.stderr.lines() {
+                error!("{} (stderr): {}", path.display(), err);
+            }
 
-    Ok(())
+            Ok(())
+        }
+        Err(easy_process::Error::Failure(status, output)) => {
+            error!("{} has failed with status: {:?}", name, status);
+            for err in output.stderr.lines() {
+                error!("{} (stderr): {}", path.display(), err);
+            }
+            Err(easy_process::Error::Failure(status, output).into())
+        }
+        Err(e) => {
+            error!("{} has failed with an invalid error: {:?}", name, e);
+            Err(e.into())
+        }
+    }
 }
