@@ -7,7 +7,7 @@ use super::{
     EntryPoint, ProgressReporter, Result, State, StateChangeImpl, StateMachine, TransitionCallback,
 };
 use crate::update_package::UpdatePackage;
-use slog_scope::info;
+use slog_scope::{info, warn};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Reboot {
@@ -39,10 +39,10 @@ impl StateChangeImpl for State<Reboot> {
     }
 
     async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
-        info!("Triggering reboot");
+        info!("triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
-            info!("  reboot output: stdout: {}, stderr: {}", output.stdout, output.stderr);
+            warn!("  reboot output: stdout: {}, stderr: {}", output.stdout, output.stderr);
         }
         Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
     }

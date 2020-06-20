@@ -26,10 +26,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("IO error: {0}")]
+    #[error(transparent)]
     Io(#[from] std::io::Error),
 
-    #[error("Cloud SDK error: {0}")]
+    #[error(transparent)]
     CloudSDK(#[from] cloud::Error),
 
     #[error("Incompatible with hardware: {0}")]
@@ -88,7 +88,7 @@ impl UpdatePackageExt for UpdatePackage {
             .filter(|o| {
                 o.status(&settings.update.download_dir)
                     .map_err(|e| {
-                        error!("Fail accessing the object: {} (err: {})", o.sha256sum(), e)
+                        error!("fail accessing the object: {} (err: {})", o.sha256sum(), e)
                     })
                     .unwrap_or(object::info::Status::Missing)
                     .eq(&filter)

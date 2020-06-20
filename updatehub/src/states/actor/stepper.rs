@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::Addr;
-use slog_scope::{debug, error, info};
+use slog_scope::{error, trace};
 use std::sync::mpsc;
 
 /// [Controller] is used to [start](Controller::start),
@@ -27,7 +27,7 @@ impl Controller {
         A: actix::Handler<super::Step>,
         A::Context: actix::dev::ToEnvelope<A, super::Step>,
     {
-        info!("Restarting stepper");
+        trace!("restarting stepper");
         self.stop();
         self.start(addr);
     }
@@ -44,7 +44,7 @@ impl Controller {
 
     /// Stops the stepper if it's currently running.
     pub(super) fn stop(&mut self) {
-        info!("Stopping stepper");
+        trace!("stopping stepper");
         if let Some(sndr) = self.terminate.take() {
             // send mpsc::Sender::send Err means the channel is closed and thus the
             // thread has stopped already
@@ -63,7 +63,7 @@ impl Controller {
         A: actix::Handler<super::Step>,
         A::Context: actix::dev::ToEnvelope<A, super::Step>,
     {
-        info!("Starting stepper");
+        trace!("starting stepper");
         let (sndr, recv) = mpsc::channel();
         self.terminate = Some(sndr);
 
@@ -75,15 +75,15 @@ impl Controller {
                 while recv.try_recv().is_err() {
                     match addr.send(super::Step).await {
                         Err(e) => {
-                            error!("Communication to actor failed: {:?}", e);
+                            error!("communication to actor failed: {:?}", e);
                         }
                         Ok(super::StepTransition::Immediate) => {}
                         Ok(super::StepTransition::Delayed(t)) => {
-                            debug!("Sleeping stepper thread for: {} seconds", t.as_secs());
+                            trace!("sleeping stepper thread for: {} seconds", t.as_secs());
                             actix::clock::delay_for(t).await;
                         }
                         Ok(super::StepTransition::Never) => {
-                            info!("Stopping step messages");
+                            trace!("stopping step messages");
                             break;
                         }
                     }

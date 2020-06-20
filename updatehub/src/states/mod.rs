@@ -41,43 +41,43 @@ pub type Result<T> = std::result::Result<T, TransitionError>;
 
 #[derive(Debug, Error)]
 pub enum TransitionError {
-    #[error("Not all objects are ready for use")]
+    #[error("not all objects are ready for use")]
     ObjectsNotReady,
 
-    #[error("Signature not found")]
+    #[error("signature not found")]
     SignatureNotFound,
 
-    #[error("Firmware error: {0}")]
+    #[error(transparent)]
     Firmware(#[from] crate::firmware::Error),
 
-    #[error("Installation error: {0}")]
+    #[error(transparent)]
     Installation(#[from] crate::object::Error),
 
-    #[error("Runtime settings error: {0}")]
+    #[error(transparent)]
     RuntimeSettings(#[from] crate::runtime_settings::Error),
 
-    #[error("Update package error: {0}")]
+    #[error(transparent)]
     UpdatePackage(#[from] crate::update_package::Error),
 
-    #[error("Client error: {0}")]
+    #[error(transparent)]
     Client(#[from] cloud::Error),
 
-    #[error("Uncompress error: {0}")]
+    #[error(transparent)]
     Uncompress(#[from] compress_tools::Error),
 
-    #[error("Serde error: {0}")]
+    #[error("serde error: {0}")]
     SerdeJson(#[from] serde_json::error::Error),
 
-    #[error("Update package error: {0}")]
+    #[error("update package error: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("Non Utf8 error: {0}")]
+    #[error("non Utf8 error: {0}")]
     NonUtf8(#[from] std::string::FromUtf8Error),
 
-    #[error("Mailbox error: {0}")]
+    #[error("mailbox error: {0}")]
     ActixMailbox(#[from] actix::MailboxError),
 
-    #[error("Process error: {0}")]
+    #[error("process error: {0}")]
     Process(#[from] easy_process::Error),
 }
 
@@ -183,12 +183,12 @@ where
         };
 
         if let Err(e) = report(enter_state, None, None, None).await {
-            warn!("Report failed: {}", e);
+            warn!("report failed: {}", e);
         }
         match self.handle(shared_state).await {
             Ok((state, trans)) => {
                 if let Err(e) = report(leave_state, None, None, None).await {
-                    warn!("Report failed: {}", e);
+                    warn!("report failed: {}", e);
                 };
                 Ok((state, trans))
             }
@@ -201,7 +201,7 @@ where
                 )
                 .await
                 {
-                    warn!("Report failed: {}", e);
+                    warn!("report failed: {}", e);
                 }
                 Err(e)
             }
@@ -214,13 +214,13 @@ fn handle_startup_callbacks(
     runtime_settings: &mut RuntimeSettings,
 ) -> crate::Result<()> {
     if let Some(expected_set) = runtime_settings.update.upgrade_to_installation {
-        info!("Booting from a recent installation");
+        info!("booting from a recent installation");
         if expected_set == firmware::installation_set::active()?.0 {
             match firmware::validate_callback(&settings.firmware.metadata)? {
                 Transition::Cancel => {
-                    warn!("Validate callback has failed");
+                    warn!("validate callback has failed");
                     firmware::installation_set::swap_active()?;
-                    warn!("Swapped active installation set and running rollback");
+                    warn!("swapped active installation set and running rollback");
                     firmware::rollback_callback(&settings.firmware.metadata)?;
                     runtime_settings.reset_installation_settings()?;
                     easy_process::run("reboot")?;

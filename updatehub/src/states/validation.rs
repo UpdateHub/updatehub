@@ -7,7 +7,7 @@ use super::{
     EntryPoint, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
 };
 use crate::update_package::UpdatePackageExt;
-use slog_scope::{debug, error, info};
+use slog_scope::{debug, error, info, trace};
 
 #[derive(Debug, PartialEq)]
 pub(super) struct Validation {
@@ -35,11 +35,11 @@ impl StateChangeImpl for State<Validation> {
         if let Some(key) = shared_state.firmware.pub_key.as_ref() {
             match self.0.sign.as_ref() {
                 Some(sign) => {
-                    debug!("Validating signature");
+                    debug!("validating signature");
                     sign.validate(key, &self.0.package)?;
                 }
                 None => {
-                    error!("Missing signature key");
+                    error!("missing signature key");
                     return Err(super::TransitionError::SignatureNotFound);
                 }
             }
@@ -54,11 +54,10 @@ impl StateChangeImpl for State<Validation> {
             .map(|u| *u == self.0.package.package_uid())
             .unwrap_or_default()
         {
-            info!("Not downloading update package. Same package has already been installed.");
-            debug!("Moving to EntryPoint as this update package is already installed.");
+            info!("not downloading update package, the same package has already been installed.");
             Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
         } else {
-            debug!("Moving to PrepareDownload state to process the update package.");
+            trace!("moving to PrepareDownload state to process the update package.");
             Ok((
                 StateMachine::PrepareDownload(State(PrepareDownload {
                     update_package: self.0.package,

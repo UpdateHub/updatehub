@@ -35,7 +35,7 @@ impl Installer for objects::Raw {
 
         let device = match self.target_type {
             definitions::TargetType::Device(ref p) => p,
-            _ => unreachable!("Device should be secured by check_requirements"),
+            _ => unreachable!("device should be secured by check_requirements"),
         };
         let source = download_dir.join(self.sha256sum());
         let chunk_size = self.chunk_size.0;

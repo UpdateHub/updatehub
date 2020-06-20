@@ -11,7 +11,7 @@ use awc::{
     ClientBuilder,
 };
 use serde::Serialize;
-use slog_scope::debug;
+use slog_scope::{debug, error};
 use std::{
     convert::{TryFrom, TryInto},
     path::Path,
@@ -147,8 +147,10 @@ impl<'a> Client<'a> {
         ));
 
         if !download_dir.exists() {
-            debug!("Creating directory to store the downloads.");
-            create_dir_all(download_dir).await?;
+            create_dir_all(download_dir).await.map_err(|e| {
+                error!("fail to create {:?} directory, error: {}", download_dir, e);
+                e
+            })?;
         }
 
         let file = download_dir.join(object);

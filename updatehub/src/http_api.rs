@@ -14,9 +14,9 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub(crate) enum Error {
-    #[error("Mailbox error: {0}")]
+    #[error(transparent)]
     ActixMailbox(#[from] actix::MailboxError),
-    #[error("Failed to handle the request: {0}")]
+    #[error("failed to handle the request: {0}")]
     RequestError(#[from] actor::Error),
 }
 
@@ -32,7 +32,7 @@ impl API {
     }
 
     async fn info(agent: web::Data<API>) -> Result<HttpResponse> {
-        debug!("Receiving info request");
+        debug!("receiving info request");
         Ok(HttpResponse::Ok().json(agent.0.send(actor::info::Request).await?))
     }
 
@@ -41,7 +41,7 @@ impl API {
         server_address: Option<web::Json<api::probe::Request>>,
     ) -> Result<actor::probe::Response> {
         let server_address = server_address.map(|r| r.into_inner().custom_server);
-        debug!("Receiving probe request with {:?}", server_address);
+        debug!("receiving probe request with {:?}", server_address);
         Ok(agent.0.send(actor::probe::Request(server_address)).await??)
     }
 
@@ -49,7 +49,7 @@ impl API {
         agent: web::Data<API>,
         req: web::Json<api::local_install::Request>,
     ) -> Result<actor::local_install::Response> {
-        debug!("Receiving local_install request with {:?}", req);
+        debug!("receiving local_install request with {:?}", req);
         Ok(agent.0.send(actor::local_install::Request(req.into_inner().file)).await?)
     }
 
@@ -57,17 +57,17 @@ impl API {
         agent: web::Data<API>,
         req: web::Json<api::remote_install::Request>,
     ) -> Result<actor::remote_install::Response> {
-        debug!("Receiving remote_install request with {:?}", req);
+        debug!("receiving remote_install request with {:?}", req);
         Ok(agent.0.send(actor::remote_install::Request(req.into_inner().url)).await?)
     }
 
     async fn log() -> HttpResponse {
-        debug!("Receiving log request");
+        debug!("receiving log request");
         HttpResponse::Ok().json(crate::logger::buffer())
     }
 
     async fn download_abort(agent: web::Data<API>) -> Result<actor::download_abort::Response> {
-        debug!("Receiving abort download request");
+        debug!("receiving abort download request");
         Ok(agent.0.send(actor::download_abort::Request).await?)
     }
 }

@@ -93,12 +93,12 @@ struct ServerOptions {
 
 fn verbosity_level(value: &str) -> Result<slog::Level, String> {
     use std::str::FromStr;
-    slog::Level::from_str(value).map_err(|_| format!("Failed to parse verbosity level: {}", value))
+    slog::Level::from_str(value).map_err(|_| format!("failed to parse verbosity level: {}", value))
 }
 
 async fn server_main(cmd: ServerOptions) -> updatehub::Result<()> {
     updatehub::logger::init(cmd.verbosity.unwrap_or(slog::Level::Info));
-    info!("Starting UpdateHub Agent {}", updatehub::version());
+    info!("starting UpdateHub Agent {}", updatehub::version());
 
     let settings = updatehub::Settings::load()?;
     updatehub::run(settings).await?;

@@ -68,10 +68,10 @@ impl StateChangeImpl for State<Install> {
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
         let package_uid = self.0.update_package.package_uid();
-        info!("Installing update: {}", &package_uid);
+        info!("installing update: {}", &package_uid);
 
         let installation_set = shared_state.runtime_settings.get_inactive_installation_set()?;
-        info!("Using installation set as target {}", installation_set);
+        info!("using installation set as target {}", installation_set);
 
         // FIXME: What is missing:
         //
@@ -94,9 +94,9 @@ impl StateChangeImpl for State<Install> {
 
         // Swap installation set so it is used next device boot.
         installation_set::swap_active()?;
-        info!("Swapping active installation set");
+        info!("swapping active installation set");
 
-        info!("Update installed successfully");
+        info!("update installed successfully");
         Ok((StateMachine::Reboot(self.into()), actor::StepTransition::Immediate))
     }
 }

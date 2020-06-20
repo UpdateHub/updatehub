@@ -13,7 +13,7 @@ pub(crate) fn run_hook(path: &Path) -> Result<String> {
         return Ok("".into());
     }
 
-    Ok(run_script(path.to_str().expect("Invalid path for hook"))?)
+    Ok(run_script(path.to_str().expect("invalid path for hook"))?)
 }
 
 pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
@@ -41,12 +41,7 @@ fn metadata_value_from_str(s: &str) -> io::Result<MetadataValue> {
         if v.len() != 2 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!(
-                    "Invalid format for value '{:?}'. \
-                         An <key>=<value> output is \
-                         expected",
-                    v
-                ),
+                format!("invalid format for value '{:?}', the <key>=<value> output is expected", v),
             ));
         }
 

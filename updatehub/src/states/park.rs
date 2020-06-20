@@ -33,7 +33,7 @@ impl StateChangeImpl for State<Park> {
     }
 
     async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
-        debug!("Staying on Park state.");
+        debug!("staying on Park state.");
         crate::logger::stop_memory_logging();
         Ok((StateMachine::Park(self), actor::StepTransition::Never))
     }

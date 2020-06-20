@@ -17,14 +17,14 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("IO error: {0}")]
+    #[error(transparent)]
     Io(#[from] io::Error),
-    #[error("Fail with serialization/deserialization: {0}")]
+    #[error("fail with serialization/deserialization: {0}")]
     SerdeJson(#[from] serde_json::Error),
-    #[error("Firmware error: {0}")]
+    #[error(transparent)]
     FirmwareError(#[from] firmware::Error),
 
-    #[error("Invalid runtime settings destination")]
+    #[error("invalid runtime settings destination")]
     InvalidDestination,
 }
 
@@ -50,11 +50,11 @@ impl Default for RuntimeSettings {
 impl RuntimeSettings {
     pub(crate) fn load(path: &Path) -> Result<Self> {
         let mut this = if path.exists() {
-            debug!("Loading runtime settings from {:?}...", path);
+            debug!("loading runtime settings from {:?}...", path);
             match fs::read_to_string(path).map_err(Error::from).and_then(|ref s| Self::parse(s)) {
                 Ok(v) => v,
                 Err(e) => {
-                    warn!("Failed to load current runtime settings: {}", e);
+                    warn!("failed to load current runtime settings: {}", e);
                     let _ = fs::rename(
                         path,
                         path.with_file_name(format!(
@@ -62,15 +62,12 @@ impl RuntimeSettings {
                             path.file_name().unwrap().to_str().unwrap()
                         )),
                     );
-                    debug!("Using default runtime settings...");
+                    debug!("using default runtime settings...");
                     Self::default()
                 }
             }
         } else {
-            debug!(
-                "Runtime settings file {:?} does not exists. Using default runtime settings...",
-                path
-            );
+            debug!("runtime settings file {:?} does not exists, using default settings...", path);
             Self::default()
         };
 
@@ -84,17 +81,17 @@ impl RuntimeSettings {
 
     fn save(&self) -> Result<()> {
         if !self.persistent {
-            debug!("Skipping runtime settings save, using non-persistent.");
+            debug!("skipping runtime settings save, using non-persistent.");
             return Ok(());
         }
 
         let parent = self.path.parent().ok_or_else(|| Error::InvalidDestination)?;
         if !parent.exists() {
-            debug!("Creating runtime settings to store state.");
+            debug!("creating runtime settings to store state.");
             fs::create_dir_all(parent)?;
         }
 
-        debug!("Saving runtime settings from {:?}...", &self.path);
+        debug!("saving runtime settings from {:?}...", &self.path);
         fs::write(&self.path, self.serialize()?)?;
 
         Ok(())

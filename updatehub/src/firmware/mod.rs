@@ -30,28 +30,28 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Invalid product UID")]
+    #[error("invalid product UID")]
     InvalidProductUid,
 
-    #[error("Product UID is missing")]
+    #[error("product UID is missing")]
     MissingProductUid,
 
-    #[error("Device Identity is missing")]
+    #[error("device identity is missing")]
     MissingDeviceIdentity,
 
     #[error("{0} is a invalid value. The only know ones are 0 or 1")]
     InvalidInstallSet(u8),
 
-    #[error("ParseInt: {0}")]
+    #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
 
-    #[error("Walkdir error: {0}")]
+    #[error(transparent)]
     Walkdir(#[from] walkdir::Error),
 
-    #[error("Io error: {0}")]
+    #[error(transparent)]
     Io(#[from] std::io::Error),
 
-    #[error("Process error: {0}")]
+    #[error(transparent)]
     Process(#[from] easy_process::Error),
 }
 
@@ -125,8 +125,7 @@ pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transiti
         _ => Err(io::Error::new(
             io::ErrorKind::InvalidInput,
             format!(
-                "Invalid format found while running 'state-change-callback' \
-                 hook for state '{}'",
+                "invalid output format from 'state-change-callback' hook for state '{}'",
                 &state
             ),
         )
