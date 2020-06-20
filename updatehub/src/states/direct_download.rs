@@ -23,7 +23,7 @@ impl StateChangeImpl for State<DirectDownload> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        info!("Fetching update package directly from url: {:?}", self.0.url);
+        info!("fetching update package directly from url: {:?}", self.0.url);
 
         let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
         let mut file = tokio::fs::File::create(&update_file).await?;

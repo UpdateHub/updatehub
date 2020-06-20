@@ -10,7 +10,7 @@ use crate::{
     firmware::installation_set,
     update_package::{Signature, UpdatePackage, UpdatePackageExt},
 };
-use slog_scope::{debug, info};
+use slog_scope::{debug, info, trace};
 use std::{
     fs,
     io::{Seek, SeekFrom},
@@ -32,7 +32,7 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        info!("Prepare local install: {}", self.0.update_file.display());
+        info!("prepare local install: {}", self.0.update_file.display());
         let dest_path = shared_state.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
 
@@ -40,7 +40,7 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
         let mut source = fs::File::open(self.0.update_file)?;
         compress_tools::uncompress_archive_file(&mut source, &mut metadata, "metadata")?;
         let update_package = UpdatePackage::parse(&metadata)?;
-        debug!("Successfuly uncompressed metadata file");
+        trace!("successfuly uncompressed metadata file");
 
         if let Some(key) = shared_state.firmware.pub_key.as_ref() {
             let mut sign = Vec::with_capacity(512);
@@ -49,7 +49,7 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
                 Ok(_) => {
                     let sign = String::from_utf8(sign)?;
                     let sign = Signature::from_base64_str(&sign)?;
-                    debug!("Validating signature");
+                    debug!("validating signature");
                     sign.validate(key, &update_package)?;
                 }
                 Err(compress_tools::Error::FileNotFound) => {
@@ -70,7 +70,7 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
             compress_tools::uncompress_archive_file(&mut source, &mut target, object)?;
         }
 
-        debug!("Update package extracted: {:?}", update_package);
+        debug!("update package extracted: {:?}", update_package);
 
         update_package.clear_unrelated_files(
             &dest_path,

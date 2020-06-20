@@ -15,19 +15,19 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("IO error: {0}")]
+    #[error(transparent)]
     Io(#[from] io::Error),
-    #[error("Fail reading the file: {0}")]
+    #[error("fail reading the file: {0}")]
     Deserialize(#[from] toml::de::Error),
-    #[error("Fail generating the file: {0}")]
+    #[error("fail generating the file: {0}")]
     Serialize(#[from] toml::ser::Error),
-    #[error("Invalid interval")]
+    #[error("invalid interval")]
     InvalidInterval,
-    #[error("Invalid server address")]
+    #[error("invalid server address")]
     InvalidServerAddress,
 
     #[cfg(feature = "v1-parsing")]
-    #[error("Fail reading ini the file: {0}")]
+    #[error("fail reading ini the file: {0}")]
     DeserializeIni(#[from] serde_ini::de::Error),
 }
 
@@ -68,13 +68,10 @@ impl Settings {
         let path = std::path::Path::new(SYSTEM_SETTINGS_PATH);
 
         if path.exists() {
-            debug!("Loading system settings from {:?}...", path);
+            debug!("loading system settings from {:?}...", path);
             Ok(Self::parse(&fs::read_to_string(path)?)?)
         } else {
-            debug!(
-                "System settings file {:?} does not exists. Using default system settings...",
-                path
-            );
+            debug!("system settings file {:?} does not exists, using default settings...", path);
             Ok(Self::default())
         }
     }
@@ -88,18 +85,14 @@ impl Settings {
         let settings = Settings(res?);
 
         if settings.polling.interval < Duration::seconds(60) {
-            error!(
-                "Invalid setting for polling interval. The interval cannot be less than 60 seconds"
-            );
+            error!("invalid setting for polling interval, it cannot be less than 60 seconds");
             return Err(Error::InvalidInterval);
         }
 
         if !&settings.network.server_address.starts_with("http://")
             && !&settings.network.server_address.starts_with("https://")
         {
-            error!(
-                "Invalid setting for server address. The server address must use the protocol prefix"
-            );
+            error!("invalid setting for server address, it must use the protocol prefix");
             return Err(Error::InvalidServerAddress);
         }
 

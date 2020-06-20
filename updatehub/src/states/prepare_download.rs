@@ -51,7 +51,7 @@ impl StateChangeImpl for State<PrepareDownload> {
                 let obj_status = o
                     .status(&download_dir)
                     .map_err(|e| {
-                        error!("Fail accessing the object: {} (err: {})", o.sha256sum(), e)
+                        error!("fail accessing the object: {} (err: {})", o.sha256sum(), e)
                     })
                     .unwrap_or(object::info::Status::Missing);
                 obj_status == object::info::Status::Missing
@@ -75,7 +75,7 @@ impl StateChangeImpl for State<PrepareDownload> {
                     api.download_object(&product_uid, &package_uid, &download_dir, &shasum).await,
                 );
             }
-            sndr.send(results).await.expect("Unable to send response about object downlod");
+            sndr.send(results).await.expect("unable to send response about object downlod");
         });
 
         Ok((

@@ -20,7 +20,7 @@ use super::{
 use actix::{
     fut::WrapFuture, Actor, Addr, Arbiter, AsyncContext, AtomicResponse, Context, Handler, Message,
 };
-use slog_scope::info;
+use slog_scope::trace;
 use thiserror::Error;
 
 pub(crate) struct Machine {
@@ -33,9 +33,9 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub(crate) enum Error {
-    #[error("Client Error: {0}")]
+    #[error(transparent)]
     Client(#[from] cloud::Error),
-    #[error("Runtime Settings Error: {0}")]
+    #[error(transparent)]
     RuntimeSettings(#[from] crate::runtime_settings::Error),
 }
 
@@ -58,11 +58,11 @@ impl Actor for Machine {
     type Context = Context<Self>;
 
     fn started(&mut self, _: &mut Self::Context) {
-        info!("Starting State Machine Actor...");
+        trace!("starting State Machine Actor...");
     }
 
     fn stopped(&mut self, _: &mut Self::Context) {
-        info!("Stopping State Machine Actor...");
+        trace!("stopping State Machine Actor...");
     }
 }
 
@@ -108,7 +108,7 @@ impl Handler<Step> for Machine {
         AtomicResponse::new(Box::pin(
             async move {
                 let this = unsafe { this.as_mut().unwrap() };
-                let machine = this.state.take().expect("Failed to take StateMachine's ownership");
+                let machine = this.state.take().expect("fail to take StateMachine's ownership");
                 let (state, transition) = machine
                     .move_to_next_state(&mut this.shared_state)
                     .await

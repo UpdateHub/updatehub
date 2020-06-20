@@ -58,7 +58,7 @@ impl StateChangeImpl for State<Probe> {
 
         match probe {
             ProbeResponse::NoUpdate => {
-                debug!("Moving to EntryPoint state as no update is available.");
+                debug!("moving to EntryPoint state as no update is available.");
 
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
@@ -66,7 +66,7 @@ impl StateChangeImpl for State<Probe> {
             }
 
             ProbeResponse::ExtraPoll(s) => {
-                info!("Delaying the probing as requested by the server.");
+                info!("delaying the probing as requested by the server.");
                 Ok((
                     StateMachine::Probe(self),
                     actor::StepTransition::Delayed(Duration::from_secs(s as u64)),
@@ -77,7 +77,7 @@ impl StateChangeImpl for State<Probe> {
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
 
-                info!("Update received.");
+                info!("update received.");
                 Ok((
                     StateMachine::Validation(State(Validation { package, sign })),
                     actor::StepTransition::Immediate,

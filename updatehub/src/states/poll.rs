@@ -34,11 +34,11 @@ impl StateChangeImpl for State<Poll> {
             - Utc::now().signed_duration_since(shared_state.runtime_settings.last_polling());
 
         if delay > interval || delay.num_seconds() < 0 {
-            info!("Forcing to Probe state as we are in time");
+            info!("forcing to Probe state as we are in time");
             return Ok((StateMachine::Probe(self.into()), actor::StepTransition::Immediate));
         }
 
-        debug!("Moving to Probe state after delay.");
+        debug!("moving to Probe state after delay.");
         Ok((
             StateMachine::Probe(self.into()),
             actor::StepTransition::Delayed(delay.to_std().unwrap()),

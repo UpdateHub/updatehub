@@ -29,13 +29,13 @@ impl StateChangeImpl for State<Error> {
     }
 
     async fn handle(self, st: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
-        error!("Error state reached: {}", self.0.error);
+        error!("error state reached: {}", self.0.error);
 
         if let Err(err) = firmware::error_callback(&st.settings.firmware.metadata) {
-            error!("Failed to run error callback script: {}", err);
+            error!("failed to run error callback script: {}", err);
         }
 
-        info!("Returning to machine's entry point");
+        info!("returning to machine's entry point");
         Ok((StateMachine::EntryPoint(State(EntryPoint {})), actor::StepTransition::Immediate))
     }
 }
