@@ -23,6 +23,10 @@ impl StateChangeImpl for State<Poll> {
         "poll"
     }
 
+    fn is_preemptive_state(&self) -> bool {
+        true
+    }
+
     async fn handle(
         self,
         shared_state: &mut SharedState,
