@@ -54,42 +54,49 @@ impl StateChangeImpl for State<EntryPoint> {
 create_state_step!(EntryPoint => Park);
 create_state_step!(EntryPoint => Poll);
 
-#[actix_rt::test]
-async fn polling_disable() {
+#[cfg(test)]
+mod tests {
     use super::*;
-    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
+    use crate::{
+        firmware::{
+            tests::{create_fake_metadata, FakeDevice},
+            Metadata,
+        },
+        runtime_settings::RuntimeSettings,
+        settings::Settings,
+    };
 
-    let mut settings = Settings::default();
-    settings.polling.enabled = false;
-    let runtime_settings = RuntimeSettings::default();
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    let mut shared_state = SharedState { settings, runtime_settings, firmware };
+    #[actix_rt::test]
+    async fn polling_disable() {
+        let mut settings = Settings::default();
+        settings.polling.enabled = false;
+        let runtime_settings = RuntimeSettings::default();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-    let machine = StateMachine::EntryPoint(State(EntryPoint {}))
-        .move_to_next_state(&mut shared_state)
-        .await
-        .unwrap()
-        .0;
+        let machine = StateMachine::EntryPoint(State(EntryPoint {}))
+            .move_to_next_state(&mut shared_state)
+            .await
+            .unwrap()
+            .0;
 
-    assert_state!(machine, Park);
-}
+        assert_state!(machine, Park);
+    }
 
-#[actix_rt::test]
-async fn polling_enabled() {
-    use super::*;
-    use crate::firmware::tests::{create_fake_metadata, FakeDevice};
+    #[actix_rt::test]
+    async fn polling_enabled() {
+        let mut settings = Settings::default();
+        settings.polling.enabled = true;
+        let runtime_settings = RuntimeSettings::default();
+        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
+        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
-    let mut settings = Settings::default();
-    settings.polling.enabled = true;
-    let runtime_settings = RuntimeSettings::default();
-    let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-    let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let machine = StateMachine::EntryPoint(State(EntryPoint {}))
+            .move_to_next_state(&mut shared_state)
+            .await
+            .unwrap()
+            .0;
 
-    let machine = StateMachine::EntryPoint(State(EntryPoint {}))
-        .move_to_next_state(&mut shared_state)
-        .await
-        .unwrap()
-        .0;
-
-    assert_state!(machine, Poll);
+        assert_state!(machine, Poll);
+    }
 }
