@@ -24,7 +24,7 @@ impl StateChangeImpl for State<Probe> {
         "probe"
     }
 
-    fn can_run_trigger_probe(&self) -> bool {
+    fn is_preemptive_state(&self) -> bool {
         true
     }
 

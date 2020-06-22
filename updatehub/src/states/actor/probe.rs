@@ -43,7 +43,7 @@ impl super::Machine {
     ) -> super::Result<Response> {
         let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
 
-        if machine.for_current_state(|s| s.can_run_trigger_probe()) {
+        if machine.for_current_state(|s| s.is_preemptive_state()) {
             self.shared_state.runtime_settings.reset_transient_settings();
             if let Some(server_address) = custom_server {
                 self.shared_state.runtime_settings.set_custom_server_address(&server_address);

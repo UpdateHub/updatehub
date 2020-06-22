@@ -20,7 +20,7 @@ impl Handler<Request> for super::Machine {
     fn handle(&mut self, req: Request, ctx: &mut Context<Self>) -> Self::Result {
         let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
         let state = machine.for_current_state(|s| s.name().to_owned());
-        if machine.for_current_state(|s| s.can_run_remote_install()) {
+        if machine.for_current_state(|s| s.is_preemptive_state()) {
             crate::logger::start_memory_logging();
             self.stepper.restart(ctx.address());
             self.state.replace(StateMachine::DirectDownload(State(DirectDownload { url: req.0 })));

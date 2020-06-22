@@ -20,15 +20,7 @@ impl StateChangeImpl for State<Park> {
         "park"
     }
 
-    fn can_run_trigger_probe(&self) -> bool {
-        true
-    }
-
-    fn can_run_local_install(&self) -> bool {
-        true
-    }
-
-    fn can_run_remote_install(&self) -> bool {
+    fn is_preemptive_state(&self) -> bool {
         true
     }
 

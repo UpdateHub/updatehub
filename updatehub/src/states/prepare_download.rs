@@ -24,7 +24,7 @@ impl StateChangeImpl for State<PrepareDownload> {
         "prepare_download"
     }
 
-    fn can_run_download_abort(&self) -> bool {
+    fn is_handling_download(&self) -> bool {
         true
     }
 

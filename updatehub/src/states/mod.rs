@@ -90,19 +90,16 @@ trait StateChangeImpl {
 
     fn name(&self) -> &'static str;
 
-    fn can_run_download_abort(&self) -> bool {
+    /// All states downloading large files should overwrite this to return true.
+    /// That way, a external request to abort download can be heeded.
+    fn is_handling_download(&self) -> bool {
         false
     }
 
-    fn can_run_trigger_probe(&self) -> bool {
-        false
-    }
-
-    fn can_run_local_install(&self) -> bool {
-        false
-    }
-
-    fn can_run_remote_install(&self) -> bool {
+    /// A preemptive state is a state whose transition can be yield
+    /// to handle a user's request. Any preemptive state should overwrite
+    /// this method to return true.
+    fn is_preemptive_state(&self) -> bool {
         false
     }
 }
