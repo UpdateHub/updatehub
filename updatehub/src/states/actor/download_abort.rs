@@ -20,7 +20,7 @@ impl Handler<Request> for super::Machine {
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
         let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
 
-        if machine.for_current_state(|s| s.can_run_download_abort()) {
+        if machine.for_current_state(|s| s.is_handling_download()) {
             self.state.replace(StateMachine::EntryPoint(State(EntryPoint {})));
             return MessageResult(Response::RequestAccepted);
         }
