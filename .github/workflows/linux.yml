@@ -37,20 +37,29 @@ jobs:
           crate: grcov
           use-tool-cache: true
 
+      - name: Install cargo bloat tool
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-bloat
+          use-tool-cache: true
+
       - name: Generate Cargo.lock
         uses: actions-rs/cargo@v1
         with:
           command: generate-lockfile
+
       - name: Cache cargo registry
         uses: actions/cache@v1
         with:
           path: ~/.cargo/registry
           key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-registry-trimmed-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Cache cargo index
         uses: actions/cache@v1
         with:
           path: ~/.cargo/git
           key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-index-trimmed-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Cache cargo build
         uses: actions/cache@v1
         with:
@@ -69,6 +78,12 @@ jobs:
         with:
           command: test
           args: --release --all --all-features --no-fail-fast -- --nocapture
+
+      - name: Run cargo bloat
+        uses: orf/cargo-bloat-action@98e840980f6a3cb37780dd6435459b1a124d7e7e
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          bloat_args: --release --package updatehub
 
       - name: Run cargo test with coverage
         if: matrix.version == 'nightly'
