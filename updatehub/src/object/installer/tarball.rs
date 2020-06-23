@@ -119,7 +119,7 @@ mod tests {
         // Peform Install
         obj.check_requirements()?;
         obj.setup()?;
-        obj.install(&PathBuf::from("test/fixtures"))?;
+        obj.install(&PathBuf::from("fixtures"))?;
 
         // Validade File
         #[allow(clippy::redundant_clone)]
