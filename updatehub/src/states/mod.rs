@@ -305,9 +305,10 @@ impl StateMachine {
 /// # extern crate updatehub;
 /// # async fn run() -> Result<(), updatehub::Error> {
 /// use updatehub;
+/// use std::path::PathBuf;
 ///
 /// updatehub::logger::init(slog::Level::Info);
-/// let settings = updatehub::Settings::load()?;
+/// let settings = updatehub::Settings::load(&PathBuf::from("/etc/updatehub.conf"))?;
 /// updatehub::run(settings).await?;
 /// # Ok(())
 /// # }
