@@ -1174,12 +1174,9 @@ dependencies = [
 
 [[package]]
 name = "infer"
-version = "0.1.6"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d55c406a76164eb346a829ed4b97b73cb06259078eca01adeb12e8ca308d4123"
-dependencies = [
- "byteorder",
-]
+checksum = "e07d3b55167d27ac3ad2cec473b98f7ed314175646225b31b14d4d561bdc218c"
 
 [[package]]
 name = "iovec"
