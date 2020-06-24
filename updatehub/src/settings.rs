@@ -6,10 +6,8 @@ use chrono::Duration;
 use derive_more::{Deref, DerefMut};
 use sdk::api::info::settings as api;
 use slog_scope::{debug, error};
-use std::{fs, io};
+use std::{fs, io, path::Path};
 use thiserror::Error;
-
-const SYSTEM_SETTINGS_PATH: &str = "/etc/updatehub.conf";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -64,9 +62,7 @@ impl Settings {
     /// Loads the settings from the filesystem. If
     /// `/etc/updatehub.conf` does not exists, it uses the default
     /// settings.
-    pub fn load() -> Result<Self> {
-        let path = std::path::Path::new(SYSTEM_SETTINGS_PATH);
-
+    pub fn load(path: &Path) -> Result<Self> {
         if path.exists() {
             debug!("loading system settings from {:?}...", path);
             Ok(Self::parse(&fs::read_to_string(path)?)?)
