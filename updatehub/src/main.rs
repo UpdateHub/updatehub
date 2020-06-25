@@ -90,9 +90,9 @@ struct ServerOptions {
     #[argh(option, short = 'v', from_str_fn(verbosity_level), default = "slog::Level::Info")]
     verbosity: slog::Level,
 
-    /// specify the configuration file to use. Default to "/etc/updatehub.conf"
+    /// configuration file to use (defaults to "/etc/updatehub.conf")
     #[argh(option, short = 'c', default = "PathBuf::from(\"/etc/updatehub.conf\")")]
-    conf_file: PathBuf,
+    config: PathBuf,
 }
 
 fn verbosity_level(value: &str) -> Result<slog::Level, String> {
@@ -104,7 +104,7 @@ async fn server_main(cmd: ServerOptions) -> updatehub::Result<()> {
     updatehub::logger::init(cmd.verbosity);
     info!("starting UpdateHub Agent {}", updatehub::version());
 
-    let settings = updatehub::Settings::load(&cmd.conf_file)?;
+    let settings = updatehub::Settings::load(&cmd.config)?;
 
     updatehub::run(settings).await?;
 
