@@ -12,7 +12,3 @@ opt-level = 'z'  # Optimize for size.
 lto = true
 codegen-units = 1
 panic = 'abort'
-
-[patch.crates-io]
-actix-http = { package = "actix-http", git = "https://github.com/actix/actix-web" }
-awc = { package = "awc", git = "https://github.com/actix/actix-web" }
