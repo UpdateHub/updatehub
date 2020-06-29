@@ -104,40 +104,15 @@ impl StateChangeImpl for State<Install> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        firmware::Metadata, runtime_settings::RuntimeSettings,
-        update_package::tests::get_update_package,
-    };
+    use crate::update_package::tests::get_update_package;
     use pretty_assertions::assert_eq;
-    use std::fs;
-    use tempfile::NamedTempFile;
-
-    fn fake_install_state() -> (State<Install>, SharedState) {
-        use crate::{
-            firmware::tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
-            update_package::tests::create_fake_settings,
-        };
-        use std::env;
-
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        fs::remove_file(&tmpfile).unwrap();
-
-        let settings = create_fake_settings();
-        let tmpdir = settings.update.download_dir.clone();
-        create_fake_installation_set(&tmpdir, 0);
-        env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
-
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let shared_state = SharedState { settings, runtime_settings, firmware };
-
-        (State(Install { update_package: get_update_package() }), shared_state)
-    }
 
     #[actix_rt::test]
     async fn has_package_uid_if_succeed() {
-        let (state, mut shared_state) = fake_install_state();
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
+        let state = State(Install { update_package: get_update_package() });
+
         let machine =
             StateMachine::Install(state).move_to_next_state(&mut shared_state).await.unwrap().0;
 

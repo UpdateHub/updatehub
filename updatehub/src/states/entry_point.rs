@@ -56,22 +56,11 @@ create_state_step!(EntryPoint => Probe);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        firmware::{
-            tests::{create_fake_metadata, FakeDevice},
-            Metadata,
-        },
-        runtime_settings::RuntimeSettings,
-        settings::Settings,
-    };
 
     #[actix_rt::test]
     async fn polling_disable() {
-        let mut settings = Settings::default();
-        settings.polling.enabled = false;
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().disable_polling().finish();
+        let mut shared_state = setup.gen_shared_state();
 
         let machine = StateMachine::EntryPoint(State(EntryPoint {}))
             .move_to_next_state(&mut shared_state)
@@ -84,11 +73,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn polling_enabled() {
-        let mut settings = Settings::default();
-        settings.polling.enabled = true;
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
 
         let machine = StateMachine::EntryPoint(State(EntryPoint {}))
             .move_to_next_state(&mut shared_state)
@@ -101,10 +87,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn forced_probe() {
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         shared_state.runtime_settings.reset_installation_settings().unwrap();
 
         let (machine, trans) = StateMachine::EntryPoint(State(EntryPoint {}))

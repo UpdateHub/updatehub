@@ -51,58 +51,15 @@ impl StateChangeImpl for State<Reboot> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::update_package::tests::get_update_package;
     use pretty_assertions::assert_eq;
-    use std::path::Path;
-
-    fn fake_reboot_state() -> (State<Reboot>, SharedState) {
-        use crate::{
-            firmware::{
-                tests::{create_fake_metadata, FakeDevice},
-                Metadata,
-            },
-            runtime_settings::RuntimeSettings,
-            settings::Settings,
-            update_package::tests::get_update_package,
-        };
-
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let shared_state = SharedState { settings, runtime_settings, firmware };
-
-        (State(Reboot { update_package: get_update_package() }), shared_state)
-    }
-
-    fn create_reboot(path: &Path) {
-        use std::{
-            fs::{create_dir_all, metadata, File},
-            io::Write,
-            os::unix::fs::PermissionsExt,
-        };
-
-        // ensure path exists
-        create_dir_all(path).unwrap();
-
-        let mut file = File::create(&path.join("reboot")).unwrap();
-        writeln!(file, "#!/bin/sh\necho reboot").unwrap();
-
-        let mut permissions = metadata(path).unwrap().permissions();
-        permissions.set_mode(0o755);
-        file.set_permissions(permissions).unwrap();
-    }
 
     #[actix_rt::test]
     async fn runs() {
-        use std::env;
-        use tempfile::tempdir;
+        let setup = crate::tests::TestEnvironment::build().add_echo_binary("reboot").finish();
+        let mut shared_state = setup.gen_shared_state();
+        let state = State(Reboot { update_package: get_update_package() });
 
-        // create the fake reboot command
-        let tmpdir = tempdir().unwrap();
-        let tmpdir = tmpdir.path();
-        create_reboot(&tmpdir);
-        env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
-
-        let (state, mut shared_state) = fake_reboot_state();
         let machine =
             StateMachine::Reboot(state).move_to_next_state(&mut shared_state).await.unwrap().0;
 
@@ -111,7 +68,7 @@ mod test {
 
     #[test]
     fn reboot_has_transition_callback_trait() {
-        let (state, _) = fake_reboot_state();
+        let state = State(Reboot { update_package: get_update_package() });
         assert_eq!(state.name(), "reboot");
     }
 }

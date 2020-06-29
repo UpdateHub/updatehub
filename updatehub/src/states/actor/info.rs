@@ -21,7 +21,7 @@ impl Handler<Request> for super::Machine {
             version: crate::version().to_string(),
             config: self.shared_state.settings.0.clone(),
             firmware: self.shared_state.firmware.0.clone(),
-            runtime_settings: self.shared_state.runtime_settings.clone(),
+            runtime_settings: self.shared_state.runtime_settings.0.clone(),
         })
     }
 }

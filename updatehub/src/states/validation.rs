@@ -71,28 +71,12 @@ impl StateChangeImpl for State<Validation> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        firmware::{
-            tests::{create_fake_metadata, FakeDevice},
-            Metadata,
-        },
-        runtime_settings::RuntimeSettings,
-        settings::Settings,
-        states::TransitionError,
-        update_package::tests::get_update_package,
-    };
-    use tempfile::NamedTempFile;
+    use crate::{states::TransitionError, update_package::tests::get_update_package};
 
     #[actix_rt::test]
     async fn normal_transition() {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        std::fs::remove_file(&tmpfile).unwrap();
-
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         let package = get_update_package();
         let sign = None;
 
@@ -106,15 +90,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn invalid_hardware() {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        std::fs::remove_file(&tmpfile).unwrap();
-
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-        let firmware =
-            Metadata::from_path(&create_fake_metadata(FakeDevice::InvalidHardware)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().invalid_hardware().finish();
+        let mut shared_state = setup.gen_shared_state();
         let package = get_update_package();
         let sign = None;
 
@@ -130,15 +107,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn skip_same_package_uid() {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        std::fs::remove_file(&tmpfile).unwrap();
-
-        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-        let settings = Settings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
-
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         let package = get_update_package();
         let sign = None;
         shared_state.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
@@ -153,14 +123,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn missing_signature() {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        std::fs::remove_file(&tmpfile).unwrap();
-
-        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-        let settings = Settings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         shared_state.firmware.pub_key = Some("foo".into());
 
         let package = get_update_package();

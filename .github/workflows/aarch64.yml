@@ -56,7 +56,7 @@ jobs:
         with:
           use-cross: true
           command: check
-          args: --target aarch64-unknown-linux-gnu --release --all --bins --examples --tests
+          args: --target aarch64-unknown-linux-gnu --release --all --bins --examples --tests --all-features
 
       - name: Tests
         uses: actions-rs/cargo@v1

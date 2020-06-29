@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use pretty_assertions::assert_eq;
 use std::path::PathBuf;
-use tempfile::tempdir;
 
-pub fn create_hook(path: PathBuf, contents: &str) {
+#[cfg(test)]
+use {pretty_assertions::assert_eq, tempfile::tempdir};
+
+pub(crate) fn create_hook(path: PathBuf, contents: &str) {
     use std::{
         fs::{create_dir_all, metadata, File},
         io::Write,
@@ -30,34 +31,28 @@ pub fn create_hook(path: PathBuf, contents: &str) {
     thread::sleep(time::Duration::from_millis(50));
 }
 
-pub fn product_uid_hook(path: &Path) -> PathBuf {
+pub(crate) fn product_uid_hook(path: &Path) -> PathBuf {
     path.join(PRODUCT_UID_HOOK)
 }
 
-pub fn version_hook(path: &Path) -> PathBuf {
+pub(crate) fn version_hook(path: &Path) -> PathBuf {
     path.join(VERSION_HOOK)
 }
 
-pub fn hardware_hook(path: &Path) -> PathBuf {
+pub(crate) fn hardware_hook(path: &Path) -> PathBuf {
     path.join(HARDWARE_HOOK)
 }
 
-pub fn device_identity_dir(path: &Path) -> PathBuf {
+pub(crate) fn device_identity_dir(path: &Path) -> PathBuf {
     path.join(DEVICE_IDENTITY_DIR).join("identity")
 }
 
-pub fn device_attributes_dir(path: &Path) -> PathBuf {
+pub(crate) fn device_attributes_dir(path: &Path) -> PathBuf {
     path.join(DEVICE_ATTRIBUTES_DIR).join("attributes")
 }
 
-pub enum FakeDevice {
-    NoUpdate,
-    HasUpdate,
-    ExtraPoll,
-    InvalidHardware,
-}
-
-pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
+#[cfg(test)]
+pub(crate) fn create_fake_metadata() -> PathBuf {
     let tmpdir = tempdir().unwrap().path().to_path_buf();
 
     // create fake hooks to be used to validate the load
@@ -66,28 +61,8 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
         "#!/bin/sh\necho 229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
     );
     create_hook(version_hook(&tmpdir), "#!/bin/sh\necho 1.1");
-    create_hook(
-        hardware_hook(&tmpdir),
-        &format!(
-            "#!/bin/sh\necho {}",
-            match device {
-                FakeDevice::InvalidHardware => "invalid",
-                _ => "board",
-            }
-        ),
-    );
-    create_hook(
-        device_identity_dir(&tmpdir),
-        &format!(
-            "#!/bin/sh\necho id1=value{}\necho id2=value2",
-            match device {
-                FakeDevice::NoUpdate => 1,
-                FakeDevice::HasUpdate => 2,
-                FakeDevice::ExtraPoll => 3,
-                FakeDevice::InvalidHardware => 4,
-            }
-        ),
-    );
+    create_hook(hardware_hook(&tmpdir), &"#!/bin/sh\necho board");
+    create_hook(device_identity_dir(&tmpdir), &"#!/bin/sh\necho id1=value1\necho id2=value2");
     create_hook(
         device_attributes_dir(&tmpdir),
         "#!/bin/sh\necho attr1=attrvalue1\necho attr2=attrvalue2",
@@ -96,7 +71,7 @@ pub fn create_fake_metadata(device: FakeDevice) -> PathBuf {
     tmpdir
 }
 
-pub fn create_fake_installation_set(tmpdir: &Path, active: usize) {
+pub(crate) fn create_fake_installation_set(tmpdir: &Path, active: usize) {
     use std::{
         fs::{create_dir_all, metadata, File},
         io::Write,
@@ -133,7 +108,8 @@ pub fn create_fake_installation_set(tmpdir: &Path, active: usize) {
     file.set_permissions(permissions).unwrap();
 }
 
-pub fn create_fake_starup_callbacks(metadata_dir: &Path, output_file: &Path) {
+#[cfg(test)]
+pub(crate) fn create_fake_starup_callbacks(metadata_dir: &Path, output_file: &Path) {
     use std::{
         fs::{metadata, File},
         io::Write,
@@ -170,7 +146,7 @@ fn check_load_metadata() {
     use std::fs::remove_file;
 
     {
-        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
+        let metadata_dir = create_fake_metadata();
         // check error with a invalid product uid
         create_hook(product_uid_hook(&metadata_dir), "#!/bin/sh\necho 123");
         let metadata = Metadata::from_path(&metadata_dir);
@@ -179,7 +155,7 @@ fn check_load_metadata() {
 
     {
         // check error when lacks product uid
-        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
+        let metadata_dir = create_fake_metadata();
         remove_file(product_uid_hook(&metadata_dir)).unwrap();
         let metadata = Metadata::from_path(&metadata_dir);
         assert!(metadata.is_err());
@@ -187,7 +163,7 @@ fn check_load_metadata() {
 
     {
         // check error when lacks device identity
-        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
+        let metadata_dir = create_fake_metadata();
         remove_file(device_identity_dir(&metadata_dir)).unwrap();
         let metadata = Metadata::from_path(&metadata_dir);
         assert!(metadata.is_err());
@@ -195,7 +171,7 @@ fn check_load_metadata() {
 
     {
         // check if is still valid without device attributes
-        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
+        let metadata_dir = create_fake_metadata();
         remove_file(device_attributes_dir(&metadata_dir)).unwrap();
         let metadata = Metadata::from_path(&metadata_dir).unwrap();
         assert_eq!(
@@ -210,7 +186,7 @@ fn check_load_metadata() {
 
     {
         // complete metadata
-        let metadata_dir = create_fake_metadata(FakeDevice::NoUpdate);
+        let metadata_dir = create_fake_metadata();
         let metadata = Metadata::from_path(&metadata_dir).unwrap();
         assert_eq!(
             "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
@@ -223,8 +199,10 @@ fn check_load_metadata() {
     }
 }
 
+#[cfg(test)]
 const CALLBACK_STATE_NAME: &str = "test_state";
 
+#[cfg(test)]
 fn create_state_change_callback_hook(content: &str) -> tempfile::TempDir {
     let tmpdir = tempfile::tempdir().unwrap();
     create_hook(tmpdir.path().join(STATE_CHANGE_CALLBACK), content);

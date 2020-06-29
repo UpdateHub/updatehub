@@ -28,8 +28,8 @@ pub enum Error {
     InvalidDestination,
 }
 
-#[derive(Debug, Deref, DerefMut, PartialEq)]
-pub(crate) struct RuntimeSettings(pub(crate) api::RuntimeSettings);
+#[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
+pub struct RuntimeSettings(pub api::RuntimeSettings);
 
 impl Default for RuntimeSettings {
     fn default() -> Self {
@@ -48,7 +48,7 @@ impl Default for RuntimeSettings {
 }
 
 impl RuntimeSettings {
-    pub(crate) fn load(path: &Path) -> Result<Self> {
+    pub fn load(path: &Path) -> Result<Self> {
         let mut this = if path.exists() {
             debug!("loading runtime settings from {:?}...", path);
             match fs::read_to_string(path).map_err(Error::from).and_then(|ref s| Self::parse(s)) {

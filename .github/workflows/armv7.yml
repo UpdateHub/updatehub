@@ -56,7 +56,7 @@ jobs:
         with:
           use-cross: true
           command: check
-          args: --target armv7-unknown-linux-gnueabihf --release --all --bins --examples --tests
+          args: --target armv7-unknown-linux-gnueabihf --release --all --bins --examples --tests --all-features
 
       - name: Tests
         uses: actions-rs/cargo@v1

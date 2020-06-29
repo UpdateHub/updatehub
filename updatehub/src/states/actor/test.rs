@@ -3,18 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use crate::{
-    cloud_mock,
-    firmware::{
-        tests::{create_fake_metadata, FakeDevice},
-        Metadata,
-    },
-    runtime_settings::RuntimeSettings,
-    settings::Settings,
-};
+use crate::cloud_mock;
 use actix::{Addr, MessageResult, System};
 use pretty_assertions::assert_eq;
-use std::fs;
 
 enum Setup {
     HasUpdate,
@@ -57,51 +48,39 @@ impl Handler<Step> for FakeMachine {
     }
 }
 
-fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, Settings, Metadata) {
-    let tmpfile = tempfile::NamedTempFile::new().unwrap();
-    let tmpfile = tmpfile.path();
-    fs::remove_file(&tmpfile).unwrap();
-    let mut settings = Settings::default();
-    settings.polling.enabled = match probe {
-        Probe::Enabled => true,
-        Probe::Disabled => false,
+fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, crate::tests::TestEnvironment) {
+    let setup_builder = crate::tests::TestEnvironment::build();
+    let setup_builder = match probe {
+        Probe::Enabled => setup_builder,
+        Probe::Disabled => setup_builder.disable_polling(),
     };
-    let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-    let firmware = Metadata::from_path(&create_fake_metadata(match kind {
-        Setup::HasUpdate => FakeDevice::HasUpdate,
-        Setup::NoUpdate => FakeDevice::NoUpdate,
-    }))
-    .unwrap();
-
-    let settings_clone = settings.clone();
-    let firmware_clone = firmware.clone();
     match kind {
-        Setup::HasUpdate => cloud_mock::setup_fake_response(cloud_mock::FakeResponse::HasUpdate),
         Setup::NoUpdate => cloud_mock::setup_fake_response(cloud_mock::FakeResponse::NoUpdate),
-    }
+        Setup::HasUpdate => cloud_mock::setup_fake_response(cloud_mock::FakeResponse::HasUpdate),
+    };
+    let setup = setup_builder.finish();
 
     (
         // We use the actix::Actor::start here instead of the Machine::start in order to not
         // start the stepper and thus have control of how many steps are been sent to the Machine
         actix::Actor::start(Machine::new(
             StateMachine::EntryPoint(State(EntryPoint {})),
-            settings,
-            runtime_settings,
-            firmware,
+            setup.settings.data.clone(),
+            setup.runtime_settings.data.clone(),
+            setup.firmware.data.clone(),
         )),
-        settings_clone,
-        firmware_clone,
+        setup,
     )
 }
 
 #[actix_rt::test]
 async fn info_request() {
-    let (addr, settings, firmware) = setup_actor(Setup::NoUpdate, Probe::Enabled);
+    let (addr, setup) = setup_actor(Setup::NoUpdate, Probe::Enabled);
     let response = addr.send(info::Request).await.unwrap();
     assert_eq!(response.state, "entry_point");
     assert_eq!(response.version, crate::version().to_string());
-    assert_eq!(response.config, settings.0);
-    assert_eq!(response.firmware, firmware.0);
+    assert_eq!(response.config, setup.settings.data.0);
+    assert_eq!(response.firmware, setup.firmware.data.0);
 }
 
 #[actix_rt::test]
