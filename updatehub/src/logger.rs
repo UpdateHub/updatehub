@@ -16,7 +16,12 @@ lazy_static! {
 
 pub fn init(level: slog::Level) {
     let buffer_drain = buffer().filter_level(level).fuse();
-    let terminal_drain = Mutex::new(slog_term::term_full().filter_level(level)).fuse();
+    let terminal_drain = Mutex::new(
+        slog_term::FullFormat::new(slog_term::TermDecorator::new().force_plain().build())
+            .build()
+            .filter_level(level),
+    )
+    .fuse();
     let terminal_drain = slog_async::Async::new(terminal_drain).build().fuse();
 
     let log = Logger::root(slog::Duplicate::new(buffer_drain, terminal_drain).fuse(), o!());
