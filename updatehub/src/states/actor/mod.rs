@@ -40,10 +40,10 @@ pub(crate) enum Error {
 }
 
 #[derive(Debug, PartialEq)]
-pub(super) struct SharedState {
-    pub(super) settings: Settings,
-    pub(super) runtime_settings: RuntimeSettings,
-    pub(super) firmware: Metadata,
+pub struct SharedState {
+    pub settings: Settings,
+    pub runtime_settings: RuntimeSettings,
+    pub firmware: Metadata,
 }
 
 impl SharedState {

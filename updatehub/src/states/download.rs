@@ -95,22 +95,11 @@ impl StateChangeImpl for State<Download> {
 mod test {
     use super::*;
     use crate::{
-        cloud_mock,
-        firmware::{
-            tests::{create_fake_installation_set, create_fake_metadata, FakeDevice},
-            Metadata,
-        },
-        runtime_settings::RuntimeSettings,
-        states::PrepareDownload,
-        update_package::tests::{create_fake_settings, get_update_package_with_shasum},
+        cloud_mock, states::PrepareDownload, update_package::tests::get_update_package_with_shasum,
         utils,
     };
     use pretty_assertions::assert_eq;
-    use std::{
-        env,
-        fs::{create_dir_all, File},
-        io::Read,
-    };
+    use std::{fs, io::Read};
     use walkdir::WalkDir;
 
     fn fake_download_object(size: usize) -> (Vec<u8>, String) {
@@ -119,28 +108,16 @@ mod test {
         (vec, shasum)
     }
 
-    fn fake_download_state(shasum: &str) -> (State<PrepareDownload>, SharedState) {
-        let settings = create_fake_settings();
-        let tmpdir = settings.update.download_dir.clone();
-        let _ = create_dir_all(&tmpdir);
-        create_fake_installation_set(&tmpdir, 0);
-        env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-
-        (
-            State(PrepareDownload { update_package: get_update_package_with_shasum(shasum) }),
-            SharedState { settings, runtime_settings, firmware },
-        )
-    }
-
     async fn test_object_download(size: usize) {
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         let (obj, shasum) = fake_download_object(size);
-        let (predownload_state, mut shared_state) = fake_download_state(&shasum);
-        let tmpdir = shared_state.settings.update.download_dir.clone();
+        let predownload_state =
+            State(PrepareDownload { update_package: get_update_package_with_shasum(&shasum) });
+        let download_dir = shared_state.settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed
-        let _ = File::create(&tmpdir.join("leftover-file"));
+        fs::File::create(&download_dir.join("leftover-file")).unwrap();
 
         cloud_mock::set_download_data(obj);
 
@@ -159,7 +136,7 @@ mod test {
         assert_state!(machine, Install);
 
         assert_eq!(
-            WalkDir::new(&tmpdir)
+            WalkDir::new(&download_dir)
                 .follow_links(true)
                 .min_depth(1)
                 .into_iter()
@@ -170,7 +147,7 @@ mod test {
         );
 
         let mut object_content = String::new();
-        let _ = File::open(&tmpdir.join(&shasum))
+        let _ = fs::File::open(&download_dir.join(&shasum))
             .expect("Fail to open the temporary directory.")
             .read_to_string(&mut object_content);
 

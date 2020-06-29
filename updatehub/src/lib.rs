@@ -17,6 +17,9 @@ mod utils;
 #[cfg(test)]
 mod cloud_mock;
 
+#[cfg(feature = "test-env")]
+pub mod tests;
+
 #[cfg(test)]
 pub(crate) use crate::cloud_mock::Client as CloudClient;
 #[cfg(not(test))]

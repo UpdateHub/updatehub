@@ -14,6 +14,7 @@ default = []
 
 # Feature to allow deserialization from v1 Settings
 v1-parsing = ["serde_ini"]
+test-env = []
 
 [dependencies]
 actix = { version = "0.10.0-alpha.2", default-features = false }

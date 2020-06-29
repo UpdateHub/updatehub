@@ -5,7 +5,7 @@
 mod hook;
 pub mod installation_set;
 
-#[cfg(test)]
+#[cfg(feature = "test-env")]
 pub mod tests;
 
 use self::hook::{run_hook, run_hooks_from_dir};
@@ -62,7 +62,7 @@ pub(crate) enum Transition {
 }
 
 #[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
-pub(crate) struct Metadata(pub(crate) api::Metadata);
+pub struct Metadata(pub api::Metadata);
 
 impl Metadata {
     pub fn from_path(path: &Path) -> Result<Self> {

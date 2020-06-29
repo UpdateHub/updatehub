@@ -61,7 +61,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --release --all --bins --examples --tests
+          args: --release --all --bins --examples --tests --all-features
 
       - name: Tests
         uses: actions-rs/cargo@v1

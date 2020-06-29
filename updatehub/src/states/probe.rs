@@ -90,24 +90,12 @@ impl StateChangeImpl for State<Probe> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        cloud_mock,
-        firmware::{
-            tests::{create_fake_metadata, FakeDevice},
-            Metadata,
-        },
-        runtime_settings::RuntimeSettings,
-        settings::Settings,
-    };
-    use std::fs;
-    use tempfile::NamedTempFile;
+    use crate::cloud_mock;
 
     #[actix_rt::test]
     async fn invalid_uri() {
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::InvalidUri);
 
         let res = StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).await;
@@ -121,14 +109,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn update_not_available() {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        fs::remove_file(&tmpfile).unwrap();
-
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::NoUpdate);
 
         let machine = StateMachine::Probe(State(Probe {}))
@@ -142,14 +124,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn update_available() {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        fs::remove_file(&tmpfile).unwrap();
-
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::HasUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::HasUpdate);
 
         let machine = StateMachine::Probe(State(Probe {}))
@@ -163,16 +139,9 @@ mod tests {
 
     #[actix_rt::test]
     async fn extra_poll_interval() {
-        let tmpfile = NamedTempFile::new().unwrap();
-        let tmpfile = tmpfile.path();
-        fs::remove_file(&tmpfile).unwrap();
-
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::ExtraPoll);
-
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::load(tmpfile).unwrap();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::ExtraPoll)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
 
         let machine = StateMachine::Probe(State(Probe {}))
             .move_to_next_state(&mut shared_state)

@@ -53,22 +53,12 @@ impl StateChangeImpl for State<Poll> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        firmware::{
-            tests::{create_fake_metadata, FakeDevice},
-            Metadata,
-        },
-        runtime_settings::RuntimeSettings,
-        settings::Settings,
-    };
     use chrono::{Duration, Utc};
 
     #[actix_rt::test]
     async fn normal_delay() {
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         shared_state.runtime_settings.polling.last = Utc::now() - Duration::minutes(10);
 
         let (machine, trans) =
@@ -84,10 +74,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn update_in_time() {
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
 
         let (machine, trans) =
             StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap();
@@ -101,10 +89,8 @@ mod tests {
 
     #[actix_rt::test]
     async fn least_probe_in_the_future() {
-        let settings = Settings::default();
-        let runtime_settings = RuntimeSettings::default();
-        let firmware = Metadata::from_path(&create_fake_metadata(FakeDevice::NoUpdate)).unwrap();
-        let mut shared_state = SharedState { settings, runtime_settings, firmware };
+        let setup = crate::tests::TestEnvironment::build().finish();
+        let mut shared_state = setup.gen_shared_state();
         shared_state.runtime_settings.polling.last = Utc::now() + Duration::days(1);
 
         let (machine, trans) =
