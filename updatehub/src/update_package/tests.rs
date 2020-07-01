@@ -65,22 +65,18 @@ pub(crate) fn create_fake_object(body: &[u8], shasum: &str, settings: &Settings)
     File::create(&dir.join(shasum)).unwrap().write_all(body).unwrap();
 }
 
-pub(crate) fn create_fake_settings() -> Settings {
-    use tempfile::tempdir;
-
-    let mut settings = Settings::default();
-    settings.update.download_dir = tempdir().unwrap().path().to_path_buf();
-    settings
-}
-
 #[test]
 fn missing_object_file() {
+    let setup = crate::tests::TestEnvironment::build().finish();
     let update_package = get_update_package();
-    let settings = create_fake_settings();
 
     assert_eq!(
         update_package
-            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Missing)
+            .filter_objects(
+                &setup.settings.data,
+                Set(InstallationSet::A),
+                object::info::Status::Missing
+            )
             .len(),
         1
     );
@@ -88,32 +84,33 @@ fn missing_object_file() {
 
 #[test]
 fn complete_object_file() {
+    let setup = crate::tests::TestEnvironment::build().finish();
+    let settings = &setup.settings.data;
     let update_package = get_update_package();
-    let settings = create_fake_settings();
 
-    create_fake_object(OBJECT, SHA256SUM, &settings);
+    create_fake_object(OBJECT, SHA256SUM, settings);
 
     assert!(
         update_package
-            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Missing)
+            .filter_objects(settings, Set(InstallationSet::A), object::info::Status::Missing)
             .is_empty()
     );
 
     assert!(
         update_package
-            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Incomplete)
+            .filter_objects(settings, Set(InstallationSet::A), object::info::Status::Incomplete)
             .is_empty()
     );
 
     assert!(
         update_package
-            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Corrupted)
+            .filter_objects(settings, Set(InstallationSet::A), object::info::Status::Corrupted)
             .is_empty()
     );
 
     assert_eq!(
         update_package
-            .filter_objects(&settings, Set(InstallationSet::A), object::info::Status::Ready)
+            .filter_objects(settings, Set(InstallationSet::A), object::info::Status::Ready)
             .iter()
             .count(),
         1

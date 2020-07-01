@@ -96,8 +96,8 @@ mod tests {
     use super::*;
     use flate2::{write::GzEncoder, Compression};
     use pretty_assertions::assert_eq;
-    use std::{io, iter, path::PathBuf};
-    use tempfile::{tempdir, NamedTempFile};
+    use std::{io, iter};
+    use tempfile::{tempdir, NamedTempFile, TempDir};
 
     const DEFAULT_BYTE: u8 = 0xF;
     const ORIGINAL_BYTE: u8 = 0xA;
@@ -110,7 +110,7 @@ mod tests {
         count: definitions::Count,
         truncate: bool,
         compressed: bool,
-    ) -> Result<(objects::Raw, PathBuf, NamedTempFile, NamedTempFile, Vec<u8>)> {
+    ) -> Result<(objects::Raw, TempDir, NamedTempFile, NamedTempFile, Vec<u8>)> {
         let download_dir = tempdir()?;
 
         let mut source = NamedTempFile::new_in(download_dir.path())?;
@@ -145,7 +145,7 @@ mod tests {
                 count,
                 truncate: definitions::Truncate(truncate),
             },
-            download_dir.into_path(),
+            download_dir,
             source,
             dest,
             original_data,
@@ -212,7 +212,7 @@ mod tests {
                 .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(&download_dir).unwrap();
+        obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -233,7 +233,7 @@ mod tests {
                 .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(&download_dir).unwrap();
+        obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -254,7 +254,7 @@ mod tests {
                 .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(&download_dir).unwrap();
+        obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -276,7 +276,7 @@ mod tests {
                 .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(&download_dir).unwrap();
+        obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -298,7 +298,7 @@ mod tests {
                 .unwrap();
         obj.check_requirements().unwrap();
         obj.setup().unwrap();
-        obj.install(&download_dir).unwrap();
+        obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
