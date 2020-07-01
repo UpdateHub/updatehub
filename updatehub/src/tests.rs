@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::firmware::tests::{
-    create_fake_installation_set, create_hook, device_attributes_dir, device_identity_dir,
-    hardware_hook, product_uid_hook, version_hook,
+    create_fake_installation_set, create_fake_starup_callbacks, create_hook, device_attributes_dir,
+    device_identity_dir, hardware_hook, product_uid_hook, version_hook,
 };
 use std::{any::Any, env, fs, io::Write, os::unix::fs::PermissionsExt, path::PathBuf};
 
@@ -17,8 +17,7 @@ pub struct TestEnvironment {
     pub firmware: Data<Metadata>,
     pub runtime_settings: Data<RuntimeSettings>,
     pub settings: Data<Settings>,
-    #[allow(dead_code)]
-    pub binaries: Data<()>,
+    pub binaries: Data<PathBuf>,
 }
 
 pub struct Data<T> {
@@ -64,24 +63,6 @@ impl TestEnvironmentBuilder {
     }
 
     pub fn finish(self) -> TestEnvironment {
-        let binaries = {
-            let bin_dir = tempfile::tempdir().unwrap();
-            let bin_dir_path = bin_dir.path();
-
-            create_fake_installation_set(bin_dir_path, 0);
-            for bin in self.extra_binaries.into_iter() {
-                let mut file = fs::File::create(&bin_dir_path.join(&bin)).unwrap();
-                writeln!(file, "#!/bin/sh\necho {}", bin).unwrap();
-                let mut permissions = file.metadata().unwrap().permissions();
-                permissions.set_mode(0o755);
-                file.set_permissions(permissions).unwrap();
-            }
-            let curr_path = env::var("PATH").map(|s| ":".to_string() + &s).unwrap_or_default();
-            env::set_var("PATH", format!("{}{}", bin_dir_path.to_string_lossy(), curr_path,));
-
-            Data { data: (), stored_path: bin_dir_path.to_owned(), guard: Box::new(bin_dir) }
-        };
-
         let firmware = {
             let dir = tempfile::tempdir().unwrap();
             let dir_path = dir.path();
@@ -116,6 +97,32 @@ impl TestEnvironmentBuilder {
                 data: Metadata::from_path(dir_path).unwrap(),
                 stored_path: dir_path.to_owned(),
                 guard: Box::new(dir),
+            }
+        };
+
+        let binaries = {
+            let bin_dir = tempfile::tempdir().unwrap();
+            let bin_dir_path = bin_dir.path();
+            let output_file = bin_dir_path.join("output");
+
+            create_fake_installation_set(bin_dir_path, 0);
+            // Startup callbacks will be stored in the firmware directory
+            create_fake_starup_callbacks(&firmware.stored_path, &output_file);
+
+            for bin in self.extra_binaries.into_iter() {
+                let mut file = fs::File::create(&bin_dir_path.join(&bin)).unwrap();
+                writeln!(file, "#!/bin/sh\necho $0 >> {}", output_file.to_string_lossy()).unwrap();
+                let mut permissions = file.metadata().unwrap().permissions();
+                permissions.set_mode(0o755);
+                file.set_permissions(permissions).unwrap();
+            }
+            let curr_path = env::var("PATH").map(|s| ":".to_string() + &s).unwrap_or_default();
+            env::set_var("PATH", format!("{}{}", bin_dir_path.to_string_lossy(), curr_path,));
+
+            Data {
+                data: output_file,
+                stored_path: bin_dir_path.to_owned(),
+                guard: Box::new(bin_dir),
             }
         };
 

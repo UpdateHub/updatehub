@@ -108,18 +108,17 @@ pub(crate) fn create_fake_installation_set(tmpdir: &Path, active: usize) {
     file.set_permissions(permissions).unwrap();
 }
 
-#[cfg(test)]
 pub(crate) fn create_fake_starup_callbacks(metadata_dir: &Path, output_file: &Path) {
-    use std::{
-        fs::{metadata, File},
-        io::Write,
-        os::unix::fs::PermissionsExt,
-    };
+    use std::{fs, io::Write, os::unix::fs::PermissionsExt};
 
     for script in &[VALIDATE_CALLBACK, ROLLBACK_CALLBACK] {
-        let mut file = File::create(&metadata_dir.join(script)).unwrap();
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(&metadata_dir.join(script))
+            .unwrap();
         writeln!(file, "#!/bin/sh\necho $0 >> {}", output_file.to_string_lossy()).unwrap();
-        let mut permissions = metadata(metadata_dir).unwrap().permissions();
+        let mut permissions = fs::metadata(metadata_dir).unwrap().permissions();
         permissions.set_mode(0o755);
         file.set_permissions(permissions).unwrap();
     }
