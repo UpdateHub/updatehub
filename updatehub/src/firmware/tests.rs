@@ -52,8 +52,9 @@ pub(crate) fn device_attributes_dir(path: &Path) -> PathBuf {
 }
 
 #[cfg(test)]
-pub(crate) fn create_fake_metadata() -> PathBuf {
-    let tmpdir = tempdir().unwrap().path().to_path_buf();
+pub(crate) fn create_fake_metadata() -> (PathBuf, tempfile::TempDir) {
+    let tmpdir_handle = tempdir().unwrap();
+    let tmpdir = tmpdir_handle.path().to_path_buf();
 
     // create fake hooks to be used to validate the load
     create_hook(
@@ -68,7 +69,7 @@ pub(crate) fn create_fake_metadata() -> PathBuf {
         "#!/bin/sh\necho attr1=attrvalue1\necho attr2=attrvalue2",
     );
 
-    tmpdir
+    (tmpdir, tmpdir_handle)
 }
 
 pub(crate) fn create_fake_installation_set(tmpdir: &Path, active: usize) {
@@ -126,7 +127,8 @@ pub(crate) fn create_fake_starup_callbacks(metadata_dir: &Path, output_file: &Pa
 
 #[test]
 fn run_multiple_hooks_in_a_dir() {
-    let tmpdir = tempdir().unwrap().path().to_path_buf();
+    let tmpdir_handle = tempdir().unwrap();
+    let tmpdir = tmpdir_handle.path().to_path_buf();
 
     // create two scripts so we can test the parsing of output
     create_hook(tmpdir.join("hook1"), "#!/bin/sh\necho key2=val2\necho key1=val1");
@@ -145,7 +147,7 @@ fn check_load_metadata() {
     use std::fs::remove_file;
 
     {
-        let metadata_dir = create_fake_metadata();
+        let (metadata_dir, _guard) = create_fake_metadata();
         // check error with a invalid product uid
         create_hook(product_uid_hook(&metadata_dir), "#!/bin/sh\necho 123");
         let metadata = Metadata::from_path(&metadata_dir);
@@ -154,7 +156,7 @@ fn check_load_metadata() {
 
     {
         // check error when lacks product uid
-        let metadata_dir = create_fake_metadata();
+        let (metadata_dir, _guard) = create_fake_metadata();
         remove_file(product_uid_hook(&metadata_dir)).unwrap();
         let metadata = Metadata::from_path(&metadata_dir);
         assert!(metadata.is_err());
@@ -162,7 +164,7 @@ fn check_load_metadata() {
 
     {
         // check error when lacks device identity
-        let metadata_dir = create_fake_metadata();
+        let (metadata_dir, _guard) = create_fake_metadata();
         remove_file(device_identity_dir(&metadata_dir)).unwrap();
         let metadata = Metadata::from_path(&metadata_dir);
         assert!(metadata.is_err());
@@ -170,7 +172,7 @@ fn check_load_metadata() {
 
     {
         // check if is still valid without device attributes
-        let metadata_dir = create_fake_metadata();
+        let (metadata_dir, _guard) = create_fake_metadata();
         remove_file(device_attributes_dir(&metadata_dir)).unwrap();
         let metadata = Metadata::from_path(&metadata_dir).unwrap();
         assert_eq!(
@@ -185,7 +187,7 @@ fn check_load_metadata() {
 
     {
         // complete metadata
-        let metadata_dir = create_fake_metadata();
+        let (metadata_dir, _guard) = create_fake_metadata();
         let metadata = Metadata::from_path(&metadata_dir).unwrap();
         assert_eq!(
             "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
