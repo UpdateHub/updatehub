@@ -25,7 +25,7 @@ pub(crate) use crate::cloud_mock::Client as CloudClient;
 #[cfg(not(test))]
 pub(crate) use cloud::Client as CloudClient;
 
-pub use crate::{build_info::version, settings::Settings, states::run};
+pub use crate::{build_info::version, states::run};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;

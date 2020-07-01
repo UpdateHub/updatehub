@@ -104,9 +104,7 @@ async fn server_main(cmd: ServerOptions) -> updatehub::Result<()> {
     updatehub::logger::init(cmd.verbosity);
     info!("starting UpdateHub Agent {}", updatehub::version());
 
-    let settings = updatehub::Settings::load(&cmd.config)?;
-
-    updatehub::run(settings).await?;
+    updatehub::run(&cmd.config).await?;
 
     Ok(())
 }
