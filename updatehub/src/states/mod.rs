@@ -35,6 +35,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use slog_scope::{error, info, warn};
+use std::path::Path;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, TransitionError>;
@@ -303,18 +304,19 @@ impl StateMachine {
 /// # Example
 /// ```no_run
 /// # extern crate updatehub;
+/// # use std::path::PathBuf;
 /// # async fn run() -> Result<(), updatehub::Error> {
 /// use updatehub;
 /// use std::path::PathBuf;
 ///
 /// updatehub::logger::init(slog::Level::Info);
-/// let settings = updatehub::Settings::load(&PathBuf::from("/etc/updatehub.conf"))?;
-/// updatehub::run(settings).await?;
+/// updatehub::run(&PathBuf::from("/etc/updatehub.conf")).await?;
 /// # Ok(())
 /// # }
 /// ```
-pub async fn run(settings: Settings) -> crate::Result<()> {
+pub async fn run(settings: &Path) -> crate::Result<()> {
     crate::logger::start_memory_logging();
+    let settings = Settings::load(settings)?;
     let listen_socket = settings.network.listen_socket.clone();
     let mut runtime_settings = RuntimeSettings::load(&settings.storage.runtime_settings)?;
     if !settings.storage.read_only {
