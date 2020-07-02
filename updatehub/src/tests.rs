@@ -32,6 +32,8 @@ pub struct TestEnvironmentBuilder {
     disable_polling: bool,
     invalid_hardware: bool,
     extra_binaries: Vec<String>,
+    server_address: Option<String>,
+    listen_socket: Option<String>,
 }
 
 impl TestEnvironment {
@@ -60,6 +62,14 @@ impl TestEnvironmentBuilder {
 
     pub fn disable_polling(self) -> Self {
         TestEnvironmentBuilder { disable_polling: true, ..self }
+    }
+
+    pub fn listen_socket(self, s: String) -> Self {
+        TestEnvironmentBuilder { listen_socket: Some(s), ..self }
+    }
+
+    pub fn server_address(self, s: String) -> Self {
+        TestEnvironmentBuilder { server_address: Some(s), ..self }
     }
 
     pub fn finish(self) -> TestEnvironment {
@@ -144,8 +154,8 @@ impl TestEnvironmentBuilder {
             write!(
                 file,
                 r#"[network]
-server_address="https://api.updatehub.io"
-listen_socket="localhost:8080"
+server_address={}
+listen_socket={}
 
 [storage]
 read_only=false
@@ -161,6 +171,13 @@ supported_install_modes=["copy", "tarball"]
 
 [firmware]
 metadata={metadata}"#,
+                server_address = toml::to_string(
+                    self.server_address.as_deref().unwrap_or("https://api.updatehub.io")
+                )
+                .unwrap(),
+                listen_socket =
+                    toml::to_string(self.listen_socket.as_deref().unwrap_or("localhost:8080"))
+                        .unwrap(),
                 runtime_settings = toml::to_string(&runtime_settings.stored_path).unwrap(),
                 polling_enabled = toml::to_string(&!self.disable_polling).unwrap(),
                 download_dir = toml::to_string(download_dir.path()).unwrap(),
