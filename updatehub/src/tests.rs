@@ -23,7 +23,7 @@ pub struct TestEnvironment {
 pub struct Data<T> {
     pub stored_path: PathBuf,
     #[allow(dead_code)]
-    pub guard: Box<dyn Any>,
+    pub guard: Vec<Box<dyn Any>>,
     pub data: T,
 }
 
@@ -106,7 +106,7 @@ impl TestEnvironmentBuilder {
             Data {
                 data: Metadata::from_path(dir_path).unwrap(),
                 stored_path: dir_path.to_owned(),
-                guard: Box::new(dir),
+                guard: vec![Box::new(dir)],
             }
         };
 
@@ -132,18 +132,19 @@ impl TestEnvironmentBuilder {
             Data {
                 data: output_file,
                 stored_path: bin_dir_path.to_owned(),
-                guard: Box::new(bin_dir),
+                guard: vec![Box::new(bin_dir)],
             }
         };
 
         let runtime_settings = {
             let file = tempfile::NamedTempFile::new().unwrap();
             let file_path = file.path().to_owned();
+            fs::remove_file(&file_path).unwrap();
 
             let mut runtime_settings = RuntimeSettings::default();
             runtime_settings.path = file_path.clone();
 
-            Data { data: runtime_settings, stored_path: file_path, guard: Box::new(file) }
+            Data { data: runtime_settings, stored_path: file_path, guard: vec![Box::new(file)] }
         };
 
         let settings = {
@@ -188,7 +189,7 @@ metadata={metadata}"#,
             Data {
                 data: Settings::load(&file_path).unwrap(),
                 stored_path: file_path,
-                guard: Box::new(download_dir),
+                guard: vec![Box::new(file), Box::new(download_dir)],
             }
         };
 
