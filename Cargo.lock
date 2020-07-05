@@ -2152,7 +2152,8 @@ dependencies = [
 [[package]]
 name = "testcontainers"
 version = "0.9.1"
-source = "git+https://github.com/testcontainers/testcontainers-rs#53e9d6d0f7b942f579ba2c20cbb87eb94808054f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af06783709f5254b087f0a1ea4557e372a5c2c597ca4a1157fbe536b1de2fb19"
 dependencies = [
  "derivative",
  "hex",

@@ -17,5 +17,5 @@ thiserror = "1"
 
 [dev-dependencies]
 tempfile = "3"
-testcontainers = { git = "https://github.com/testcontainers/testcontainers-rs" }
+testcontainers = "0.9"
 actix-rt = { version = "1", default-features = false }
