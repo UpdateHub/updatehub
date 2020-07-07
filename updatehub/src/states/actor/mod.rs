@@ -14,7 +14,7 @@ pub(crate) mod remote_install;
 pub(crate) mod stepper;
 
 use super::{
-    DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, RuntimeSettings, Settings, State,
+    DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, RuntimeSettings, Settings,
     StateMachine, Validation,
 };
 use actix::{

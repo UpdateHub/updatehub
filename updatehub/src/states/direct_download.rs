@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    PrepareLocalInstall, Result, State, StateChangeImpl, StateMachine,
+    PrepareLocalInstall, Result, StateChangeImpl, StateMachine,
 };
 use slog_scope::info;
 
@@ -14,7 +14,7 @@ pub(super) struct DirectDownload {
 }
 
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<DirectDownload> {
+impl StateChangeImpl for DirectDownload {
     fn name(&self) -> &'static str {
         "direct_download"
     }
@@ -23,14 +23,14 @@ impl StateChangeImpl for State<DirectDownload> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        info!("fetching update package directly from url: {:?}", self.0.url);
+        info!("fetching update package directly from url: {:?}", self.url);
 
         let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
         let mut file = tokio::fs::File::create(&update_file).await?;
-        cloud::get(&self.0.url, &mut file).await?;
+        cloud::get(&self.url, &mut file).await?;
 
         Ok((
-            StateMachine::PrepareLocalInstall(State(PrepareLocalInstall { update_file })),
+            StateMachine::PrepareLocalInstall(PrepareLocalInstall { update_file }),
             actor::StepTransition::Immediate,
         ))
     }

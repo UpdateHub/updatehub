@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Result, State, StateChangeImpl, StateMachine,
+    Result, StateChangeImpl, StateMachine,
 };
 
 use slog_scope::debug;
@@ -15,7 +15,7 @@ pub(super) struct Park {}
 /// Implements the state change for `State<Park>`. It stays in
 /// `State<Park>` state.
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<Park> {
+impl StateChangeImpl for Park {
     fn name(&self) -> &'static str {
         "park"
     }

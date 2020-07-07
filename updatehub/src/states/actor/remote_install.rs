@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{DirectDownload, State, StateMachine};
+use super::{DirectDownload, StateMachine};
 use actix::{AsyncContext, Context, Handler, Message, MessageResult};
 
 #[derive(Message)]
@@ -23,7 +23,7 @@ impl Handler<Request> for super::Machine {
         if machine.for_current_state(|s| s.is_preemptive_state()) {
             crate::logger::start_memory_logging();
             self.stepper.restart(ctx.address());
-            self.state.replace(StateMachine::DirectDownload(State(DirectDownload { url: req.0 })));
+            self.state.replace(StateMachine::DirectDownload(DirectDownload { url: req.0 }));
             return MessageResult(Response::RequestAccepted(state));
         }
 

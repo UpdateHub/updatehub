@@ -105,59 +105,12 @@ trait StateChangeImpl {
     }
 }
 
-trait TransitionCallback: StateChangeImpl + Into<State<EntryPoint>> {}
-
-trait ProgressReporter: TransitionCallback {
+#[async_trait(?Send)]
+trait ProgressReporter: Sized + StateChangeImpl {
     fn package_uid(&self) -> String;
     fn report_enter_state_name(&self) -> &'static str;
     fn report_leave_state_name(&self) -> &'static str;
-}
 
-#[derive(Debug, PartialEq)]
-struct State<S>(S)
-where
-    State<S>: StateChangeImpl;
-
-#[derive(Debug, PartialEq)]
-enum StateMachine {
-    Park(State<Park>),
-    EntryPoint(State<EntryPoint>),
-    Poll(State<Poll>),
-    Probe(State<Probe>),
-    Validation(State<Validation>),
-    PrepareDownload(State<PrepareDownload>),
-    DirectDownload(State<DirectDownload>),
-    PrepareLocalInstall(State<PrepareLocalInstall>),
-    Download(State<Download>),
-    Install(State<Install>),
-    Reboot(State<Reboot>),
-    Error(State<Error>),
-}
-
-impl<S> State<S>
-where
-    State<S>: TransitionCallback + ProgressReporter,
-{
-    async fn handle_with_callback_and_report_progress(
-        self,
-        shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
-        let transition =
-            firmware::state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
-
-        match transition {
-            Transition::Continue => Ok(self.handle_and_report_progress(shared_state).await?),
-            Transition::Cancel => {
-                Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
-            }
-        }
-    }
-}
-
-impl<S> State<S>
-where
-    State<S>: ProgressReporter,
-{
     async fn handle_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
@@ -205,6 +158,37 @@ where
             }
         }
     }
+
+    async fn handle_with_callback_and_report_progress(
+        self,
+        shared_state: &mut actor::SharedState,
+    ) -> Result<(StateMachine, actor::StepTransition)> {
+        let transition =
+            firmware::state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
+
+        match transition {
+            Transition::Continue => Ok(self.handle_and_report_progress(shared_state).await?),
+            Transition::Cancel => {
+                Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+            }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum StateMachine {
+    Park(Park),
+    EntryPoint(EntryPoint),
+    Poll(Poll),
+    Probe(Probe),
+    Validation(Validation),
+    PrepareDownload(PrepareDownload),
+    Download(Download),
+    Install(Install),
+    Reboot(Reboot),
+    DirectDownload(DirectDownload),
+    PrepareLocalInstall(PrepareLocalInstall),
+    Error(Error),
 }
 
 fn handle_startup_callbacks(
@@ -233,7 +217,7 @@ fn handle_startup_callbacks(
 
 impl StateMachine {
     fn new() -> Self {
-        StateMachine::EntryPoint(State(EntryPoint {}))
+        StateMachine::EntryPoint(EntryPoint {})
     }
 
     async fn move_to_next_state(

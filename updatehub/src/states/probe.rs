@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, Poll, Result, State, StateChangeImpl, StateMachine, Validation,
+    EntryPoint, Result, StateChangeImpl, StateMachine, Validation,
 };
 use chrono::Utc;
 use cloud::api::ProbeResponse;
@@ -14,12 +14,9 @@ use std::time::Duration;
 #[derive(Debug, PartialEq)]
 pub(super) struct Probe;
 
-create_state_step!(Probe => EntryPoint);
-create_state_step!(Probe => Poll);
-
 /// Implements the state change for State<Probe>.
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<Probe> {
+impl StateChangeImpl for Probe {
     fn name(&self) -> &'static str {
         "probe"
     }
@@ -62,7 +59,7 @@ impl StateChangeImpl for State<Probe> {
 
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
-                Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
+                Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
             }
 
             ProbeResponse::ExtraPoll(s) => {
@@ -79,7 +76,7 @@ impl StateChangeImpl for State<Probe> {
 
                 info!("update received.");
                 Ok((
-                    StateMachine::Validation(State(Validation { package, sign })),
+                    StateMachine::Validation(Validation { package, sign }),
                     actor::StepTransition::Immediate,
                 ))
             }
@@ -98,7 +95,7 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::InvalidUri);
 
-        let res = StateMachine::Probe(State(Probe {})).move_to_next_state(&mut shared_state).await;
+        let res = StateMachine::Probe(Probe {}).move_to_next_state(&mut shared_state).await;
 
         match res {
             Err(crate::states::TransitionError::Client(_)) => {}
@@ -113,11 +110,8 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::NoUpdate);
 
-        let machine = StateMachine::Probe(State(Probe {}))
-            .move_to_next_state(&mut shared_state)
-            .await
-            .unwrap()
-            .0;
+        let machine =
+            StateMachine::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         assert_state!(machine, EntryPoint);
     }
@@ -128,11 +122,8 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::HasUpdate);
 
-        let machine = StateMachine::Probe(State(Probe {}))
-            .move_to_next_state(&mut shared_state)
-            .await
-            .unwrap()
-            .0;
+        let machine =
+            StateMachine::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         assert_state!(machine, Validation);
     }
@@ -143,11 +134,8 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::ExtraPoll);
 
-        let machine = StateMachine::Probe(State(Probe {}))
-            .move_to_next_state(&mut shared_state)
-            .await
-            .unwrap()
-            .0;
+        let machine =
+            StateMachine::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         assert_state!(machine, Probe);
     }

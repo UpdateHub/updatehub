@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, ProgressReporter, Result, State, StateChangeImpl, StateMachine, TransitionCallback,
+    EntryPoint, ProgressReporter, Result, StateChangeImpl, StateMachine,
 };
 use crate::update_package::UpdatePackage;
 use slog_scope::{info, warn};
@@ -14,13 +14,9 @@ pub(super) struct Reboot {
     pub(super) update_package: UpdatePackage,
 }
 
-create_state_step!(Reboot => EntryPoint);
-
-impl TransitionCallback for State<Reboot> {}
-
-impl ProgressReporter for State<Reboot> {
+impl ProgressReporter for Reboot {
     fn package_uid(&self) -> String {
-        self.0.update_package.package_uid()
+        self.update_package.package_uid()
     }
 
     fn report_enter_state_name(&self) -> &'static str {
@@ -33,7 +29,7 @@ impl ProgressReporter for State<Reboot> {
 }
 
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<Reboot> {
+impl StateChangeImpl for Reboot {
     fn name(&self) -> &'static str {
         "reboot"
     }
@@ -44,7 +40,7 @@ impl StateChangeImpl for State<Reboot> {
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
             warn!("  reboot output: stdout: {}, stderr: {}", output.stdout, output.stderr);
         }
-        Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
+        Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
     }
 }
 
@@ -58,7 +54,7 @@ mod test {
     async fn runs() {
         let setup = crate::tests::TestEnvironment::build().add_echo_binary("reboot").finish();
         let mut shared_state = setup.gen_shared_state();
-        let state = State(Reboot { update_package: get_update_package() });
+        let state = Reboot { update_package: get_update_package() };
 
         let machine =
             StateMachine::Reboot(state).move_to_next_state(&mut shared_state).await.unwrap().0;
@@ -68,7 +64,7 @@ mod test {
 
     #[test]
     fn reboot_has_transition_callback_trait() {
-        let state = State(Reboot { update_package: get_update_package() });
+        let state = Reboot { update_package: get_update_package() };
         assert_eq!(state.name(), "reboot");
     }
 }

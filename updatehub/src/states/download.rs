@@ -4,8 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, Install, ProgressReporter, Result, State, StateChangeImpl, StateMachine,
-    TransitionCallback, TransitionError,
+    Install, ProgressReporter, Result, StateChangeImpl, StateMachine, TransitionError,
 };
 use crate::{
     firmware::installation_set,
@@ -39,14 +38,10 @@ impl fmt::Debug for Download {
     }
 }
 
-create_state_step!(Download => EntryPoint);
-create_state_step!(Download => Install(update_package));
-
-impl TransitionCallback for State<Download> {}
-
-impl ProgressReporter for State<Download> {
+#[async_trait::async_trait(?Send)]
+impl ProgressReporter for Download {
     fn package_uid(&self) -> String {
-        self.0.update_package.package_uid()
+        self.update_package.package_uid()
     }
 
     fn report_enter_state_name(&self) -> &'static str {
@@ -59,7 +54,7 @@ impl ProgressReporter for State<Download> {
 }
 
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<Download> {
+impl StateChangeImpl for Download {
     fn name(&self) -> &'static str {
         "download"
     }
@@ -72,19 +67,21 @@ impl StateChangeImpl for State<Download> {
         mut self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        if let Some(vec) = self.0.download_chan.recv().await {
+        if let Some(vec) = self.download_chan.recv().await {
             vec.into_iter().try_for_each(|res| res)?;
         }
 
         let download_dir = &shared_state.settings.update.download_dir;
         if self
-            .0
             .update_package
-            .objects(self.0.installation_set)
+            .objects(self.installation_set)
             .iter()
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
-            Ok((StateMachine::Install(self.into()), actor::StepTransition::Immediate))
+            Ok((
+                StateMachine::Install(Install { update_package: self.update_package }),
+                actor::StepTransition::Immediate,
+            ))
         } else {
             Err(TransitionError::ObjectsNotReady)
         }
@@ -113,7 +110,7 @@ mod test {
         let mut shared_state = setup.gen_shared_state();
         let (obj, shasum) = fake_download_object(size);
         let predownload_state =
-            State(PrepareDownload { update_package: get_update_package_with_shasum(&shasum) });
+            PrepareDownload { update_package: get_update_package_with_shasum(&shasum) };
         let download_dir = shared_state.settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed

@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Park, Poll, Probe, Result, State, StateChangeImpl, StateMachine,
+    Park, Poll, Probe, Result, StateChangeImpl, StateMachine,
 };
 use slog_scope::{debug, info};
 
@@ -17,7 +17,7 @@ pub(super) struct EntryPoint {}
 /// If polling is disabled it stays in `State<EntryPoint>`, otherwise, it moves
 /// to `State<Poll>` state.
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<EntryPoint> {
+impl StateChangeImpl for EntryPoint {
     fn name(&self) -> &'static str {
         "entry_point"
     }
@@ -33,7 +33,7 @@ impl StateChangeImpl for State<EntryPoint> {
         if shared_state.runtime_settings.is_polling_forced() {
             info!("triggering Probe to finish update.");
             shared_state.runtime_settings.disable_force_poll()?;
-            return Ok((StateMachine::Probe(self.into()), actor::StepTransition::Immediate));
+            return Ok((StateMachine::Probe(Probe {}), actor::StepTransition::Immediate));
         }
 
         // Cleanup temporary settings from last installation
@@ -41,17 +41,13 @@ impl StateChangeImpl for State<EntryPoint> {
 
         if !shared_state.settings.polling.enabled {
             debug!("polling is disabled, parking the state machine.");
-            return Ok((StateMachine::Park(self.into()), actor::StepTransition::Immediate));
+            return Ok((StateMachine::Park(Park {}), actor::StepTransition::Immediate));
         }
 
         debug!("polling is enabled, moving to Poll state.");
-        Ok((StateMachine::Poll(self.into()), actor::StepTransition::Immediate))
+        Ok((StateMachine::Poll(Poll {}), actor::StepTransition::Immediate))
     }
 }
-
-create_state_step!(EntryPoint => Park);
-create_state_step!(EntryPoint => Poll);
-create_state_step!(EntryPoint => Probe);
 
 #[cfg(test)]
 mod tests {
@@ -62,7 +58,7 @@ mod tests {
         let setup = crate::tests::TestEnvironment::build().disable_polling().finish();
         let mut shared_state = setup.gen_shared_state();
 
-        let machine = StateMachine::EntryPoint(State(EntryPoint {}))
+        let machine = StateMachine::EntryPoint(EntryPoint {})
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
@@ -76,7 +72,7 @@ mod tests {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
 
-        let machine = StateMachine::EntryPoint(State(EntryPoint {}))
+        let machine = StateMachine::EntryPoint(EntryPoint {})
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
@@ -91,7 +87,7 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         shared_state.runtime_settings.reset_installation_settings().unwrap();
 
-        let (machine, trans) = StateMachine::EntryPoint(State(EntryPoint {}))
+        let (machine, trans) = StateMachine::EntryPoint(EntryPoint {})
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap();
