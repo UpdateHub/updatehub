@@ -10,7 +10,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [features]
-default = []
+default = ["test-env"]
 
 # Feature to allow deserialization from v1 Settings
 v1-parsing = ["serde_ini"]
