@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Download, Result, State, StateChangeImpl, StateMachine,
+    Download, Result, StateChangeImpl, StateMachine,
 };
 use crate::{
     firmware::installation_set,
@@ -19,7 +19,7 @@ pub(super) struct PrepareDownload {
 }
 
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<PrepareDownload> {
+impl StateChangeImpl for PrepareDownload {
     fn name(&self) -> &'static str {
         "prepare_download"
     }
@@ -35,7 +35,7 @@ impl StateChangeImpl for State<PrepareDownload> {
         let installation_set = installation_set::inactive()?;
         let download_dir = shared_state.settings.update.download_dir.to_owned();
 
-        self.0.update_package.clear_unrelated_files(
+        self.update_package.clear_unrelated_files(
             &download_dir,
             installation_set,
             &shared_state.settings,
@@ -43,7 +43,6 @@ impl StateChangeImpl for State<PrepareDownload> {
 
         // Get shasums of missing or incomplete objects
         let shasum_list: Vec<_> = self
-            .0
             .update_package
             .objects(installation_set)
             .iter()
@@ -63,7 +62,7 @@ impl StateChangeImpl for State<PrepareDownload> {
         // Get ownership of remaining data that will be sent to new thread
         let server = shared_state.server_address().to_owned();
         let product_uid = shared_state.firmware.product_uid.to_owned();
-        let package_uid = self.0.update_package.package_uid();
+        let package_uid = self.update_package.package_uid();
         let (mut sndr, recv) = tokio::sync::mpsc::channel(1);
 
         // Download the missing or incomplete objects
@@ -79,11 +78,11 @@ impl StateChangeImpl for State<PrepareDownload> {
         });
 
         Ok((
-            StateMachine::Download(State(Download {
-                update_package: self.0.update_package,
+            StateMachine::Download(Download {
+                update_package: self.update_package,
                 installation_set,
                 download_chan: recv,
-            })),
+            }),
             actor::StepTransition::Immediate,
         ))
     }

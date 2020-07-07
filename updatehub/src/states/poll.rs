@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Probe, Result, State, StateChangeImpl, StateMachine,
+    Probe, Result, StateChangeImpl, StateMachine,
 };
 use chrono::Utc;
 use slog_scope::{debug, info};
@@ -12,13 +12,11 @@ use slog_scope::{debug, info};
 #[derive(Debug, PartialEq)]
 pub(super) struct Poll {}
 
-create_state_step!(Poll => Probe);
-
 /// Implements the state change for `State<Poll>`.
 ///
 /// This state is used to control when to go to the `State<Probe>`.
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<Poll> {
+impl StateChangeImpl for Poll {
     fn name(&self) -> &'static str {
         "poll"
     }
@@ -39,14 +37,11 @@ impl StateChangeImpl for State<Poll> {
 
         if delay > interval || delay.num_seconds() < 0 {
             info!("forcing to Probe state as we are in time");
-            return Ok((StateMachine::Probe(self.into()), actor::StepTransition::Immediate));
+            return Ok((StateMachine::Probe(Probe {}), actor::StepTransition::Immediate));
         }
 
         debug!("moving to Probe state after delay.");
-        Ok((
-            StateMachine::Probe(self.into()),
-            actor::StepTransition::Delayed(delay.to_std().unwrap()),
-        ))
+        Ok((StateMachine::Probe(Probe {}), actor::StepTransition::Delayed(delay.to_std().unwrap())))
     }
 }
 
@@ -62,7 +57,7 @@ mod tests {
         shared_state.runtime_settings.polling.last = Utc::now() - Duration::minutes(10);
 
         let (machine, trans) =
-            StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap();
+            StateMachine::Poll(Poll {}).move_to_next_state(&mut shared_state).await.unwrap();
 
         assert_state!(machine, Probe);
         match trans {
@@ -78,7 +73,7 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
 
         let (machine, trans) =
-            StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap();
+            StateMachine::Poll(Poll {}).move_to_next_state(&mut shared_state).await.unwrap();
 
         assert_state!(machine, Probe);
         match trans {
@@ -94,7 +89,7 @@ mod tests {
         shared_state.runtime_settings.polling.last = Utc::now() + Duration::days(1);
 
         let (machine, trans) =
-            StateMachine::Poll(State(Poll {})).move_to_next_state(&mut shared_state).await.unwrap();
+            StateMachine::Poll(Poll {}).move_to_next_state(&mut shared_state).await.unwrap();
 
         assert_state!(machine, Probe);
         match trans {

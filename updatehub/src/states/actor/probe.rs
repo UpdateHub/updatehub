@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{EntryPoint, State, StateMachine, Validation};
+use super::{EntryPoint, StateMachine, Validation};
 use actix::{fut::WrapFuture, Addr, AsyncContext, AtomicResponse, Context, Handler, Message};
 use chrono::Utc;
 use cloud::api::ProbeResponse;
@@ -62,7 +62,7 @@ impl super::Machine {
                     // Store timestamp of last polling
                     self.shared_state.runtime_settings.set_last_polling(Utc::now())?;
                     self.stepper.restart(addr);
-                    self.state.replace(StateMachine::EntryPoint(State(EntryPoint {})));
+                    self.state.replace(StateMachine::EntryPoint(EntryPoint {}));
                     Ok(Response::Unavailable)
                 }
 
@@ -70,8 +70,7 @@ impl super::Machine {
                     // Store timestamp of last polling
                     self.shared_state.runtime_settings.set_last_polling(Utc::now())?;
                     self.stepper.restart(addr);
-                    self.state
-                        .replace(StateMachine::Validation(State(Validation { package, sign })));
+                    self.state.replace(StateMachine::Validation(Validation { package, sign }));
                     Ok(Response::Available)
                 }
             };

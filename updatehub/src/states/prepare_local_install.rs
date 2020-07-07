@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Install, Result, State, StateChangeImpl, StateMachine,
+    Install, Result, StateChangeImpl, StateMachine,
 };
 use crate::{
     firmware::installation_set,
@@ -23,7 +23,7 @@ pub(super) struct PrepareLocalInstall {
 }
 
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<PrepareLocalInstall> {
+impl StateChangeImpl for PrepareLocalInstall {
     fn name(&self) -> &'static str {
         "prepare_local_install"
     }
@@ -32,12 +32,12 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
         self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        info!("prepare local install: {}", self.0.update_file.display());
+        info!("prepare local install: {}", self.update_file.display());
         let dest_path = shared_state.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
 
         let mut metadata = Vec::with_capacity(1024);
-        let mut source = fs::File::open(self.0.update_file)?;
+        let mut source = fs::File::open(self.update_file)?;
         compress_tools::uncompress_archive_file(&mut source, &mut metadata, "metadata")?;
         let update_package = UpdatePackage::parse(&metadata)?;
         trace!("successfuly uncompressed metadata file");
@@ -78,9 +78,6 @@ impl StateChangeImpl for State<PrepareLocalInstall> {
             &shared_state.settings,
         )?;
 
-        Ok((
-            StateMachine::Install(State(Install { update_package })),
-            actor::StepTransition::Immediate,
-        ))
+        Ok((StateMachine::Install(Install { update_package }), actor::StepTransition::Immediate))
     }
 }

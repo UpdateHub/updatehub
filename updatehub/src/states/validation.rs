@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, PrepareDownload, Result, State, StateChangeImpl, StateMachine,
+    EntryPoint, PrepareDownload, Result, StateChangeImpl, StateMachine,
 };
 use crate::update_package::UpdatePackageExt;
 use slog_scope::{debug, error, info, trace};
@@ -15,11 +15,9 @@ pub(super) struct Validation {
     pub(super) sign: Option<cloud::api::Signature>,
 }
 
-create_state_step!(Validation => EntryPoint);
-
 /// Implements the state change for State<Validation>.
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<Validation> {
+impl StateChangeImpl for Validation {
     fn name(&self) -> &'static str {
         "validation"
     }
@@ -33,10 +31,10 @@ impl StateChangeImpl for State<Validation> {
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
         if let Some(key) = shared_state.firmware.pub_key.as_ref() {
-            match self.0.sign.as_ref() {
+            match self.sign.as_ref() {
                 Some(sign) => {
                     debug!("validating signature");
-                    sign.validate(key, &self.0.package)?;
+                    sign.validate(key, &self.package)?;
                 }
                 None => {
                     error!("missing signature key");
@@ -46,22 +44,20 @@ impl StateChangeImpl for State<Validation> {
         }
 
         // Ensure the package is compatible
-        self.0.package.compatible_with(&shared_state.firmware)?;
+        self.package.compatible_with(&shared_state.firmware)?;
 
         if shared_state
             .runtime_settings
             .applied_package_uid()
-            .map(|u| *u == self.0.package.package_uid())
+            .map(|u| *u == self.package.package_uid())
             .unwrap_or_default()
         {
             info!("not downloading update package, the same package has already been installed.");
-            Ok((StateMachine::EntryPoint(self.into()), actor::StepTransition::Immediate))
+            Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
         } else {
             trace!("moving to PrepareDownload state to process the update package.");
             Ok((
-                StateMachine::PrepareDownload(State(PrepareDownload {
-                    update_package: self.0.package,
-                })),
+                StateMachine::PrepareDownload(PrepareDownload { update_package: self.package }),
                 actor::StepTransition::Immediate,
             ))
         }
@@ -80,7 +76,7 @@ mod tests {
         let package = get_update_package();
         let sign = None;
 
-        let machine = StateMachine::Validation(State(Validation { package, sign }))
+        let machine = StateMachine::Validation(Validation { package, sign })
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
@@ -95,7 +91,7 @@ mod tests {
         let package = get_update_package();
         let sign = None;
 
-        let machine = StateMachine::Validation(State(Validation { package, sign }))
+        let machine = StateMachine::Validation(Validation { package, sign })
             .move_to_next_state(&mut shared_state)
             .await;
 
@@ -113,7 +109,7 @@ mod tests {
         let sign = None;
         shared_state.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
 
-        let machine = StateMachine::Validation(State(Validation { package, sign }))
+        let machine = StateMachine::Validation(Validation { package, sign })
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
@@ -131,7 +127,7 @@ mod tests {
         let sign = None;
         shared_state.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
 
-        let res = StateMachine::Validation(State(Validation { package, sign }))
+        let res = StateMachine::Validation(Validation { package, sign })
             .move_to_next_state(&mut shared_state)
             .await;
         match res {

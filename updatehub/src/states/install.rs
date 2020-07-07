@@ -4,8 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, ProgressReporter, Reboot, Result, State, StateChangeImpl, StateMachine,
-    TransitionCallback,
+    ProgressReporter, Reboot, Result, StateChangeImpl, StateMachine,
 };
 use crate::{
     firmware::installation_set,
@@ -19,14 +18,9 @@ pub(super) struct Install {
     pub(super) update_package: UpdatePackage,
 }
 
-create_state_step!(Install => EntryPoint);
-create_state_step!(Install => Reboot(update_package));
-
-impl TransitionCallback for State<Install> {}
-
-impl ProgressReporter for State<Install> {
+impl ProgressReporter for Install {
     fn package_uid(&self) -> String {
-        self.0.update_package.package_uid()
+        self.update_package.package_uid()
     }
 
     fn report_enter_state_name(&self) -> &'static str {
@@ -58,7 +52,7 @@ pub(crate) trait ObjectInstaller {
 }
 
 #[async_trait::async_trait(?Send)]
-impl StateChangeImpl for State<Install> {
+impl StateChangeImpl for Install {
     fn name(&self) -> &'static str {
         "install"
     }
@@ -67,7 +61,7 @@ impl StateChangeImpl for State<Install> {
         mut self,
         shared_state: &mut SharedState,
     ) -> Result<(StateMachine, actor::StepTransition)> {
-        let package_uid = self.0.update_package.package_uid();
+        let package_uid = self.update_package.package_uid();
         info!("installing update: {}", &package_uid);
 
         let installation_set = shared_state.runtime_settings.get_inactive_installation_set()?;
@@ -78,7 +72,7 @@ impl StateChangeImpl for State<Install> {
         // - verify if the object needs to be installed, accordingly to the install if
         //   different rule.
 
-        let objs = self.0.update_package.objects_mut(installation_set);
+        let objs = self.update_package.objects_mut(installation_set);
         objs.iter().try_for_each(object::Installer::check_requirements)?;
         objs.iter_mut().try_for_each(object::Installer::setup)?;
         objs.iter_mut().try_for_each(|obj| {
@@ -97,7 +91,10 @@ impl StateChangeImpl for State<Install> {
         info!("swapping active installation set");
 
         info!("update installed successfully");
-        Ok((StateMachine::Reboot(self.into()), actor::StepTransition::Immediate))
+        Ok((
+            StateMachine::Reboot(Reboot { update_package: self.update_package }),
+            actor::StepTransition::Immediate,
+        ))
     }
 }
 
@@ -111,7 +108,7 @@ mod test {
     async fn has_package_uid_if_succeed() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
-        let state = State(Install { update_package: get_update_package() });
+        let state = Install { update_package: get_update_package() };
 
         let machine =
             StateMachine::Install(state).move_to_next_state(&mut shared_state).await.unwrap().0;

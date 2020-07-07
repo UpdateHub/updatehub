@@ -64,7 +64,7 @@ fn setup_actor(kind: Setup, probe: Probe) -> (Addr<Machine>, crate::tests::TestE
         // We use the actix::Actor::start here instead of the Machine::start in order to not
         // start the stepper and thus have control of how many steps are been sent to the Machine
         actix::Actor::start(Machine::new(
-            StateMachine::EntryPoint(State(EntryPoint {})),
+            StateMachine::EntryPoint(EntryPoint {}),
             setup.settings.data.clone(),
             setup.runtime_settings.data.clone(),
             setup.firmware.data.clone(),
