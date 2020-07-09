@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     Probe, Result, State, StateChangeImpl,
 };
 use chrono::Utc;
@@ -28,7 +28,7 @@ impl StateChangeImpl for Poll {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         crate::logger::start_memory_logging();
 
         let interval = shared_state.settings.polling.interval;
@@ -37,11 +37,11 @@ impl StateChangeImpl for Poll {
 
         if delay > interval || delay.num_seconds() < 0 {
             info!("forcing to Probe state as we are in time");
-            return Ok((State::Probe(Probe {}), actor::StepTransition::Immediate));
+            return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
         }
 
         debug!("moving to Probe state after delay.");
-        Ok((State::Probe(Probe {}), actor::StepTransition::Delayed(delay.to_std().unwrap())))
+        Ok((State::Probe(Probe {}), machine::StepTransition::Delayed(delay.to_std().unwrap())))
     }
 }
 
@@ -61,7 +61,7 @@ mod tests {
 
         assert_state!(machine, Probe);
         match trans {
-            actor::StepTransition::Delayed(d)
+            machine::StepTransition::Delayed(d)
                 if d <= shared_state.settings.polling.interval.to_std().unwrap() => {}
             _ => panic!("Unexpected StepTransition: {:?}", trans),
         }
@@ -77,7 +77,7 @@ mod tests {
 
         assert_state!(machine, Probe);
         match trans {
-            actor::StepTransition::Immediate => {}
+            machine::StepTransition::Immediate => {}
             _ => panic!("Unexpected StepTransition: {:?}", trans),
         }
     }
@@ -93,7 +93,7 @@ mod tests {
 
         assert_state!(machine, Probe);
         match trans {
-            actor::StepTransition::Immediate => {}
+            machine::StepTransition::Immediate => {}
             _ => panic!("Unexpected StepTransition: {:?}", trans),
         }
     }

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     ProgressReporter, Reboot, Result, State, StateChangeImpl,
 };
 use crate::{
@@ -60,7 +60,7 @@ impl StateChangeImpl for Install {
     async fn handle(
         mut self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         let package_uid = self.update_package.package_uid();
         info!("installing update: {}", &package_uid);
 
@@ -93,7 +93,7 @@ impl StateChangeImpl for Install {
         info!("update installed successfully");
         Ok((
             State::Reboot(Reboot { update_package: self.update_package }),
-            actor::StepTransition::Immediate,
+            machine::StepTransition::Immediate,
         ))
     }
 }

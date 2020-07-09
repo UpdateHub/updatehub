@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     Park, Poll, Probe, Result, State, StateChangeImpl,
 };
 use slog_scope::{debug, info};
@@ -29,11 +29,11 @@ impl StateChangeImpl for EntryPoint {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         if shared_state.runtime_settings.is_polling_forced() {
             info!("triggering Probe to finish update.");
             shared_state.runtime_settings.disable_force_poll()?;
-            return Ok((State::Probe(Probe {}), actor::StepTransition::Immediate));
+            return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
         }
 
         // Cleanup temporary settings from last installation
@@ -41,11 +41,11 @@ impl StateChangeImpl for EntryPoint {
 
         if !shared_state.settings.polling.enabled {
             debug!("polling is disabled, parking the state machine.");
-            return Ok((State::Park(Park {}), actor::StepTransition::Immediate));
+            return Ok((State::Park(Park {}), machine::StepTransition::Immediate));
         }
 
         debug!("polling is enabled, moving to Poll state.");
-        Ok((State::Poll(Poll {}), actor::StepTransition::Immediate))
+        Ok((State::Poll(Poll {}), machine::StepTransition::Immediate))
     }
 }
 
@@ -86,7 +86,7 @@ mod tests {
 
         assert_state!(machine, Probe);
         match trans {
-            actor::StepTransition::Immediate => {}
+            machine::StepTransition::Immediate => {}
             _ => panic!("Unexpected StepTransition: {:?}", trans),
         }
     }

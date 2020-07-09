@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     EntryPoint, Result, State, StateChangeImpl, Validation,
 };
 use chrono::Utc;
@@ -28,7 +28,7 @@ impl StateChangeImpl for Probe {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         let server_address = shared_state.server_address();
 
         let probe = match crate::CloudClient::new(&server_address)
@@ -46,7 +46,7 @@ impl StateChangeImpl for Probe {
                 shared_state.runtime_settings.inc_retries();
                 return Ok((
                     State::Probe(self),
-                    actor::StepTransition::Delayed(Duration::from_secs(1)),
+                    machine::StepTransition::Delayed(Duration::from_secs(1)),
                 ));
             }
             Ok(probe) => probe,
@@ -59,14 +59,14 @@ impl StateChangeImpl for Probe {
 
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
-                Ok((State::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+                Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
             }
 
             ProbeResponse::ExtraPoll(s) => {
                 info!("delaying the probing as requested by the server.");
                 Ok((
                     State::Probe(self),
-                    actor::StepTransition::Delayed(Duration::from_secs(s as u64)),
+                    machine::StepTransition::Delayed(Duration::from_secs(s as u64)),
                 ))
             }
 
@@ -77,7 +77,7 @@ impl StateChangeImpl for Probe {
                 info!("update received.");
                 Ok((
                     State::Validation(Validation { package, sign }),
-                    actor::StepTransition::Immediate,
+                    machine::StepTransition::Immediate,
                 ))
             }
         }
