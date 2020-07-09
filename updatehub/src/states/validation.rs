@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, PrepareDownload, Result, StateChangeImpl, StateMachine,
+    EntryPoint, PrepareDownload, Result, State, StateChangeImpl,
 };
 use crate::update_package::UpdatePackageExt;
 use slog_scope::{debug, error, info, trace};
@@ -29,7 +29,7 @@ impl StateChangeImpl for Validation {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         if let Some(key) = shared_state.firmware.pub_key.as_ref() {
             match self.sign.as_ref() {
                 Some(sign) => {
@@ -53,11 +53,11 @@ impl StateChangeImpl for Validation {
             .unwrap_or_default()
         {
             info!("not downloading update package, the same package has already been installed.");
-            Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+            Ok((State::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
         } else {
             trace!("moving to PrepareDownload state to process the update package.");
             Ok((
-                StateMachine::PrepareDownload(PrepareDownload { update_package: self.package }),
+                State::PrepareDownload(PrepareDownload { update_package: self.package }),
                 actor::StepTransition::Immediate,
             ))
         }
@@ -76,7 +76,7 @@ mod tests {
         let package = get_update_package();
         let sign = None;
 
-        let machine = StateMachine::Validation(Validation { package, sign })
+        let machine = State::Validation(Validation { package, sign })
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
@@ -91,7 +91,7 @@ mod tests {
         let package = get_update_package();
         let sign = None;
 
-        let machine = StateMachine::Validation(Validation { package, sign })
+        let machine = State::Validation(Validation { package, sign })
             .move_to_next_state(&mut shared_state)
             .await;
 
@@ -109,7 +109,7 @@ mod tests {
         let sign = None;
         shared_state.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
 
-        let machine = StateMachine::Validation(Validation { package, sign })
+        let machine = State::Validation(Validation { package, sign })
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
@@ -127,7 +127,7 @@ mod tests {
         let sign = None;
         shared_state.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
 
-        let res = StateMachine::Validation(Validation { package, sign })
+        let res = State::Validation(Validation { package, sign })
             .move_to_next_state(&mut shared_state)
             .await;
         match res {

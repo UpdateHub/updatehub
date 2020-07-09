@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{EntryPoint, StateMachine, Validation};
+use super::{EntryPoint, State, Validation};
 use actix::{fut::WrapFuture, Addr, AsyncContext, AtomicResponse, Context, Handler, Message};
 use chrono::Utc;
 use cloud::api::ProbeResponse;
@@ -41,7 +41,7 @@ impl super::Machine {
         addr: Addr<Self>,
         custom_server: Option<String>,
     ) -> super::Result<Response> {
-        let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
+        let machine = self.state.as_ref().expect("Failed to take State's ownership");
 
         if machine.for_current_state(|s| s.is_preemptive_state()) {
             self.shared_state.runtime_settings.reset_transient_settings();
@@ -62,7 +62,7 @@ impl super::Machine {
                     // Store timestamp of last polling
                     self.shared_state.runtime_settings.set_last_polling(Utc::now())?;
                     self.stepper.restart(addr);
-                    self.state.replace(StateMachine::EntryPoint(EntryPoint {}));
+                    self.state.replace(State::EntryPoint(EntryPoint {}));
                     Ok(Response::Unavailable)
                 }
 
@@ -70,7 +70,7 @@ impl super::Machine {
                     // Store timestamp of last polling
                     self.shared_state.runtime_settings.set_last_polling(Utc::now())?;
                     self.stepper.restart(addr);
-                    self.state.replace(StateMachine::Validation(Validation { package, sign }));
+                    self.state.replace(State::Validation(Validation { package, sign }));
                     Ok(Response::Available)
                 }
             };

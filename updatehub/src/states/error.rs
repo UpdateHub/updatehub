@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, Result, StateChangeImpl, StateMachine, TransitionError,
+    EntryPoint, Result, State, StateChangeImpl, TransitionError,
 };
 
 use crate::firmware;
@@ -28,7 +28,7 @@ impl StateChangeImpl for Error {
         "error"
     }
 
-    async fn handle(self, st: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
+    async fn handle(self, st: &mut SharedState) -> Result<(State, actor::StepTransition)> {
         error!("error state reached: {}", self.error);
 
         if let Err(err) = firmware::error_callback(&st.settings.firmware.metadata) {
@@ -36,12 +36,12 @@ impl StateChangeImpl for Error {
         }
 
         info!("returning to machine's entry point");
-        Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+        Ok((State::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
     }
 }
 
-impl From<TransitionError> for StateMachine {
-    fn from(error: TransitionError) -> StateMachine {
-        StateMachine::Error(Error { error })
+impl From<TransitionError> for State {
+    fn from(error: TransitionError) -> State {
+        State::Error(Error { error })
     }
 }

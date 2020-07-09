@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{EntryPoint, StateMachine};
+use super::{EntryPoint, State};
 use actix::{Context, Handler, Message, MessageResult};
 
 #[derive(Message)]
@@ -18,10 +18,10 @@ impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
-        let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
+        let machine = self.state.as_ref().expect("Failed to take State's ownership");
 
         if machine.for_current_state(|s| s.is_handling_download()) {
-            self.state.replace(StateMachine::EntryPoint(EntryPoint {}));
+            self.state.replace(State::EntryPoint(EntryPoint {}));
             return MessageResult(Response::RequestAccepted);
         }
 

@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, Result, StateChangeImpl, StateMachine, Validation,
+    EntryPoint, Result, State, StateChangeImpl, Validation,
 };
 use chrono::Utc;
 use cloud::api::ProbeResponse;
@@ -28,7 +28,7 @@ impl StateChangeImpl for Probe {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         let server_address = shared_state.server_address();
 
         let probe = match crate::CloudClient::new(&server_address)
@@ -45,7 +45,7 @@ impl StateChangeImpl for Probe {
                 error!("Probe failed: {}", e);
                 shared_state.runtime_settings.inc_retries();
                 return Ok((
-                    StateMachine::Probe(self),
+                    State::Probe(self),
                     actor::StepTransition::Delayed(Duration::from_secs(1)),
                 ));
             }
@@ -59,13 +59,13 @@ impl StateChangeImpl for Probe {
 
                 // Store timestamp of last polling
                 shared_state.runtime_settings.set_last_polling(Utc::now())?;
-                Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+                Ok((State::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
             }
 
             ProbeResponse::ExtraPoll(s) => {
                 info!("delaying the probing as requested by the server.");
                 Ok((
-                    StateMachine::Probe(self),
+                    State::Probe(self),
                     actor::StepTransition::Delayed(Duration::from_secs(s as u64)),
                 ))
             }
@@ -76,7 +76,7 @@ impl StateChangeImpl for Probe {
 
                 info!("update received.");
                 Ok((
-                    StateMachine::Validation(Validation { package, sign }),
+                    State::Validation(Validation { package, sign }),
                     actor::StepTransition::Immediate,
                 ))
             }
@@ -95,7 +95,7 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::InvalidUri);
 
-        let res = StateMachine::Probe(Probe {}).move_to_next_state(&mut shared_state).await;
+        let res = State::Probe(Probe {}).move_to_next_state(&mut shared_state).await;
 
         match res {
             Err(crate::states::TransitionError::Client(_)) => {}
@@ -110,8 +110,7 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::NoUpdate);
 
-        let machine =
-            StateMachine::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         assert_state!(machine, EntryPoint);
     }
@@ -122,8 +121,7 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::HasUpdate);
 
-        let machine =
-            StateMachine::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         assert_state!(machine, Validation);
     }
@@ -134,8 +132,7 @@ mod tests {
         let mut shared_state = setup.gen_shared_state();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::ExtraPoll);
 
-        let machine =
-            StateMachine::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         assert_state!(machine, Probe);
     }

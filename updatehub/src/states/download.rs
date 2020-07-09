@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Install, ProgressReporter, Result, StateChangeImpl, StateMachine, TransitionError,
+    Install, ProgressReporter, Result, State, StateChangeImpl, TransitionError,
 };
 use crate::{
     firmware::installation_set,
@@ -66,7 +66,7 @@ impl StateChangeImpl for Download {
     async fn handle(
         mut self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         if let Some(vec) = self.download_chan.recv().await {
             vec.into_iter().try_for_each(|res| res)?;
         }
@@ -79,7 +79,7 @@ impl StateChangeImpl for Download {
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
             Ok((
-                StateMachine::Install(Install { update_package: self.update_package }),
+                State::Install(Install { update_package: self.update_package }),
                 actor::StepTransition::Immediate,
             ))
         } else {
@@ -118,7 +118,7 @@ mod test {
 
         cloud_mock::set_download_data(obj);
 
-        let mut machine = StateMachine::PrepareDownload(predownload_state)
+        let mut machine = State::PrepareDownload(predownload_state)
             .move_to_next_state(&mut shared_state)
             .await
             .unwrap()
@@ -126,7 +126,7 @@ mod test {
         assert_state!(machine, Download);
         loop {
             machine = machine.move_to_next_state(&mut shared_state).await.unwrap().0;
-            if let StateMachine::Install(_) = machine {
+            if let State::Install(_) = machine {
                 break;
             }
         }

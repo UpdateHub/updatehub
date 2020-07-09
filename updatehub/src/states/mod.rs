@@ -87,7 +87,7 @@ trait StateChangeImpl {
     async fn handle(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)>;
+    ) -> Result<(State, actor::StepTransition)>;
 
     fn name(&self) -> &'static str;
 
@@ -114,7 +114,7 @@ trait ProgressReporter: Sized + StateChangeImpl {
     async fn handle_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         let server = shared_state.server_address().to_owned();
         let firmware = &shared_state.firmware.clone();
         let package_uid = &self.package_uid();
@@ -162,21 +162,21 @@ trait ProgressReporter: Sized + StateChangeImpl {
     async fn handle_with_callback_and_report_progress(
         self,
         shared_state: &mut actor::SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         let transition =
             firmware::state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
 
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress(shared_state).await?),
             Transition::Cancel => {
-                Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+                Ok((State::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
             }
         }
     }
 }
 
 #[derive(Debug, PartialEq)]
-enum StateMachine {
+enum State {
     Park(Park),
     EntryPoint(EntryPoint),
     Poll(Poll),
@@ -215,9 +215,9 @@ fn handle_startup_callbacks(
     Ok(())
 }
 
-impl StateMachine {
+impl State {
     fn new() -> Self {
-        StateMachine::EntryPoint(EntryPoint {})
+        State::EntryPoint(EntryPoint {})
     }
 
     async fn move_to_next_state(
@@ -225,24 +225,18 @@ impl StateMachine {
         shared_state: &mut actor::SharedState,
     ) -> Result<(Self, actor::StepTransition)> {
         match self {
-            StateMachine::Error(s) => s.handle(shared_state).await,
-            StateMachine::Park(s) => s.handle(shared_state).await,
-            StateMachine::EntryPoint(s) => s.handle(shared_state).await,
-            StateMachine::Poll(s) => s.handle(shared_state).await,
-            StateMachine::Probe(s) => s.handle(shared_state).await,
-            StateMachine::Validation(s) => s.handle(shared_state).await,
-            StateMachine::PrepareDownload(s) => s.handle(shared_state).await,
-            StateMachine::DirectDownload(s) => s.handle(shared_state).await,
-            StateMachine::PrepareLocalInstall(s) => s.handle(shared_state).await,
-            StateMachine::Download(s) => {
-                s.handle_with_callback_and_report_progress(shared_state).await
-            }
-            StateMachine::Install(s) => {
-                s.handle_with_callback_and_report_progress(shared_state).await
-            }
-            StateMachine::Reboot(s) => {
-                s.handle_with_callback_and_report_progress(shared_state).await
-            }
+            State::Error(s) => s.handle(shared_state).await,
+            State::Park(s) => s.handle(shared_state).await,
+            State::EntryPoint(s) => s.handle(shared_state).await,
+            State::Poll(s) => s.handle(shared_state).await,
+            State::Probe(s) => s.handle(shared_state).await,
+            State::Validation(s) => s.handle(shared_state).await,
+            State::PrepareDownload(s) => s.handle(shared_state).await,
+            State::DirectDownload(s) => s.handle(shared_state).await,
+            State::PrepareLocalInstall(s) => s.handle(shared_state).await,
+            State::Download(s) => s.handle_with_callback_and_report_progress(shared_state).await,
+            State::Install(s) => s.handle_with_callback_and_report_progress(shared_state).await,
+            State::Reboot(s) => s.handle_with_callback_and_report_progress(shared_state).await,
         }
     }
 
@@ -251,18 +245,18 @@ impl StateMachine {
         F: Fn(&dyn StateChangeImpl) -> A,
     {
         match self {
-            StateMachine::Error(s) => f(s),
-            StateMachine::Park(s) => f(s),
-            StateMachine::EntryPoint(s) => f(s),
-            StateMachine::Poll(s) => f(s),
-            StateMachine::Probe(s) => f(s),
-            StateMachine::Validation(s) => f(s),
-            StateMachine::PrepareDownload(s) => f(s),
-            StateMachine::DirectDownload(s) => f(s),
-            StateMachine::PrepareLocalInstall(s) => f(s),
-            StateMachine::Download(s) => f(s),
-            StateMachine::Install(s) => f(s),
-            StateMachine::Reboot(s) => f(s),
+            State::Error(s) => f(s),
+            State::Park(s) => f(s),
+            State::EntryPoint(s) => f(s),
+            State::Poll(s) => f(s),
+            State::Probe(s) => f(s),
+            State::Validation(s) => f(s),
+            State::PrepareDownload(s) => f(s),
+            State::DirectDownload(s) => f(s),
+            State::PrepareLocalInstall(s) => f(s),
+            State::Download(s) => f(s),
+            State::Install(s) => f(s),
+            State::Reboot(s) => f(s),
         }
     }
 }
@@ -313,7 +307,7 @@ pub async fn run(settings: &Path) -> crate::Result<()> {
     }
 
     let machine_addr =
-        actor::Machine::new(StateMachine::new(), settings, runtime_settings, firmware).start();
+        actor::Machine::new(State::new(), settings, runtime_settings, firmware).start();
     actix_web::HttpServer::new(move || {
         actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, machine_addr.clone()))
     })

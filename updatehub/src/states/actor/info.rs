@@ -14,7 +14,7 @@ impl Handler<Request> for super::Machine {
     type Result = MessageResult<Request>;
 
     fn handle(&mut self, _: Request, _: &mut Context<Self>) -> Self::Result {
-        let machine = self.state.as_ref().expect("Failed to take StateMachine's ownership");
+        let machine = self.state.as_ref().expect("Failed to take State's ownership");
         let state = machine.for_current_state(|s| s.name().to_owned());
         MessageResult(Response {
             state,
