@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     PrepareLocalInstall, Result, State, StateChangeImpl,
 };
 use slog_scope::info;
@@ -22,7 +22,7 @@ impl StateChangeImpl for DirectDownload {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         info!("fetching update package directly from url: {:?}", self.url);
 
         let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
@@ -31,7 +31,7 @@ impl StateChangeImpl for DirectDownload {
 
         Ok((
             State::PrepareLocalInstall(PrepareLocalInstall { update_file }),
-            actor::StepTransition::Immediate,
+            machine::StepTransition::Immediate,
         ))
     }
 }

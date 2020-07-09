@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     Install, ProgressReporter, Result, State, StateChangeImpl, TransitionError,
 };
 use crate::{
@@ -66,7 +66,7 @@ impl StateChangeImpl for Download {
     async fn handle(
         mut self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         if let Some(vec) = self.download_chan.recv().await {
             vec.into_iter().try_for_each(|res| res)?;
         }
@@ -80,7 +80,7 @@ impl StateChangeImpl for Download {
         {
             Ok((
                 State::Install(Install { update_package: self.update_package }),
-                actor::StepTransition::Immediate,
+                machine::StepTransition::Immediate,
             ))
         } else {
             Err(TransitionError::ObjectsNotReady)

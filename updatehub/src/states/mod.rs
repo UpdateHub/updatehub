@@ -4,12 +4,12 @@
 
 #[macro_use]
 mod macros;
-pub(crate) mod actor;
 mod direct_download;
 mod download;
 mod entry_point;
 mod error;
 pub(crate) mod install;
+pub(crate) mod machine;
 mod park;
 mod poll;
 mod prepare_download;
@@ -75,9 +75,6 @@ pub enum TransitionError {
     #[error("non Utf8 error: {0}")]
     NonUtf8(#[from] std::string::FromUtf8Error),
 
-    #[error("mailbox error: {0}")]
-    ActixMailbox(#[from] actix::MailboxError),
-
     #[error("process error: {0}")]
     Process(#[from] easy_process::Error),
 }
@@ -86,8 +83,8 @@ pub enum TransitionError {
 trait StateChangeImpl {
     async fn handle(
         self,
-        shared_state: &mut actor::SharedState,
-    ) -> Result<(State, actor::StepTransition)>;
+        shared_state: &mut machine::SharedState,
+    ) -> Result<(State, machine::StepTransition)>;
 
     fn name(&self) -> &'static str;
 
@@ -113,8 +110,8 @@ trait ProgressReporter: Sized + StateChangeImpl {
 
     async fn handle_and_report_progress(
         self,
-        shared_state: &mut actor::SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+        shared_state: &mut machine::SharedState,
+    ) -> Result<(State, machine::StepTransition)> {
         let server = shared_state.server_address().to_owned();
         let firmware = &shared_state.firmware.clone();
         let package_uid = &self.package_uid();
@@ -161,15 +158,15 @@ trait ProgressReporter: Sized + StateChangeImpl {
 
     async fn handle_with_callback_and_report_progress(
         self,
-        shared_state: &mut actor::SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+        shared_state: &mut machine::SharedState,
+    ) -> Result<(State, machine::StepTransition)> {
         let transition =
             firmware::state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
 
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress(shared_state).await?),
             Transition::Cancel => {
-                Ok((State::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+                Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
             }
         }
     }
@@ -215,6 +212,28 @@ fn handle_startup_callbacks(
     Ok(())
 }
 
+#[async_trait(?Send)]
+impl StateChangeImpl for State {
+    async fn handle(
+        self,
+        st: &mut machine::SharedState,
+    ) -> Result<(State, machine::StepTransition)> {
+        self.move_to_next_state(st).await
+    }
+
+    fn name(&self) -> &'static str {
+        self.inner_state().name()
+    }
+
+    fn is_handling_download(&self) -> bool {
+        self.inner_state().is_handling_download()
+    }
+
+    fn is_preemptive_state(&self) -> bool {
+        self.inner_state().is_handling_download()
+    }
+}
+
 impl State {
     fn new() -> Self {
         State::EntryPoint(EntryPoint {})
@@ -222,8 +241,8 @@ impl State {
 
     async fn move_to_next_state(
         self,
-        shared_state: &mut actor::SharedState,
-    ) -> Result<(Self, actor::StepTransition)> {
+        shared_state: &mut machine::SharedState,
+    ) -> Result<(Self, machine::StepTransition)> {
         match self {
             State::Error(s) => s.handle(shared_state).await,
             State::Park(s) => s.handle(shared_state).await,
@@ -240,23 +259,20 @@ impl State {
         }
     }
 
-    fn for_current_state<F, A>(&self, f: F) -> A
-    where
-        F: Fn(&dyn StateChangeImpl) -> A,
-    {
+    fn inner_state(&self) -> &dyn StateChangeImpl {
         match self {
-            State::Error(s) => f(s),
-            State::Park(s) => f(s),
-            State::EntryPoint(s) => f(s),
-            State::Poll(s) => f(s),
-            State::Probe(s) => f(s),
-            State::Validation(s) => f(s),
-            State::PrepareDownload(s) => f(s),
-            State::DirectDownload(s) => f(s),
-            State::PrepareLocalInstall(s) => f(s),
-            State::Download(s) => f(s),
-            State::Install(s) => f(s),
-            State::Reboot(s) => f(s),
+            State::Error(s) => s,
+            State::Park(s) => s,
+            State::EntryPoint(s) => s,
+            State::Poll(s) => s,
+            State::Probe(s) => s,
+            State::Validation(s) => s,
+            State::PrepareDownload(s) => s,
+            State::DirectDownload(s) => s,
+            State::PrepareLocalInstall(s) => s,
+            State::Download(s) => s,
+            State::Install(s) => s,
+            State::Reboot(s) => s,
         }
     }
 }
@@ -306,10 +322,12 @@ pub async fn run(settings: &Path) -> crate::Result<()> {
         error!("Failed to handle startup callbacks: {}", e);
     }
 
-    let machine_addr =
-        actor::Machine::new(State::new(), settings, runtime_settings, firmware).start();
+    let machine = machine::StateMachine::new(State::new(), settings, runtime_settings, firmware);
+    let addr = machine.address();
+    actix_rt::spawn(machine.start());
+
     actix_web::HttpServer::new(move || {
-        actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, machine_addr.clone()))
+        actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, addr.clone()))
     })
     .bind(listen_socket.clone())
     .unwrap_or_else(|_| panic!("Failed to bind listen socket, {:?}, for HTTP API", listen_socket,))

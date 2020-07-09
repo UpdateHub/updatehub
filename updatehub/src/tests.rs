@@ -10,7 +10,7 @@ use std::{any::Any, env, fs, io::Write, os::unix::fs::PermissionsExt, path::Path
 
 pub use crate::{
     firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings,
-    states::actor::SharedState,
+    states::machine::SharedState,
 };
 
 pub struct TestEnvironment {

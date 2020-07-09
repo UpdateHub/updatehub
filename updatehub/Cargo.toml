@@ -17,7 +17,7 @@ v1-parsing = ["serde_ini"]
 test-env = []
 
 [dependencies]
-actix = { version = "0.10.0-alpha.2", default-features = false }
+async-std = { version = "1", features = ["unstable"] }
 actix-rt = "1"
 actix-web = { version = "3.0.0-alpha.1", default-features = false }
 argh = "0.1.3"

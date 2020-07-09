@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     Download, Result, State, StateChangeImpl,
 };
 use crate::{
@@ -31,7 +31,7 @@ impl StateChangeImpl for PrepareDownload {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         let installation_set = installation_set::inactive()?;
         let download_dir = shared_state.settings.update.download_dir.to_owned();
 
@@ -66,7 +66,7 @@ impl StateChangeImpl for PrepareDownload {
         let (mut sndr, recv) = tokio::sync::mpsc::channel(1);
 
         // Download the missing or incomplete objects
-        actix::Arbiter::spawn(async move {
+        actix_rt::spawn(async move {
             let api = crate::CloudClient::new(&server);
             let mut results = Vec::default();
             for shasum in shasum_list.iter() {
@@ -83,7 +83,7 @@ impl StateChangeImpl for PrepareDownload {
                 installation_set,
                 download_chan: recv,
             }),
-            actor::StepTransition::Immediate,
+            machine::StepTransition::Immediate,
         ))
     }
 }

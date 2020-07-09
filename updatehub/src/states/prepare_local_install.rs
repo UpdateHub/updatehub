@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     Install, Result, State, StateChangeImpl,
 };
 use crate::{
@@ -31,7 +31,7 @@ impl StateChangeImpl for PrepareLocalInstall {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         info!("prepare local install: {}", self.update_file.display());
         let dest_path = shared_state.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
@@ -78,6 +78,6 @@ impl StateChangeImpl for PrepareLocalInstall {
             &shared_state.settings,
         )?;
 
-        Ok((State::Install(Install { update_package }), actor::StepTransition::Immediate))
+        Ok((State::Install(Install { update_package }), machine::StepTransition::Immediate))
     }
 }

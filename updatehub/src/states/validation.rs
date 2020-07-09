@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    actor::{self, SharedState},
+    machine::{self, SharedState},
     EntryPoint, PrepareDownload, Result, State, StateChangeImpl,
 };
 use crate::update_package::UpdatePackageExt;
@@ -29,7 +29,7 @@ impl StateChangeImpl for Validation {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(State, actor::StepTransition)> {
+    ) -> Result<(State, machine::StepTransition)> {
         if let Some(key) = shared_state.firmware.pub_key.as_ref() {
             match self.sign.as_ref() {
                 Some(sign) => {
@@ -53,12 +53,12 @@ impl StateChangeImpl for Validation {
             .unwrap_or_default()
         {
             info!("not downloading update package, the same package has already been installed.");
-            Ok((State::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+            Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
         } else {
             trace!("moving to PrepareDownload state to process the update package.");
             Ok((
                 State::PrepareDownload(PrepareDownload { update_package: self.package }),
-                actor::StepTransition::Immediate,
+                machine::StepTransition::Immediate,
             ))
         }
     }
