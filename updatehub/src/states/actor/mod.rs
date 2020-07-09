@@ -14,8 +14,8 @@ pub(crate) mod remote_install;
 pub(crate) mod stepper;
 
 use super::{
-    DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, RuntimeSettings, Settings,
-    StateMachine, Validation,
+    DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, RuntimeSettings, Settings, State,
+    Validation,
 };
 use actix::{
     fut::WrapFuture, Actor, Addr, Arbiter, AsyncContext, AtomicResponse, Context, Handler, Message,
@@ -24,7 +24,7 @@ use slog_scope::trace;
 use thiserror::Error;
 
 pub(crate) struct Machine {
-    state: Option<StateMachine>,
+    state: Option<State>,
     shared_state: SharedState,
     stepper: stepper::Controller,
 }
@@ -68,7 +68,7 @@ impl Actor for Machine {
 
 impl Machine {
     pub(super) fn new(
-        state: StateMachine,
+        state: State,
         settings: Settings,
         runtime_settings: RuntimeSettings,
         firmware: Metadata,
@@ -108,11 +108,11 @@ impl Handler<Step> for Machine {
         AtomicResponse::new(Box::pin(
             async move {
                 let this = unsafe { this.as_mut().unwrap() };
-                let machine = this.state.take().expect("fail to take StateMachine's ownership");
+                let machine = this.state.take().expect("fail to take State's ownership");
                 let (state, transition) = machine
                     .move_to_next_state(&mut this.shared_state)
                     .await
-                    .unwrap_or_else(|e| (StateMachine::from(e), StepTransition::Immediate));
+                    .unwrap_or_else(|e| (State::from(e), StepTransition::Immediate));
                 this.state = Some(state);
 
                 transition

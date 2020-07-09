@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    EntryPoint, ProgressReporter, Result, StateChangeImpl, StateMachine,
+    EntryPoint, ProgressReporter, Result, State, StateChangeImpl,
 };
 use crate::update_package::UpdatePackage;
 use slog_scope::{info, warn};
@@ -34,13 +34,13 @@ impl StateChangeImpl for Reboot {
         "reboot"
     }
 
-    async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
+    async fn handle(self, _: &mut SharedState) -> Result<(State, actor::StepTransition)> {
         info!("triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
             warn!("  reboot output: stdout: {}, stderr: {}", output.stdout, output.stderr);
         }
-        Ok((StateMachine::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
+        Ok((State::EntryPoint(EntryPoint {}), actor::StepTransition::Immediate))
     }
 }
 
@@ -56,8 +56,7 @@ mod test {
         let mut shared_state = setup.gen_shared_state();
         let state = Reboot { update_package: get_update_package() };
 
-        let machine =
-            StateMachine::Reboot(state).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Reboot(state).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         assert_state!(machine, EntryPoint);
     }

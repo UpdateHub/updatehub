@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Result, StateChangeImpl, StateMachine,
+    Result, State, StateChangeImpl,
 };
 
 use slog_scope::debug;
@@ -24,9 +24,9 @@ impl StateChangeImpl for Park {
         true
     }
 
-    async fn handle(self, _: &mut SharedState) -> Result<(StateMachine, actor::StepTransition)> {
+    async fn handle(self, _: &mut SharedState) -> Result<(State, actor::StepTransition)> {
         debug!("staying on Park state.");
         crate::logger::stop_memory_logging();
-        Ok((StateMachine::Park(self), actor::StepTransition::Never))
+        Ok((State::Park(self), actor::StepTransition::Never))
     }
 }

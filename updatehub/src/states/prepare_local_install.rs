@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Install, Result, StateChangeImpl, StateMachine,
+    Install, Result, State, StateChangeImpl,
 };
 use crate::{
     firmware::installation_set,
@@ -31,7 +31,7 @@ impl StateChangeImpl for PrepareLocalInstall {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         info!("prepare local install: {}", self.update_file.display());
         let dest_path = shared_state.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
@@ -78,6 +78,6 @@ impl StateChangeImpl for PrepareLocalInstall {
             &shared_state.settings,
         )?;
 
-        Ok((StateMachine::Install(Install { update_package }), actor::StepTransition::Immediate))
+        Ok((State::Install(Install { update_package }), actor::StepTransition::Immediate))
     }
 }

@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    ProgressReporter, Reboot, Result, StateChangeImpl, StateMachine,
+    ProgressReporter, Reboot, Result, State, StateChangeImpl,
 };
 use crate::{
     firmware::installation_set,
@@ -60,7 +60,7 @@ impl StateChangeImpl for Install {
     async fn handle(
         mut self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         let package_uid = self.update_package.package_uid();
         info!("installing update: {}", &package_uid);
 
@@ -92,7 +92,7 @@ impl StateChangeImpl for Install {
 
         info!("update installed successfully");
         Ok((
-            StateMachine::Reboot(Reboot { update_package: self.update_package }),
+            State::Reboot(Reboot { update_package: self.update_package }),
             actor::StepTransition::Immediate,
         ))
     }
@@ -110,11 +110,10 @@ mod test {
         let mut shared_state = setup.gen_shared_state();
         let state = Install { update_package: get_update_package() };
 
-        let machine =
-            StateMachine::Install(state).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Install(state).move_to_next_state(&mut shared_state).await.unwrap().0;
 
         match machine {
-            StateMachine::Reboot(_) => assert_eq!(
+            State::Reboot(_) => assert_eq!(
                 shared_state.runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),

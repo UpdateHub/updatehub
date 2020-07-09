@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    PrepareLocalInstall, Result, StateChangeImpl, StateMachine,
+    PrepareLocalInstall, Result, State, StateChangeImpl,
 };
 use slog_scope::info;
 
@@ -22,7 +22,7 @@ impl StateChangeImpl for DirectDownload {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         info!("fetching update package directly from url: {:?}", self.url);
 
         let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
@@ -30,7 +30,7 @@ impl StateChangeImpl for DirectDownload {
         cloud::get(&self.url, &mut file).await?;
 
         Ok((
-            StateMachine::PrepareLocalInstall(PrepareLocalInstall { update_file }),
+            State::PrepareLocalInstall(PrepareLocalInstall { update_file }),
             actor::StepTransition::Immediate,
         ))
     }

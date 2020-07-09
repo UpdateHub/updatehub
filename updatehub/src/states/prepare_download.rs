@@ -4,7 +4,7 @@
 
 use super::{
     actor::{self, SharedState},
-    Download, Result, StateChangeImpl, StateMachine,
+    Download, Result, State, StateChangeImpl,
 };
 use crate::{
     firmware::installation_set,
@@ -31,7 +31,7 @@ impl StateChangeImpl for PrepareDownload {
     async fn handle(
         self,
         shared_state: &mut SharedState,
-    ) -> Result<(StateMachine, actor::StepTransition)> {
+    ) -> Result<(State, actor::StepTransition)> {
         let installation_set = installation_set::inactive()?;
         let download_dir = shared_state.settings.update.download_dir.to_owned();
 
@@ -78,7 +78,7 @@ impl StateChangeImpl for PrepareDownload {
         });
 
         Ok((
-            StateMachine::Download(Download {
+            State::Download(Download {
                 update_package: self.update_package,
                 installation_set,
                 download_chan: recv,
