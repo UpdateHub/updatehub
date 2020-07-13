@@ -55,6 +55,10 @@ git-version = "0.3"
 
 [dev-dependencies]
 flate2 = "1"
+insta = { version = "0.16", features = ["backtrace"] }
 loopdev = "0.2"
+mockito = "0.26"
 pretty_assertions = "0.6"
+regex = "1"
+rexpect = "0.4"
 tempfile = "3"
