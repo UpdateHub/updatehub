@@ -26,7 +26,7 @@ impl StateChangeImpl for DirectDownload {
         info!("fetching update package directly from url: {:?}", self.url);
 
         let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
-        let mut file = tokio::fs::File::create(&update_file).await?;
+        let mut file = async_std::fs::File::create(&update_file).await?;
         cloud::get(&self.url, &mut file).await?;
 
         Ok((

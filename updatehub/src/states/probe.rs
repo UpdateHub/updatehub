@@ -38,7 +38,9 @@ impl StateChangeImpl for Probe {
             )
             .await
         {
-            Err(cloud::Error::Http(e)) if e.is::<awc::http::uri::InvalidUri>() => {
+            Err(cloud::Error::Http(e))
+                if e.downcast_ref::<surf::http::url::ParseError>().is_some() =>
+            {
                 return Err(cloud::Error::Http(e).into());
             }
             Err(e) => {

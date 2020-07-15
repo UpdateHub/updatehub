@@ -23,15 +23,6 @@ pub enum Error {
     OpenSsl(openssl::error::ErrorStack),
     ParseInt(std::num::ParseIntError),
 
-    #[display("Send Request Error: {}", _0)]
-    #[from(ignore)]
-    SendRequestError(#[error(not(source))] String),
-
-    InvalidStatusResponse(#[error(not(source))] awc::http::StatusCode),
-    Http(awc::error::HttpError),
-    ConnectError(awc::error::ConnectError),
-    PayloadError(awc::error::PayloadError),
-    JsonPayloadError(awc::error::JsonPayloadError),
-    InvalidHeader(awc::http::header::InvalidHeaderValue),
-    NonStrHeader(awc::http::header::ToStrError),
+    Http(#[error(not(source))] surf::Error),
+    InvalidStatusResponse(#[error(not(source))] surf::StatusCode),
 }

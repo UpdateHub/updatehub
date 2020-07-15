@@ -3,70 +3,76 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{api, Error, Result};
-use awc::{
-    http::{
-        header::{self, HeaderName, CONTENT_TYPE, RANGE, USER_AGENT},
-        StatusCode,
-    },
-    ClientBuilder,
-};
-use serde::Serialize;
+use async_std::{fs, io};
+use futures_util::future::BoxFuture;
 use slog_scope::{debug, error};
 use std::{
     convert::{TryFrom, TryInto},
     path::Path,
-    time::Duration,
 };
-use tokio::{
-    io::{self, AsyncWriteExt},
-    stream::StreamExt,
+use surf::{
+    http::headers,
+    middleware::{self, Middleware},
+    StatusCode,
 };
 
-pub struct Client<'a> {
-    client: awc::Client,
-    server: &'a str,
+struct API;
+
+impl Middleware for API {
+    fn handle<'a>(
+        &'a self,
+        mut req: middleware::Request,
+        client: std::sync::Arc<dyn middleware::HttpClient>,
+        next: middleware::Next<'a>,
+    ) -> BoxFuture<'a, std::result::Result<middleware::Response, surf::Error>> {
+        Box::pin(async move {
+            req.insert_header(headers::USER_AGENT, "updatehub/next");
+            req.insert_header(headers::CONTENT_TYPE, "application/json");
+            req.insert_header("api-content-type", "application/vnd.updatehub-v1+json");
+            Ok(next.run(req, client).await?)
+        })
+    }
 }
 
-impl From<awc::error::SendRequestError> for Error {
-    fn from(err: awc::error::SendRequestError) -> Self {
-        if let awc::error::SendRequestError::Http(err) = err {
-            return Error::Http(err);
-        }
-        Error::SendRequestError(format!("{}", err))
-    }
+pub struct Client<'a> {
+    client: surf::Client,
+    server: &'a str,
 }
 
 pub async fn get<W>(url: &str, handle: &mut W) -> Result<()>
 where
-    W: io::AsyncWrite + Unpin,
+    W: io::Write + Unpin,
 {
-    let req = awc::Client::new().get(url);
+    let req = surf::get(url);
     save_body_to(req, handle).await
 }
 
-async fn save_body_to<W>(req: awc::ClientRequest, handle: &mut W) -> Result<()>
+async fn save_body_to<W>(req: surf::Request, handle: &mut W) -> Result<()>
 where
-    W: io::AsyncWrite + Unpin,
+    W: io::Write + Unpin,
 {
+    use async_std::prelude::StreamExt;
+    use io::prelude::{ReadExt, WriteExt};
     use std::str::FromStr;
 
-    let mut rep = req.send().await?;
+    let rep = req.await?;
     if !rep.status().is_success() {
         return Err(Error::InvalidStatusResponse(rep.status()));
     }
 
     let mut written: f32 = 0.;
     let mut threshold = 10;
-    let length = match rep.headers().get(header::CONTENT_LENGTH) {
-        Some(v) => usize::from_str(v.to_str()?)?,
+    let length = match rep.header(headers::CONTENT_LENGTH) {
+        Some(v) => usize::from_str(v.as_str())?,
         None => 0,
     };
 
-    while let Some(chunk) = rep.next().await {
-        let chunk = &chunk?;
-        handle.write_all(&chunk).await?;
+    let mut stream = rep.bytes();
+    while let Some(byte) = stream.next().await {
+        let byte = byte?;
+        handle.write_all(&[byte]).await?;
         if length > 0 {
-            written += chunk.len() as f32 / (length / 100) as f32;
+            written += 1.0 / (length / 100) as f32;
             if written as usize >= threshold {
                 threshold += 20;
                 debug!("{}% of the file has been downloaded", std::cmp::max(written as usize, 100));
@@ -80,16 +86,7 @@ where
 
 impl<'a> Client<'a> {
     pub fn new(server: &'a str) -> Self {
-        let client = ClientBuilder::new()
-            .timeout(Duration::from_secs(10))
-            .header(USER_AGENT, "updatehub/next")
-            .header(CONTENT_TYPE, "application/json")
-            .header(
-                HeaderName::from_static("api-content-type"),
-                "application/vnd.updatehub-v1+json",
-            )
-            .finish();
-        Self { server, client }
+        Self { server, client: surf::Client::new() }
     }
 
     pub async fn probe(
@@ -100,28 +97,25 @@ impl<'a> Client<'a> {
         let mut response = self
             .client
             .post(&format!("{}/upgrades", &self.server))
-            .header(HeaderName::from_static("api-retries"), num_retries)
-            .send_json(&firmware)
+            .middleware(API)
+            .set_header("api-retries", num_retries.to_string())
+            .body_json(&firmware)?
             .await?;
 
         match response.status() {
-            StatusCode::NOT_FOUND => Ok(api::ProbeResponse::NoUpdate),
-            StatusCode::OK => {
+            StatusCode::NotFound => Ok(api::ProbeResponse::NoUpdate),
+            StatusCode::Ok => {
                 match response
-                    .headers()
-                    .get("add-extra-poll")
-                    .and_then(|extra_poll| extra_poll.to_str().ok())
+                    .header("add-extra-poll")
+                    .map(|extra_poll| extra_poll.as_str())
                     .and_then(|extra_poll| extra_poll.parse().ok())
                 {
                     Some(extra_poll) => Ok(api::ProbeResponse::ExtraPoll(extra_poll)),
                     None => {
-                        let signature = response
-                            .headers()
-                            .get("UH-Signature")
-                            .map(TryInto::try_into)
-                            .transpose()?;
+                        let signature =
+                            response.header("UH-Signature").map(TryInto::try_into).transpose()?;
                         Ok(api::ProbeResponse::Update(
-                            api::UpdatePackage::parse(&response.body().await?)?,
+                            api::UpdatePackage::parse(&response.body_bytes().await?)?,
                             signature,
                         ))
                     }
@@ -138,16 +132,17 @@ impl<'a> Client<'a> {
         download_dir: &Path,
         object: &str,
     ) -> Result<()> {
-        use tokio::fs::{create_dir_all, OpenOptions};
-
         // FIXME: Discuss the need of packages inside the route
-        let mut request = self.client.get(&format!(
-            "{}/products/{}/packages/{}/objects/{}",
-            &self.server, product_uid, package_uid, object
-        ));
+        let mut request = self
+            .client
+            .get(&format!(
+                "{}/products/{}/packages/{}/objects/{}",
+                &self.server, product_uid, package_uid, object
+            ))
+            .middleware(API);
 
         if !download_dir.exists() {
-            create_dir_all(download_dir).await.map_err(|e| {
+            fs::create_dir_all(download_dir).await.map_err(|e| {
                 error!("fail to create {:?} directory, error: {}", download_dir, e);
                 e
             })?;
@@ -155,11 +150,13 @@ impl<'a> Client<'a> {
 
         let file = download_dir.join(object);
         if file.exists() {
-            request = request
-                .header(RANGE, format!("bytes={}-", file.metadata()?.len().saturating_sub(1)));
+            request = request.set_header(
+                "RANGE",
+                format!("bytes={}-", file.metadata()?.len().saturating_sub(1)),
+            );
         }
 
-        let mut file = OpenOptions::new().create(true).append(true).open(&file).await?;
+        let mut file = fs::OpenOptions::new().create(true).append(true).open(&file).await?;
 
         save_body_to(request, &mut file).await
     }
@@ -173,7 +170,7 @@ impl<'a> Client<'a> {
         error_message: Option<String>,
         current_log: Option<String>,
     ) -> Result<()> {
-        #[derive(Serialize)]
+        #[derive(serde::Serialize)]
         #[serde(rename_all = "kebab-case")]
         struct Payload<'a> {
             #[serde(rename = "status")]
@@ -192,15 +189,19 @@ impl<'a> Client<'a> {
         let payload =
             Payload { state, firmware, package_uid, previous_state, error_message, current_log };
 
-        self.client.post(&format!("{}/report", &self.server)).send_json(&payload).await?;
+        self.client
+            .post(&format!("{}/report", &self.server))
+            .middleware(API)
+            .body_json(&payload)?
+            .await?;
         Ok(())
     }
 }
 
-impl TryFrom<&header::HeaderValue> for api::Signature {
+impl TryFrom<&headers::HeaderValues> for api::Signature {
     type Error = Error;
 
-    fn try_from(value: &header::HeaderValue) -> Result<Self> {
-        Ok(Self::from_base64_str(value.to_str()?)?)
+    fn try_from(value: &headers::HeaderValues) -> Result<Self> {
+        Ok(Self::from_base64_str(value.as_str())?)
     }
 }

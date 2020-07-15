@@ -50,8 +50,8 @@ impl<'a> Client<'a> {
                 None,
             )),
             FakeResponse::InvalidUri => {
-                let uri_error = awc::http::Uri::from_maybe_shared(b"htt:;/aaa").unwrap_err();
-                Err(Error::Http(awc::error::HttpError::from(uri_error)))
+                let uri_error = surf::http::Url::parse("http://foo:--").unwrap_err();
+                Err(Error::Http(surf::Error::new(surf::StatusCode::InternalServerError, uri_error)))
             }
         })
     }
