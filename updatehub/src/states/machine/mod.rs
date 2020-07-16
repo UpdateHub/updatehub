@@ -101,7 +101,13 @@ impl StateMachine {
                 StepTransition::Immediate => {}
                 StepTransition::Delayed(t) => {
                     trace!("delaying transition for: {} seconds", t.as_secs());
-                    async_std::task::sleep(t).race(self.await_communication()).await;
+                    let waker = self.context.waker.receiver.clone();
+                    async_std::task::sleep(t)
+                        .race(async {
+                            let _ = waker.recv().await;
+                        })
+                        .race(self.await_communication())
+                        .await;
                 }
                 StepTransition::Never => {
                     trace!("stopping transition until awoken");
