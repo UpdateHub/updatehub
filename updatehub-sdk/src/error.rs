@@ -2,30 +2,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use thiserror::Error;
+use derive_more::{Display, Error, From};
 
 pub type Result<A> = std::result::Result<A, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[error("Agent is busy: {0:?}")]
-    AgentIsBusy(crate::api::state::Response),
+    #[display(fmt = "Agent is busy: {:?}", _0)]
+    AgentIsBusy(#[error(not(source))] crate::api::state::Response),
 
-    #[error("Abort download was refused: {0:?}")]
-    AbortDownloadRefused(crate::api::abort_download::Refused),
+    #[display(fmt = "Abort download was refused: {:?}", _0)]
+    AbortDownloadRefused(#[error(not(source))] crate::api::abort_download::Refused),
 
-    #[error("Unexpected response: {0:?}")]
-    UnexpectedResponse(awc::http::StatusCode),
+    #[display(fmt = "Unexpected response: {:?}", _0)]
+    UnexpectedResponse(#[error(not(source))] awc::http::StatusCode),
 
-    #[error(transparent)]
-    ConnectError(#[from] awc::error::ConnectError),
+    ConnectError(awc::error::ConnectError),
 
-    #[error(transparent)]
-    SendRequestError(#[from] awc::error::SendRequestError),
+    SendRequestError(awc::error::SendRequestError),
 
-    #[error(transparent)]
-    PayloadError(#[from] awc::error::PayloadError),
+    PayloadError(awc::error::PayloadError),
 
-    #[error(transparent)]
-    JsonPayloadError(#[from] awc::error::JsonPayloadError),
+    JsonPayloadError(awc::error::JsonPayloadError),
 }

@@ -2996,11 +2996,11 @@ dependencies = [
  "actix-rt",
  "awc",
  "chrono",
+ "derive_more",
  "ms-converter",
  "serde",
  "tempfile",
  "testcontainers",
- "thiserror",
 ]
 
 [[package]]
