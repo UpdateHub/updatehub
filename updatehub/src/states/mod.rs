@@ -230,7 +230,7 @@ impl StateChangeImpl for State {
     }
 
     fn is_preemptive_state(&self) -> bool {
-        self.inner_state().is_handling_download()
+        self.inner_state().is_preemptive_state()
     }
 }
 
