@@ -9,13 +9,13 @@ authors = ["asakiz <asakizin@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-awc = "2.0.0-alpha.1"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 derive_more = { version = "0.99", default-features = false, features = ["display", "error", "from"] }
 ms-converter = "1"
 serde = { version = "1", default-features = false, features = ["derive"] }
+surf = { git = "https://github.com/http-rs/surf", default-features = false, features = ["h1-client"] }
 
 [dev-dependencies]
+async-std = { version = "1", default-features = false, features = ["attributes"] }
 tempfile = "3"
 testcontainers = "0.9"
-actix-rt = { version = "1", default-features = false }

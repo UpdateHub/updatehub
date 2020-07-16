@@ -15,13 +15,7 @@ pub enum Error {
     AbortDownloadRefused(#[error(not(source))] crate::api::abort_download::Refused),
 
     #[display(fmt = "Unexpected response: {:?}", _0)]
-    UnexpectedResponse(#[error(not(source))] awc::http::StatusCode),
+    UnexpectedResponse(#[error(not(source))] surf::StatusCode),
 
-    ConnectError(awc::error::ConnectError),
-
-    SendRequestError(awc::error::SendRequestError),
-
-    PayloadError(awc::error::PayloadError),
-
-    JsonPayloadError(awc::error::JsonPayloadError),
+    Client(#[error(not(source))] surf::Error),
 }

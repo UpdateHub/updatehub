@@ -2993,12 +2993,12 @@ dependencies = [
 name = "updatehub-sdk"
 version = "0.1.0"
 dependencies = [
- "actix-rt",
- "awc",
+ "async-std",
  "chrono",
  "derive_more",
  "ms-converter",
  "serde",
+ "surf",
  "tempfile",
  "testcontainers",
 ]
