@@ -103,7 +103,7 @@ impl Responder for machine::ProbeResponse {
             machine::ProbeResponse::Delayed(d) => HttpResponse::Ok()
                 .json(api::probe::Response { update_available: false, try_again_in: Some(d) }),
             machine::ProbeResponse::Busy(current_state) => {
-                HttpResponse::Ok().json(api::state::Response { busy: true, current_state })
+                HttpResponse::Accepted().json(api::state::Response { busy: true, current_state })
             }
         }
     }
