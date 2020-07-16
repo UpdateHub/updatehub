@@ -34,7 +34,7 @@ impl MockServer {
     }
 }
 
-#[actix_rt::test]
+#[async_std::test]
 async fn info() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -43,7 +43,7 @@ async fn info() {
     assert!(dbg!(response).is_ok());
 }
 
-#[actix_rt::test]
+#[async_std::test]
 async fn probe_default() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -56,7 +56,7 @@ async fn probe_default() {
     }
 }
 
-#[actix_rt::test]
+#[async_std::test]
 async fn probe_custom() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -69,7 +69,7 @@ async fn probe_custom() {
     }
 }
 
-#[actix_rt::test]
+#[async_std::test]
 async fn local_install() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -83,7 +83,7 @@ async fn local_install() {
     }
 }
 
-#[actix_rt::test]
+#[async_std::test]
 async fn remote_install() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -96,7 +96,7 @@ async fn remote_install() {
     }
 }
 
-#[actix_rt::test]
+#[async_std::test]
 async fn abort_download() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -109,7 +109,7 @@ async fn abort_download() {
     }
 }
 
-#[actix_rt::test]
+#[async_std::test]
 async fn log() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
