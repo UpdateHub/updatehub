@@ -4,18 +4,17 @@
 
 use crate::states::machine;
 use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, Responder};
+use derive_more::{Display, Error, From};
 use sdk::api;
 use slog_scope::debug;
-use thiserror::Error;
 
 pub(crate) struct API(machine::Addr);
 
 type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 enum Error {
-    #[error("State has failed to handle the request: {0}")]
-    State(#[from] crate::states::TransitionError),
+    State(crate::states::TransitionError),
 }
 
 impl API {

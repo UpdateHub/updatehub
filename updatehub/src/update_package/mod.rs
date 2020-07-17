@@ -10,11 +10,11 @@ use crate::{
     object::{self, Info},
     settings::Settings,
 };
+use derive_more::{Display, Error, From};
 use pkg_schema::Object;
 use sdk::api::info::runtime_settings::InstallationSet;
 use slog_scope::error;
 use std::{fs, io, path::Path};
-use thiserror::Error;
 use walkdir::WalkDir;
 
 #[cfg(test)]
@@ -24,16 +24,13 @@ pub(crate) use cloud::api::{Signature, UpdatePackage};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
+    Io(std::io::Error),
+    CloudSDK(cloud::Error),
 
-    #[error(transparent)]
-    CloudSDK(#[from] cloud::Error),
-
-    #[error("Incompatible with hardware: {0}")]
-    IncompatibleHardware(String),
+    #[from(ignore)]
+    IncompatibleHardware(#[error(not(source))] String),
 }
 
 pub(crate) trait UpdatePackageExt {

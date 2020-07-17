@@ -34,49 +34,29 @@ use crate::{
     settings::Settings,
 };
 use async_trait::async_trait;
+use derive_more::{Display, Error, From};
 use slog_scope::{error, info, warn};
 use std::path::Path;
-use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, TransitionError>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum TransitionError {
-    #[error("not all objects are ready for use")]
+    #[display("not all objects are ready for use")]
     ObjectsNotReady,
-
-    #[error("signature not found")]
+    #[display("signature not found")]
     SignatureNotFound,
 
-    #[error(transparent)]
-    Firmware(#[from] crate::firmware::Error),
-
-    #[error(transparent)]
-    Installation(#[from] crate::object::Error),
-
-    #[error(transparent)]
-    RuntimeSettings(#[from] crate::runtime_settings::Error),
-
-    #[error(transparent)]
-    UpdatePackage(#[from] crate::update_package::Error),
-
-    #[error(transparent)]
-    Client(#[from] cloud::Error),
-
-    #[error(transparent)]
-    Uncompress(#[from] compress_tools::Error),
-
-    #[error("serde error: {0}")]
-    SerdeJson(#[from] serde_json::error::Error),
-
-    #[error("update package error: {0}")]
-    Io(#[from] std::io::Error),
-
-    #[error("non Utf8 error: {0}")]
-    NonUtf8(#[from] std::string::FromUtf8Error),
-
-    #[error("process error: {0}")]
-    Process(#[from] easy_process::Error),
+    Firmware(crate::firmware::Error),
+    Installation(crate::object::Error),
+    RuntimeSettings(crate::runtime_settings::Error),
+    UpdatePackage(crate::update_package::Error),
+    Client(cloud::Error),
+    Uncompress(compress_tools::Error),
+    SerdeJson(serde_json::error::Error),
+    Io(std::io::Error),
+    NonUtf8(std::string::FromUtf8Error),
+    Process(easy_process::Error),
 }
 
 #[async_trait(?Send)]

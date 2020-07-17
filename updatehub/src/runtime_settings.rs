@@ -7,24 +7,20 @@ use crate::firmware::{
     installation_set::{self, Set},
 };
 use chrono::{DateTime, NaiveDateTime, Utc};
-use derive_more::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut, Display, Error, From};
 use sdk::api::info::runtime_settings as api;
 use slog_scope::{debug, warn};
 use std::{fs, io, path::Path};
-use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[error(transparent)]
-    Io(#[from] io::Error),
-    #[error("fail with serialization/deserialization: {0}")]
-    SerdeJson(#[from] serde_json::Error),
-    #[error(transparent)]
-    FirmwareError(#[from] firmware::Error),
+    Io(io::Error),
+    SerdeJson(serde_json::Error),
+    FirmwareError(firmware::Error),
 
-    #[error("invalid runtime settings destination")]
+    #[display("invalid runtime settings destination")]
     InvalidDestination,
 }
 

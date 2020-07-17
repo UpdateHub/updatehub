@@ -3,30 +3,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use chrono::Duration;
-use derive_more::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut, Display, Error, From};
 use sdk::api::info::settings as api;
 use slog_scope::{debug, error};
 use std::{fs, io, path::Path};
-use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[error(transparent)]
-    Io(#[from] io::Error),
-    #[error("fail reading the file: {0}")]
-    Deserialize(#[from] toml::de::Error),
-    #[error("fail generating the file: {0}")]
-    Serialize(#[from] toml::ser::Error),
-    #[error("invalid interval")]
+    Io(io::Error),
+    Deserialize(toml::de::Error),
+    Serialize(toml::ser::Error),
+
+    #[display("invalid interval")]
     InvalidInterval,
-    #[error("invalid server address")]
+    #[display("invalid server address")]
     InvalidServerAddress,
 
     #[cfg(feature = "v1-parsing")]
-    #[error("fail reading ini the file: {0}")]
-    DeserializeIni(#[from] serde_ini::de::Error),
+    DeserializeIni(serde_ini::de::Error),
 }
 
 #[derive(Clone, Debug, Deref, DerefMut, PartialEq)]

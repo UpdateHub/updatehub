@@ -26,24 +26,15 @@ pub(crate) use crate::cloud_mock::Client as CloudClient;
 pub(crate) use cloud::Client as CloudClient;
 
 pub use crate::{build_info::version, states::run};
-use thiserror::Error;
+use derive_more::{Display, Error, From};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[error("Runtime settings error: {0}")]
-    RuntimeSettings(#[from] crate::runtime_settings::Error),
-
-    #[error("Settings error: {0}")]
-    Settings(#[from] crate::settings::Error),
-
-    #[error("Firmware error: {0}")]
-    Firmware(#[from] crate::firmware::Error),
-
-    #[error("Io error: {0}")]
-    Io(#[from] std::io::Error),
-
-    #[error("Process error: {0}")]
-    Process(#[from] easy_process::Error),
+    RuntimeSettings(crate::runtime_settings::Error),
+    Settings(crate::settings::Error),
+    Firmware(crate::firmware::Error),
+    Io(std::io::Error),
+    Process(easy_process::Error),
 }

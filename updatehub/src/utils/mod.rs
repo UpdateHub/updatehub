@@ -7,44 +7,36 @@ pub(crate) mod fs;
 pub(crate) mod io;
 pub(crate) mod mtd;
 
-use thiserror::Error;
+use derive_more::{Display, Error, From};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[error("Io: {0}")]
-    Io(#[from] std::io::Error),
+    Io(std::io::Error),
+    Nix(nix::Error),
+    Uncompress(compress_tools::Error),
+    Process(easy_process::Error),
+    StripPrefix(std::path::StripPrefixError),
 
-    #[error("Nix error: {0}")]
-    Nix(#[from] nix::Error),
-
-    #[error("Uncompress error: {0}")]
-    Uncompress(#[from] compress_tools::Error),
-
-    #[error("Process error: {0}")]
-    Process(#[from] easy_process::Error),
-
-    #[error("Strip prefix error: {0}")]
-    StripPrefix(#[from] std::path::StripPrefixError),
-
-    #[error("Target device does not exists")]
+    #[display("Target device does not exists")]
     DeviceDoesNotExist,
 
-    #[error("User doesn't have write permission on target device: {0}")]
-    MissingWritePermission(std::path::PathBuf),
+    #[display(fmt = "User doesn't have write permission on target device: {:?}", _0)]
+    MissingWritePermission(#[error(not(source))] std::path::PathBuf),
 
-    #[error("'{0}' not found on PATH")]
-    ExecutableNotInPath(String),
-
-    #[error("Unable to find Ubi Volume: {0}")]
-    NoUbiVolume(String),
-
-    #[error("Unable to find match for mtd device: {0}")]
-    NoMtdDevice(String),
-
-    #[error("Not enough storage space for installation")]
+    #[display("Not enough storage space for installation")]
     NotEnoughSpace,
+
+    #[display(fmt = "'{}' not found on PATH", _0)]
+    #[from(ignore)]
+    ExecutableNotInPath(#[error(not(source))] String),
+    #[display(fmt = "Unable to find Ubi Volume: {}" _0)]
+    #[from(ignore)]
+    NoUbiVolume(#[error(not(source))] String),
+    #[display(fmt = "Unable to find match for mtd device: {}", _0)]
+    #[from(ignore)]
+    NoMtdDevice(#[error(not(source))] String),
 }
 
 /// Encode a bytes stream in hex
