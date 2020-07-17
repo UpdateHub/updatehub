@@ -306,14 +306,8 @@ pub async fn run(settings: &Path) -> crate::Result<()> {
     let addr = machine.address();
     actix_rt::spawn(machine.start());
 
-    actix_web::HttpServer::new(move || {
-        actix_web::App::new().configure(|cfg| http_api::API::configure(cfg, addr.clone()))
-    })
-    .bind(listen_socket.clone())
-    .unwrap_or_else(|_| panic!("Failed to bind listen socket, {:?}, for HTTP API", listen_socket,))
-    .run()
-    .await?;
+    http_api::API::server(addr).listen(listen_socket).await?;
 
-    info!("actix System has stopped");
+    info!("Server has gracefully stopped");
     Ok(())
 }
