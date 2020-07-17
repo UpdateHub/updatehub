@@ -38,6 +38,7 @@ jobs:
           use-tool-cache: true
 
       - name: Install cargo bloat tool
+        if: matrix.version == '1.42.0'
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-bloat
@@ -80,6 +81,7 @@ jobs:
           args: --release --all --all-features --no-fail-fast -- --nocapture
 
       - name: Run cargo bloat
+        if: matrix.version == '1.42.0'
         uses: orf/cargo-bloat-action@98e840980f6a3cb37780dd6435459b1a124d7e7e
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
