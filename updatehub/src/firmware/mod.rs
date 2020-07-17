@@ -9,11 +9,10 @@ pub mod installation_set;
 pub mod tests;
 
 use self::hook::{run_hook, run_hooks_from_dir};
-use derive_more::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut, Display, Error, From};
 pub use sdk::api::info::firmware as api;
 use slog_scope::{error, trace};
 use std::{io, path::Path};
-use thiserror::Error;
 
 const PRODUCT_UID_HOOK: &str = "product-uid";
 const VERSION_HOOK: &str = "version";
@@ -28,31 +27,27 @@ const ERROR_CALLBACK: &str = "error-callback";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[error("invalid product UID")]
+    #[display("invalid product UID")]
     InvalidProductUid,
 
-    #[error("product UID is missing")]
+    #[display("product UID is missing")]
     MissingProductUid,
 
-    #[error("device identity is missing")]
+    #[display("device identity is missing")]
     MissingDeviceIdentity,
 
-    #[error("{0} is a invalid value. The only know ones are 0 or 1")]
-    InvalidInstallSet(u8),
+    #[display(fmt = "{} is a invalid value. The only know ones are 0 or 1", _0)]
+    InvalidInstallSet(#[error(not(source))] u8),
 
-    #[error(transparent)]
-    ParseInt(#[from] std::num::ParseIntError),
+    ParseInt(std::num::ParseIntError),
 
-    #[error(transparent)]
-    Walkdir(#[from] walkdir::Error),
+    Walkdir(walkdir::Error),
 
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
+    Io(std::io::Error),
 
-    #[error(transparent)]
-    Process(#[from] easy_process::Error),
+    Process(easy_process::Error),
 }
 
 #[derive(Debug, PartialEq)]

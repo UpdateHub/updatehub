@@ -25,7 +25,7 @@ async-trait = "0.1"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
 compress-tools = "0.5"
-derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut"] }
+derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
 easy_process = "0.2"
 find-binary-version = "0.3"
 infer = "0.2"
@@ -47,7 +47,6 @@ slog-term = "2"
 surf = { git = "https://github.com/http-rs/surf", default-features = false, features = ["h1-client"] }
 sys-mount = "1"
 tempfile = "3"
-thiserror = "1"
 timeout-readwrite = "0.3"
 tokio = { version = "0.2", default-features = false, features = ["fs", "sync"] }
 toml = "0.5"
