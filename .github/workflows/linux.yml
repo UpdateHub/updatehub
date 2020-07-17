@@ -89,7 +89,7 @@ jobs:
 
       - name: Run cargo bloat
         if: matrix.version == '1.42.0'
-        uses: orf/cargo-bloat-action@98e840980f6a3cb37780dd6435459b1a124d7e7e
+        uses: orf/cargo-bloat-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           bloat_args: --release --package updatehub
