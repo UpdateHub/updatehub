@@ -44,6 +44,13 @@ jobs:
           crate: cargo-bloat
           use-tool-cache: true
 
+      - name: Install cargo tree tool
+        if: matrix.version == '1.42.0'
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-tree
+          use-tool-cache: true
+
       - name: Generate Cargo.lock
         uses: actions-rs/cargo@v1
         with:
