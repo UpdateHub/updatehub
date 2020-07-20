@@ -304,7 +304,7 @@ pub async fn run(settings: &Path) -> crate::Result<()> {
 
     let machine = machine::StateMachine::new(State::new(), settings, runtime_settings, firmware);
     let addr = machine.address();
-    actix_rt::spawn(machine.start());
+    async_std::task::spawn_local(machine.start());
 
     http_api::API::server(addr).listen(listen_socket).await?;
 

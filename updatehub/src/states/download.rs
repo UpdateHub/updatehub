@@ -16,7 +16,7 @@ use std::fmt;
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
     pub(super) installation_set: installation_set::Set,
-    pub(super) download_chan: tokio::sync::mpsc::Receiver<Vec<cloud::Result<()>>>,
+    pub(super) download_chan: async_std::sync::Receiver<Vec<cloud::Result<()>>>,
 }
 
 impl PartialEq for Download {
@@ -67,7 +67,7 @@ impl StateChangeImpl for Download {
         mut self,
         shared_state: &mut SharedState,
     ) -> Result<(State, machine::StepTransition)> {
-        if let Some(vec) = self.download_chan.recv().await {
+        if let Ok(vec) = self.download_chan.recv().await {
             vec.into_iter().try_for_each(|res| res)?;
         }
 
@@ -151,13 +151,13 @@ mod test {
         assert_eq!(&utils::sha256sum(&object_content.as_bytes()), &shasum, "Checksum mismatch");
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     #[ignore]
     async fn download_small_object() {
         test_object_download(16).await
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     #[ignore]
     async fn download_large_object() {
         test_object_download(100_000_000).await

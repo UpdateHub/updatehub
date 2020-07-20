@@ -91,7 +91,7 @@ mod tests {
     use super::*;
     use crate::cloud_mock;
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn invalid_uri() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -106,7 +106,7 @@ mod tests {
         }
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn update_not_available() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -117,7 +117,7 @@ mod tests {
         assert_state!(machine, EntryPoint);
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn update_available() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -128,7 +128,7 @@ mod tests {
         assert_state!(machine, Validation);
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn extra_poll_interval() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();

@@ -130,7 +130,7 @@ async fn client_main(cmd: ClientCommands) -> updatehub::Result<()> {
     Ok(())
 }
 
-#[actix_rt::main]
+#[async_std::main]
 async fn main() {
     let cmd: TopLevel = argh::from_env();
 

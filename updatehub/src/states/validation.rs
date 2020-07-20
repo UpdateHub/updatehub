@@ -69,7 +69,7 @@ mod tests {
     use super::*;
     use crate::{states::TransitionError, update_package::tests::get_update_package};
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn normal_transition() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -84,7 +84,7 @@ mod tests {
         assert_state!(machine, PrepareDownload);
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn invalid_hardware() {
         let setup = crate::tests::TestEnvironment::build().invalid_hardware().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -101,7 +101,7 @@ mod tests {
         }
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn skip_same_package_uid() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -117,7 +117,7 @@ mod tests {
         assert_state!(machine, EntryPoint);
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn missing_signature() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();

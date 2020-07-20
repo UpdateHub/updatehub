@@ -63,10 +63,10 @@ impl StateChangeImpl for PrepareDownload {
         let server = shared_state.server_address().to_owned();
         let product_uid = shared_state.firmware.product_uid.to_owned();
         let package_uid = self.update_package.package_uid();
-        let (mut sndr, recv) = tokio::sync::mpsc::channel(1);
+        let (sndr, recv) = async_std::sync::channel(1);
 
         // Download the missing or incomplete objects
-        actix_rt::spawn(async move {
+        async_std::task::spawn_local(async move {
             let api = crate::CloudClient::new(&server);
             let mut results = Vec::default();
             for shasum in shasum_list.iter() {
@@ -74,7 +74,7 @@ impl StateChangeImpl for PrepareDownload {
                     api.download_object(&product_uid, &package_uid, &download_dir, &shasum).await,
                 );
             }
-            sndr.send(results).await.expect("unable to send response about object downlod");
+            sndr.send(results).await;
         });
 
         Ok((
