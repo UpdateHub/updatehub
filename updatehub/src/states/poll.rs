@@ -50,7 +50,7 @@ mod tests {
     use super::*;
     use chrono::{Duration, Utc};
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn normal_delay() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -67,7 +67,7 @@ mod tests {
         }
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn update_in_time() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -82,7 +82,7 @@ mod tests {
         }
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn least_probe_in_the_future() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();

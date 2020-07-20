@@ -53,7 +53,7 @@ impl StateChangeImpl for EntryPoint {
 mod tests {
     use super::*;
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn polling_disable() {
         let setup = crate::tests::TestEnvironment::build().disable_polling().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -64,7 +64,7 @@ mod tests {
         assert_state!(machine, Park);
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn polling_enabled() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();
@@ -75,7 +75,7 @@ mod tests {
         assert_state!(machine, Poll);
     }
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn forced_probe() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut shared_state = setup.gen_shared_state();

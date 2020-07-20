@@ -64,7 +64,7 @@ impl<'a> Client<'a> {
         object: &str,
     ) -> Result<()> {
         if let Some(data) = OBJECT_DATA.with(|conf| conf.borrow_mut().take()) {
-            tokio::fs::write(download_dir.join(object), data).await?
+            async_std::fs::write(download_dir.join(object), data).await?
         }
 
         Ok(())

@@ -17,7 +17,6 @@ v1-parsing = ["serde_ini"]
 test-env = []
 
 [dependencies]
-actix-rt = "1"
 argh = "0.1.3"
 async-std = { version = "1", features = ["unstable"] }
 async-trait = "0.1"
@@ -48,7 +47,6 @@ sys-mount = "1"
 tempfile = "3"
 tide = { version = "0.12", default-features = false, features = ["h1-server"] }
 timeout-readwrite = "0.3"
-tokio = { version = "0.2", default-features = false, features = ["fs", "sync"] }
 toml = "0.5"
 walkdir = "2"
 

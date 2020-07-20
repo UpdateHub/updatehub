@@ -50,7 +50,7 @@ mod test {
     use crate::update_package::tests::get_update_package;
     use pretty_assertions::assert_eq;
 
-    #[actix_rt::test]
+    #[async_std::test]
     async fn runs() {
         let setup = crate::tests::TestEnvironment::build().add_echo_binary("reboot").finish();
         let mut shared_state = setup.gen_shared_state();
