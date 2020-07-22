@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     ProgressReporter, Reboot, Result, State, StateChangeImpl,
 };
 use crate::{
@@ -57,14 +57,11 @@ impl StateChangeImpl for Install {
         "install"
     }
 
-    async fn handle(
-        mut self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
+    async fn handle(mut self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         let package_uid = self.update_package.package_uid();
         info!("installing update: {}", &package_uid);
 
-        let installation_set = shared_state.runtime_settings.get_inactive_installation_set()?;
+        let installation_set = context.runtime_settings.get_inactive_installation_set()?;
         info!("using installation set as target {}", installation_set);
 
         // FIXME: What is missing:
@@ -76,15 +73,15 @@ impl StateChangeImpl for Install {
         objs.iter().try_for_each(object::Installer::check_requirements)?;
         objs.iter_mut().try_for_each(object::Installer::setup)?;
         objs.iter_mut().try_for_each(|obj| {
-            obj.install(&shared_state.settings.update.download_dir)?;
+            obj.install(&context.settings.update.download_dir)?;
             obj.cleanup()
         })?;
 
         // Avoid installing same package twice.
-        shared_state.runtime_settings.set_applied_package_uid(&package_uid)?;
+        context.runtime_settings.set_applied_package_uid(&package_uid)?;
 
         // Set upgrading to the new installation set
-        shared_state.runtime_settings.set_upgrading_to(installation_set)?;
+        context.runtime_settings.set_upgrading_to(installation_set)?;
 
         // Swap installation set so it is used next device boot.
         installation_set::swap_active()?;
@@ -107,14 +104,14 @@ mod test {
     #[async_std::test]
     async fn has_package_uid_if_succeed() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         let state = Install { update_package: get_update_package() };
 
-        let machine = State::Install(state).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Install(state).move_to_next_state(&mut context).await.unwrap().0;
 
         match machine {
             State::Reboot(_) => assert_eq!(
-                shared_state.runtime_settings.applied_package_uid(),
+                context.runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),
             s => panic!("Invalid success: {:?}", s),

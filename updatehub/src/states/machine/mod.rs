@@ -11,26 +11,24 @@ use super::{
 use async_std::{prelude::FutureExt, sync};
 use slog_scope::trace;
 
-pub(crate) use address::{AbortDownloadResponse, Addr, ProbeResponse, StateResponse};
+pub(crate) use address::{
+    AbortDownloadResponse, Addr, Message, ProbeResponse, Response, StateResponse,
+};
 
 pub(super) struct StateMachine {
     state: State,
     context: Context,
 }
 
-pub(super) struct Context {
-    communication: Channel<(address::Message, sync::Sender<address::Response>)>,
-    waker: Channel<()>,
-    shared_state: SharedState,
-}
-
-pub struct SharedState {
+pub struct Context {
+    pub(super) communication: Channel<(Message, sync::Sender<Response>)>,
+    pub(super) waker: Channel<()>,
     pub settings: Settings,
     pub runtime_settings: RuntimeSettings,
     pub firmware: Metadata,
 }
 
-struct Channel<T> {
+pub(super) struct Channel<T> {
     sender: sync::Sender<T>,
     receiver: sync::Receiver<T>,
 }
@@ -42,7 +40,21 @@ impl<T> Channel<T> {
     }
 }
 
-impl SharedState {
+impl Context {
+    pub(crate) fn new(
+        settings: Settings,
+        runtime_settings: RuntimeSettings,
+        firmware: Metadata,
+    ) -> Self {
+        Context {
+            communication: Channel::new(10),
+            waker: Channel::new(1),
+            settings,
+            runtime_settings,
+            firmware,
+        }
+    }
+
     pub(super) fn server_address(&self) -> &str {
         self.runtime_settings
             .custom_server_address()
@@ -64,14 +76,7 @@ impl StateMachine {
         runtime_settings: RuntimeSettings,
         firmware: Metadata,
     ) -> Self {
-        StateMachine {
-            state,
-            context: Context {
-                communication: Channel::new(10),
-                waker: Channel::new(1),
-                shared_state: SharedState { settings, runtime_settings, firmware },
-            },
-        }
+        StateMachine { state, context: Context::new(settings, runtime_settings, firmware) }
     }
 
     pub(super) fn address(&self) -> Addr {
@@ -91,7 +96,7 @@ impl StateMachine {
 
             let (state, transition) = self
                 .state
-                .move_to_next_state(&mut self.context.shared_state)
+                .move_to_next_state(&mut self.context)
                 .await
                 .unwrap_or_else(|e| (State::from(e), StepTransition::Immediate));
             self.state = state;
@@ -151,9 +156,9 @@ impl StateMachine {
                 address::Response::Info(sdk::api::info::Response {
                     state,
                     version: crate::version().to_string(),
-                    config: self.context.shared_state.settings.0.clone(),
-                    firmware: self.context.shared_state.firmware.0.clone(),
-                    runtime_settings: self.context.shared_state.runtime_settings.0.clone(),
+                    config: self.context.settings.0.clone(),
+                    firmware: self.context.firmware.0.clone(),
+                    runtime_settings: self.context.runtime_settings.0.clone(),
                 })
             }
             address::Message::Probe(custom_server) => {
@@ -215,13 +220,13 @@ impl StateMachine {
         }
 
         if let Some(server_address) = custom_server {
-            self.context.shared_state.runtime_settings.set_custom_server_address(&server_address);
+            self.context.runtime_settings.set_custom_server_address(&server_address);
         }
 
-        match crate::CloudClient::new(&self.context.shared_state.server_address())
+        match crate::CloudClient::new(&self.context.server_address())
             .probe(
-                self.context.shared_state.runtime_settings.retries() as u64,
-                self.context.shared_state.firmware.as_cloud_metadata(),
+                self.context.runtime_settings.retries() as u64,
+                self.context.firmware.as_cloud_metadata(),
             )
             .await?
         {
@@ -231,7 +236,7 @@ impl StateMachine {
                 self.context.waker.sender.send(()).await;
 
                 // Store timestamp of last polling
-                self.context.shared_state.runtime_settings.set_last_polling(Utc::now())?;
+                self.context.runtime_settings.set_last_polling(Utc::now())?;
                 self.state = State::EntryPoint(EntryPoint {});
                 Ok(address::ProbeResponse::Unavailable)
             }
@@ -240,7 +245,7 @@ impl StateMachine {
                 self.context.waker.sender.send(()).await;
 
                 // Store timestamp of last polling
-                self.context.shared_state.runtime_settings.set_last_polling(Utc::now())?;
+                self.context.runtime_settings.set_last_polling(Utc::now())?;
                 self.state = State::Validation(Validation { package, sign });
                 Ok(address::ProbeResponse::Available)
             }

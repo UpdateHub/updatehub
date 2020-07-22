@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     EntryPoint, ProgressReporter, Result, State, StateChangeImpl,
 };
 use crate::update_package::UpdatePackage;
@@ -34,7 +34,7 @@ impl StateChangeImpl for Reboot {
         "reboot"
     }
 
-    async fn handle(self, _: &mut SharedState) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, _: &mut Context) -> Result<(State, machine::StepTransition)> {
         info!("triggering reboot");
         let output = easy_process::run("reboot")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
@@ -53,10 +53,10 @@ mod test {
     #[async_std::test]
     async fn runs() {
         let setup = crate::tests::TestEnvironment::build().add_echo_binary("reboot").finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         let state = Reboot { update_package: get_update_package() };
 
-        let machine = State::Reboot(state).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Reboot(state).move_to_next_state(&mut context).await.unwrap().0;
 
         assert_state!(machine, EntryPoint);
     }

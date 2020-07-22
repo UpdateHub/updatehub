@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     EntryPoint, Result, State, StateChangeImpl, TransitionError,
 };
 
@@ -28,7 +28,7 @@ impl StateChangeImpl for Error {
         "error"
     }
 
-    async fn handle(self, st: &mut SharedState) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, st: &mut Context) -> Result<(State, machine::StepTransition)> {
         error!("error state reached: {}", self.error);
 
         if let Err(err) = firmware::error_callback(&st.settings.firmware.metadata) {

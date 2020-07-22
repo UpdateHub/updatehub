@@ -10,7 +10,7 @@ use std::{any::Any, env, fs, io::Write, os::unix::fs::PermissionsExt, path::Path
 
 pub use crate::{
     firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings,
-    states::machine::SharedState,
+    states::machine::Context,
 };
 
 pub struct TestEnvironment {
@@ -41,12 +41,12 @@ impl TestEnvironment {
         TestEnvironmentBuilder::default()
     }
 
-    pub fn gen_shared_state(&self) -> SharedState {
-        SharedState {
-            settings: self.settings.data.clone(),
-            runtime_settings: self.runtime_settings.data.clone(),
-            firmware: self.firmware.data.clone(),
-        }
+    pub fn gen_context(&self) -> Context {
+        Context::new(
+            self.settings.data.clone(),
+            self.runtime_settings.data.clone(),
+            self.firmware.data.clone(),
+        )
     }
 }
 

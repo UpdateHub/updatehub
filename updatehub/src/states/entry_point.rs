@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     Park, Poll, Probe, Result, State, StateChangeImpl,
 };
 use slog_scope::{debug, info};
@@ -26,20 +26,17 @@ impl StateChangeImpl for EntryPoint {
         true
     }
 
-    async fn handle(
-        self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
-        if shared_state.runtime_settings.is_polling_forced() {
+    async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
+        if context.runtime_settings.is_polling_forced() {
             info!("triggering Probe to finish update.");
-            shared_state.runtime_settings.disable_force_poll()?;
+            context.runtime_settings.disable_force_poll()?;
             return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
         }
 
         // Cleanup temporary settings from last installation
-        shared_state.runtime_settings.reset_transient_settings();
+        context.runtime_settings.reset_transient_settings();
 
-        if !shared_state.settings.polling.enabled {
+        if !context.settings.polling.enabled {
             debug!("polling is disabled, parking the state machine.");
             return Ok((State::Park(Park {}), machine::StepTransition::Immediate));
         }
@@ -56,10 +53,10 @@ mod tests {
     #[async_std::test]
     async fn polling_disable() {
         let setup = crate::tests::TestEnvironment::build().disable_polling().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
 
         let machine =
-            State::EntryPoint(EntryPoint {}).move_to_next_state(&mut shared_state).await.unwrap().0;
+            State::EntryPoint(EntryPoint {}).move_to_next_state(&mut context).await.unwrap().0;
 
         assert_state!(machine, Park);
     }
@@ -67,10 +64,10 @@ mod tests {
     #[async_std::test]
     async fn polling_enabled() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
 
         let machine =
-            State::EntryPoint(EntryPoint {}).move_to_next_state(&mut shared_state).await.unwrap().0;
+            State::EntryPoint(EntryPoint {}).move_to_next_state(&mut context).await.unwrap().0;
 
         assert_state!(machine, Poll);
     }
@@ -78,11 +75,11 @@ mod tests {
     #[async_std::test]
     async fn forced_probe() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
-        shared_state.runtime_settings.reset_installation_settings().unwrap();
+        let mut context = setup.gen_context();
+        context.runtime_settings.reset_installation_settings().unwrap();
 
         let (machine, trans) =
-            State::EntryPoint(EntryPoint {}).move_to_next_state(&mut shared_state).await.unwrap();
+            State::EntryPoint(EntryPoint {}).move_to_next_state(&mut context).await.unwrap();
 
         assert_state!(machine, Probe);
         match trans {

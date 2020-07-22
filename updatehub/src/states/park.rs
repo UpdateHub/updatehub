@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     Result, State, StateChangeImpl,
 };
 
@@ -24,7 +24,7 @@ impl StateChangeImpl for Park {
         true
     }
 
-    async fn handle(self, _: &mut SharedState) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, _: &mut Context) -> Result<(State, machine::StepTransition)> {
         debug!("staying on Park state.");
         crate::logger::stop_memory_logging();
         Ok((State::Park(self), machine::StepTransition::Never))
