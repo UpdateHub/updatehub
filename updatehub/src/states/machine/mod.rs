@@ -24,7 +24,6 @@ pub(super) struct Context {
     shared_state: SharedState,
 }
 
-#[derive(Debug, PartialEq)]
 pub struct SharedState {
     pub settings: Settings,
     pub runtime_settings: RuntimeSettings,
