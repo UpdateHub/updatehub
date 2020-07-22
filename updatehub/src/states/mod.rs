@@ -12,7 +12,6 @@ pub(crate) mod install;
 pub(crate) mod machine;
 mod park;
 mod poll;
-mod prepare_download;
 mod prepare_local_install;
 mod probe;
 mod reboot;
@@ -23,9 +22,8 @@ mod tests;
 
 use self::{
     direct_download::DirectDownload, download::Download, entry_point::EntryPoint, error::Error,
-    install::Install, park::Park, poll::Poll, prepare_download::PrepareDownload,
-    prepare_local_install::PrepareLocalInstall, probe::Probe, reboot::Reboot,
-    validation::Validation,
+    install::Install, park::Park, poll::Poll, prepare_local_install::PrepareLocalInstall,
+    probe::Probe, reboot::Reboot, validation::Validation,
 };
 use crate::{
     firmware::{self, Metadata, Transition},
@@ -159,7 +157,6 @@ enum State {
     Poll(Poll),
     Probe(Probe),
     Validation(Validation),
-    PrepareDownload(PrepareDownload),
     Download(Download),
     Install(Install),
     Reboot(Reboot),
@@ -227,7 +224,6 @@ impl State {
             State::Poll(s) => s.handle(context).await,
             State::Probe(s) => s.handle(context).await,
             State::Validation(s) => s.handle(context).await,
-            State::PrepareDownload(s) => s.handle(context).await,
             State::DirectDownload(s) => s.handle(context).await,
             State::PrepareLocalInstall(s) => s.handle(context).await,
             State::Download(s) => s.handle_with_callback_and_report_progress(context).await,
@@ -244,7 +240,6 @@ impl State {
             State::Poll(s) => s,
             State::Probe(s) => s,
             State::Validation(s) => s,
-            State::PrepareDownload(s) => s,
             State::DirectDownload(s) => s,
             State::PrepareLocalInstall(s) => s,
             State::Download(s) => s,

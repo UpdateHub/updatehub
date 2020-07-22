@@ -189,6 +189,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-lock"
+version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "142abcf01ff9d47d1e88d7d1515a4af4a940e18668d862754b858abfd949b86c"
+dependencies = [
+ "event-listener",
+]
+
+[[package]]
 name = "async-native-tls"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2432,6 +2441,7 @@ name = "updatehub"
 version = "0.1.0"
 dependencies = [
  "argh",
+ "async-lock",
  "async-std",
  "async-trait",
  "chrono",

@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, Context},
-    EntryPoint, PrepareDownload, Result, State, StateChangeImpl,
+    Download, EntryPoint, Result, State, StateChangeImpl,
 };
 use crate::update_package::UpdatePackageExt;
 use slog_scope::{debug, error, info, trace};
@@ -52,9 +52,9 @@ impl StateChangeImpl for Validation {
             info!("not downloading update package, the same package has already been installed.");
             Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
         } else {
-            trace!("moving to PrepareDownload state to process the update package.");
+            trace!("moving to Download state to process the update package.");
             Ok((
-                State::PrepareDownload(PrepareDownload { update_package: self.package }),
+                State::Download(Download { update_package: self.package }),
                 machine::StepTransition::Immediate,
             ))
         }
@@ -78,7 +78,7 @@ mod tests {
             .await
             .unwrap()
             .0;
-        assert_state!(machine, PrepareDownload);
+        assert_state!(machine, Download);
     }
 
     #[async_std::test]
