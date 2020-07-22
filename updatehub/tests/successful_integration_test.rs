@@ -306,7 +306,7 @@ fn correct_config_update_no_polling_probe_api() {
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE Received external request: Probe(None)
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> TRCE moving to PrepareDownload state to process the update package.
+    <timestamp> TRCE moving to Download state to process the update package.
     <timestamp> DEBG 10% of the file has been downloaded
     <timestamp> DEBG 30% of the file has been downloaded
     <timestamp> DEBG 50% of the file has been downloaded

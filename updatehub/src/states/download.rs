@@ -1,9 +1,9 @@
-// Copyright (C) 2018 O.S. Systems Sofware LTDA
+// Copyright (C) 2020 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, Context},
+    machine::{self, CommunicationState, Context},
     Install, ProgressReporter, Result, State, StateChangeImpl, TransitionError,
 };
 use crate::{
@@ -11,30 +11,59 @@ use crate::{
     object::{self, Info},
     update_package::{UpdatePackage, UpdatePackageExt},
 };
-use std::fmt;
+use async_lock::Lock;
+use async_std::prelude::FutureExt;
+use slog_scope::error;
 
+#[derive(Debug, PartialEq)]
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
-    pub(super) installation_set: installation_set::Set,
-    pub(super) download_chan: async_std::sync::Receiver<Vec<cloud::Result<()>>>,
 }
 
-impl PartialEq for Download {
-    fn eq(&self, other: &Self) -> bool {
-        // download_chan intentionally ignored
-        self.update_package == other.update_package
-            && self.installation_set == other.installation_set
-    }
-}
+impl Download {
+    async fn start_download(&self, context: &Lock<&mut Context>) -> Result<()> {
+        let installation_set = installation_set::inactive()?;
+        let download_dir = context.lock().await.settings.update.download_dir.to_owned();
 
-impl fmt::Debug for Download {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // download_chan intentionally ignored
-        write!(
-            f,
-            "Download {{ update_package: {:?}, installation_set: {:?} }}",
-            self.update_package, self.installation_set
-        )
+        self.update_package.clear_unrelated_files(
+            &download_dir,
+            installation_set,
+            &context.lock().await.settings,
+        )?;
+
+        // Get shasums of missing or incomplete objects
+        let shasum_list: Vec<_> = self
+            .update_package
+            .objects(installation_set)
+            .iter()
+            .filter(|o| {
+                let obj_status = o
+                    .status(&download_dir)
+                    .map_err(|e| {
+                        error!("fail accessing the object: {} (err: {})", o.sha256sum(), e)
+                    })
+                    .unwrap_or(object::info::Status::Missing);
+                obj_status == object::info::Status::Missing
+                    || obj_status == object::info::Status::Incomplete
+            })
+            .map(|obj| obj.sha256sum().to_owned())
+            .collect();
+
+        // Download the missing or incomplete objects
+        let url = context.lock().await.server_address().to_owned();
+        let product_uid = context.lock().await.firmware.product_uid.clone();
+        let api = crate::CloudClient::new(&url);
+        for shasum in shasum_list.into_iter() {
+            api.download_object(
+                &product_uid,
+                &self.update_package.package_uid(),
+                &download_dir,
+                &shasum,
+            )
+            .await?;
+        }
+
+        Ok(())
     }
 }
 
@@ -53,6 +82,8 @@ impl ProgressReporter for Download {
     }
 }
 
+impl CommunicationState for Download {}
+
 #[async_trait::async_trait(?Send)]
 impl StateChangeImpl for Download {
     fn name(&self) -> &'static str {
@@ -64,14 +95,35 @@ impl StateChangeImpl for Download {
     }
 
     async fn handle(mut self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
-        if let Ok(vec) = self.download_chan.recv().await {
-            vec.into_iter().try_for_each(|res| res)?;
+        use std::ops::DerefMut;
+        let communication_receiver = &context.communication.receiver.clone();
+        let context = Lock::new(context);
+
+        let download_future = async {
+            self.start_download(&context).await?;
+            Result::Ok(None)
+        };
+
+        let message_handle_future = async {
+            while let Ok((msg, responder)) = communication_receiver.recv().await {
+                if let Some(new_state) = self
+                    .handle_communication(msg, responder, context.lock().await.deref_mut())
+                    .await
+                {
+                    return Ok(Some(new_state));
+                }
+            }
+            Ok(None)
+        };
+
+        if let Some(new_state) = download_future.race(message_handle_future).await? {
+            return Ok((new_state, machine::StepTransition::Immediate));
         }
 
-        let download_dir = &context.settings.update.download_dir;
+        let download_dir = &context.lock().await.settings.update.download_dir;
         if self
             .update_package
-            .objects(self.installation_set)
+            .objects(installation_set::inactive()?)
             .iter()
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
@@ -88,10 +140,7 @@ impl StateChangeImpl for Download {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        cloud_mock, states::PrepareDownload, update_package::tests::get_update_package_with_shasum,
-        utils,
-    };
+    use crate::{cloud_mock, update_package::tests::get_update_package_with_shasum, utils};
     use pretty_assertions::assert_eq;
     use std::{fs, io::Read};
     use walkdir::WalkDir;
@@ -106,8 +155,7 @@ mod test {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
         let (obj, shasum) = fake_download_object(size);
-        let predownload_state =
-            PrepareDownload { update_package: get_update_package_with_shasum(&shasum) };
+        let download_state = Download { update_package: get_update_package_with_shasum(&shasum) };
         let download_dir = context.settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed
@@ -115,18 +163,8 @@ mod test {
 
         cloud_mock::set_download_data(obj);
 
-        let mut machine = State::PrepareDownload(predownload_state)
-            .move_to_next_state(&mut context)
-            .await
-            .unwrap()
-            .0;
-        assert_state!(machine, Download);
-        loop {
-            machine = machine.move_to_next_state(&mut context).await.unwrap().0;
-            if let State::Install(_) = machine {
-                break;
-            }
-        }
+        let machine =
+            State::Download(download_state).move_to_next_state(&mut context).await.unwrap().0;
         assert_state!(machine, Install);
 
         assert_eq!(
