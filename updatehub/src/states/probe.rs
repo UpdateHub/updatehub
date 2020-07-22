@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     EntryPoint, Result, State, StateChangeImpl, Validation,
 };
 use chrono::Utc;
@@ -25,17 +25,11 @@ impl StateChangeImpl for Probe {
         true
     }
 
-    async fn handle(
-        self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
-        let server_address = shared_state.server_address();
+    async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
+        let server_address = context.server_address();
 
         let probe = match crate::CloudClient::new(&server_address)
-            .probe(
-                shared_state.runtime_settings.retries() as u64,
-                shared_state.firmware.as_cloud_metadata(),
-            )
+            .probe(context.runtime_settings.retries() as u64, context.firmware.as_cloud_metadata())
             .await
         {
             Err(cloud::Error::Http(e))
@@ -45,7 +39,7 @@ impl StateChangeImpl for Probe {
             }
             Err(e) => {
                 error!("Probe failed: {}", e);
-                shared_state.runtime_settings.inc_retries();
+                context.runtime_settings.inc_retries();
                 return Ok((
                     State::Probe(self),
                     machine::StepTransition::Delayed(Duration::from_secs(1)),
@@ -53,14 +47,14 @@ impl StateChangeImpl for Probe {
             }
             Ok(probe) => probe,
         };
-        shared_state.runtime_settings.clear_retries();
+        context.runtime_settings.clear_retries();
 
         match probe {
             ProbeResponse::NoUpdate => {
                 debug!("moving to EntryPoint state as no update is available.");
 
                 // Store timestamp of last polling
-                shared_state.runtime_settings.set_last_polling(Utc::now())?;
+                context.runtime_settings.set_last_polling(Utc::now())?;
                 Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
             }
 
@@ -74,7 +68,7 @@ impl StateChangeImpl for Probe {
 
             ProbeResponse::Update(package, sign) => {
                 // Store timestamp of last polling
-                shared_state.runtime_settings.set_last_polling(Utc::now())?;
+                context.runtime_settings.set_last_polling(Utc::now())?;
 
                 info!("update received.");
                 Ok((
@@ -94,10 +88,10 @@ mod tests {
     #[async_std::test]
     async fn invalid_uri() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::InvalidUri);
 
-        let res = State::Probe(Probe {}).move_to_next_state(&mut shared_state).await;
+        let res = State::Probe(Probe {}).move_to_next_state(&mut context).await;
 
         match res {
             Err(crate::states::TransitionError::Client(_)) => {}
@@ -109,10 +103,10 @@ mod tests {
     #[async_std::test]
     async fn update_not_available() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::NoUpdate);
 
-        let machine = State::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Probe(Probe {}).move_to_next_state(&mut context).await.unwrap().0;
 
         assert_state!(machine, EntryPoint);
     }
@@ -120,10 +114,10 @@ mod tests {
     #[async_std::test]
     async fn update_available() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::HasUpdate);
 
-        let machine = State::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Probe(Probe {}).move_to_next_state(&mut context).await.unwrap().0;
 
         assert_state!(machine, Validation);
     }
@@ -131,10 +125,10 @@ mod tests {
     #[async_std::test]
     async fn extra_poll_interval() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         cloud_mock::setup_fake_response(cloud_mock::FakeResponse::ExtraPoll);
 
-        let machine = State::Probe(Probe {}).move_to_next_state(&mut shared_state).await.unwrap().0;
+        let machine = State::Probe(Probe {}).move_to_next_state(&mut context).await.unwrap().0;
 
         assert_state!(machine, Probe);
     }

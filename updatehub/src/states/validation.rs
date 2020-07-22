@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     EntryPoint, PrepareDownload, Result, State, StateChangeImpl,
 };
 use crate::update_package::UpdatePackageExt;
@@ -26,11 +26,8 @@ impl StateChangeImpl for Validation {
         true
     }
 
-    async fn handle(
-        self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
-        if let Some(key) = shared_state.firmware.pub_key.as_ref() {
+    async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
+        if let Some(key) = context.firmware.pub_key.as_ref() {
             match self.sign.as_ref() {
                 Some(sign) => {
                     debug!("validating signature");
@@ -44,9 +41,9 @@ impl StateChangeImpl for Validation {
         }
 
         // Ensure the package is compatible
-        self.package.compatible_with(&shared_state.firmware)?;
+        self.package.compatible_with(&context.firmware)?;
 
-        if shared_state
+        if context
             .runtime_settings
             .applied_package_uid()
             .map(|u| *u == self.package.package_uid())
@@ -72,12 +69,12 @@ mod tests {
     #[async_std::test]
     async fn normal_transition() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         let package = get_update_package();
         let sign = None;
 
         let machine = State::Validation(Validation { package, sign })
-            .move_to_next_state(&mut shared_state)
+            .move_to_next_state(&mut context)
             .await
             .unwrap()
             .0;
@@ -87,13 +84,12 @@ mod tests {
     #[async_std::test]
     async fn invalid_hardware() {
         let setup = crate::tests::TestEnvironment::build().invalid_hardware().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         let package = get_update_package();
         let sign = None;
 
-        let machine = State::Validation(Validation { package, sign })
-            .move_to_next_state(&mut shared_state)
-            .await;
+        let machine =
+            State::Validation(Validation { package, sign }).move_to_next_state(&mut context).await;
 
         match machine {
             Err(TransitionError::UpdatePackage(_)) => {}
@@ -104,13 +100,13 @@ mod tests {
     #[async_std::test]
     async fn skip_same_package_uid() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         let package = get_update_package();
         let sign = None;
-        shared_state.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
+        context.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
 
         let machine = State::Validation(Validation { package, sign })
-            .move_to_next_state(&mut shared_state)
+            .move_to_next_state(&mut context)
             .await
             .unwrap()
             .0;
@@ -120,16 +116,15 @@ mod tests {
     #[async_std::test]
     async fn missing_signature() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
-        shared_state.firmware.pub_key = Some("foo".into());
+        let mut context = setup.gen_context();
+        context.firmware.pub_key = Some("foo".into());
 
         let package = get_update_package();
         let sign = None;
-        shared_state.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
+        context.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
 
-        let res = State::Validation(Validation { package, sign })
-            .move_to_next_state(&mut shared_state)
-            .await;
+        let res =
+            State::Validation(Validation { package, sign }).move_to_next_state(&mut context).await;
         match res {
             Err(crate::states::TransitionError::SignatureNotFound) => {}
             Err(e) => panic!("Unexpected error returned: {}", e),

@@ -63,7 +63,7 @@ pub enum TransitionError {
 trait StateChangeImpl {
     async fn handle(
         self,
-        shared_state: &mut machine::SharedState,
+        context: &mut machine::Context,
     ) -> Result<(State, machine::StepTransition)>;
 
     fn name(&self) -> &'static str;
@@ -90,10 +90,10 @@ trait ProgressReporter: Sized + StateChangeImpl {
 
     async fn handle_and_report_progress(
         self,
-        shared_state: &mut machine::SharedState,
+        context: &mut machine::Context,
     ) -> Result<(State, machine::StepTransition)> {
-        let server = shared_state.server_address().to_owned();
-        let firmware = &shared_state.firmware.clone();
+        let server = context.server_address().to_owned();
+        let firmware = &context.firmware.clone();
         let package_uid = &self.package_uid();
         let enter_state = self.report_enter_state_name();
         let leave_state = self.report_leave_state_name();
@@ -113,7 +113,7 @@ trait ProgressReporter: Sized + StateChangeImpl {
         if let Err(e) = report(enter_state, None, None, None).await {
             warn!("report failed: {}", e);
         }
-        match self.handle(shared_state).await {
+        match self.handle(context).await {
             Ok((state, trans)) => {
                 if let Err(e) = report(leave_state, None, None, None).await {
                     warn!("report failed: {}", e);
@@ -138,13 +138,13 @@ trait ProgressReporter: Sized + StateChangeImpl {
 
     async fn handle_with_callback_and_report_progress(
         self,
-        shared_state: &mut machine::SharedState,
+        context: &mut machine::Context,
     ) -> Result<(State, machine::StepTransition)> {
         let transition =
-            firmware::state_change_callback(&shared_state.settings.firmware.metadata, self.name())?;
+            firmware::state_change_callback(&context.settings.firmware.metadata, self.name())?;
 
         match transition {
-            Transition::Continue => Ok(self.handle_and_report_progress(shared_state).await?),
+            Transition::Continue => Ok(self.handle_and_report_progress(context).await?),
             Transition::Cancel => {
                 Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
             }
@@ -194,10 +194,7 @@ fn handle_startup_callbacks(
 
 #[async_trait(?Send)]
 impl StateChangeImpl for State {
-    async fn handle(
-        self,
-        st: &mut machine::SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, st: &mut machine::Context) -> Result<(State, machine::StepTransition)> {
         self.move_to_next_state(st).await
     }
 
@@ -221,21 +218,21 @@ impl State {
 
     async fn move_to_next_state(
         self,
-        shared_state: &mut machine::SharedState,
+        context: &mut machine::Context,
     ) -> Result<(Self, machine::StepTransition)> {
         match self {
-            State::Error(s) => s.handle(shared_state).await,
-            State::Park(s) => s.handle(shared_state).await,
-            State::EntryPoint(s) => s.handle(shared_state).await,
-            State::Poll(s) => s.handle(shared_state).await,
-            State::Probe(s) => s.handle(shared_state).await,
-            State::Validation(s) => s.handle(shared_state).await,
-            State::PrepareDownload(s) => s.handle(shared_state).await,
-            State::DirectDownload(s) => s.handle(shared_state).await,
-            State::PrepareLocalInstall(s) => s.handle(shared_state).await,
-            State::Download(s) => s.handle_with_callback_and_report_progress(shared_state).await,
-            State::Install(s) => s.handle_with_callback_and_report_progress(shared_state).await,
-            State::Reboot(s) => s.handle_with_callback_and_report_progress(shared_state).await,
+            State::Error(s) => s.handle(context).await,
+            State::Park(s) => s.handle(context).await,
+            State::EntryPoint(s) => s.handle(context).await,
+            State::Poll(s) => s.handle(context).await,
+            State::Probe(s) => s.handle(context).await,
+            State::Validation(s) => s.handle(context).await,
+            State::PrepareDownload(s) => s.handle(context).await,
+            State::DirectDownload(s) => s.handle(context).await,
+            State::PrepareLocalInstall(s) => s.handle(context).await,
+            State::Download(s) => s.handle_with_callback_and_report_progress(context).await,
+            State::Install(s) => s.handle_with_callback_and_report_progress(context).await,
+            State::Reboot(s) => s.handle_with_callback_and_report_progress(context).await,
         }
     }
 

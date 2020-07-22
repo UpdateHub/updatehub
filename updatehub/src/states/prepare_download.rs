@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     Download, Result, State, StateChangeImpl,
 };
 use crate::{
@@ -28,17 +28,14 @@ impl StateChangeImpl for PrepareDownload {
         true
     }
 
-    async fn handle(
-        self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         let installation_set = installation_set::inactive()?;
-        let download_dir = shared_state.settings.update.download_dir.to_owned();
+        let download_dir = context.settings.update.download_dir.to_owned();
 
         self.update_package.clear_unrelated_files(
             &download_dir,
             installation_set,
-            &shared_state.settings,
+            &context.settings,
         )?;
 
         // Get shasums of missing or incomplete objects
@@ -60,8 +57,8 @@ impl StateChangeImpl for PrepareDownload {
             .collect();
 
         // Get ownership of remaining data that will be sent to new thread
-        let server = shared_state.server_address().to_owned();
-        let product_uid = shared_state.firmware.product_uid.to_owned();
+        let server = context.server_address().to_owned();
+        let product_uid = context.firmware.product_uid.to_owned();
         let package_uid = self.update_package.package_uid();
         let (sndr, recv) = async_std::sync::channel(1);
 

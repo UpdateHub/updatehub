@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     Install, ProgressReporter, Result, State, StateChangeImpl, TransitionError,
 };
 use crate::{
@@ -63,15 +63,12 @@ impl StateChangeImpl for Download {
         true
     }
 
-    async fn handle(
-        mut self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
+    async fn handle(mut self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         if let Ok(vec) = self.download_chan.recv().await {
             vec.into_iter().try_for_each(|res| res)?;
         }
 
-        let download_dir = &shared_state.settings.update.download_dir;
+        let download_dir = &context.settings.update.download_dir;
         if self
             .update_package
             .objects(self.installation_set)
@@ -107,11 +104,11 @@ mod test {
 
     async fn test_object_download(size: usize) {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
         let (obj, shasum) = fake_download_object(size);
         let predownload_state =
             PrepareDownload { update_package: get_update_package_with_shasum(&shasum) };
-        let download_dir = shared_state.settings.update.download_dir.clone();
+        let download_dir = context.settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed
         fs::File::create(&download_dir.join("leftover-file")).unwrap();
@@ -119,13 +116,13 @@ mod test {
         cloud_mock::set_download_data(obj);
 
         let mut machine = State::PrepareDownload(predownload_state)
-            .move_to_next_state(&mut shared_state)
+            .move_to_next_state(&mut context)
             .await
             .unwrap()
             .0;
         assert_state!(machine, Download);
         loop {
-            machine = machine.move_to_next_state(&mut shared_state).await.unwrap().0;
+            machine = machine.move_to_next_state(&mut context).await.unwrap().0;
             if let State::Install(_) = machine {
                 break;
             }

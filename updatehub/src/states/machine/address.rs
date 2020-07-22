@@ -12,7 +12,7 @@ pub(crate) struct Addr {
 }
 
 #[derive(Debug)]
-pub(super) enum Message {
+pub(crate) enum Message {
     Info,
     Probe(Option<String>),
     AbortDownload,
@@ -21,7 +21,7 @@ pub(super) enum Message {
 }
 
 #[derive(Debug)]
-pub(super) enum Response {
+pub(crate) enum Response {
     Info(sdk::api::info::Response),
     Probe(super::Result<ProbeResponse>),
     AbortDownload(AbortDownloadResponse),

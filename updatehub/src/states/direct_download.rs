@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     PrepareLocalInstall, Result, State, StateChangeImpl,
 };
 use slog_scope::info;
@@ -19,13 +19,10 @@ impl StateChangeImpl for DirectDownload {
         "direct_download"
     }
 
-    async fn handle(
-        self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         info!("fetching update package directly from url: {:?}", self.url);
 
-        let update_file = shared_state.settings.update.download_dir.join("fetched_pkg");
+        let update_file = context.settings.update.download_dir.join("fetched_pkg");
         let mut file = async_std::fs::File::create(&update_file).await?;
         cloud::get(&self.url, &mut file).await?;
 

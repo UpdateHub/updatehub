@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     Probe, Result, State, StateChangeImpl,
 };
 use chrono::Utc;
@@ -25,15 +25,12 @@ impl StateChangeImpl for Poll {
         true
     }
 
-    async fn handle(
-        self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         crate::logger::start_memory_logging();
 
-        let interval = shared_state.settings.polling.interval;
-        let delay = interval
-            - Utc::now().signed_duration_since(shared_state.runtime_settings.last_polling());
+        let interval = context.settings.polling.interval;
+        let delay =
+            interval - Utc::now().signed_duration_since(context.runtime_settings.last_polling());
 
         if delay > interval || delay.num_seconds() < 0 {
             info!("forcing to Probe state as we are in time");
@@ -53,16 +50,15 @@ mod tests {
     #[async_std::test]
     async fn normal_delay() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
-        shared_state.runtime_settings.polling.last = Utc::now() - Duration::minutes(10);
+        let mut context = setup.gen_context();
+        context.runtime_settings.polling.last = Utc::now() - Duration::minutes(10);
 
-        let (machine, trans) =
-            State::Poll(Poll {}).move_to_next_state(&mut shared_state).await.unwrap();
+        let (machine, trans) = State::Poll(Poll {}).move_to_next_state(&mut context).await.unwrap();
 
         assert_state!(machine, Probe);
         match trans {
             machine::StepTransition::Delayed(d)
-                if d <= shared_state.settings.polling.interval.to_std().unwrap() => {}
+                if d <= context.settings.polling.interval.to_std().unwrap() => {}
             _ => panic!("Unexpected StepTransition: {:?}", trans),
         }
     }
@@ -70,10 +66,9 @@ mod tests {
     #[async_std::test]
     async fn update_in_time() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
+        let mut context = setup.gen_context();
 
-        let (machine, trans) =
-            State::Poll(Poll {}).move_to_next_state(&mut shared_state).await.unwrap();
+        let (machine, trans) = State::Poll(Poll {}).move_to_next_state(&mut context).await.unwrap();
 
         assert_state!(machine, Probe);
         match trans {
@@ -85,11 +80,10 @@ mod tests {
     #[async_std::test]
     async fn least_probe_in_the_future() {
         let setup = crate::tests::TestEnvironment::build().finish();
-        let mut shared_state = setup.gen_shared_state();
-        shared_state.runtime_settings.polling.last = Utc::now() + Duration::days(1);
+        let mut context = setup.gen_context();
+        context.runtime_settings.polling.last = Utc::now() + Duration::days(1);
 
-        let (machine, trans) =
-            State::Poll(Poll {}).move_to_next_state(&mut shared_state).await.unwrap();
+        let (machine, trans) = State::Poll(Poll {}).move_to_next_state(&mut context).await.unwrap();
 
         assert_state!(machine, Probe);
         match trans {

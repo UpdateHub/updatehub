@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, SharedState},
+    machine::{self, Context},
     Install, Result, State, StateChangeImpl,
 };
 use crate::{
@@ -28,12 +28,9 @@ impl StateChangeImpl for PrepareLocalInstall {
         "prepare_local_install"
     }
 
-    async fn handle(
-        self,
-        shared_state: &mut SharedState,
-    ) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         info!("prepare local install: {}", self.update_file.display());
-        let dest_path = shared_state.settings.update.download_dir.clone();
+        let dest_path = context.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
 
         let mut metadata = Vec::with_capacity(1024);
@@ -42,7 +39,7 @@ impl StateChangeImpl for PrepareLocalInstall {
         let update_package = UpdatePackage::parse(&metadata)?;
         trace!("successfuly uncompressed metadata file");
 
-        if let Some(key) = shared_state.firmware.pub_key.as_ref() {
+        if let Some(key) = context.firmware.pub_key.as_ref() {
             let mut sign = Vec::with_capacity(512);
             source.seek(SeekFrom::Start(0))?;
             match compress_tools::uncompress_archive_file(&mut source, &mut sign, "signature") {
@@ -75,7 +72,7 @@ impl StateChangeImpl for PrepareLocalInstall {
         update_package.clear_unrelated_files(
             &dest_path,
             installation_set::inactive()?,
-            &shared_state.settings,
+            &context.settings,
         )?;
 
         Ok((State::Install(Install { update_package }), machine::StepTransition::Immediate))
