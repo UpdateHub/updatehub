@@ -21,7 +21,7 @@ pub(super) struct StateMachine {
 }
 
 pub struct Context {
-    pub(super) communication: Channel<(Message, sync::Sender<Response>)>,
+    pub(super) communication: Channel<(Message, sync::Sender<Result<Response>>)>,
     pub(super) waker: Channel<()>,
     pub settings: Settings,
     pub runtime_settings: RuntimeSettings,
@@ -146,32 +146,34 @@ impl StateMachine {
     async fn handle_communication(
         &mut self,
         msg: address::Message,
-        responder: sync::Sender<address::Response>,
+        responder: sync::Sender<Result<address::Response>>,
     ) {
         trace!("Received external request: {:?}", msg);
 
         let response = match msg {
             address::Message::Info => {
                 let state = self.state.name().to_owned();
-                address::Response::Info(sdk::api::info::Response {
+                Ok(address::Response::Info(sdk::api::info::Response {
                     state,
                     version: crate::version().to_string(),
                     config: self.context.settings.0.clone(),
                     firmware: self.context.firmware.0.clone(),
                     runtime_settings: self.context.runtime_settings.0.clone(),
-                })
+                }))
             }
             address::Message::Probe(custom_server) => {
-                address::Response::Probe(self.handle_probe_request(custom_server).await)
+                self.handle_probe_request(custom_server).await.map(|r| address::Response::Probe(r))
             }
             address::Message::AbortDownload => {
                 if self.state.is_handling_download() {
                     self.state = State::EntryPoint(EntryPoint {});
-                    address::Response::AbortDownload(
+                    Ok(address::Response::AbortDownload(
                         address::AbortDownloadResponse::RequestAccepted,
-                    )
+                    ))
                 } else {
-                    address::Response::AbortDownload(address::AbortDownloadResponse::InvalidState)
+                    Ok(address::Response::AbortDownload(
+                        address::AbortDownloadResponse::InvalidState,
+                    ))
                 }
             }
             address::Message::LocalInstall(update_file) => {
@@ -183,9 +185,11 @@ impl StateMachine {
 
                     self.state = State::PrepareLocalInstall(PrepareLocalInstall { update_file });
 
-                    address::Response::LocalInstall(address::StateResponse::RequestAccepted(state))
+                    Ok(address::Response::LocalInstall(address::StateResponse::RequestAccepted(
+                        state,
+                    )))
                 } else {
-                    address::Response::LocalInstall(address::StateResponse::InvalidState(state))
+                    Ok(address::Response::LocalInstall(address::StateResponse::InvalidState(state)))
                 }
             }
             address::Message::RemoteInstall(url) => {
@@ -197,9 +201,13 @@ impl StateMachine {
 
                     self.state = State::DirectDownload(DirectDownload { url });
 
-                    address::Response::RemoteInstall(address::StateResponse::RequestAccepted(state))
+                    Ok(address::Response::RemoteInstall(address::StateResponse::RequestAccepted(
+                        state,
+                    )))
                 } else {
-                    address::Response::RemoteInstall(address::StateResponse::InvalidState(state))
+                    Ok(address::Response::RemoteInstall(address::StateResponse::InvalidState(
+                        state,
+                    )))
                 }
             }
         };

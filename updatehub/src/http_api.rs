@@ -23,7 +23,7 @@ impl API {
 
     async fn info(req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
         debug!("receiving info request");
-        let res = req.state().request_info().await;
+        let res = req.state().request_info().await?;
         Ok(tide::Response::builder(tide::StatusCode::Ok).body(tide::Body::from_json(&res)?).build())
     }
 
@@ -40,13 +40,13 @@ impl API {
     async fn local_install(mut req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
         debug!("receiving local_install request");
         let file = req.body_json::<api::local_install::Request>().await?.file;
-        Ok(tide::Response::try_from(req.state().request_local_install(file).await)?)
+        Ok(tide::Response::try_from(req.state().request_local_install(file).await?)?)
     }
 
     async fn remote_install(mut req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
         debug!("receiving remote_install request");
         let url = req.body_json::<api::remote_install::Request>().await?.url;
-        Ok(tide::Response::try_from(req.state().request_remote_install(url).await)?)
+        Ok(tide::Response::try_from(req.state().request_remote_install(url).await?)?)
     }
 
     async fn log(_: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
@@ -58,7 +58,7 @@ impl API {
 
     async fn download_abort(req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
         debug!("receiving abort download request");
-        Ok(tide::Response::try_from(req.state().request_abort_download().await)?)
+        Ok(tide::Response::try_from(req.state().request_abort_download().await?)?)
     }
 }
 
