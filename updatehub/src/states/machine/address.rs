@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 #[derive(Clone)]
 pub(crate) struct Addr {
-    pub(super) message: sync::Sender<(Message, sync::Sender<Response>)>,
+    pub(super) message: sync::Sender<(Message, sync::Sender<super::Result<Response>>)>,
     pub(super) waker: sync::Sender<()>,
 }
 
@@ -23,7 +23,7 @@ pub(crate) enum Message {
 #[derive(Debug)]
 pub(crate) enum Response {
     Info(sdk::api::info::Response),
-    Probe(super::Result<ProbeResponse>),
+    Probe(ProbeResponse),
     AbortDownload(AbortDownloadResponse),
     LocalInstall(StateResponse),
     RemoteInstall(StateResponse),
@@ -50,11 +50,12 @@ pub(crate) enum StateResponse {
 }
 
 impl Addr {
-    pub(crate) async fn request_info(&self) -> sdk::api::info::Response {
+    pub(crate) async fn request_info(&self) -> super::Result<sdk::api::info::Response> {
         let (sndr, recv) = sync::channel(1);
         self.message.send((Message::Info, sndr)).await;
         match recv.recv().await {
-            Ok(Response::Info(resp)) => resp,
+            Ok(Ok(Response::Info(resp))) => Ok(resp),
+            Ok(Err(e)) => Err(e),
             res => unreachable!("Unexpected response: {:?}", res),
         }
     }
@@ -66,34 +67,41 @@ impl Addr {
         let (sndr, recv) = sync::channel(1);
         self.message.send((Message::Probe(custom_server), sndr)).await;
         match recv.recv().await {
-            Ok(Response::Probe(resp)) => resp,
+            Ok(Ok(Response::Probe(resp))) => Ok(resp),
+            Ok(Err(e)) => Err(e),
             res => unreachable!("Unexpected response: {:?}", res),
         }
     }
 
-    pub(crate) async fn request_abort_download(&self) -> AbortDownloadResponse {
+    pub(crate) async fn request_abort_download(&self) -> super::Result<AbortDownloadResponse> {
         let (sndr, recv) = sync::channel(1);
         self.message.send((Message::AbortDownload, sndr)).await;
         match recv.recv().await {
-            Ok(Response::AbortDownload(resp)) => resp,
+            Ok(Ok(Response::AbortDownload(resp))) => Ok(resp),
+            Ok(Err(e)) => Err(e),
             res => unreachable!("Unexpected response: {:?}", res),
         }
     }
 
-    pub(crate) async fn request_local_install(&self, path: PathBuf) -> StateResponse {
+    pub(crate) async fn request_local_install(
+        &self,
+        path: PathBuf,
+    ) -> super::Result<StateResponse> {
         let (sndr, recv) = sync::channel(1);
         self.message.send((Message::LocalInstall(path), sndr)).await;
         match recv.recv().await {
-            Ok(Response::LocalInstall(resp)) => resp,
+            Ok(Ok(Response::LocalInstall(resp))) => Ok(resp),
+            Ok(Err(e)) => Err(e),
             res => unreachable!("Unexpected response: {:?}", res),
         }
     }
 
-    pub(crate) async fn request_remote_install(&self, url: String) -> StateResponse {
+    pub(crate) async fn request_remote_install(&self, url: String) -> super::Result<StateResponse> {
         let (sndr, recv) = sync::channel(1);
         self.message.send((Message::RemoteInstall(url), sndr)).await;
         match recv.recv().await {
-            Ok(Response::RemoteInstall(resp)) => resp,
+            Ok(Ok(Response::RemoteInstall(resp))) => Ok(resp),
+            Ok(Err(e)) => Err(e),
             res => unreachable!("Unexpected response: {:?}", res),
         }
     }
