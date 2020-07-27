@@ -202,10 +202,22 @@ impl FakeMetadata {
 }
 
 #[async_std::test]
+async fn direct_get_invalid_url() {
+    let res = sdk::get("http://foo.bar:---", &mut async_std::io::sink()).await;
+    assert!(res.is_err());
+}
+
+#[async_std::test]
 async fn probe_requirements() {
     let (url, mocks) = create_mock_server(FakeServer::NoUpdate);
     sdk::Client::new(&url).probe(0, FakeMetadata::new().get()).await.unwrap();
     mocks.iter().for_each(Mock::assert);
+}
+
+#[async_std::test]
+async fn probe_invalid_url() {
+    let res = sdk::Client::new("http://foo.bar:---").probe(0, FakeMetadata::new().get()).await;
+    assert!(res.is_err());
 }
 
 #[async_std::test]
