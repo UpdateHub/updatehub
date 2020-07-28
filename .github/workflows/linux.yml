@@ -56,22 +56,13 @@ jobs:
         with:
           command: generate-lockfile
 
-      - name: Cache cargo registry
-        uses: actions/cache@v1
+      - name: Cache build contents
+        uses: actions/cache@v2
         with:
-          path: ~/.cargo/registry
-          key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-registry-trimmed-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo index
-        uses: actions/cache@v1
-        with:
-          path: ~/.cargo/git
-          key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-index-trimmed-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Cache cargo build
-        uses: actions/cache@v1
-        with:
-          path: target
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
           key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-build-trimmed-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Check build
