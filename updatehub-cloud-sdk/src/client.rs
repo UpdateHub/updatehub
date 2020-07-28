@@ -202,6 +202,13 @@ impl TryFrom<&headers::HeaderValues> for api::Signature {
     type Error = Error;
 
     fn try_from(value: &headers::HeaderValues) -> Result<Self> {
-        Ok(Self::from_base64_str(value.as_str())?)
+        let value = value.as_str();
+
+        // Workarround for https://github.com/sfackler/rust-openssl/issues/1325
+        if value.is_empty() {
+            return Ok(Self::from_base64_str("")?);
+        }
+
+        Ok(Self::from_base64_str(value)?)
     }
 }
