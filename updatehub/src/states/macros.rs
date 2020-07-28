@@ -6,7 +6,7 @@
 macro_rules! assert_state {
     ($machine:ident, $state:ident) => {
         assert!(
-            if let State::$state(_) = $machine { true } else { false },
+            matches!($machine, State::$state(_)),
             "Failed to get to {} state.",
             stringify!($state),
         );
