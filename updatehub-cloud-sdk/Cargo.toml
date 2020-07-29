@@ -12,7 +12,6 @@ edition = "2018"
 [dependencies]
 async-std = { version = "1", default-features = false, features = ["attributes"] }
 derive_more = { version = "0.99", default-features = false, features = ["display", "error", "from"] }
-futures-util = { version = "0.3", default-features = false }
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 serde = { version = "1", default-features = false, features = ["derive"] }
@@ -21,6 +20,6 @@ slog-scope = "4"
 surf = { git = "https://github.com/http-rs/surf", default-features = false, features = ["h1-client"] }
 
 [dev-dependencies]
-mockito = "0.25"
+mockito = "0.27"
 tempfile = "3"
 
