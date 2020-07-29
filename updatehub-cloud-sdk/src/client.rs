@@ -70,10 +70,10 @@ where
         let byte = byte?;
         handle.write_all(&[byte]).await?;
         if length > 0 {
-            written += 1.0 / (length / 100) as f32;
+            written += 100. / length as f32;
             if written as usize >= threshold {
                 threshold += 20;
-                debug!("{}% of the file has been downloaded", std::cmp::max(written as usize, 100));
+                debug!("{}% of the file has been downloaded", std::cmp::min(written as usize, 100));
             }
         }
     }

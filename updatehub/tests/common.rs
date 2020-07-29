@@ -152,8 +152,8 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                     "mode": "test",
                     "filename": "testfile",
                     "target": "/dev/device1",
-                    "sha256sum": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
-                    "size": 4
+                    "sha256sum": "bdbdb660c6b7b18a8376695ff18842d1ea9f3c2c80a192596226b5191bea42bf",
+                    "size": 120
                 }
             ],
             [
@@ -161,8 +161,8 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                     "mode": "test",
                     "filename": "testfile",
                     "target": "/dev/device2",
-                    "sha256sum": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
-                    "size": 4
+                    "sha256sum": "bdbdb660c6b7b18a8376695ff18842d1ea9f3c2c80a192596226b5191bea42bf",
+                    "size": 120
                 }
             ]
         ]
@@ -202,13 +202,13 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                 .create(),
             mock(
                 "GET",
-                format!("/products/{}/packages/d3d671d22a0fe0861e14fc29289fe548731e0d80b4a39e28be615d5d43a95503/objects/03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4", product_uid)
+                format!("/products/{}/packages/4304291fa4d86ba6f924b3385ee1c0d5b4a0f8985abf3b84df73da3e5182ff0b/objects/bdbdb660c6b7b18a8376695ff18842d1ea9f3c2c80a192596226b5191bea42bf", product_uid)
                     .as_str(),
             )
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .with_status(200)
-            .with_body("1234")
+                .with_body(std::iter::repeat(0xF).take(120).collect::<Vec<_>>())
             .create(),
         ],
     }
