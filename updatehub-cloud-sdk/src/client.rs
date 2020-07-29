@@ -4,7 +4,6 @@
 
 use crate::{api, Error, Result};
 use async_std::{fs, io};
-use futures_util::future::BoxFuture;
 use slog_scope::{debug, error};
 use std::{
     convert::{TryFrom, TryInto},
@@ -18,19 +17,18 @@ use surf::{
 
 struct API;
 
+#[surf::utils::async_trait]
 impl Middleware for API {
-    fn handle<'a>(
-        &'a self,
+    async fn handle(
+        &self,
         mut req: middleware::Request,
         client: std::sync::Arc<dyn middleware::HttpClient>,
-        next: middleware::Next<'a>,
-    ) -> BoxFuture<'a, std::result::Result<middleware::Response, surf::Error>> {
-        Box::pin(async move {
-            req.insert_header(headers::USER_AGENT, "updatehub/next");
-            req.insert_header(headers::CONTENT_TYPE, "application/json");
-            req.insert_header("api-content-type", "application/vnd.updatehub-v1+json");
-            Ok(next.run(req, client).await?)
-        })
+        next: middleware::Next<'_>,
+    ) -> surf::Result<middleware::Response> {
+        req.insert_header(headers::USER_AGENT, "updatehub/next");
+        req.insert_header(headers::CONTENT_TYPE, "application/json");
+        req.insert_header("api-content-type", "application/vnd.updatehub-v1+json");
+        Ok(next.run(req, client).await?)
     }
 }
 

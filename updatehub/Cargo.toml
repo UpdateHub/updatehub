@@ -22,14 +22,14 @@ async-std = { version = "1", features = ["unstable"] }
 async-trait = "0.1"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
-compress-tools = "0.5"
+compress-tools = "0.6"
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
 easy_process = "0.2"
 find-binary-version = "0.3"
 infer = "0.2"
 lazy_static = "1"
 ms-converter = "1"
-nix = "0.17"
+nix = "0.18"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
@@ -57,7 +57,7 @@ git-version = "0.3"
 flate2 = "1"
 insta = { version = "0.16", features = ["backtrace"] }
 loopdev = "0.2"
-mockito = "0.26"
+mockito = "0.27"
 pretty_assertions = "0.6"
 regex = "1"
 rexpect = "0.4"
