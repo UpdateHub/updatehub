@@ -58,7 +58,7 @@ jobs:
         with:
           use-cross: true
           command: test
-          args: --target armv7-unknown-linux-gnueabihf -p updatehub --release --all-features --no-fail-fast -- --nocapture
+          args: --target armv7-unknown-linux-gnueabihf -p updatehub --release --all-features --no-fail-fast --lib -- --nocapture
 
       - name: Clear the cargo caches
         run: |
