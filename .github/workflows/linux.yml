@@ -38,7 +38,7 @@ jobs:
           use-tool-cache: true
 
       - name: Install cargo bloat tool
-        if: matrix.version == '1.42.0'
+        if: matrix.version == '1.42.0' && 0
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-bloat
