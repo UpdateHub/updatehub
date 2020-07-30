@@ -11,4 +11,5 @@ pub struct Test {
     pub sha256sum: String,
     pub target: String,
     pub size: u64,
+    pub force_check_requirements_fail: bool,
 }

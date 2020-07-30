@@ -313,9 +313,8 @@ fn correct_config_update_no_polling_probe_api() {
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
-    <timestamp> INFO installing update: 7b5078f6e7549ad5a1397d7d95b0ba20cffbb16bb739fec6b6c078cd94707786
+    <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
     <timestamp> INFO using installation set as target 1
-    <timestamp> DEBG running default check_requirements
     <timestamp> DEBG saving runtime settings from "<file>"...
     <timestamp> DEBG saving runtime settings from "<file>"...
     <timestamp> INFO swapping active installation set
@@ -326,7 +325,7 @@ fn correct_config_update_no_polling_probe_api() {
     "###);
 
     insta::assert_snapshot!(output_server_info_2.trim(), @r###"
-    <timestamp> INFO installing update: 7b5078f6e7549ad5a1397d7d95b0ba20cffbb16bb739fec6b6c078cd94707786
+    <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
