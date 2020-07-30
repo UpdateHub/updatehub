@@ -24,7 +24,8 @@ pub(crate) fn get_update_json(sha256sum: &str) -> serde_json::Value {
                         "filename": "testfile",
                         "target": "/dev/device1",
                         "sha256sum": sha256sum,
-                        "size": 10
+                        "size": 10,
+                        "force-check-requirements-fail": false
                     }
                 ],
                 [
@@ -33,7 +34,8 @@ pub(crate) fn get_update_json(sha256sum: &str) -> serde_json::Value {
                         "filename": "testfile",
                         "target": "/dev/device2",
                         "sha256sum": sha256sum,
-                        "size": 10
+                        "size": 10,
+                        "force-check-requirements-fail": false
                     }
                 ]
             ]

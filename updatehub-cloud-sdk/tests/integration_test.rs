@@ -33,7 +33,8 @@ fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
                     "filename": "testfile",
                     "target": "/dev/device1",
                     "sha256sum": "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646",
-                    "size": 10
+                    "size": 10,
+                    "force-check-requirements-fail": false
                 }
             ],
             [
@@ -42,7 +43,8 @@ fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
                     "filename": "testfile",
                     "target": "/dev/device2",
                     "sha256sum": "c775e7b757ede630cd0aa1113bd102661ab38829ca52a6422ab782862f268646",
-                    "size": 10
+                    "size": 10,
+                    "force-check-requirements-fail": false
                 }
             ]
         ]

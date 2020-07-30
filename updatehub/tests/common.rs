@@ -154,7 +154,8 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                     "filename": "testfile",
                     "target": "/dev/device1",
                     "sha256sum": "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4",
-                    "size": 40960
+                    "size": 40960,
+                    "force-check-requirements-fail": false
                 }
             ],
             [
@@ -163,7 +164,8 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                     "filename": "testfile",
                     "target": "/dev/device2",
                     "sha256sum": "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4",
-                    "size": 40960
+                    "size": 40960,
+                    "force-check-requirements-fail": false
                 }
             ]
         ]
@@ -203,7 +205,7 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                 .create(),
             mock(
                 "GET",
-                format!("/products/{}/packages/7b5078f6e7549ad5a1397d7d95b0ba20cffbb16bb739fec6b6c078cd94707786/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid)
+                format!("/products/{}/packages/87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid)
                     .as_str(),
             )
             .match_header("Content-Type", "application/json")
@@ -211,7 +213,7 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
             .with_status(200)
                 .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
             .create(),
-        ],
+        ]
     }
 }
 
