@@ -79,7 +79,7 @@ jobs:
           args: --release --all --all-features --no-fail-fast -- --nocapture
 
       - name: Run cargo bloat
-        if: matrix.version == '1.42.0'
+        if: matrix.version == '1.42.0' && 0
         uses: orf/cargo-bloat-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
