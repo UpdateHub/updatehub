@@ -71,11 +71,7 @@ impl StateChangeImpl for Install {
 
         let objs = self.update_package.objects_mut(installation_set);
         objs.iter().try_for_each(object::Installer::check_requirements)?;
-        objs.iter_mut().try_for_each(object::Installer::setup)?;
-        objs.iter_mut().try_for_each(|obj| {
-            obj.install(&context.settings.update.download_dir)?;
-            obj.cleanup()
-        })?;
+        objs.iter_mut().try_for_each(|obj| obj.install(&context.settings.update.download_dir))?;
 
         // Avoid installing same package twice.
         context.runtime_settings.set_applied_package_uid(&package_uid)?;

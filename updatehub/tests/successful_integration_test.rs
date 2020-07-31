@@ -316,8 +316,6 @@ fn correct_config_update_no_polling_probe_api() {
     <timestamp> INFO installing update: 4304291fa4d86ba6f924b3385ee1c0d5b4a0f8985abf3b84df73da3e5182ff0b
     <timestamp> INFO using installation set as target 1
     <timestamp> DEBG running default check_requirements
-    <timestamp> DEBG running default setup
-    <timestamp> DEBG running default cleanup
     <timestamp> DEBG saving runtime settings from "<file>"...
     <timestamp> DEBG saving runtime settings from "<file>"...
     <timestamp> INFO swapping active installation set

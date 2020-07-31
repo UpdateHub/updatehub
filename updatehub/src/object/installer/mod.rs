@@ -23,16 +23,6 @@ pub(crate) trait Installer {
         Ok(())
     }
 
-    fn setup(&mut self) -> Result<()> {
-        debug!("running default setup");
-        Ok(())
-    }
-
-    fn cleanup(&mut self) -> Result<()> {
-        debug!("running default cleanup");
-        Ok(())
-    }
-
     fn install(&self, download_dir: &std::path::Path) -> Result<()>;
 }
 
@@ -41,16 +31,8 @@ impl Installer for Object {
         for_any_object!(self, o, { o.check_requirements() })
     }
 
-    fn setup(&mut self) -> Result<()> {
-        for_any_object!(self, o, { o.setup() })
-    }
-
     fn install(&self, download_dir: &std::path::Path) -> Result<()> {
         for_any_object!(self, o, { o.install(download_dir) })
-    }
-
-    fn cleanup(&mut self) -> Result<()> {
-        for_any_object!(self, o, { o.cleanup() })
     }
 }
 
