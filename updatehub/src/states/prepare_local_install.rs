@@ -17,7 +17,7 @@ use std::{
     path::PathBuf,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct PrepareLocalInstall {
     pub(super) update_file: PathBuf,
 }

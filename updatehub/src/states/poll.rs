@@ -9,7 +9,7 @@ use super::{
 use chrono::Utc;
 use slog_scope::{debug, info};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct Poll {}
 
 /// Implements the state change for `State<Poll>`.

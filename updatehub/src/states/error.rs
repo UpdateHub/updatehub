@@ -15,13 +15,6 @@ pub(super) struct Error {
     error: TransitionError,
 }
 
-impl PartialEq for Error {
-    fn eq(&self, _other: &Self) -> bool {
-        // error field intentionally ignored
-        true
-    }
-}
-
 #[async_trait::async_trait(?Send)]
 impl StateChangeImpl for Error {
     fn name(&self) -> &'static str {

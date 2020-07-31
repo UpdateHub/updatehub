@@ -9,7 +9,7 @@ use super::{
 use crate::update_package::UpdatePackage;
 use slog_scope::{info, warn};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct Reboot {
     pub(super) update_package: UpdatePackage,
 }

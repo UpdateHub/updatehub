@@ -9,7 +9,7 @@ use super::{
 use crate::update_package::UpdatePackageExt;
 use slog_scope::{debug, error, info, trace};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct Validation {
     pub(super) package: cloud::api::UpdatePackage,
     pub(super) sign: Option<cloud::api::Signature>,

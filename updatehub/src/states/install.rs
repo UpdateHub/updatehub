@@ -13,7 +13,7 @@ use crate::{
 };
 use slog_scope::{debug, info};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct Install {
     pub(super) update_package: UpdatePackage,
 }
