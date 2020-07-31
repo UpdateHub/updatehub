@@ -10,7 +10,7 @@ use async_lock::Lock;
 use async_std::prelude::FutureExt;
 use slog_scope::info;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct DirectDownload {
     pub(super) url: String,
 }

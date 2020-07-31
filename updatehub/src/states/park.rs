@@ -9,7 +9,7 @@ use super::{
 
 use slog_scope::debug;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct Park {}
 
 /// Implements the state change for `State<Park>`. It stays in

@@ -15,7 +15,7 @@ use async_lock::Lock;
 use async_std::prelude::FutureExt;
 use slog_scope::error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
 }

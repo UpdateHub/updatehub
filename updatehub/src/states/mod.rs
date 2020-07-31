@@ -152,7 +152,7 @@ trait ProgressReporter: Sized + StateChangeImpl {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 enum State {
     Park(Park),
     EntryPoint(EntryPoint),

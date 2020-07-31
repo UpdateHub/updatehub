@@ -8,7 +8,7 @@ use super::{
 };
 use slog_scope::{debug, info};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct EntryPoint {}
 
 /// Implements the state change for `State<EntryPoint>`. It has two

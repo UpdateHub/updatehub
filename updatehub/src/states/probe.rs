@@ -11,7 +11,7 @@ use cloud::api::ProbeResponse;
 use slog_scope::{debug, error, info};
 use std::time::Duration;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub(super) struct Probe;
 
 /// Implements the state change for State<Probe>.
