@@ -207,11 +207,10 @@ mod tests {
         let truncate = false;
         let compressed = true;
 
-        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.setup().unwrap();
         obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
@@ -228,11 +227,10 @@ mod tests {
         let truncate = false;
         let compressed = false;
 
-        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.setup().unwrap();
         obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
@@ -249,11 +247,10 @@ mod tests {
         let truncate = false;
         let compressed = false;
 
-        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.setup().unwrap();
         obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
@@ -271,11 +268,10 @@ mod tests {
         let truncate = false;
         let compressed = false;
 
-        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.setup().unwrap();
         obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
@@ -293,11 +289,10 @@ mod tests {
         let truncate = false;
         let compressed = false;
 
-        let (mut obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.setup().unwrap();
         obj.install(download_dir.path()).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)

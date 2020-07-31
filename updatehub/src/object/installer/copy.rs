@@ -191,7 +191,6 @@ mod tests {
 
         // Peform Install
         obj.check_requirements()?;
-        obj.setup()?;
         obj.install(&download_dir.path())?;
 
         // Validade File

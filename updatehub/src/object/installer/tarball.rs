@@ -118,7 +118,6 @@ mod tests {
 
         // Peform Install
         obj.check_requirements()?;
-        obj.setup()?;
         obj.install(&PathBuf::from("fixtures"))?;
 
         // Validade File
