@@ -44,6 +44,8 @@ pub enum TransitionError {
     ObjectsNotReady,
     #[display("signature not found")]
     SignatureNotFound,
+    #[display("channel communication as failed")]
+    CommunicationFailed,
 
     Firmware(crate::firmware::Error),
     Installation(crate::object::Error),
