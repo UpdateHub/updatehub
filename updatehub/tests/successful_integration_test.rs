@@ -4,8 +4,8 @@
 
 use common::{
     create_mock_server, format_output_client_log, format_output_server, get_output_server,
-    remove_carriage_newline_caracters, remove_whitespaces, run_client_log, run_client_probe,
-    FakeServer, Polling, Server, Settings,
+    remove_carriage_newline_caracters, run_client_log, run_client_probe, FakeServer, Polling,
+    Server, Settings,
 };
 
 pub mod common;
@@ -73,7 +73,6 @@ fn correct_config_no_update_polling() {
     let output_log = run_client_log();
 
     let (output_server_trce, output_server_info) = format_output_server(output_server);
-    let output_server_info = remove_whitespaces(output_server_info, FakeServer::NoUpdate);
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -139,7 +138,6 @@ fn correct_config_no_update_polling_probe_api() {
     let output_server_2 = iter.fold(String::default(), |acc, l| acc + l + "\n");
 
     let (output_server_trce, output_server_info) = format_output_server(output_server_1);
-    let output_server_info = remove_whitespaces(output_server_info, FakeServer::NoUpdate);
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -291,10 +289,6 @@ fn correct_config_update_no_polling_probe_api() {
 
     let (output_server_trce_1, output_server_info_1) = format_output_server(output_server_1);
     let (output_server_trce_2, output_server_info_2) = format_output_server(output_server_2);
-    let output_server_info_2 = remove_whitespaces(
-        output_server_info_2,
-        FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()),
-    );
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>

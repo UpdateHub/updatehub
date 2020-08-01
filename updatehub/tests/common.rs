@@ -229,7 +229,14 @@ pub fn format_output_server(s: String) -> (String, String) {
     let debg_re = Regex::new(r"<timestamp> DEBG.*").expect("fail to compile the debg regexp");
     let s_info = debg_re.replace_all(&s_info, "");
 
-    (s_trce, s_info.to_string())
+    let s_info = s_info
+        .split('\n')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    (s_trce, s_info)
 }
 
 pub fn remove_version(s: String) -> String {
@@ -260,11 +267,4 @@ pub fn format_output_client_log(s: String) -> String {
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
 
     remove_carriage_newline_caracters(s.to_string())
-}
-
-pub fn remove_whitespaces(s: String, server: FakeServer) -> String {
-    match server {
-        FakeServer::NoUpdate => s.replace("\n\n\n", ""),
-        FakeServer::HasUpdate(_) => s.replace("\n\n\n\n\n", ""),
-    }
 }
