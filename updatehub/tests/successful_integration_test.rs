@@ -120,7 +120,7 @@ fn correct_config_no_update_polling() {
 }
 
 #[test]
-fn correct_config_no_update_polling_probe_api() {
+fn correct_config_no_update_polling_with_probe_api() {
     let setup = Settings::default();
     let mocks = create_mock_server(FakeServer::NoUpdate);
 
@@ -200,7 +200,7 @@ fn correct_config_no_update_polling_probe_api() {
 }
 
 #[test]
-fn correct_config_no_update_no_polling_probe_api() {
+fn correct_config_no_update_no_polling_with_probe_api() {
     let setup = Settings::default();
     let mocks = create_mock_server(FakeServer::NoUpdate);
 
@@ -276,7 +276,7 @@ fn correct_config_no_update_no_polling_probe_api() {
 }
 
 #[test]
-fn correct_config_update_no_polling_probe_api() {
+fn correct_config_update_no_polling_with_probe_api() {
     let setup = Settings::default();
 
     let (mut session, setup) = setup.timeout(300).init_server();
