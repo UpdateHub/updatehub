@@ -10,6 +10,12 @@ use std::{env, path::PathBuf};
 pub enum FakeServer {
     NoUpdate,
     HasUpdate(String),
+    CheckRequirementsTest(String),
+}
+
+pub enum StopMessage {
+    Custom(String),
+    Polling(Polling),
 }
 
 pub enum Polling {
@@ -102,11 +108,17 @@ impl Settings {
     }
 }
 
-pub fn get_output_server(handle: &mut rexpect::session::PtySession, polling: Polling) -> String {
+pub fn get_output_server(
+    handle: &mut rexpect::session::PtySession,
+    stop_message: StopMessage,
+) -> String {
     handle
-        .exp_regex(match polling {
-            Polling::Enable => "\r\n.* TRCE delaying transition for:.*",
-            Polling::Disable => "\r\n.* TRCE stopping transition until awoken.*",
+        .exp_regex(match stop_message {
+            StopMessage::Custom(ref s) => s,
+            StopMessage::Polling(Polling::Enable) => "\r\n.* TRCE delaying transition for:.*",
+            StopMessage::Polling(Polling::Disable) => {
+                "\r\n.* TRCE stopping transition until awoken.*"
+            }
         })
         .expect("fail to match the required string")
         .0
@@ -171,6 +183,35 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
         ]
     });
 
+    let wrong_json_update = json!({
+        "product": "0123456789",
+        "version": "1.2",
+        "supported-hardware": ["board"],
+        "objects":
+        [
+            [
+                {
+                    "mode": "test",
+                    "filename": "testfile",
+                    "target": "/dev/device1",
+                    "sha256sum": "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4",
+                    "size": 40960,
+                    "force-check-requirements-fail": true
+                }
+            ],
+            [
+                {
+                    "mode": "test",
+                    "filename": "testfile",
+                    "target": "/dev/device2",
+                    "sha256sum": "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4",
+                    "size": 40960,
+                    "force-check-requirements-fail": true
+                }
+            ]
+        ]
+    });
+
     let request_body = Matcher::Json(json!({
         "product-uid": "229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
         "version": "1.1",
@@ -213,7 +254,27 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
             .with_status(200)
                 .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
             .create(),
-        ]
+        ],
+        FakeServer::CheckRequirementsTest(product_uid) => vec![
+            mock("POST", "/upgrades")
+                .match_header("Content-Type", "application/json")
+                .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+                .match_body(request_body)
+                .with_status(200)
+                .with_header("UH-Signature", &openssl::base64::encode_block(b"some_signature"))
+                .with_body(&wrong_json_update.to_string())
+                .create(),
+            mock(
+                "GET",
+                format!("/products/{}/packages/fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid)
+                    .as_str(),
+            )
+            .match_header("Content-Type", "application/json")
+            .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+            .with_status(200)
+                .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
+            .create(),
+        ],
     }
 }
 
