@@ -11,7 +11,7 @@ use common::{
 pub mod common;
 
 #[test]
-fn invalid_download_dir() {
+fn failing_invalid_download_dir() {
     let tmp_dir = tempfile::tempdir().unwrap();
     let mut perms = std::fs::metadata(tmp_dir.path()).unwrap().permissions();
     perms.set_readonly(true);
@@ -94,7 +94,7 @@ fn invalid_download_dir() {
 
 #[test]
 #[cfg(not(feature = "v1-parsing"))]
-fn invalid_file_config() {
+fn failing_invalid_file_config() {
     use std::io::Write;
 
     let setup = Settings::default();
@@ -121,7 +121,7 @@ fn invalid_file_config() {
 
 #[test]
 #[cfg(feature = "v1-parsing")]
-fn invalid_file_config() {
+fn failing_invalid_file_config() {
     use std::io::Write;
 
     let setup = Settings::default();
@@ -147,7 +147,7 @@ fn invalid_file_config() {
 }
 
 #[test]
-fn invalid_server_address() {
+fn failing_invalid_server_address() {
     let setup = Settings::default();
     let (mut session, _setup) = setup.timeout(300).init_server();
     let _mocks = create_mock_server(FakeServer::NoUpdate);
@@ -221,7 +221,7 @@ fn invalid_server_address() {
 }
 
 #[test]
-fn fail_check_requirements() {
+fn failing_fail_check_requirements() {
     let setup = Settings::default();
 
     let (mut session, setup) = setup.timeout(300).init_server();
