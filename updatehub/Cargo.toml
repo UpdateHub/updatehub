@@ -46,7 +46,7 @@ slog-term = "2"
 surf = { git = "https://github.com/http-rs/surf", default-features = false, features = ["h1-client"] }
 sys-mount = "1"
 tempfile = "3"
-tide = { version = "0.12", default-features = false, features = ["h1-server"] }
+tide = { version = "0.13", default-features = false, features = ["h1-server"] }
 timeout-readwrite = "0.3"
 toml = "0.5"
 walkdir = "2"
