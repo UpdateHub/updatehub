@@ -49,11 +49,10 @@ async fn save_body_to<W>(req: surf::Request, handle: &mut W) -> Result<()>
 where
     W: io::Write + Unpin,
 {
-    use async_std::prelude::StreamExt;
     use io::prelude::{ReadExt, WriteExt};
     use std::str::FromStr;
 
-    let rep = req.await?;
+    let mut rep = req.await?;
     if !rep.status().is_success() {
         return Err(Error::InvalidStatusResponse(rep.status()));
     }
@@ -65,12 +64,15 @@ where
         None => 0,
     };
 
-    let mut stream = rep.bytes();
-    while let Some(byte) = stream.next().await {
-        let byte = byte?;
-        handle.write_all(&[byte]).await?;
+    loop {
+        let mut buf = [0; 4096];
+        let read = rep.read(&mut buf).await?;
+        if read == 0 {
+            break;
+        }
+        handle.write_all(&buf[..read]).await?;
         if length > 0 {
-            written += 100. / length as f32;
+            written += read as f32 / (length as f32 / 100.);
             if written as usize >= threshold {
                 threshold += 20;
                 debug!("{}% of the file has been downloaded", std::cmp::min(written as usize, 100));
