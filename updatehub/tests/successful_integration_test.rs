@@ -4,7 +4,7 @@
 
 use common::{
     create_mock_server, format_output_client_log, format_output_server, get_output_server,
-    remove_carriage_newline_caracters, run_client_log, run_client_probe, FakeServer, Polling,
+    remove_carriage_newline_characters, run_client_log, run_client_probe, FakeServer, Polling,
     Server, Settings, StopMessage,
 };
 
@@ -164,7 +164,7 @@ fn correct_config_no_update_polling_with_probe_api() {
     <timestamp> DEBG moving to Probe state after delay.
     "###);
 
-    insta::assert_snapshot!(remove_carriage_newline_caracters(output_client), @r###"
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
     Ok(
         Response {
             update_available: false,
@@ -233,7 +233,7 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     <timestamp> DEBG staying on Park state.
     "###);
 
-    insta::assert_snapshot!(remove_carriage_newline_caracters(output_client), @r###"
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
     Ok(
         Response {
             update_available: false,
@@ -332,7 +332,7 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> DEBG staying on Park state.
     "###);
 
-    insta::assert_snapshot!(remove_carriage_newline_caracters(output_client), @r###"
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
     Ok(
         Response {
             update_available: true,
