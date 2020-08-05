@@ -215,20 +215,21 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
 }
 
 pub fn format_output_server(s: String) -> (String, String) {
-    let s = remove_carriage_newline_caracters(remove_timestamp(remove_version(s)));
+    let version_re = Regex::new(r"Agent .*").unwrap();
+    let tmpfile_re = Regex::new(r#""/tmp/.tmp.*""#).unwrap();
+    let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3})").unwrap();
+    let trce_re = Regex::new(r"<timestamp> TRCE.*").unwrap();
+    let debg_re = Regex::new(r"<timestamp> DEBG.*").unwrap();
 
+    let s = version_re.replace_all(&s, "Agent <version>");
+    let s = tmpfile_re.replace_all(&s, r#""<file>""#);
+    let s = date_re.replace_all(&s, "<timestamp>");
     let mut iter = s.lines();
     iter.next_back();
     let s_trce = iter.fold(String::default(), |acc, l| acc + l + "\n");
 
-    let s_tmp = s_trce.clone();
-
-    let trce_re = Regex::new(r"<timestamp> TRCE.*").expect("fail to compile the trce regexp");
-    let s_info = trce_re.replace_all(&s_tmp, "");
-
-    let debg_re = Regex::new(r"<timestamp> DEBG.*").expect("fail to compile the debg regexp");
+    let s_info = trce_re.replace_all(&s_trce, "");
     let s_info = debg_re.replace_all(&s_info, "");
-
     let s_info = s_info
         .split('\n')
         .map(|s| s.trim())
@@ -237,20 +238,6 @@ pub fn format_output_server(s: String) -> (String, String) {
         .join("\n");
 
     (s_trce, s_info)
-}
-
-pub fn remove_version(s: String) -> String {
-    let version_re = Regex::new(r"Agent .*").expect("fail to compile the version regexp");
-    let s = version_re.replace_all(&s, "Agent <version>");
-
-    let tmpfile_re = Regex::new(r#""/tmp/.tmp.*""#).expect("fail to compile the tmpfile regexp");
-    tmpfile_re.replace_all(&s, r#""<file>""#).to_string()
-}
-
-pub fn remove_timestamp(s: String) -> String {
-    let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3}) ")
-        .expect("fail to compile the date regexp");
-    date_re.replace_all(&s, "<timestamp> ").to_string()
 }
 
 pub fn remove_carriage_newline_caracters(s: String) -> String {
