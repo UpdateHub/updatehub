@@ -249,6 +249,20 @@ fn failing_fail_check_requirements() {
     <timestamp> DEBG staying on Park state.
     "###);
 
+    insta::assert_snapshot!(output_server_info_2.trim(), @r###"
+    <timestamp> INFO installing update: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
+    <timestamp> INFO using installation set as target 1
+    <timestamp> ERRO error state reached: fail to check the requirements
+    <timestamp> INFO returning to machine's entry point
+    "###);
+
+    insta::assert_snapshot!(output_server_info_2.trim(), @r###"
+    <timestamp> INFO installing update: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
+    <timestamp> INFO using installation set as target 1
+    <timestamp> ERRO error state reached: fail to check the requirements
+    <timestamp> INFO returning to machine's entry point
+    "###);
+
     insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE Received external request: Probe(None)
@@ -266,13 +280,6 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO returning to machine's entry point
     <timestamp> DEBG polling is disabled, parking the state machine.
     <timestamp> DEBG staying on Park state.
-    "###);
-
-    insta::assert_snapshot!(output_server_info_2.trim(), @r###"
-    <timestamp> INFO installing update: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
-    <timestamp> INFO using installation set as target 1
-    <timestamp> ERRO error state reached: fail to check the requirements
-    <timestamp> INFO returning to machine's entry point
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_caracters(output_client), @r###"
