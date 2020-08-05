@@ -152,8 +152,8 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                     "mode": "test",
                     "filename": "testfile",
                     "target": "/dev/device1",
-                    "sha256sum": "bdbdb660c6b7b18a8376695ff18842d1ea9f3c2c80a192596226b5191bea42bf",
-                    "size": 120
+                    "sha256sum": "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4",
+                    "size": 40960
                 }
             ],
             [
@@ -161,8 +161,8 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                     "mode": "test",
                     "filename": "testfile",
                     "target": "/dev/device2",
-                    "sha256sum": "bdbdb660c6b7b18a8376695ff18842d1ea9f3c2c80a192596226b5191bea42bf",
-                    "size": 120
+                    "sha256sum": "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4",
+                    "size": 40960
                 }
             ]
         ]
@@ -202,13 +202,13 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                 .create(),
             mock(
                 "GET",
-                format!("/products/{}/packages/4304291fa4d86ba6f924b3385ee1c0d5b4a0f8985abf3b84df73da3e5182ff0b/objects/bdbdb660c6b7b18a8376695ff18842d1ea9f3c2c80a192596226b5191bea42bf", product_uid)
+                format!("/products/{}/packages/7b5078f6e7549ad5a1397d7d95b0ba20cffbb16bb739fec6b6c078cd94707786/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid)
                     .as_str(),
             )
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .with_status(200)
-                .with_body(std::iter::repeat(0xF).take(120).collect::<Vec<_>>())
+                .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
             .create(),
         ],
     }
@@ -220,10 +220,12 @@ pub fn format_output_server(s: String) -> (String, String) {
     let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3})").unwrap();
     let trce_re = Regex::new(r"<timestamp> TRCE.*").unwrap();
     let debg_re = Regex::new(r"<timestamp> DEBG.*").unwrap();
+    let download_re = Regex::new(r"DEBG (\d{2})%").unwrap();
 
     let s = version_re.replace_all(&s, "Agent <version>");
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
     let s = date_re.replace_all(&s, "<timestamp>");
+    let s = download_re.replace_all(&s, "DEBG <percentage>%");
     let mut iter = s.lines();
     iter.next_back();
     let s_trce = iter.fold(String::default(), |acc, l| acc + l + "\n");

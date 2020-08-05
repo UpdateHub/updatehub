@@ -307,13 +307,13 @@ fn correct_config_update_no_polling_probe_api() {
     <timestamp> TRCE Received external request: Probe(None)
     <timestamp> DEBG saving runtime settings from "<file>"...
     <timestamp> TRCE moving to Download state to process the update package.
-    <timestamp> DEBG 10% of the file has been downloaded
-    <timestamp> DEBG 30% of the file has been downloaded
-    <timestamp> DEBG 50% of the file has been downloaded
-    <timestamp> DEBG 70% of the file has been downloaded
-    <timestamp> DEBG 90% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
-    <timestamp> INFO installing update: 4304291fa4d86ba6f924b3385ee1c0d5b4a0f8985abf3b84df73da3e5182ff0b
+    <timestamp> INFO installing update: 7b5078f6e7549ad5a1397d7d95b0ba20cffbb16bb739fec6b6c078cd94707786
     <timestamp> INFO using installation set as target 1
     <timestamp> DEBG running default check_requirements
     <timestamp> DEBG saving runtime settings from "<file>"...
@@ -326,7 +326,7 @@ fn correct_config_update_no_polling_probe_api() {
     "###);
 
     insta::assert_snapshot!(output_server_info_2.trim(), @r###"
-    <timestamp> INFO installing update: 4304291fa4d86ba6f924b3385ee1c0d5b4a0f8985abf3b84df73da3e5182ff0b
+    <timestamp> INFO installing update: 7b5078f6e7549ad5a1397d7d95b0ba20cffbb16bb739fec6b6c078cd94707786
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
