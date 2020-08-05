@@ -104,11 +104,12 @@ impl Settings {
 
 pub fn get_output_server(handle: &mut rexpect::session::PtySession, polling: Polling) -> String {
     handle
-        .exp_string(match polling {
-            Polling::Enable => "TRCE delaying transition for:",
-            Polling::Disable => "TRCE stopping transition until awoken",
+        .exp_regex(match polling {
+            Polling::Enable => "\r\n.* TRCE delaying transition for:.*",
+            Polling::Disable => "\r\n.* TRCE stopping transition until awoken.*",
         })
         .expect("fail to match the required string")
+        .0
 }
 
 pub fn run_client_probe(server: Server) -> String {
@@ -226,9 +227,7 @@ pub fn format_output_server(s: String) -> (String, String) {
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
     let s = date_re.replace_all(&s, "<timestamp>");
     let s = download_re.replace_all(&s, "DEBG <percentage>%");
-    let mut iter = s.lines();
-    iter.next_back();
-    let s_trce = iter.fold(String::default(), |acc, l| acc + l + "\n");
+    let s_trce = s.replace("\r\n", "\n");
 
     let s_info = trce_re.replace_all(&s_trce, "");
     let s_info = debg_re.replace_all(&s_info, "");
