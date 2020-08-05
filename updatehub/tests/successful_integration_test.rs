@@ -302,6 +302,14 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> DEBG staying on Park state.
     "###);
 
+    insta::assert_snapshot!(output_server_info_2.trim(), @r###"
+    <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
+    <timestamp> INFO using installation set as target 1
+    <timestamp> INFO swapping active installation set
+    <timestamp> INFO update installed successfully
+    <timestamp> INFO triggering reboot
+    "###);
+
     insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE Received external request: Probe(None)
@@ -322,14 +330,6 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> INFO triggering reboot
     <timestamp> DEBG polling is disabled, parking the state machine.
     <timestamp> DEBG staying on Park state.
-    "###);
-
-    insta::assert_snapshot!(output_server_info_2.trim(), @r###"
-    <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
-    <timestamp> INFO using installation set as target 1
-    <timestamp> INFO swapping active installation set
-    <timestamp> INFO update installed successfully
-    <timestamp> INFO triggering reboot
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_caracters(output_client), @r###"
