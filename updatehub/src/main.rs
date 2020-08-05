@@ -101,7 +101,7 @@ fn verbosity_level(value: &str) -> Result<slog::Level, String> {
 }
 
 async fn server_main(cmd: ServerOptions) -> updatehub::Result<()> {
-    updatehub::logger::init(cmd.verbosity);
+    let _guard = updatehub::logger::init(cmd.verbosity);
     info!("starting UpdateHub Agent {}", updatehub::version());
 
     updatehub::run(&cmd.config).await?;

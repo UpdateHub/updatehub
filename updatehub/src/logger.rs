@@ -5,16 +5,13 @@
 use crate::mem_drain::MemDrain;
 use lazy_static::lazy_static;
 use slog::{o, Drain, Logger};
-use std::{
-    boxed::Box,
-    sync::{Arc, Mutex},
-};
+use std::sync::{Arc, Mutex};
 
 lazy_static! {
     static ref BUFFER: Arc<Mutex<MemDrain>> = Arc::new(Mutex::new(MemDrain::default()));
 }
 
-pub fn init(level: slog::Level) {
+pub fn init(level: slog::Level) -> slog_scope::GlobalLoggerGuard {
     let buffer_drain = buffer().filter_level(level).fuse();
     let terminal_drain = Mutex::new(
         slog_term::FullFormat::new(slog_term::TermDecorator::new().force_plain().build())
@@ -26,9 +23,7 @@ pub fn init(level: slog::Level) {
 
     let log = Logger::root(slog::Duplicate::new(buffer_drain, terminal_drain).fuse(), o!());
 
-    // FIXME: Drop the use of Box::leak here (issue #23).
-    let guard = slog_scope::set_global_logger(log);
-    Box::leak(Box::new(guard));
+    slog_scope::set_global_logger(log)
 }
 
 pub fn buffer() -> Arc<Mutex<MemDrain>> {
