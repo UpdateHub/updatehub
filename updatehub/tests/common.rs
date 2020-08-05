@@ -304,7 +304,7 @@ pub fn format_output_server(s: String) -> (String, String) {
     (s_trce, s_info)
 }
 
-pub fn remove_carriage_newline_caracters(s: String) -> String {
+pub fn remove_carriage_newline_characters(s: String) -> String {
     s.replace("\r\n", "\n")
 }
 
@@ -317,5 +317,5 @@ pub fn format_output_client_log(s: String) -> String {
     let tmpfile_re = Regex::new(r#"\\"/tmp/.tmp.*""#).expect("fail to compile the tmpfile regexp");
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
 
-    remove_carriage_newline_caracters(s.to_string())
+    remove_carriage_newline_characters(s.to_string())
 }

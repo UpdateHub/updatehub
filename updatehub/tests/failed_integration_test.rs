@@ -4,7 +4,7 @@
 
 use common::{
     create_mock_server, format_output_client_log, format_output_server, get_output_server,
-    remove_carriage_newline_caracters, run_client_log, run_client_probe, FakeServer, Polling,
+    remove_carriage_newline_characters, run_client_log, run_client_probe, FakeServer, Polling,
     Server, Settings, StopMessage,
 };
 
@@ -52,7 +52,7 @@ fn failing_invalid_download_dir() {
     <timestamp> DEBG staying on Park state.
     "###);
 
-    insta::assert_snapshot!(remove_carriage_newline_caracters(output_client), @r###"
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
     Ok(
         Response {
             update_available: true,
@@ -182,7 +182,7 @@ fn failing_invalid_server_address() {
     <timestamp> DEBG receiving probe request
     "###);
 
-    insta::assert_snapshot!(remove_carriage_newline_caracters(output_client), @r###"
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
     Err(
         UnexpectedResponse(
             InternalServerError,
@@ -282,7 +282,7 @@ fn failing_fail_check_requirements() {
     <timestamp> DEBG staying on Park state.
     "###);
 
-    insta::assert_snapshot!(remove_carriage_newline_caracters(output_client), @r###"
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
     Ok(
         Response {
             update_available: true,
