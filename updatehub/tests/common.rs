@@ -5,7 +5,7 @@
 use mockito::{mock, Mock};
 use regex::Regex;
 use serde_json::json;
-use std::{env, path::PathBuf};
+use std::{env, net::TcpListener, path::PathBuf};
 
 pub enum FakeServer {
     NoUpdate,
@@ -41,7 +41,10 @@ impl Default for Settings {
     fn default() -> Self {
         Settings {
             polling: false,
-            listen_socket: String::from("localhost:8080"),
+            listen_socket: format!(
+                "localhost:{}",
+                listen_available_port().expect("failed to bind a socket.")
+            ),
             server_address: mockito::server_url(),
             download_dir: None,
             config_file: None,
@@ -318,4 +321,8 @@ pub fn format_output_client_log(s: String) -> String {
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
 
     remove_carriage_newline_characters(s.to_string())
+}
+
+fn listen_available_port() -> Option<u16> {
+    (8080..65535).find(|port| TcpListener::bind(("localhost", *port)).is_ok())
 }
