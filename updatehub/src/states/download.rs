@@ -180,7 +180,7 @@ mod test {
 
         let mut object_content = String::new();
         let _ = fs::File::open(&download_dir.join(&shasum))
-            .expect("Fail to open the temporary directory.")
+            .expect("Fail to open the temporary directory")
             .read_to_string(&mut object_content);
 
         assert_eq!(&utils::sha256sum(&object_content.as_bytes()), &shasum, "Checksum mismatch");

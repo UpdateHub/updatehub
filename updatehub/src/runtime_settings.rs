@@ -77,13 +77,13 @@ impl RuntimeSettings {
 
     fn save(&self) -> Result<()> {
         if !self.persistent {
-            debug!("skipping runtime settings save, using non-persistent.");
+            debug!("skipping runtime settings save, using non-persistent");
             return Ok(());
         }
 
         let parent = self.path.parent().ok_or_else(|| Error::InvalidDestination)?;
         if !parent.exists() {
-            debug!("creating runtime settings to store state.");
+            debug!("creating runtime settings to store state");
             fs::create_dir_all(parent)?;
         }
 
