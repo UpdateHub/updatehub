@@ -10,7 +10,7 @@ use crate::{
     firmware::installation_set,
     update_package::{Signature, UpdatePackage, UpdatePackageExt},
 };
-use slog_scope::{debug, info, trace};
+use slog_scope::{debug, error, info};
 use std::{
     fs,
     io::{Seek, SeekFrom},
@@ -29,7 +29,7 @@ impl StateChangeImpl for PrepareLocalInstall {
     }
 
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
-        info!("prepare local install: {}", self.update_file.display());
+        info!("installing local package: {}", self.update_file.display());
         let dest_path = context.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
 
@@ -37,7 +37,7 @@ impl StateChangeImpl for PrepareLocalInstall {
         let mut source = fs::File::open(self.update_file)?;
         compress_tools::uncompress_archive_file(&mut source, &mut metadata, "metadata")?;
         let update_package = UpdatePackage::parse(&metadata)?;
-        trace!("successfuly uncompressed metadata file");
+        debug!("successfuly uncompressed metadata file");
 
         if let Some(key) = context.firmware.pub_key.as_ref() {
             let mut sign = Vec::with_capacity(512);
@@ -50,6 +50,7 @@ impl StateChangeImpl for PrepareLocalInstall {
                     sign.validate(key, &update_package)?;
                 }
                 Err(compress_tools::Error::FileNotFound) => {
+                    error!("package does not contain a signature file");
                     return Err(super::TransitionError::SignatureNotFound);
                 }
                 Err(e) => return Err(e.into()),
@@ -67,7 +68,7 @@ impl StateChangeImpl for PrepareLocalInstall {
             compress_tools::uncompress_archive_file(&mut source, &mut target, object)?;
         }
 
-        debug!("update package extracted: {:?}", update_package);
+        info!("update package extracted: {}", update_package.package_uid());
 
         update_package.clear_unrelated_files(
             &dest_path,

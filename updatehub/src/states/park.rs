@@ -6,8 +6,7 @@ use super::{
     machine::{self, Context},
     Result, State, StateChangeImpl,
 };
-
-use slog_scope::debug;
+use slog_scope::info;
 
 #[derive(Debug)]
 pub(super) struct Park {}
@@ -25,7 +24,7 @@ impl StateChangeImpl for Park {
     }
 
     async fn handle(self, _: &mut Context) -> Result<(State, machine::StepTransition)> {
-        debug!("staying on Park state");
+        info!("parking state machine");
         crate::logger::stop_memory_logging();
         Ok((State::Park(self), machine::StepTransition::Never))
     }

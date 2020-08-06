@@ -31,25 +31,36 @@ fn failing_invalid_download_dir() {
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(format_output_server(output_server_2).0.trim(), @r###"
     <timestamp> DEBG receiving probe request
-    <timestamp> TRCE Received external request: Probe(None)
+    <timestamp> TRCE received external request: Probe(None)
+    <timestamp> INFO update received: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> TRCE moving to Download state to process the update package
+    <timestamp> TRCE starting to handle: validation
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle: download
+    <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
+    <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
+    <timestamp> TRCE starting to handle: error
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -77,14 +88,26 @@ fn failing_invalid_download_dir() {
                 data: {},
             },
             Entry {
-                level: Debug,
-                message: "polling is disabled, parking the state machine",
+                level: Trace,
+                message: "starting to handle: entry_point",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state",
+                message: "polling is disabled",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Trace,
+                message: "starting to handle: park",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Info,
+                message: "parking state machine",
                 time: "<timestamp>",
                 data: {},
             },
@@ -158,7 +181,7 @@ fn failing_invalid_server_address() {
     let output_server_2 = get_output_server(
         &mut session,
         StopMessage::Custom(
-            r#"\r\n.* TRCE Received external request: Probe\(Some\("http://foo:--"\)\).*"#
+            r#"\r\n.* TRCE received external request: Probe\(Some\("http://foo:--"\)\).*"#
                 .to_string(),
         ),
     );
@@ -169,14 +192,17 @@ fn failing_invalid_server_address() {
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
@@ -206,14 +232,26 @@ fn failing_invalid_server_address() {
                 data: {},
             },
             Entry {
-                level: Debug,
-                message: "polling is disabled, parking the state machine",
+                level: Trace,
+                message: "starting to handle: entry_point",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state",
+                message: "polling is disabled",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Trace,
+                message: "starting to handle: park",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Info,
+                message: "parking state machine",
                 time: "<timestamp>",
                 data: {},
             },
@@ -241,47 +279,65 @@ fn failing_fail_check_requirements() {
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_info_2.trim(), @r###"
+    <timestamp> INFO update received: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> INFO installing update: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
     <timestamp> INFO using installation set as target 1
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_info_2.trim(), @r###"
+    <timestamp> INFO update received: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> INFO installing update: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
     <timestamp> INFO using installation set as target 1
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
     <timestamp> DEBG receiving probe request
-    <timestamp> TRCE Received external request: Probe(None)
+    <timestamp> TRCE received external request: Probe(None)
+    <timestamp> INFO update received: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> TRCE moving to Download state to process the update package
+    <timestamp> TRCE starting to handle: validation
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle: download
+    <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
+    <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> TRCE starting to handle: install
     <timestamp> INFO installing update: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
     <timestamp> INFO using installation set as target 1
+    <timestamp> TRCE starting to handle: error
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -308,14 +364,26 @@ fn failing_fail_check_requirements() {
                 data: {},
             },
             Entry {
-                level: Debug,
-                message: "polling is disabled, parking the state machine",
+                level: Trace,
+                message: "starting to handle: entry_point",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state",
+                message: "polling is disabled",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Trace,
+                message: "starting to handle: park",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Info,
+                message: "parking state machine",
                 time: "<timestamp>",
                 data: {},
             },

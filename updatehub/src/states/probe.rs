@@ -8,7 +8,7 @@ use super::{
 };
 use chrono::Utc;
 use cloud::api::ProbeResponse;
-use slog_scope::{debug, error, info};
+use slog_scope::{error, info};
 use std::time::Duration;
 
 #[derive(Debug)]
@@ -51,7 +51,7 @@ impl StateChangeImpl for Probe {
 
         match probe {
             ProbeResponse::NoUpdate => {
-                debug!("moving to EntryPoint state as no update is available");
+                info!("no update is current available for this device");
 
                 // Store timestamp of last polling
                 context.runtime_settings.set_last_polling(Utc::now())?;
@@ -59,18 +59,19 @@ impl StateChangeImpl for Probe {
             }
 
             ProbeResponse::ExtraPoll(s) => {
-                info!("delaying the probing as requested by the server");
-                Ok((
-                    State::Probe(self),
-                    machine::StepTransition::Delayed(Duration::from_secs(s as u64)),
-                ))
+                let s = Duration::from_secs(s as u64);
+                info!(
+                    "delaying the probing for {} seconds as requested by the server",
+                    s.as_secs()
+                );
+                Ok((State::Probe(self), machine::StepTransition::Delayed(s)))
             }
 
             ProbeResponse::Update(package, sign) => {
                 // Store timestamp of last polling
                 context.runtime_settings.set_last_polling(Utc::now())?;
 
-                info!("update received");
+                info!("update received: {}", package.package_uid());
                 Ok((
                     State::Validation(Validation { package, sign }),
                     machine::StepTransition::Immediate,

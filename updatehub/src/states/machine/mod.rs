@@ -9,7 +9,7 @@ use super::{
     State, StateChangeImpl, Validation,
 };
 use async_std::{prelude::FutureExt, sync};
-use slog_scope::trace;
+use slog_scope::{info, trace};
 use std::path::PathBuf;
 
 pub(crate) use address::{
@@ -51,7 +51,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
         responder: sync::Sender<Result<address::Response>>,
         context: &mut Context,
     ) -> Option<State> {
-        trace!("Received external request: {:?}", msg);
+        trace!("received external request: {:?}", msg);
 
         let res = match msg {
             address::Message::Info => {
@@ -106,7 +106,8 @@ pub(super) trait CommunicationState: StateChangeImpl {
         use cloud::api::ProbeResponse;
 
         if !self.is_preemptive_state() {
-            return Ok((address::ProbeResponse::Busy(self.name().to_owned()), None));
+            let name = self.name().to_owned();
+            return Ok((address::ProbeResponse::Busy(name), None));
         }
 
         if let Some(server_address) = custom_server {
@@ -117,9 +118,13 @@ pub(super) trait CommunicationState: StateChangeImpl {
             .probe(context.runtime_settings.retries() as u64, context.firmware.as_cloud_metadata())
             .await?
         {
-            ProbeResponse::ExtraPoll(s) => Ok((address::ProbeResponse::Delayed(s), None)),
+            ProbeResponse::ExtraPoll(s) => {
+                info!("server responded with extra poll of {} seconds", s);
+                Ok((address::ProbeResponse::Delayed(s), None))
+            }
 
             ProbeResponse::NoUpdate => {
+                info!("no update is current available for this device");
                 context.waker.sender.send(()).await;
 
                 // Store timestamp of last polling
@@ -128,6 +133,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
             }
 
             ProbeResponse::Update(package, sign) => {
+                info!("update received: {}", package.package_uid());
                 context.waker.sender.send(()).await;
 
                 // Store timestamp of last polling
@@ -250,7 +256,7 @@ impl StateMachine {
 
             let (state, transition) = self
                 .state
-                .move_to_next_state(&mut self.context)
+                .handle(&mut self.context)
                 .await
                 .unwrap_or_else(|e| (State::from(e), StepTransition::Immediate));
             self.state = state;

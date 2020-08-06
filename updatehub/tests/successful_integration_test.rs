@@ -22,14 +22,17 @@ fn correct_config_no_update_no_polling() {
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
@@ -48,14 +51,26 @@ fn correct_config_no_update_no_polling() {
                 data: {},
             },
             Entry {
-                level: Debug,
-                message: "polling is disabled, parking the state machine",
+                level: Trace,
+                message: "starting to handle: entry_point",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state",
+                message: "polling is disabled",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Trace,
+                message: "starting to handle: park",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Info,
+                message: "parking state machine",
                 time: "<timestamp>",
                 data: {},
             },
@@ -77,19 +92,25 @@ fn correct_config_no_update_polling() {
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> INFO forcing to Probe state as we are in time
+    <timestamp> INFO probing server as we are in time
+    <timestamp> INFO no update is current available for this device
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is enabled, moving to Poll state
-    <timestamp> INFO forcing to Probe state as we are in time
-    <timestamp> DEBG moving to EntryPoint state as no update is available
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> INFO probing server as we are in time
+    <timestamp> TRCE starting to handle: probe
+    <timestamp> INFO no update is current available for this device
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG polling is enabled, moving to Poll state
-    <timestamp> DEBG moving to Probe state after delay
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying 86399 seconds till next probe
     "###);
 
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
@@ -97,7 +118,7 @@ fn correct_config_no_update_polling() {
         [
             Entry {
                 level: Debug,
-                message: "moving to Probe state after delay",
+                message: "delaying 86399 seconds till next probe",
                 time: "<timestamp>",
                 data: {},
             },
@@ -142,27 +163,36 @@ fn correct_config_no_update_polling_with_probe_api() {
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> INFO forcing to Probe state as we are in time
+    <timestamp> INFO probing server as we are in time
+    <timestamp> INFO no update is current available for this device
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is enabled, moving to Poll state
-    <timestamp> INFO forcing to Probe state as we are in time
-    <timestamp> DEBG moving to EntryPoint state as no update is available
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> INFO probing server as we are in time
+    <timestamp> TRCE starting to handle: probe
+    <timestamp> INFO no update is current available for this device
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG polling is enabled, moving to Poll state
-    <timestamp> DEBG moving to Probe state after delay
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying 86399 seconds till next probe
     "###);
 
     insta::assert_snapshot!(format_output_server(output_server_2).0.trim(), @r###"
     <timestamp> DEBG receiving probe request
-    <timestamp> TRCE Received external request: Probe(None)
+    <timestamp> TRCE received external request: Probe(None)
+    <timestamp> INFO no update is current available for this device
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG polling is enabled, moving to Poll state
-    <timestamp> DEBG moving to Probe state after delay
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying 86399 seconds till next probe
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -179,7 +209,7 @@ fn correct_config_no_update_polling_with_probe_api() {
         [
             Entry {
                 level: Debug,
-                message: "moving to Probe state after delay",
+                message: "delaying 86399 seconds till next probe",
                 time: "<timestamp>",
                 data: {},
             },
@@ -216,22 +246,28 @@ fn correct_config_no_update_no_polling_with_probe_api() {
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(format_output_server(output_server_2).0.trim(), @r###"
     <timestamp> DEBG receiving probe request
-    <timestamp> TRCE Received external request: Probe(None)
+    <timestamp> TRCE received external request: Probe(None)
+    <timestamp> INFO no update is current available for this device
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -259,14 +295,26 @@ fn correct_config_no_update_no_polling_with_probe_api() {
                 data: {},
             },
             Entry {
-                level: Debug,
-                message: "polling is disabled, parking the state machine",
+                level: Trace,
+                message: "starting to handle: entry_point",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state",
+                message: "polling is disabled",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Trace,
+                message: "starting to handle: park",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Info,
+                message: "parking state machine",
                 time: "<timestamp>",
                 data: {},
             },
@@ -294,44 +342,59 @@ fn correct_config_update_no_polling_with_probe_api() {
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_info_2.trim(), @r###"
+    <timestamp> INFO update received: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
     <timestamp> INFO triggering reboot
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
     <timestamp> DEBG receiving probe request
-    <timestamp> TRCE Received external request: Probe(None)
+    <timestamp> TRCE received external request: Probe(None)
+    <timestamp> INFO update received: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> TRCE moving to Download state to process the update package
+    <timestamp> TRCE starting to handle: validation
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle: download
+    <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
+    <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> TRCE starting to handle: install
     <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
     <timestamp> INFO using installation set as target 1
     <timestamp> DEBG saving runtime settings from "<file>"...
     <timestamp> DEBG saving runtime settings from "<file>"...
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
+    <timestamp> TRCE starting to handle: reboot
     <timestamp> INFO triggering reboot
-    <timestamp> DEBG polling is disabled, parking the state machine
-    <timestamp> DEBG staying on Park state
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -358,14 +421,26 @@ fn correct_config_update_no_polling_with_probe_api() {
                 data: {},
             },
             Entry {
-                level: Debug,
-                message: "polling is disabled, parking the state machine",
+                level: Trace,
+                message: "starting to handle: entry_point",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state",
+                message: "polling is disabled",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Trace,
+                message: "starting to handle: park",
+                time: "<timestamp>",
+                data: {},
+            },
+            Entry {
+                level: Info,
+                message: "parking state machine",
                 time: "<timestamp>",
                 data: {},
             },
