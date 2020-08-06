@@ -49,10 +49,10 @@ impl StateChangeImpl for Validation {
             .map(|u| *u == self.package.package_uid())
             .unwrap_or_default()
         {
-            info!("not downloading update package, the same package has already been installed.");
+            info!("not downloading update package, the same package has already been installed");
             Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
         } else {
-            trace!("moving to Download state to process the update package.");
+            trace!("moving to Download state to process the update package");
             Ok((
                 State::Download(Download { update_package: self.package }),
                 machine::StepTransition::Immediate,

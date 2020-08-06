@@ -37,19 +37,19 @@ fn failing_invalid_download_dir() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(format_output_server(output_server_2).0.trim(), @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE Received external request: Probe(None)
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> TRCE moving to Download state to process the update package.
+    <timestamp> TRCE moving to Download state to process the update package
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -78,18 +78,19 @@ fn failing_invalid_download_dir() {
             },
             Entry {
                 level: Debug,
-                message: "polling is disabled, parking the state machine.",
+                message: "polling is disabled, parking the state machine",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state.",
+                message: "staying on Park state",
                 time: "<timestamp>",
                 data: {},
             },
         ],
-    )"###);
+    )
+    "###);
 }
 
 #[test]
@@ -174,8 +175,8 @@ fn failing_invalid_server_address() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
@@ -206,18 +207,19 @@ fn failing_invalid_server_address() {
             },
             Entry {
                 level: Debug,
-                message: "polling is disabled, parking the state machine.",
+                message: "polling is disabled, parking the state machine",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state.",
+                message: "staying on Park state",
                 time: "<timestamp>",
                 data: {},
             },
         ],
-    )"###);
+    )
+    "###);
 }
 
 #[test]
@@ -245,8 +247,8 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(output_server_info_2.trim(), @r###"
@@ -267,7 +269,7 @@ fn failing_fail_check_requirements() {
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE Received external request: Probe(None)
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> TRCE moving to Download state to process the update package.
+    <timestamp> TRCE moving to Download state to process the update package
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
@@ -278,8 +280,8 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO using installation set as target 1
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -307,16 +309,17 @@ fn failing_fail_check_requirements() {
             },
             Entry {
                 level: Debug,
-                message: "polling is disabled, parking the state machine.",
+                message: "polling is disabled, parking the state machine",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state.",
+                message: "staying on Park state",
                 time: "<timestamp>",
                 data: {},
             },
         ],
-    )"###);
+    )
+    "###);
 }

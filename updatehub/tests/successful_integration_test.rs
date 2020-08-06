@@ -28,8 +28,8 @@ fn correct_config_no_update_no_polling() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
@@ -49,18 +49,19 @@ fn correct_config_no_update_no_polling() {
             },
             Entry {
                 level: Debug,
-                message: "polling is disabled, parking the state machine.",
+                message: "polling is disabled, parking the state machine",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state.",
+                message: "staying on Park state",
                 time: "<timestamp>",
                 data: {},
             },
         ],
-    )"###);
+    )
+    "###);
 }
 
 #[test]
@@ -83,12 +84,12 @@ fn correct_config_no_update_polling() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is enabled, moving to Poll state.
+    <timestamp> DEBG polling is enabled, moving to Poll state
     <timestamp> INFO forcing to Probe state as we are in time
-    <timestamp> DEBG moving to EntryPoint state as no update is available.
+    <timestamp> DEBG moving to EntryPoint state as no update is available
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG polling is enabled, moving to Poll state.
-    <timestamp> DEBG moving to Probe state after delay.
+    <timestamp> DEBG polling is enabled, moving to Poll state
+    <timestamp> DEBG moving to Probe state after delay
     "###);
 
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
@@ -96,7 +97,7 @@ fn correct_config_no_update_polling() {
         [
             Entry {
                 level: Debug,
-                message: "moving to Probe state after delay.",
+                message: "moving to Probe state after delay",
                 time: "<timestamp>",
                 data: {},
             },
@@ -148,20 +149,20 @@ fn correct_config_no_update_polling_with_probe_api() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is enabled, moving to Poll state.
+    <timestamp> DEBG polling is enabled, moving to Poll state
     <timestamp> INFO forcing to Probe state as we are in time
-    <timestamp> DEBG moving to EntryPoint state as no update is available.
+    <timestamp> DEBG moving to EntryPoint state as no update is available
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG polling is enabled, moving to Poll state.
-    <timestamp> DEBG moving to Probe state after delay.
+    <timestamp> DEBG polling is enabled, moving to Poll state
+    <timestamp> DEBG moving to Probe state after delay
     "###);
 
     insta::assert_snapshot!(format_output_server(output_server_2).0.trim(), @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE Received external request: Probe(None)
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG polling is enabled, moving to Poll state.
-    <timestamp> DEBG moving to Probe state after delay.
+    <timestamp> DEBG polling is enabled, moving to Poll state
+    <timestamp> DEBG moving to Probe state after delay
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -178,7 +179,7 @@ fn correct_config_no_update_polling_with_probe_api() {
         [
             Entry {
                 level: Debug,
-                message: "moving to Probe state after delay.",
+                message: "moving to Probe state after delay",
                 time: "<timestamp>",
                 data: {},
             },
@@ -221,16 +222,16 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(format_output_server(output_server_2).0.trim(), @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE Received external request: Probe(None)
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -259,18 +260,19 @@ fn correct_config_no_update_no_polling_with_probe_api() {
             },
             Entry {
                 level: Debug,
-                message: "polling is disabled, parking the state machine.",
+                message: "polling is disabled, parking the state machine",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state.",
+                message: "staying on Park state",
                 time: "<timestamp>",
                 data: {},
             },
         ],
-    )"###);
+    )
+    "###);
 
     mocks.iter().for_each(|mock| mock.assert());
 }
@@ -298,8 +300,8 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(output_server_info_2.trim(), @r###"
@@ -314,7 +316,7 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE Received external request: Probe(None)
     <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> TRCE moving to Download state to process the update package.
+    <timestamp> TRCE moving to Download state to process the update package
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
@@ -328,8 +330,8 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
     <timestamp> INFO triggering reboot
-    <timestamp> DEBG polling is disabled, parking the state machine.
-    <timestamp> DEBG staying on Park state.
+    <timestamp> DEBG polling is disabled, parking the state machine
+    <timestamp> DEBG staying on Park state
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
@@ -357,17 +359,18 @@ fn correct_config_update_no_polling_with_probe_api() {
             },
             Entry {
                 level: Debug,
-                message: "polling is disabled, parking the state machine.",
+                message: "polling is disabled, parking the state machine",
                 time: "<timestamp>",
                 data: {},
             },
             Entry {
                 level: Debug,
-                message: "staying on Park state.",
+                message: "staying on Park state",
                 time: "<timestamp>",
                 data: {},
             },
         ],
-    )"###);
+    )
+    "###);
     mocks.iter().for_each(|mock| mock.assert());
 }

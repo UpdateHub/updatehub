@@ -25,7 +25,7 @@ impl StateChangeImpl for Park {
     }
 
     async fn handle(self, _: &mut Context) -> Result<(State, machine::StepTransition)> {
-        debug!("staying on Park state.");
+        debug!("staying on Park state");
         crate::logger::stop_memory_logging();
         Ok((State::Park(self), machine::StepTransition::Never))
     }

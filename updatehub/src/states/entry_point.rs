@@ -28,7 +28,7 @@ impl StateChangeImpl for EntryPoint {
 
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         if context.runtime_settings.is_polling_forced() {
-            info!("triggering Probe to finish update.");
+            info!("triggering Probe to finish update");
             context.runtime_settings.disable_force_poll()?;
             return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
         }
@@ -37,11 +37,11 @@ impl StateChangeImpl for EntryPoint {
         context.runtime_settings.reset_transient_settings();
 
         if !context.settings.polling.enabled {
-            debug!("polling is disabled, parking the state machine.");
+            debug!("polling is disabled, parking the state machine");
             return Ok((State::Park(Park {}), machine::StepTransition::Immediate));
         }
 
-        debug!("polling is enabled, moving to Poll state.");
+        debug!("polling is enabled, moving to Poll state");
         Ok((State::Poll(Poll {}), machine::StepTransition::Immediate))
     }
 }

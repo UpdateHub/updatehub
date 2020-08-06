@@ -37,7 +37,7 @@ impl StateChangeImpl for Poll {
             return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
         }
 
-        debug!("moving to Probe state after delay.");
+        debug!("moving to Probe state after delay");
         Ok((State::Probe(Probe {}), machine::StepTransition::Delayed(delay.to_std().unwrap())))
     }
 }
