@@ -37,11 +37,11 @@ impl StateChangeImpl for EntryPoint {
         context.runtime_settings.reset_transient_settings();
 
         if !context.settings.polling.enabled {
-            debug!("polling is disabled, parking the state machine");
+            debug!("polling is disabled");
             return Ok((State::Park(Park {}), machine::StepTransition::Immediate));
         }
 
-        debug!("polling is enabled, moving to Poll state");
+        debug!("polling is enabled");
         Ok((State::Poll(Poll {}), machine::StepTransition::Immediate))
     }
 }

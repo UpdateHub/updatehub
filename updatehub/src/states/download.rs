@@ -13,7 +13,7 @@ use crate::{
 };
 use async_lock::Lock;
 use async_std::prelude::FutureExt;
-use slog_scope::error;
+use slog_scope::{debug, error, trace};
 
 #[derive(Debug)]
 pub(super) struct Download {
@@ -36,24 +36,34 @@ impl Download {
             .update_package
             .objects(installation_set)
             .iter()
-            .filter(|o| {
+            .filter_map(|o| {
+                let name = o.filename();
+                let shasum = o.sha256sum();
                 let obj_status = o
                     .status(&download_dir)
                     .map_err(|e| {
-                        error!("fail accessing the object: {} (err: {})", o.sha256sum(), e)
+                        error!("fail accessing the object: {} ({}) (err: {})", name, shasum, e)
                     })
                     .unwrap_or(object::info::Status::Missing);
-                obj_status == object::info::Status::Missing
+                if obj_status == object::info::Status::Missing
                     || obj_status == object::info::Status::Incomplete
+                {
+                    Some((name.to_owned(), shasum.to_owned()))
+                } else {
+                    debug!("skiping object: {} ({})", name, shasum);
+                    None
+                }
             })
-            .map(|obj| obj.sha256sum().to_owned())
             .collect();
+
+        trace!("the following objects are missing: {:?}", shasum_list);
 
         // Download the missing or incomplete objects
         let url = context.lock().await.server_address().to_owned();
         let product_uid = context.lock().await.firmware.product_uid.clone();
         let api = crate::CloudClient::new(&url);
-        for shasum in shasum_list.into_iter() {
+        for (name, shasum) in shasum_list.into_iter() {
+            debug!("starting download of: {} ({})", name, shasum);
             api.download_object(
                 &product_uid,
                 &self.update_package.package_uid(),

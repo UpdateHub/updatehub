@@ -33,12 +33,13 @@ impl StateChangeImpl for Poll {
             interval - Utc::now().signed_duration_since(context.runtime_settings.last_polling());
 
         if delay > interval || delay.num_seconds() < 0 {
-            info!("forcing to Probe state as we are in time");
+            info!("probing server as we are in time");
             return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
         }
 
-        debug!("moving to Probe state after delay");
-        Ok((State::Probe(Probe {}), machine::StepTransition::Delayed(delay.to_std().unwrap())))
+        let delay = delay.to_std().unwrap();
+        debug!("delaying {} seconds till next probe", delay.as_secs());
+        Ok((State::Probe(Probe {}), machine::StepTransition::Delayed(delay)))
     }
 }
 

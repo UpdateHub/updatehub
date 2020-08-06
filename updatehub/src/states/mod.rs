@@ -33,7 +33,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use derive_more::{Display, Error, From};
-use slog_scope::{error, info, warn};
+use slog_scope::{error, info, trace, warn};
 use std::path::Path;
 
 pub type Result<T> = std::result::Result<T, TransitionError>;
@@ -194,6 +194,7 @@ fn handle_startup_callbacks(
 #[async_trait(?Send)]
 impl StateChangeImpl for State {
     async fn handle(self, st: &mut machine::Context) -> Result<(State, machine::StepTransition)> {
+        trace!("starting to handle: {}", self.name());
         self.move_to_next_state(st).await
     }
 

@@ -7,7 +7,7 @@ use super::{
     Download, EntryPoint, Result, State, StateChangeImpl,
 };
 use crate::update_package::UpdatePackageExt;
-use slog_scope::{debug, error, info, trace};
+use slog_scope::{debug, error, info};
 
 #[derive(Debug)]
 pub(super) struct Validation {
@@ -38,6 +38,8 @@ impl StateChangeImpl for Validation {
                     return Err(super::TransitionError::SignatureNotFound);
                 }
             }
+        } else {
+            info!("no signature key available on device, ignoring signature validation");
         }
 
         // Ensure the package is compatible
@@ -52,7 +54,6 @@ impl StateChangeImpl for Validation {
             info!("not downloading update package, the same package has already been installed");
             Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
         } else {
-            trace!("moving to Download state to process the update package");
             Ok((
                 State::Download(Download { update_package: self.package }),
                 machine::StepTransition::Immediate,
