@@ -157,7 +157,7 @@ fn failing_invalid_server_address() {
     let output_server_2 = get_output_server(
         &mut session,
         StopMessage::Custom(
-            "\r\n.* TRCE Received external request: Probe\\(Some\\(\"http://foo:--\"\\)\\).*"
+            r#"\r\n.* TRCE Received external request: Probe\(Some\("http://foo:--"\)\).*"#
                 .to_string(),
         ),
     );
