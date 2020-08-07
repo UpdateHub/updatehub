@@ -45,11 +45,6 @@ impl StateChangeImpl for Install {
         let installation_set = context.runtime_settings.get_inactive_installation_set()?;
         info!("using installation set as target {}", installation_set);
 
-        // FIXME: What is missing:
-        //
-        // - verify if the object needs to be installed, accordingly to the install if
-        //   different rule.
-
         let objs = self.update_package.objects_mut(installation_set);
         objs.iter().try_for_each(object::Installer::check_requirements)?;
         objs.iter_mut().try_for_each(|obj| obj.install(&context.settings.update.download_dir))?;
