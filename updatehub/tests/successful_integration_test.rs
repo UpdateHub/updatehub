@@ -28,7 +28,7 @@ fn correct_config_no_update_no_polling() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
-    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle: park
@@ -99,14 +99,15 @@ fn correct_config_no_update_polling() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
-    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle: poll
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle: probe
     <timestamp> INFO no update is current available for this device
-    <timestamp> DEBG saving runtime settings from "<file>"...
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle: poll
@@ -170,14 +171,15 @@ fn correct_config_no_update_polling_with_probe_api() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
-    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle: poll
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle: probe
     <timestamp> INFO no update is current available for this device
-    <timestamp> DEBG saving runtime settings from "<file>"...
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle: poll
@@ -188,7 +190,8 @@ fn correct_config_no_update_polling_with_probe_api() {
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
     <timestamp> INFO no update is current available for this device
-    <timestamp> DEBG saving runtime settings from "<file>"...
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle: poll
@@ -252,7 +255,7 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
-    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle: park
@@ -263,7 +266,8 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
     <timestamp> INFO no update is current available for this device
-    <timestamp> DEBG saving runtime settings from "<file>"...
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle: park
@@ -348,7 +352,7 @@ fn correct_config_update_no_polling_with_probe_api() {
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
-    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle: park
@@ -370,7 +374,8 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
     <timestamp> INFO update received: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
-    <timestamp> DEBG saving runtime settings from "<file>"...
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: download
@@ -385,8 +390,10 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> TRCE starting to handle: install
     <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
     <timestamp> INFO using installation set as target 1
-    <timestamp> DEBG saving runtime settings from "<file>"...
-    <timestamp> DEBG saving runtime settings from "<file>"...
+    <timestamp> DEBG marking package 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d as installed
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> DEBG setting upgrading to 1
+    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
     <timestamp> TRCE starting to handle: reboot

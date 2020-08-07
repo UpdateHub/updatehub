@@ -37,7 +37,7 @@ fn failing_invalid_download_dir() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
-    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle: park
@@ -48,7 +48,8 @@ fn failing_invalid_download_dir() {
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
     <timestamp> INFO update received: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
-    <timestamp> DEBG saving runtime settings from "<file>"...
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: download
@@ -198,7 +199,7 @@ fn failing_invalid_server_address() {
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
-    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle: park
@@ -285,7 +286,7 @@ fn failing_fail_check_requirements() {
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"...
-    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings...
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle: park
@@ -316,7 +317,8 @@ fn failing_fail_check_requirements() {
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
     <timestamp> INFO update received: fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3
-    <timestamp> DEBG saving runtime settings from "<file>"...
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: download

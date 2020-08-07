@@ -46,7 +46,7 @@ impl Default for RuntimeSettings {
 impl RuntimeSettings {
     pub fn load(path: &Path) -> Result<Self> {
         let mut this = if path.exists() {
-            debug!("loading runtime settings from {:?}...", path);
+            debug!("loading runtime settings from {:?}", path);
             match fs::read_to_string(path).map_err(Error::from).and_then(|ref s| Self::parse(s)) {
                 Ok(v) => v,
                 Err(e) => {
@@ -58,12 +58,12 @@ impl RuntimeSettings {
                             path.file_name().unwrap().to_str().unwrap()
                         )),
                     );
-                    debug!("using default runtime settings...");
+                    debug!("using default runtime settings");
                     Self::default()
                 }
             }
         } else {
-            debug!("runtime settings file {:?} does not exists, using default settings...", path);
+            debug!("runtime settings file {:?} does not exists, using default settings", path);
             Self::default()
         };
 
@@ -87,8 +87,8 @@ impl RuntimeSettings {
             fs::create_dir_all(parent)?;
         }
 
-        debug!("saving runtime settings from {:?}...", &self.path);
         fs::write(&self.path, self.serialize()?)?;
+        debug!("saved runtime settings to {:?}", &self.path);
 
         Ok(())
     }
@@ -118,6 +118,7 @@ impl RuntimeSettings {
     }
 
     pub(crate) fn disable_force_poll(&mut self) -> Result<()> {
+        debug!("disabling foce poll");
         self.polling.now = false;
         self.save()
     }
@@ -139,6 +140,7 @@ impl RuntimeSettings {
     }
 
     pub(crate) fn set_last_polling(&mut self, last_polling: DateTime<Utc>) -> Result<()> {
+        debug!("updating last polling time");
         self.polling.last = last_polling;
         self.save()
     }
@@ -148,11 +150,13 @@ impl RuntimeSettings {
     }
 
     pub(crate) fn set_applied_package_uid(&mut self, applied_package_uid: &str) -> Result<()> {
+        debug!("marking package {} as installed", applied_package_uid);
         self.update.applied_package_uid = Some(applied_package_uid.to_string());
         self.save()
     }
 
     pub(crate) fn set_upgrading_to(&mut self, new_install_set: Set) -> Result<()> {
+        debug!("setting upgrading to {}", new_install_set);
         self.update.upgrade_to_installation = Some(new_install_set.0);
         self.save()
     }
@@ -176,6 +180,7 @@ impl RuntimeSettings {
     }
 
     pub(crate) fn reset_installation_settings(&mut self) -> Result<()> {
+        debug!("reseting installation settings");
         self.update.upgrade_to_installation = None;
         self.update.applied_package_uid = None;
 
