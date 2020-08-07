@@ -60,10 +60,10 @@ impl Settings {
     /// settings.
     pub fn load(path: &Path) -> Result<Self> {
         if path.exists() {
-            debug!("loading system settings from {:?}...", path);
+            debug!("loading system settings from {:?}", path);
             Ok(Self::parse(&fs::read_to_string(path)?)?)
         } else {
-            debug!("system settings file {:?} does not exists, using default settings...", path);
+            debug!("system settings file {:?} does not exists, using default settings", path);
             Ok(Self::default())
         }
     }

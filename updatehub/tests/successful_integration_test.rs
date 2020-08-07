@@ -27,7 +27,7 @@ fn correct_config_no_update_no_polling() {
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
@@ -98,7 +98,7 @@ fn correct_config_no_update_polling() {
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
@@ -170,7 +170,7 @@ fn correct_config_no_update_polling_with_probe_api() {
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
@@ -254,7 +254,7 @@ fn correct_config_no_update_no_polling_with_probe_api() {
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
@@ -351,7 +351,7 @@ fn correct_config_update_no_polling_with_probe_api() {
 
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
