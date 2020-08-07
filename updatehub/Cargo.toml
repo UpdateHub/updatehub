@@ -43,7 +43,7 @@ slog = { version = "2", default-features = false, features = ["max_level_trace",
 slog-async = { version = "2", default-features = false }
 slog-scope = "4"
 slog-term = "2"
-surf = { git = "https://github.com/http-rs/surf", default-features = false, features = ["h1-client"] }
+surf = { git = "https://github.com/http-rs/surf", rev = "57d0322", default-features = false, features = ["h1-client"] }
 sys-mount = "1"
 tempfile = "3"
 tide = { version = "0.13", default-features = false, features = ["h1-server"] }

@@ -2116,7 +2116,7 @@ checksum = "502d53007c02d7605a05df1c1a73ee436952781653da5d0bf57ad608f66932c1"
 [[package]]
 name = "surf"
 version = "2.0.0-alpha.4"
-source = "git+https://github.com/http-rs/surf#57d03222dc9a88866d2e10431c9fff01e8cc1c57"
+source = "git+https://github.com/http-rs/surf?rev=57d0322#57d03222dc9a88866d2e10431c9fff01e8cc1c57"
 dependencies = [
  "async-std",
  "async-trait",

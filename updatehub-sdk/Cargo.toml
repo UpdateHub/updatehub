@@ -13,7 +13,7 @@ chrono = { version = "0.4", default-features = false, features = ["serde"] }
 derive_more = { version = "0.99", default-features = false, features = ["display", "error", "from"] }
 ms-converter = "1"
 serde = { version = "1", default-features = false, features = ["derive"] }
-surf = { git = "https://github.com/http-rs/surf", default-features = false, features = ["h1-client"] }
+surf = { git = "https://github.com/http-rs/surf", rev = "57d0322", default-features = false, features = ["h1-client"] }
 
 [dev-dependencies]
 async-std = { version = "1", default-features = false, features = ["attributes"] }
