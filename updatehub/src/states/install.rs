@@ -11,7 +11,7 @@ use crate::{
     object::{self, Installer},
     update_package::{UpdatePackage, UpdatePackageExt},
 };
-use slog_scope::{debug, info};
+use slog_scope::info;
 
 #[derive(Debug)]
 pub(super) struct Install {
@@ -30,25 +30,6 @@ impl ProgressReporter for Install {
     fn report_leave_state_name(&self) -> &'static str {
         "installed"
     }
-}
-
-pub(crate) trait ObjectInstaller {
-    fn check_requirements(&self) -> crate::Result<()> {
-        debug!("running default check_requirements");
-        Ok(())
-    }
-
-    fn setup(&mut self) -> crate::Result<()> {
-        debug!("running default setup");
-        Ok(())
-    }
-
-    fn cleanup(&mut self) -> crate::Result<()> {
-        debug!("running default cleanup");
-        Ok(())
-    }
-
-    fn install(&self, download_dir: std::path::PathBuf) -> crate::Result<()>;
 }
 
 #[async_trait::async_trait(?Send)]
