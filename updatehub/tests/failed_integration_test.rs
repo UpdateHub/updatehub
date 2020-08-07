@@ -36,7 +36,7 @@ fn failing_invalid_download_dir() {
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
@@ -139,7 +139,7 @@ fn failing_invalid_file_config() {
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     unexpected character found: `/` at line 2 column 26
     "###);
 }
@@ -166,7 +166,7 @@ fn failing_invalid_file_config() {
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     Custom("missing field `Network`")
     "###);
 }
@@ -198,7 +198,7 @@ fn failing_invalid_server_address() {
 
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
@@ -285,7 +285,7 @@ fn failing_fail_check_requirements() {
 
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> DEBG loading system settings from "<file>"...
+    <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is disabled
