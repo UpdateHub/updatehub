@@ -114,7 +114,25 @@ async fn client_main(cmd: ClientCommands) -> updatehub::Result<()> {
 
     match cmd {
         ClientCommands::Info(_) => println!("{:#?}", client.info().await),
-        ClientCommands::Log(_) => println!("{:#?}", client.log().await),
+        ClientCommands::Log(_) => {
+            for entry in client.log().await?.into_iter() {
+                let level = match entry.level {
+                    sdk::api::log::Level::Critical => "CRIT",
+                    sdk::api::log::Level::Error => "ERRO",
+                    sdk::api::log::Level::Warning => "WARN",
+                    sdk::api::log::Level::Info => "INFO",
+                    sdk::api::log::Level::Debug => "DEBG",
+                    sdk::api::log::Level::Trace => "TRCE",
+                };
+
+                println!(
+                    "{timestamp} {level} {msg}",
+                    timestamp = entry.time,
+                    level = level,
+                    msg = entry.message
+                );
+            }
+        }
         ClientCommands::Probe(Probe { server }) => println!("{:#?}", client.probe(server).await),
         ClientCommands::AbortDownload(_) => println!("{:#?}", client.abort_download().await),
         ClientCommands::LocalInstall(LocalInstall { file }) => {

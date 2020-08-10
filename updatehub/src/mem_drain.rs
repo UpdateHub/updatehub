@@ -75,7 +75,7 @@ impl Drain for MemDrain {
             let l = LogRecord {
                 level: record.level().as_str().to_lowercase(),
                 message: fmt::format(*record.msg()),
-                time: chrono::Local::now().format("%F %H:%M:%S%.9f %z").to_string(),
+                time: chrono::Local::now().format("%b %d %H:%M:%S%.3f").to_string(),
                 data: kv.0,
             };
 

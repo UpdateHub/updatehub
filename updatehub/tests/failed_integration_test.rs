@@ -74,46 +74,12 @@ fn failing_invalid_download_dir() {
     "###);
 
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
-    Ok(
-        [
-            Entry {
-                level: Debug,
-                message: "loading system settings from "<file>",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Debug,
-                message: "runtime settings file "<file>",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Trace,
-                message: "starting to handle: entry_point",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Debug,
-                message: "polling is disabled",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Trace,
-                message: "starting to handle: park",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Info,
-                message: "parking state machine",
-                time: "<timestamp>",
-                data: {},
-            },
-        ],
-    )
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 }
 
@@ -215,49 +181,15 @@ fn failing_invalid_server_address() {
         UnexpectedResponse(
             InternalServerError,
         ),
-    )
-    "###);
+    )"###);
+
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
-    Ok(
-        [
-            Entry {
-                level: Debug,
-                message: "loading system settings from "<file>",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Debug,
-                message: "runtime settings file "<file>",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Trace,
-                message: "starting to handle: entry_point",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Debug,
-                message: "polling is disabled",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Trace,
-                message: "starting to handle: park",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Info,
-                message: "parking state machine",
-                time: "<timestamp>",
-                data: {},
-            },
-        ],
-    )
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 }
 
@@ -350,46 +282,13 @@ fn failing_fail_check_requirements() {
         },
     )
     "###);
+
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
-    Ok(
-        [
-            Entry {
-                level: Debug,
-                message: "loading system settings from "<file>",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Debug,
-                message: "runtime settings file "<file>",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Trace,
-                message: "starting to handle: entry_point",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Debug,
-                message: "polling is disabled",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Trace,
-                message: "starting to handle: park",
-                time: "<timestamp>",
-                data: {},
-            },
-            Entry {
-                level: Info,
-                message: "parking state machine",
-                time: "<timestamp>",
-                data: {},
-            },
-        ],
-    )
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 }
