@@ -68,7 +68,11 @@ impl StateChangeImpl for PrepareLocalInstall {
             compress_tools::uncompress_archive_file(&mut source, &mut target, object)?;
         }
 
-        info!("update package extracted: {}", update_package.package_uid());
+        info!(
+            "update package extracted: {} ({})",
+            update_package.version(),
+            update_package.package_uid()
+        );
 
         update_package.clear_unrelated_files(
             &dest_path,

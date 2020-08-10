@@ -40,7 +40,7 @@ impl StateChangeImpl for Install {
 
     async fn handle(mut self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         let package_uid = self.update_package.package_uid();
-        info!("installing update: {}", &package_uid);
+        info!("installing update: {} ({})", self.update_package.version(), &package_uid);
 
         let installation_set = context.runtime_settings.get_inactive_installation_set()?;
         info!("using installation set as target {}", installation_set);

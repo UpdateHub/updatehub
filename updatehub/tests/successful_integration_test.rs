@@ -360,9 +360,9 @@ fn correct_config_update_no_polling_with_probe_api() {
     "###);
 
     insta::assert_snapshot!(output_server_info_2.trim(), @r###"
-    <timestamp> INFO update received: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
+    <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
@@ -373,7 +373,7 @@ fn correct_config_update_no_polling_with_probe_api() {
     insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
-    <timestamp> INFO update received: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: validation
@@ -388,7 +388,7 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> TRCE starting to handle: install
-    <timestamp> INFO installing update: 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d
+    <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO using installation set as target 1
     <timestamp> DEBG marking package 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d as installed
     <timestamp> DEBG saved runtime settings to "<file>"
