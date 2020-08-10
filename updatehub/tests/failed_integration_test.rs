@@ -167,7 +167,7 @@ fn failing_invalid_file_config() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
-    Custom("missing field `Network`")
+    Parsing error: toml: unexpected character found: `/` at line 2 column 26, ini: Custom("missing field `Network`")
     "###);
 }
 
