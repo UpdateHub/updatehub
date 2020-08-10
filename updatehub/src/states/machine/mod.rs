@@ -109,6 +109,9 @@ pub(super) trait CommunicationState: StateChangeImpl {
             let name = self.name().to_owned();
             return Ok((address::ProbeResponse::Busy(name), None));
         }
+        // Starting logging a new scope of operation since we are
+        // starting to handle a user request
+        crate::logger::start_memory_logging();
 
         if let Some(server_address) = custom_server {
             context.runtime_settings.set_custom_server_address(&server_address);
@@ -167,6 +170,8 @@ pub(super) trait CommunicationState: StateChangeImpl {
     ) -> Result<(address::StateResponse, Option<State>)> {
         let name = self.name().to_owned();
         if self.is_preemptive_state() {
+            // Starting logging a new scope of operation since we are
+            // starting to handle a user request
             crate::logger::start_memory_logging();
             context.waker.sender.send(()).await;
 
@@ -187,6 +192,8 @@ pub(super) trait CommunicationState: StateChangeImpl {
         let name = self.name().to_owned();
 
         if self.is_preemptive_state() {
+            // Starting logging a new scope of operation since we are
+            // starting to handle a user request
             crate::logger::start_memory_logging();
             context.waker.sender.send(()).await;
 

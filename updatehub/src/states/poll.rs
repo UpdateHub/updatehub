@@ -26,8 +26,6 @@ impl StateChangeImpl for Poll {
     }
 
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
-        crate::logger::start_memory_logging();
-
         let interval = context.settings.polling.interval;
         let delay =
             interval - Utc::now().signed_duration_since(context.runtime_settings.last_polling());
