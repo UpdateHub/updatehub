@@ -312,13 +312,15 @@ pub fn remove_carriage_newline_characters(s: String) -> String {
 }
 
 pub fn format_output_client_log(s: String) -> String {
-    let date_re =
-        Regex::new(r"(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{9}) (-|\+)(\d{4})")
-            .expect("fail to compile the date regexp");
+    let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3})")
+        .expect("fail to compile the date regexp");
     let s = date_re.replace_all(&s, "<timestamp>");
 
-    let tmpfile_re = Regex::new(r#"\\"/tmp/.tmp.*""#).expect("fail to compile the tmpfile regexp");
+    let tmpfile_re = Regex::new(r#""/tmp/.tmp.*""#).expect("fail to compile the tmpfile regexp");
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
+
+    let time_re = Regex::new(r#"(\d{5}) seconds"#).expect("fail to compile the tmpfile regexp");
+    let s = time_re.replace_all(&s, r#"<time>"#);
 
     remove_carriage_newline_characters(s.to_string())
 }
