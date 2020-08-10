@@ -133,7 +133,31 @@ async fn client_main(cmd: ClientCommands) -> updatehub::Result<()> {
                 );
             }
         }
-        ClientCommands::Probe(Probe { server }) => println!("{:#?}", client.probe(server).await),
+        ClientCommands::Probe(Probe { server }) => {
+            let response = client.probe(server).await?;
+
+            if response.update_available && response.try_again_in.is_none() {
+                println!("Update available. The update is running in background.");
+            }
+
+            if response.update_available && response.try_again_in.is_some() {
+                println!(
+                    "Update available. The update is running in {} seconds.",
+                    response.try_again_in.unwrap()
+                );
+            }
+
+            if !response.update_available && response.try_again_in.is_none() {
+                println!("There are no updates available.")
+            }
+
+            if !response.update_available && response.try_again_in.is_some() {
+                println!(
+                    "There are no updates available. Try again in {} seconds",
+                    response.try_again_in.unwrap()
+                )
+            }
+        }
         ClientCommands::AbortDownload(_) => println!("{:#?}", client.abort_download().await),
         ClientCommands::LocalInstall(LocalInstall { file }) => {
             let file =

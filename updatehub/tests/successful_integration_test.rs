@@ -146,12 +146,7 @@ fn correct_config_no_update_polling_with_probe_api() {
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
-    Ok(
-        Response {
-            update_available: false,
-            try_again_in: None,
-        },
-    )
+    There are no updates available.
     "###);
 
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
@@ -203,12 +198,7 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
-    Ok(
-        Response {
-            update_available: false,
-            try_again_in: None,
-        },
-    )
+    There are no updates available.
     "###);
 
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
@@ -299,12 +289,7 @@ fn correct_config_update_no_polling_with_probe_api() {
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
-    Ok(
-        Response {
-            update_available: true,
-            try_again_in: None,
-        },
-    )
+    Update available. The update is running in background.
     "###);
 
     insta::assert_snapshot!(format_output_client_log(output_log), @r###"
@@ -315,5 +300,6 @@ fn correct_config_update_no_polling_with_probe_api() {
     <timestamp> TRCE starting to handle: park
     <timestamp> INFO parking state machine
     "###);
+
     mocks.iter().for_each(|mock| mock.assert());
 }
