@@ -22,7 +22,8 @@ pub enum Error {
     InvalidServerAddress,
 
     #[cfg(feature = "v1-parsing")]
-    DeserializeIni(serde_ini::de::Error),
+    #[display(fmt = "Parsing error: toml: {}, ini: {}", _0, _1)]
+    V1Parsing(toml::de::Error, serde_ini::de::Error),
 }
 
 #[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
@@ -73,7 +74,7 @@ impl Settings {
     // `Err`.
     fn parse(content: &str) -> Result<Self> {
         let res = toml::from_str::<api::Settings>(content);
-        let res = res.or_else(|e| v1_parse(content, e.into()));
+        let res = res.or_else(|e| v1_parse(content, e));
         let settings = Settings(res?);
 
         if settings.polling.interval < Duration::seconds(60) {
@@ -93,7 +94,7 @@ impl Settings {
 }
 
 #[cfg(feature = "v1-parsing")]
-fn v1_parse(content: &str, _: Error) -> Result<api::Settings> {
+fn v1_parse(content: &str, toml_err: toml::de::Error) -> Result<api::Settings> {
     use serde::Deserialize;
     use std::path::PathBuf;
 
@@ -228,7 +229,10 @@ fn v1_parse(content: &str, _: Error) -> Result<api::Settings> {
         }
     }
 
-    let old_settings = serde_ini::de::from_str::<Settings>(content)?;
+    let old_settings = match serde_ini::de::from_str::<Settings>(content) {
+        Ok(s) => s,
+        Err(err) => return Err(Error::V1Parsing(toml_err, err)),
+    };
 
     Ok(api::Settings {
         firmware: api::Firmware { metadata: old_settings.firmware.metadata_path },
@@ -253,8 +257,8 @@ fn v1_parse(content: &str, _: Error) -> Result<api::Settings> {
 
 #[cfg(not(feature = "v1-parsing"))]
 #[inline]
-fn v1_parse(_: &str, e: Error) -> Result<api::Settings> {
-    Err(e)
+fn v1_parse(_: &str, e: toml::de::Error) -> Result<api::Settings> {
+    Err(e.into())
 }
 
 #[cfg(test)]
