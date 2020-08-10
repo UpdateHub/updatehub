@@ -61,6 +61,10 @@ impl UpdatePackage {
     pub fn package_uid(&self) -> String {
         openssl::sha::sha256(&self.raw).iter().map(|c| format!("{:02x}", c)).collect()
     }
+
+    pub fn version(&self) -> &str {
+        &self.inner.version
+    }
 }
 
 impl Signature {
