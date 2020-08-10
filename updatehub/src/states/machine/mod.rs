@@ -133,7 +133,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
             }
 
             ProbeResponse::Update(package, sign) => {
-                info!("update received: {}", package.package_uid());
+                info!("update received: {} ({})", package.version(), package.package_uid());
                 context.waker.sender.send(()).await;
 
                 // Store timestamp of last polling

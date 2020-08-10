@@ -71,7 +71,7 @@ impl StateChangeImpl for Probe {
                 // Store timestamp of last polling
                 context.runtime_settings.set_last_polling(Utc::now())?;
 
-                info!("update received: {}", package.package_uid());
+                info!("update received: {} ({})", package.version(), package.package_uid());
                 Ok((
                     State::Validation(Validation { package, sign }),
                     machine::StepTransition::Immediate,
