@@ -71,6 +71,10 @@ impl StateChangeImpl for Probe {
                 // Store timestamp of last polling
                 context.runtime_settings.set_last_polling(Utc::now())?;
 
+                // Starting logging a new scope of operation since we are
+                // beginning the installation process of a new update package
+                crate::logger::start_memory_logging();
+
                 info!("update received: {} ({})", package.version(), package.package_uid());
                 Ok((
                     State::Validation(Validation { package, sign }),
