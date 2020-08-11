@@ -3,9 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use common::{
-    create_mock_server, format_output_client_log, format_output_server, get_output_server,
-    remove_carriage_newline_characters, run_client_log, run_client_probe, FakeServer, Polling,
-    Server, Settings, StopMessage,
+    create_mock_server, get_output_server, remove_carriage_newline_characters, rewrite_log_output,
+    run_client_log, run_client_probe, FakeServer, Polling, Server, Settings, StopMessage,
 };
 
 pub mod common;
@@ -27,7 +26,7 @@ fn failing_invalid_download_dir() {
     let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_log = run_client_log();
 
-    let (output_server_trce, output_server_info) = format_output_server(output_server_1);
+    let (output_server_trce, output_server_info) = rewrite_log_output(output_server_1);
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -44,7 +43,7 @@ fn failing_invalid_download_dir() {
     <timestamp> INFO parking state machine
     "###);
 
-    insta::assert_snapshot!(format_output_server(output_server_2).0.trim(), @r###"
+    insta::assert_snapshot!(rewrite_log_output(output_server_2).0.trim(), @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
@@ -73,7 +72,7 @@ fn failing_invalid_download_dir() {
     )
     "###);
 
-    insta::assert_snapshot!(format_output_client_log(output_log), @r###"
+    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
@@ -101,7 +100,7 @@ fn failing_invalid_file_config() {
 
     let (mut session, _setup) = setup.config_file(file_path).init_server();
     let output_server = session.exp_eof().unwrap();
-    let (output_server_trce, ..) = format_output_server(output_server);
+    let (output_server_trce, ..) = rewrite_log_output(output_server);
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -128,7 +127,7 @@ fn failing_invalid_file_config() {
 
     let (mut session, _setup) = setup.config_file(file_path).init_server();
     let output_server = session.exp_eof().unwrap();
-    let (output_server_trce, ..) = format_output_server(output_server);
+    let (output_server_trce, ..) = rewrite_log_output(output_server);
 
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -154,8 +153,8 @@ fn failing_invalid_server_address() {
     );
     let output_log = run_client_log();
 
-    let (output_server_trce_1, output_server_info_1) = format_output_server(output_server_1);
-    let (output_server_trce_2, ..) = format_output_server(output_server_2);
+    let (output_server_trce_1, output_server_info_1) = rewrite_log_output(output_server_1);
+    let (output_server_trce_2, ..) = rewrite_log_output(output_server_2);
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -183,7 +182,7 @@ fn failing_invalid_server_address() {
         ),
     )"###);
 
-    insta::assert_snapshot!(format_output_client_log(output_log), @r###"
+    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
@@ -207,8 +206,8 @@ fn failing_fail_check_requirements() {
     let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_log = run_client_log();
 
-    let (output_server_trce_1, output_server_info_1) = format_output_server(output_server_1);
-    let (output_server_trce_2, output_server_info_2) = format_output_server(output_server_2);
+    let (output_server_trce_1, output_server_info_1) = rewrite_log_output(output_server_1);
+    let (output_server_trce_2, output_server_info_2) = rewrite_log_output(output_server_2);
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -283,7 +282,7 @@ fn failing_fail_check_requirements() {
     )
     "###);
 
-    insta::assert_snapshot!(format_output_client_log(output_log), @r###"
+    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point

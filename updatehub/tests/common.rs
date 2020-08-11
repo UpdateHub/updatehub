@@ -281,10 +281,11 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
     }
 }
 
-pub fn format_output_server(s: String) -> (String, String) {
+pub fn rewrite_log_output(s: String) -> (String, String) {
     let version_re = Regex::new(r"Agent .*").unwrap();
     let tmpfile_re = Regex::new(r#""/tmp/.tmp.*""#).unwrap();
     let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3})").unwrap();
+    let time_re = Regex::new(r#"(\d{5}) seconds"#).unwrap();
     let trce_re = Regex::new(r"<timestamp> TRCE.*").unwrap();
     let debg_re = Regex::new(r"<timestamp> DEBG.*").unwrap();
     let download_re = Regex::new(r"DEBG (\d{2})%").unwrap();
@@ -293,6 +294,7 @@ pub fn format_output_server(s: String) -> (String, String) {
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
     let s = date_re.replace_all(&s, "<timestamp>");
     let s = download_re.replace_all(&s, "DEBG <percentage>%");
+    let s = time_re.replace_all(&s, r#"<time>"#);
     let s_trce = s.replace("\r\n", "\n");
 
     let s_info = trce_re.replace_all(&s_trce, "");
@@ -309,20 +311,6 @@ pub fn format_output_server(s: String) -> (String, String) {
 
 pub fn remove_carriage_newline_characters(s: String) -> String {
     s.replace("\r\n", "\n")
-}
-
-pub fn format_output_client_log(s: String) -> String {
-    let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3})")
-        .expect("fail to compile the date regexp");
-    let s = date_re.replace_all(&s, "<timestamp>");
-
-    let tmpfile_re = Regex::new(r#""/tmp/.tmp.*""#).expect("fail to compile the tmpfile regexp");
-    let s = tmpfile_re.replace_all(&s, r#""<file>""#);
-
-    let time_re = Regex::new(r#"(\d{5}) seconds"#).expect("fail to compile the tmpfile regexp");
-    let s = time_re.replace_all(&s, r#"<time>"#);
-
-    remove_carriage_newline_characters(s.to_string())
 }
 
 fn listen_available_port() -> Option<u16> {
