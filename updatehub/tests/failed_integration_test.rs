@@ -64,12 +64,7 @@ fn failing_invalid_download_dir() {
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
-    Ok(
-        Response {
-            update_available: true,
-            try_again_in: None,
-        },
-    )
+    Update available. The update is running in background.
     "###);
 
     insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
@@ -185,11 +180,8 @@ fn failing_invalid_server_address() {
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
-    Err(
-        UnexpectedResponse(
-            InternalServerError,
-        ),
-    )"###);
+    Unexpected response: InternalServerError
+    "###);
 
     insta::assert_snapshot!(rewrite_log_output(output_log).0, @"<timestamp> DEBG receiving log request
 ");
@@ -277,12 +269,7 @@ fn failing_fail_check_requirements() {
     "###);
 
     insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
-    Ok(
-        Response {
-            update_available: true,
-            try_again_in: None,
-        },
-    )
+    Update available. The update is running in background.
     "###);
 
     insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
