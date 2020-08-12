@@ -107,7 +107,8 @@ macro_rules! handle_install_if_different {
             }) {
                 Ok(true) => {
                     slog_scope::info!(
-                        "installation has been skipped (install if different): {}",
+                        "installation of {} has been skipped (install if different): {}",
+                        $sha256sum,
                         $rule.as_ref().unwrap()
                     );
                     return Ok(());
