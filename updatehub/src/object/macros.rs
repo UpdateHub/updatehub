@@ -76,7 +76,7 @@ macro_rules! impl_compressed_object_info {
             }
 
             fn required_install_size(&self) -> u64 {
-                self.required_uncompressed_size
+                if self.compressed { self.required_uncompressed_size } else { self.size }
             }
         }
     };
