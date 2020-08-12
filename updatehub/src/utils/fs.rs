@@ -8,10 +8,12 @@ use pkg_schema::definitions::{
     target_permissions::{Gid, Uid},
     Filesystem,
 };
+use slog_scope::trace;
 use std::{io, path::Path};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
 pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
+    trace!("looking for {} free bytes on {:?}", required, target);
     let stat = nix::sys::statvfs::statvfs(target)?;
 
     // stat fields might be 32 or 64 bytes depending on host arch
@@ -24,6 +26,7 @@ pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
 }
 
 pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
+    trace!("checking if {} is executable", cmd);
     match quale::which(cmd) {
         Some(_) => Ok(()),
         None => Err(Error::ExecutableNotInPath(cmd.to_owned())),
@@ -31,6 +34,7 @@ pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
 }
 
 pub(crate) fn format(target: &Path, fs: Filesystem, options: &Option<String>) -> Result<()> {
+    trace!("formating {:?} as {}", target, fs);
     let target = target.display();
     let options = options.clone().unwrap_or_else(|| "".to_string());
 
@@ -70,6 +74,7 @@ pub(crate) fn mount(
     fs: Filesystem,
     options: &str,
 ) -> io::Result<UnmountDrop<Mount>> {
+    trace!("mounting {:?} as {} at {:?}", source, fs, dest);
     Ok(Mount::new(
         source,
         dest,
@@ -81,6 +86,7 @@ pub(crate) fn mount(
 }
 
 pub(crate) fn chmod(path: &Path, mode: u32) -> Result<()> {
+    trace!("applying 0o{:o} permissions to {:?}", mode, path);
     nix::sys::stat::fchmodat(
         None,
         path,
@@ -92,6 +98,7 @@ pub(crate) fn chmod(path: &Path, mode: u32) -> Result<()> {
 }
 
 pub(crate) fn chown(path: &Path, uid: &Option<Uid>, gid: &Option<Gid>) -> Result<()> {
+    trace!("applying ownership of uid:{:?} and gid:{:?} to {:?}", uid, gid, path);
     Ok(nix::unistd::chown(
         path,
         uid.as_ref().map(|id| nix::unistd::Uid::from_raw(id.as_u32())),
