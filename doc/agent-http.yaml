@@ -25,18 +25,18 @@ paths:
     post:
       summary: "Actively probe the server."
       description: |-
-        Probe the server and download the update metadata if  available.
-        Returns a json object containing the "update_available" boolean field.
-        It also may contain a "try_again_in" field which means the caller should
-        try the request again 'n' seconds from now, where 'n' is the value of
-        "try_again_in".
+        Probe the server and download the update metadata if available.  This
+        request accepts a "server_address" parameter on POST. When it's present,
+        it will use the address for the triggered probe process and following
+        requests in case there is an update available.
 
-        This request accepts a "server_address" parameter on POST. When it's present,
-        it will use the address for the triggered probe (and the update procedure too
-        in case there is an update available).
+        The returned JSON object is an enum with three possible possibilities:
+        "updating", "no_update" and "try_again".  The "try_again": is a object
+        that contains an integer which inform the caller it should retry the
+        request again in 'n' seconds from now.
 
         If agent is busy (e.g. downloading a object or installing an object) the
-        returned http code is 202.
+        returned http code is 406.
       requestBody:
         required: false
         description: "The custom server to probe"
@@ -51,12 +51,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProbeInfo"
-        "202":
+              examples:
+                ex1:
+                  value:
+                    try_again: 3600
+                ex2:
+                  value:
+                    '"updating"'
+        "406":
           description: "Agent is busy"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentStatus"
+                $ref: "#/components/schemas/AgentState"
 
   "/local_install":
     post:
@@ -75,13 +82,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentStatus"
-        "422":
+                $ref: "#/components/schemas/AgentState"
+        "406":
           description: "Local instalation cond't start"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentStatus"
+                $ref: "#/components/schemas/AgentState"
 
   "/remote_install":
     post:
@@ -100,34 +107,35 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentStatus"
-        "422":
+                $ref: "#/components/schemas/AgentState"
+        "406":
           description: "Remote instalation cond't start"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentStatus"
+                $ref: "#/components/schemas/AgentState"
 
   "/update/download/abort":
     post:
       summary: "Abort download"
       description: |-
-        Abort an update objects download (triggered by any command). On success, returns
-        HTTP 200 and a empty json object as body. On failure, returns HTTP 400 and the
-        error message inside a json object as body.
+        Abort an update download (triggered by any command). It returns the
+        current state of the agent when handling the abort together with the
+        respective HTTP code. On success the returned HTTP code is 200, and on
+        failure it is 406.
       responses:
         "200":
           description: "Download Aborted"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AbortDownloadAccepted"
-        "400":
+                $ref: "#/components/schemas/AgentState"
+        "406":
           description: "No download to be aborted"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AbortDownloadRejected"
+                $ref: "#/components/schemas/AgentState"
 
   "/log":
     get:
@@ -169,15 +177,16 @@ components:
 
     ProbeInfo:
       description: "Response about requested probe"
-      type: object
-      required:
-        - update_available
-      properties:
-        update_available:
-          type: boolean
-        try_again_in:
-          type: integer
-          example: 3600
+      oneOf:
+        - type: string
+          enum: ["updating", "no_update"]
+        - type: object
+          required:
+            - try_again
+          properties:
+            try_again:
+              type: integer
+              example: 3600
 
     ProbeCustomServer:
       description: "Server address which the update procedure will use for this request"
@@ -188,37 +197,6 @@ components:
         custom_server:
           type: string
           example: "http://different-address:8080"
-
-    AgentStatus:
-      description: "Agent state information"
-      type: object
-      required:
-        - busy
-        - current_state
-      properties:
-        busy:
-          type: boolean
-          example: false
-        current_state:
-          $ref: "#/components/schemas/AgentState"
-
-    AbortDownloadAccepted:
-      type: object
-      required:
-        - message
-      properties:
-        message:
-          type: string
-          example: "request accepted, download aborted"
-
-    AbortDownloadRejected:
-      type: object
-      required:
-        - error
-      properties:
-        error:
-          type: string
-          example: "there is no download to be aborted"
 
     LocalInstallRequest:
       description: "The update file which will be used for this request"
@@ -437,7 +415,9 @@ components:
     AgentState:
       description: "Agent state"
       type: string
-      enum: ["idle", "install", "park", "poll", "probe", "reboot"]
+      enum: ['"park"', '"entry_point"', '"poll"', '"probe"', '"validation"', 
+            '"download"', '"install"', '"reboot"', '"direct_download"',
+            '"prepare_local_install"', '"error"']
 
     InstallationSet:
       description: "The partitions used for boot or installation"
@@ -446,9 +426,10 @@ components:
 
     RuntimePollingServer:
       description: |-
-        The server being used for the current running probe operation, if default then the probe
-        is being made to the server specified by the agent settings. This can be non default when
-        the user requests probe to a different server.
+        The server being used for the current running probe operation, if
+        default then the probe is being made to the server specified by the
+        agent settings. This can be non default when the user requests probe to
+        a different server.
       oneOf:
         - type: string
           enum: ["default"]
