@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use slog_scope::trace;
 use std::{
     io::{BufReader, BufWriter, Read, Seek, Write},
     os::unix::io::AsRawFd,
@@ -13,6 +14,7 @@ pub(crate) fn timed_buf_reader<R>(chunk_size: usize, reader: R) -> BufReader<Tim
 where
     R: Read + Seek + AsRawFd,
 {
+    trace!("starting IO read with 5 seconds of timeout");
     BufReader::with_capacity(chunk_size, TimeoutReader::new(reader, Duration::from_secs(5)))
 }
 
@@ -20,5 +22,6 @@ pub(crate) fn timed_buf_writer<W>(chunk_size: usize, writer: W) -> BufWriter<Tim
 where
     W: Write + Seek + AsRawFd,
 {
+    trace!("starting IO write with 5 seconds of timeout");
     BufWriter::with_capacity(chunk_size, TimeoutWriter::new(writer, Duration::from_secs(5)))
 }
