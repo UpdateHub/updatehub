@@ -113,7 +113,7 @@ async fn client_main(cmd: ClientCommands) -> updatehub::Result<()> {
     let client = sdk::Client::new("localhost:8080");
 
     match cmd {
-        ClientCommands::Info(_) => println!("{:#?}", client.info().await),
+        ClientCommands::Info(_) => println!("{:#?}", client.info().await?),
         ClientCommands::Log(_) => {
             for entry in client.log().await?.into_iter() {
                 let level = match entry.level {
@@ -147,14 +147,14 @@ async fn client_main(cmd: ClientCommands) -> updatehub::Result<()> {
                 }
             }
         }
-        ClientCommands::AbortDownload(_) => println!("{:#?}", client.abort_download().await),
+        ClientCommands::AbortDownload(_) => println!("{:#?}", client.abort_download().await?),
         ClientCommands::LocalInstall(LocalInstall { file }) => {
             let file =
                 if file.is_absolute() { file } else { std::env::current_dir().unwrap().join(file) };
-            println!("{:#?}", client.local_install(&file).await)
+            println!("{:#?}", client.local_install(&file).await?)
         }
         ClientCommands::RemoteInstall(RemoteInstall { url }) => {
-            println!("{:#?}", client.remote_install(&url).await)
+            println!("{:#?}", client.remote_install(&url).await?)
         }
     }
 
