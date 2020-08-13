@@ -25,6 +25,10 @@ enum EntryPoints {
 struct ClientOptions {
     #[argh(subcommand)]
     commands: ClientCommands,
+
+    /// change the client socket to listen
+    #[argh(option, default = "String::from(\"localhost:8080\")")]
+    listen_socket: String,
 }
 
 #[derive(FromArgs)]
@@ -109,8 +113,8 @@ async fn server_main(cmd: ServerOptions) -> updatehub::Result<()> {
     Ok(())
 }
 
-async fn client_main(cmd: ClientCommands) -> updatehub::Result<()> {
-    let client = sdk::Client::new("localhost:8080");
+async fn client_main(cmd: ClientCommands, socket: String) -> updatehub::Result<()> {
+    let client = sdk::Client::new(&socket);
 
     match cmd {
         ClientCommands::Info(_) => println!("{:#?}", client.info().await?),
@@ -166,7 +170,7 @@ async fn main() {
     let cmd: TopLevel = argh::from_env();
 
     let res = match cmd.entry_point {
-        EntryPoints::Client(client) => client_main(client.commands).await,
+        EntryPoints::Client(client) => client_main(client.commands, client.listen_socket).await,
         EntryPoints::Server(cmd) => server_main(cmd).await,
     };
 

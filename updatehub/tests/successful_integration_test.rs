@@ -13,9 +13,9 @@ pub mod common;
 fn correct_config_no_update_no_polling() {
     let setup = Settings::default();
 
-    let (mut session, _setup) = setup.timeout(300).init_server();
+    let (mut session, setup) = setup.timeout(300).init_server();
     let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-    let output_log = run_client_log();
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
 
@@ -49,9 +49,9 @@ fn correct_config_no_update_polling() {
     let setup = Settings::default();
     let mocks = create_mock_server(FakeServer::NoUpdate);
 
-    let (mut session, _setup) = setup.timeout(300).polling().init_server();
+    let (mut session, setup) = setup.timeout(300).polling().init_server();
     let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
-    let output_log = run_client_log();
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
 
@@ -106,14 +106,15 @@ fn correct_config_no_update_polling_with_probe_api() {
     let setup = Settings::default();
     let mocks = create_mock_server(FakeServer::NoUpdate);
 
-    let (mut session, _setup) = setup.timeout(300).polling().init_server();
+    let (mut session, setup) = setup.timeout(300).polling().init_server();
     let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
 
     mocks.iter().for_each(|mock| mock.assert());
 
-    let output_client = run_client_probe(Server::Standard);
+    let output_client =
+        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
     let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
-    let output_log = run_client_log();
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     let mut iter = output_server_2.lines();
     iter.next();
@@ -179,12 +180,13 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     let setup = Settings::default();
     let mocks = create_mock_server(FakeServer::NoUpdate);
 
-    let (mut session, _setup) = setup.timeout(300).init_server();
+    let (mut session, setup) = setup.timeout(300).init_server();
     let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
 
-    let output_client = run_client_probe(Server::Standard);
+    let output_client =
+        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
     let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-    let output_log = run_client_log();
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     let (output_server_trce, output_server_info) = rewrite_log_output(output_server_1);
 
@@ -240,9 +242,10 @@ fn correct_config_update_no_polling_with_probe_api() {
     let mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
     let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
 
-    let output_client = run_client_probe(Server::Standard);
+    let output_client =
+        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
     let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-    let output_log = run_client_log();
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     let (output_server_trce_1, output_server_info_1) = rewrite_log_output(output_server_1);
     let (output_server_trce_2, output_server_info_2) = rewrite_log_output(output_server_2);
