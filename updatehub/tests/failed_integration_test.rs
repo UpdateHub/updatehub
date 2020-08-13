@@ -22,9 +22,10 @@ fn failing_invalid_download_dir() {
     let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
     let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
 
-    let output_client = run_client_probe(Server::Standard);
+    let output_client =
+        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
     let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-    let output_log = run_client_log();
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     let (output_server_trce, output_server_info) = rewrite_log_output(output_server_1);
 
@@ -143,11 +144,14 @@ fn failing_invalid_file_config() {
 #[test]
 fn failing_invalid_server_address() {
     let setup = Settings::default();
-    let (mut session, _setup) = setup.timeout(300).init_server();
+    let (mut session, setup) = setup.timeout(300).init_server();
     let _mocks = create_mock_server(FakeServer::NoUpdate);
     let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
 
-    let output_client = run_client_probe(Server::Custom("http://foo:--".to_string()));
+    let output_client = run_client_probe(
+        Server::Custom("http://foo:--".to_string()),
+        &setup.settings.data.network.listen_socket,
+    );
     let output_server_2 = get_output_server(
         &mut session,
         StopMessage::Custom(
@@ -155,7 +159,7 @@ fn failing_invalid_server_address() {
                 .to_string(),
         ),
     );
-    let output_log = run_client_log();
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     let (output_server_trce_1, output_server_info_1) = rewrite_log_output(output_server_1);
     let (output_server_trce_2, ..) = rewrite_log_output(output_server_2);
@@ -197,9 +201,10 @@ fn failing_fail_check_requirements() {
     ));
     let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
 
-    let output_client = run_client_probe(Server::Standard);
+    let output_client =
+        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
     let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-    let output_log = run_client_log();
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     let (output_server_trce_1, output_server_info_1) = rewrite_log_output(output_server_1);
     let (output_server_trce_2, output_server_info_2) = rewrite_log_output(output_server_2);

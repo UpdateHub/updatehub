@@ -127,8 +127,12 @@ pub fn get_output_server(
         .0
 }
 
-pub fn run_client_probe(server: Server) -> String {
-    let cmd_string = format!("{} client probe", cargo_bin("updatehub").to_string_lossy());
+pub fn run_client_probe(server: Server, listen_socket: &str) -> String {
+    let cmd_string = format!(
+        "{} client --listen-socket {} probe",
+        cargo_bin("updatehub").to_string_lossy(),
+        listen_socket
+    );
     let cmd = match server {
         Server::Custom(server_address) => format!("{} --server {}", cmd_string, server_address),
         Server::Standard => cmd_string,
@@ -137,8 +141,12 @@ pub fn run_client_probe(server: Server) -> String {
     handle.exp_eof().expect("fail to match the EOF for client")
 }
 
-pub fn run_client_log() -> String {
-    let cmd = format!("{} client log", cargo_bin("updatehub").to_string_lossy());
+pub fn run_client_log(listen_socket: &str) -> String {
+    let cmd = format!(
+        "{} client --listen-socket {} log",
+        cargo_bin("updatehub").to_string_lossy(),
+        listen_socket
+    );
     let mut handle = rexpect::spawn(&cmd, None).expect("fail to spawn log command");
     handle.exp_eof().expect("fail to match the EOF for client")
 }
