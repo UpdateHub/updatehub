@@ -140,14 +140,13 @@ async fn client_main(cmd: ClientCommands, socket: String) -> updatehub::Result<(
         ClientCommands::Probe(Probe { server }) => {
             let response = client.probe(server).await?;
 
-            match (response.update_available, response.try_again_in) {
-                (true, None) => println!("Update available. The update is running in background."),
-                (false, None) => println!("There are no updates available."),
-                (false, Some(t)) => {
-                    println!("Server replied asking us to try again in {} seconds", t);
+            match response {
+                sdk::api::probe::Response::Updating => {
+                    println!("Update available. The update is running in background.")
                 }
-                (true, Some(_)) => {
-                    unreachable!("We cannot have an update and receive a try again interval");
+                sdk::api::probe::Response::NoUpdate => println!("There are no updates available."),
+                sdk::api::probe::Response::TryAgain(t) => {
+                    println!("Server replied asking us to try again in {} seconds", t);
                 }
             }
         }
