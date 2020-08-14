@@ -76,6 +76,7 @@ async fn local_install() {
     let client = sdk::Client::new(&addr);
     let file = tempfile::NamedTempFile::new().unwrap();
     let response = client.local_install(file.path()).await;
+
     match dbg!(response) {
         Ok(_) => {}
         Err(sdk::Error::AgentIsBusy(_)) => {}

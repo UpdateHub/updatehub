@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod info;
-
 pub mod probe {
     use serde::{Deserialize, Serialize};
 
@@ -14,11 +13,11 @@ pub mod probe {
     }
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct Response {
-        pub update_available: bool,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        pub try_again_in: Option<i64>,
+    #[serde(rename_all = "snake_case")]
+    pub enum Response {
+        Updating,
+        NoUpdate,
+        TryAgain(i64),
     }
 }
 
@@ -46,10 +45,19 @@ pub mod state {
     use serde::{Deserialize, Serialize};
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct Response {
-        pub busy: bool,
-        pub current_state: String,
+    #[serde(rename_all = "lowercase")]
+    pub enum Response {
+        Park,
+        EntryPoint,
+        Poll,
+        Probe,
+        Validation,
+        Download,
+        Install,
+        Reboot,
+        DirectDownload,
+        PrepareLocalInstall,
+        Error,
     }
 }
 

@@ -75,7 +75,7 @@ impl TryFrom<machine::AbortDownloadResponse> for tide::Response {
                     .build()
             }
             machine::AbortDownloadResponse::InvalidState => {
-                tide::Response::builder(tide::StatusCode::BadRequest)
+                tide::Response::builder(tide::StatusCode::NotAcceptable)
                     .body(tide::Body::from_json(&api::abort_download::Refused {
                         error: "there is no download to be aborted".to_owned(),
                     })?)
@@ -91,29 +91,17 @@ impl TryFrom<machine::ProbeResponse> for tide::Response {
     fn try_from(res: machine::ProbeResponse) -> tide::Result<tide::Response> {
         Ok(match res {
             machine::ProbeResponse::Available => tide::Response::builder(tide::StatusCode::Ok)
-                .body(tide::Body::from_json(&api::probe::Response {
-                    update_available: true,
-                    try_again_in: None,
-                })?)
+                .body(tide::Body::from_json(&api::probe::Response::Updating)?)
                 .build(),
             machine::ProbeResponse::Unavailable => tide::Response::builder(tide::StatusCode::Ok)
-                .body(tide::Body::from_json(&api::probe::Response {
-                    update_available: false,
-                    try_again_in: None,
-                })?)
+                .body(tide::Body::from_json(&api::probe::Response::NoUpdate)?)
                 .build(),
             machine::ProbeResponse::Delayed(d) => tide::Response::builder(tide::StatusCode::Ok)
-                .body(tide::Body::from_json(&api::probe::Response {
-                    update_available: false,
-                    try_again_in: Some(d),
-                })?)
+                .body(tide::Body::from_json(&api::probe::Response::TryAgain(d))?)
                 .build(),
             machine::ProbeResponse::Busy(current_state) => {
                 tide::Response::builder(tide::StatusCode::Ok)
-                    .body(tide::Body::from_json(&api::state::Response {
-                        busy: true,
-                        current_state,
-                    })?)
+                    .body(tide::Body::from_json(&current_state)?)
                     .build()
             }
         })
@@ -127,18 +115,12 @@ impl TryFrom<machine::StateResponse> for tide::Response {
         Ok(match res {
             machine::StateResponse::RequestAccepted(current_state) => {
                 tide::Response::builder(tide::StatusCode::Ok)
-                    .body(tide::Body::from_json(&api::state::Response {
-                        busy: false,
-                        current_state,
-                    })?)
+                    .body(tide::Body::from_json(&current_state)?)
                     .build()
             }
             machine::StateResponse::InvalidState(current_state) => {
-                tide::Response::builder(tide::StatusCode::UnprocessableEntity)
-                    .body(tide::Body::from_json(&api::state::Response {
-                        busy: true,
-                        current_state,
-                    })?)
+                tide::Response::builder(tide::StatusCode::NotAcceptable)
+                    .body(tide::Body::from_json(&current_state)?)
                     .build()
             }
         })

@@ -48,7 +48,7 @@ impl Client {
 
         match response.status() {
             StatusCode::Ok => Ok(response.body_json().await?),
-            StatusCode::Accepted => Err(Error::AgentIsBusy(response.body_json().await?)),
+            StatusCode::NotAcceptable => Err(Error::AgentIsBusy(response.body_json().await?)),
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
@@ -62,7 +62,7 @@ impl Client {
 
         match response.status() {
             StatusCode::Ok => Ok(response.body_json().await?),
-            StatusCode::UnprocessableEntity => Err(Error::AgentIsBusy(response.body_json().await?)),
+            StatusCode::NotAcceptable => Err(Error::AgentIsBusy(response.body_json().await?)),
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
@@ -80,13 +80,15 @@ impl Client {
         }
     }
 
-    pub async fn abort_download(&self) -> Result<api::abort_download::Response> {
+    pub async fn abort_download(&self) -> Result<api::state::Response> {
         let mut response =
             self.client.post(&format!("{}/update/download/abort", self.server_address)).await?;
 
         match response.status() {
             StatusCode::Ok => Ok(response.body_json().await?),
-            StatusCode::BadRequest => Err(Error::AbortDownloadRefused(response.body_json().await?)),
+            StatusCode::NotAcceptable => {
+                Err(Error::AbortDownloadRefused(response.body_json().await?))
+            }
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
