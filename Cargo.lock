@@ -476,17 +476,6 @@ dependencies = [
 
 [[package]]
 name = "compress-tools"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c18c99ebbc0b14624ea6f19b8ba4ddc7cc96824704369e54fddc688dcdf5e0e0"
-dependencies = [
- "derive_more",
- "pkg-config",
- "vcpkg",
-]
-
-[[package]]
-name = "compress-tools"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00585785851cff7962043c98579d89483e39928040e65e0591f4f37ea6f46da0"
@@ -815,12 +804,12 @@ dependencies = [
 
 [[package]]
 name = "find-binary-version"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95bb7f8e486b77e98aad7a24c9d4fd58e3d2b666aecbbb771b779f69d45835ac"
+checksum = "daeec584009732acd079b674c6a63828faa430e777547b0b35adc19eeb057fe8"
 dependencies = [
  "byteorder",
- "compress-tools 0.5.1",
+ "compress-tools",
  "regex",
 ]
 
@@ -2421,7 +2410,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "chrono",
- "compress-tools 0.6.0",
+ "compress-tools",
  "derive_more",
  "easy_process",
  "find-binary-version",
