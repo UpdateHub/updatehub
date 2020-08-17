@@ -304,3 +304,64 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO parking state machine
     "###);
 }
+
+#[test]
+fn failing_supported_install_modes() {
+    let (mut session, setup) = Settings::default()
+        .polling()
+        .supported_install_modes(vec!["copy", "tarball"])
+        .timeout(300)
+        .init_server();
+    let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
+
+    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
+    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
+
+    insta::assert_snapshot!(output_server_info, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO probing server as we are in time
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO error state reached: Install mode not accepted: test
+    <timestamp> INFO returning to machine's entry point
+    "###);
+
+    insta::assert_snapshot!(output_server_trce, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> INFO probing server as we are in time
+    <timestamp> TRCE starting to handle: probe
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
+    <timestamp> TRCE starting to handle: validation
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle: error
+    <timestamp> ERRO error state reached: Install mode not accepted: test
+    <timestamp> INFO returning to machine's entry point
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying <time> till next probe
+    "###);
+
+    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
+    <timestamp> TRCE starting to handle: validation
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle: error
+    <timestamp> ERRO error state reached: Install mode not accepted: test
+    <timestamp> INFO returning to machine's entry point
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying <time> till next probe
+    <timestamp> TRCE delaying transition for: <time>
+    <timestamp> DEBG receiving log request
+    "###);
+}

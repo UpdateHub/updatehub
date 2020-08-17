@@ -44,6 +44,10 @@ impl StateChangeImpl for Validation {
 
         // Ensure the package is compatible
         self.package.compatible_with(&context.firmware)?;
+        self.package.validate_install_modes(
+            &context.settings,
+            context.runtime_settings.get_inactive_installation_set()?,
+        )?;
 
         if context
             .runtime_settings

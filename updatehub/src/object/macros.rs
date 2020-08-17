@@ -11,6 +11,12 @@ macro_rules! impl_object_for_object_types {
                 }
             }
 
+            fn mode(&self) -> String {
+                match *self {
+                    $( Object::$objtype(ref o) => o.mode(), )*
+                }
+            }
+
             fn filename(&self) -> &str {
                 match *self {
                     $( Object::$objtype(ref o) => o.filename(), )*
@@ -41,6 +47,10 @@ macro_rules! impl_object_for_object_types {
 macro_rules! impl_object_info {
     ($objtype:ty) => {
         impl Info for $objtype {
+            fn mode(&self) -> String {
+                stringify!($objtype).to_lowercase()
+            }
+
             fn filename(&self) -> &str {
                 &self.filename
             }
@@ -63,6 +73,10 @@ macro_rules! impl_object_info {
 macro_rules! impl_compressed_object_info {
     ($objtype:ty) => {
         impl Info for $objtype {
+            fn mode(&self) -> String {
+                stringify!($objtype).to_lowercase()
+            }
+
             fn filename(&self) -> &str {
                 &self.filename
             }
