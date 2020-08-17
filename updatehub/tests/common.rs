@@ -125,8 +125,8 @@ impl Settings {
 pub fn get_output_server(
     handle: &mut rexpect::session::PtySession,
     stop_message: StopMessage,
-) -> String {
-    handle
+) -> (String, String) {
+    let stdout = handle
         .exp_regex(match stop_message {
             StopMessage::Custom(ref s) => s,
             StopMessage::Polling(Polling::Enable) => "\r\n.* TRCE delaying transition for:.*",
@@ -135,7 +135,9 @@ pub fn get_output_server(
             }
         })
         .expect("fail to match the required string")
-        .0
+        .0;
+
+    rewrite_log_output(stdout)
 }
 
 pub fn run_client_probe(server: Server, listen_socket: &str) -> String {
@@ -159,7 +161,8 @@ pub fn run_client_log(listen_socket: &str) -> String {
         listen_socket
     );
     let mut handle = rexpect::spawn(&cmd, None).expect("fail to spawn log command");
-    handle.exp_eof().expect("fail to match the EOF for client")
+    let stdout = handle.exp_eof().expect("fail to match the EOF for client");
+    rewrite_log_output(stdout).0
 }
 
 pub fn cargo_bin<S: AsRef<str>>(name: S) -> PathBuf {
@@ -254,6 +257,7 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                 .match_header("Content-Type", "application/json")
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
                 .match_body(request_body)
+                .expect_at_least(1)
                 .with_status(404)
                 .create(),
         ],
@@ -314,7 +318,7 @@ pub fn rewrite_log_output(s: String) -> (String, String) {
     let s = date_re.replace_all(&s, "<timestamp>");
     let s = download_re.replace_all(&s, "DEBG <percentage>%");
     let s = time_re.replace_all(&s, r#"<time>"#);
-    let s_trce = s.replace("\r\n", "\n");
+    let s_trce = s.replace("\r\n", "\n").trim().to_owned();
 
     let s_info = trce_re.replace_all(&s_trce, "");
     let s_info = debg_re.replace_all(&s_info, "");

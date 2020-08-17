@@ -15,14 +15,16 @@ fn failing_invalid_download_dir() {
     let mut perms = std::fs::metadata(tmp_dir.path()).unwrap().permissions();
     perms.set_readonly(true);
     std::fs::set_permissions(tmp_dir.path(), perms).unwrap();
-
-    let setup = Settings::default();
-    let (mut session, setup) =
-        setup.download_dir(tmp_dir.path().to_path_buf()).polling().timeout(300).init_server();
+    let (mut session, setup) = Settings::default()
+        .download_dir(tmp_dir.path().to_path_buf())
+        .polling()
+        .timeout(300)
+        .init_server();
     let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
-    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -59,7 +61,7 @@ fn failing_invalid_download_dir() {
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
@@ -134,16 +136,16 @@ fn failing_invalid_file_config() {
 
 #[test]
 fn failing_invalid_server_address() {
-    let setup = Settings::default();
-    let (mut session, setup) = setup.timeout(300).init_server();
+    let (mut session, setup) = Settings::default().timeout(300).init_server();
     let _mocks = create_mock_server(FakeServer::NoUpdate);
-    let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
 
+    let (output_server_trce_1, output_server_info_1) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_client = run_client_probe(
         Server::Custom("http://foo:--".to_string()),
         &setup.settings.data.network.listen_socket,
     );
-    let output_server_2 = get_output_server(
+    let (output_server_trce_2, output_server_info_2) = get_output_server(
         &mut session,
         StopMessage::Custom(
             r#"\r\n.* TRCE received external request: Probe\(Some\("http://foo:--"\)\).*"#
@@ -152,13 +154,12 @@ fn failing_invalid_server_address() {
     );
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    let (output_server_trce_1, output_server_info_1) = rewrite_log_output(output_server_1);
-    let (output_server_trce_2, ..) = rewrite_log_output(output_server_2);
-
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO parking state machine
     "###);
+
+    insta::assert_snapshot!(output_server_info_2, @"");
 
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -170,7 +171,8 @@ fn failing_invalid_server_address() {
     <timestamp> INFO parking state machine
     "###);
 
-    insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
+    insta::assert_snapshot!(output_server_trce_2, @r###"
+
     <timestamp> DEBG receiving probe request
     "###);
 
@@ -178,22 +180,20 @@ fn failing_invalid_server_address() {
     Unexpected response: InternalServerError
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @"<timestamp> DEBG receiving log request
+    insta::assert_snapshot!(output_log, @"<timestamp> DEBG receiving log request
 ");
 }
 
 #[test]
 fn failing_fail_check_requirements() {
-    let setup = Settings::default();
-
-    let (mut session, setup) = setup.timeout(300).polling().init_server();
+    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
     let _mocks = create_mock_server(FakeServer::CheckRequirementsTest(
         setup.firmware.data.product_uid.clone(),
     ));
-    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
-    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -227,7 +227,7 @@ fn failing_fail_check_requirements() {
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
@@ -252,9 +252,9 @@ fn failing_supported_install_modes() {
         .init_server();
     let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
 
-    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -288,7 +288,7 @@ fn failing_supported_install_modes() {
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
