@@ -18,20 +18,19 @@ fn failing_invalid_download_dir() {
 
     let setup = Settings::default();
     let (mut session, setup) =
-        setup.download_dir(tmp_dir.path().to_path_buf()).timeout(300).init_server();
+        setup.download_dir(tmp_dir.path().to_path_buf()).polling().timeout(300).init_server();
     let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
-    let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-
-    let output_client =
-        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
-    let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
-
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server_1);
+    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> INFO parking state machine
+    <timestamp> INFO probing server as we are in time
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO error state reached: Permission denied (os error 13)
+    <timestamp> INFO returning to machine's entry point
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
@@ -39,17 +38,13 @@ fn failing_invalid_download_dir() {
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle: park
-    <timestamp> INFO parking state machine
-    "###);
-
-    insta::assert_snapshot!(rewrite_log_output(output_server_2).0.trim(), @r###"
-    <timestamp> DEBG receiving probe request
-    <timestamp> TRCE received external request: Probe(None)
-    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> INFO probing server as we are in time
+    <timestamp> TRCE starting to handle: probe
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: download
@@ -59,19 +54,13 @@ fn failing_invalid_download_dir() {
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle: entry_point
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle: park
-    <timestamp> INFO parking state machine
-    "###);
-
-    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
-    Update available. The update is running in background.
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying <time> till next probe
     "###);
 
     insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
-    <timestamp> DEBG updating last polling time
-    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: download
@@ -81,9 +70,11 @@ fn failing_invalid_download_dir() {
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle: entry_point
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle: park
-    <timestamp> INFO parking state machine
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying <time> till next probe
+    <timestamp> TRCE delaying transition for: <time>
+    <timestamp> DEBG receiving log request
     "###);
 }
 
@@ -195,85 +186,60 @@ fn failing_invalid_server_address() {
 fn failing_fail_check_requirements() {
     let setup = Settings::default();
 
-    let (mut session, setup) = setup.timeout(300).init_server();
+    let (mut session, setup) = setup.timeout(300).polling().init_server();
     let _mocks = create_mock_server(FakeServer::CheckRequirementsTest(
         setup.firmware.data.product_uid.clone(),
     ));
-    let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-
-    let output_client =
-        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
-    let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    let (output_server_trce_1, output_server_info_1) = rewrite_log_output(output_server_1);
-    let (output_server_trce_2, output_server_info_2) = rewrite_log_output(output_server_2);
+    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
 
-    insta::assert_snapshot!(output_server_info_1, @r###"
+    insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
-    <timestamp> INFO parking state machine
+    <timestamp> INFO probing server as we are in time
+    <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO error state reached: fail to check the requirements
+    <timestamp> INFO returning to machine's entry point
     "###);
 
-    insta::assert_snapshot!(output_server_trce_1, @r###"
+    insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle: park
-    <timestamp> INFO parking state machine
-    "###);
-
-    insta::assert_snapshot!(output_server_info_2.trim(), @r###"
-    <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
-    <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> ERRO error state reached: fail to check the requirements
-    <timestamp> INFO returning to machine's entry point
-    <timestamp> INFO parking state machine
-    "###);
-
-    insta::assert_snapshot!(output_server_info_2.trim(), @r###"
-    <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
-    <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> ERRO error state reached: fail to check the requirements
-    <timestamp> INFO returning to machine's entry point
-    <timestamp> INFO parking state machine
-    "###);
-
-    insta::assert_snapshot!(output_server_trce_2.trim(), @r###"
-    <timestamp> DEBG receiving probe request
-    <timestamp> TRCE received external request: Probe(None)
-    <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> INFO probing server as we are in time
+    <timestamp> TRCE starting to handle: probe
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: error
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle: entry_point
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle: park
-    <timestamp> INFO parking state machine
-    "###);
-
-    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
-    Update available. The update is running in background.
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying <time> till next probe
     "###);
 
     insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
-    <timestamp> DEBG updating last polling time
-    <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: error
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle: entry_point
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle: park
-    <timestamp> INFO parking state machine
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying <time> till next probe
+    <timestamp> TRCE delaying transition for: <time>
+    <timestamp> DEBG receiving log request
     "###);
 }
 
