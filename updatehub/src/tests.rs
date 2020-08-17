@@ -168,7 +168,7 @@ interval="1d"
 
 [update]
 download_dir={download_dir}
-supported_install_modes=["copy", "tarball"]
+supported_install_modes=["copy", "tarball", "test"]
 
 [firmware]
 metadata={metadata}"#,
