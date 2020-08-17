@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     firmware::installation_set,
-    object::{self, Installer},
+    object::Installer,
     update_package::{UpdatePackage, UpdatePackageExt},
 };
 use slog_scope::info;
@@ -46,7 +46,6 @@ impl StateChangeImpl for Install {
         info!("using installation set as target {}", installation_set);
 
         let objs = self.update_package.objects_mut(installation_set);
-        objs.iter().try_for_each(object::Installer::check_requirements)?;
         objs.iter_mut().try_for_each(|obj| obj.install(&context.settings.update.download_dir))?;
 
         // Avoid installing same package twice.
