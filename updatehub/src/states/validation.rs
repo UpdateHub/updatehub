@@ -6,7 +6,7 @@ use super::{
     machine::{self, Context},
     Download, EntryPoint, Result, State, StateChangeImpl,
 };
-use crate::update_package::UpdatePackageExt;
+use crate::{object, update_package::UpdatePackageExt};
 use slog_scope::{debug, error, info};
 
 #[derive(Debug)]
@@ -43,11 +43,13 @@ impl StateChangeImpl for Validation {
         }
 
         // Ensure the package is compatible
+        let inactive_installation_set = context.runtime_settings.get_inactive_installation_set()?;
         self.package.compatible_with(&context.firmware)?;
-        self.package.validate_install_modes(
-            &context.settings,
-            context.runtime_settings.get_inactive_installation_set()?,
-        )?;
+        self.package.validate_install_modes(&context.settings, inactive_installation_set)?;
+        self.package
+            .objects(inactive_installation_set)
+            .iter()
+            .try_for_each(object::Installer::check_requirements)?;
 
         if context
             .runtime_settings
