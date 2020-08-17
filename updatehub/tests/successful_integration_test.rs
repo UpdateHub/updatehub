@@ -3,21 +3,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use common::{
-    create_mock_server, get_output_server, remove_carriage_newline_characters, rewrite_log_output,
-    run_client_log, run_client_probe, FakeServer, Polling, Server, Settings, StopMessage,
+    create_mock_server, get_output_server, remove_carriage_newline_characters, run_client_log,
+    run_client_probe, FakeServer, Polling, Server, Settings, StopMessage,
 };
 
 pub mod common;
 
 #[test]
 fn correct_config_no_update_no_polling() {
-    let setup = Settings::default();
+    let (mut session, setup) = Settings::default().timeout(300).init_server();
 
-    let (mut session, setup) = setup.timeout(300).init_server();
-    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
-
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -34,7 +32,7 @@ fn correct_config_no_update_no_polling() {
     <timestamp> INFO parking state machine
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    insta::assert_snapshot!(output_log, @r###"
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
@@ -46,14 +44,14 @@ fn correct_config_no_update_no_polling() {
 
 #[test]
 fn correct_config_no_update_polling() {
-    let setup = Settings::default();
     let mocks = create_mock_server(FakeServer::NoUpdate);
+    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
 
-    let (mut session, setup) = setup.timeout(300).polling().init_server();
-    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
+    mocks.iter().for_each(|mock| mock.assert());
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -79,7 +77,7 @@ fn correct_config_no_update_polling() {
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    insta::assert_snapshot!(output_log, @r###"
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle: entry_point
@@ -97,38 +95,32 @@ fn correct_config_no_update_polling() {
     <timestamp> TRCE delaying transition for: <time>
     <timestamp> DEBG receiving log request
     "###);
-
-    mocks.iter().for_each(|mock| mock.assert());
 }
 
 #[test]
 fn correct_config_no_update_polling_with_probe_api() {
-    let setup = Settings::default();
     let mocks = create_mock_server(FakeServer::NoUpdate);
+    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
 
-    let (mut session, setup) = setup.timeout(300).polling().init_server();
-    let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+    let (output_server_trce_1, output_server_info_1) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+    let output_client =
+        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
+    let (output_server_trce_2, output_server_info_2) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
     mocks.iter().for_each(|mock| mock.assert());
 
-    let output_client =
-        run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
-    let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
-    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
-
-    let mut iter = output_server_2.lines();
-    iter.next();
-    let output_server_2 = iter.fold(String::default(), |acc, l| acc + l + "\n");
-
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server_1);
-
-    insta::assert_snapshot!(output_server_info, @r###"
+    insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO no update is current available for this device
     "###);
 
-    insta::assert_snapshot!(output_server_trce, @r###"
+    insta::assert_snapshot!(output_server_info_2, @"<timestamp> INFO no update is current available for this device");
+
+    insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
@@ -146,7 +138,7 @@ fn correct_config_no_update_polling_with_probe_api() {
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_server_2).0.trim(), @r###"
+    insta::assert_snapshot!(output_server_trce_2, @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
     <timestamp> INFO no update is current available for this device
@@ -162,7 +154,7 @@ fn correct_config_no_update_polling_with_probe_api() {
     There are no updates available.
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -177,25 +169,30 @@ fn correct_config_no_update_polling_with_probe_api() {
 
 #[test]
 fn correct_config_no_update_no_polling_with_probe_api() {
-    let setup = Settings::default();
     let mocks = create_mock_server(FakeServer::NoUpdate);
+    let (mut session, setup) = Settings::default().timeout(300).init_server();
 
-    let (mut session, setup) = setup.timeout(300).init_server();
-    let output_server_1 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-
+    let (output_server_trce_1, output_server_info_1) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_client =
         run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
-    let output_server_2 = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let (output_server_trce_2, output_server_info_2) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server_1);
+    mocks.iter().for_each(|mock| mock.assert());
 
-    insta::assert_snapshot!(output_server_info, @r###"
+    insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO parking state machine
     "###);
 
-    insta::assert_snapshot!(output_server_trce, @r###"
+    insta::assert_snapshot!(output_server_info_2, @r###"
+    <timestamp> INFO no update is current available for this device
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
@@ -205,7 +202,8 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     <timestamp> INFO parking state machine
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_server_2).0.trim(), @r###"
+    insta::assert_snapshot!(output_server_trce_2, @r###"
+
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
     <timestamp> INFO no update is current available for this device
@@ -221,7 +219,7 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     There are no updates available.
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -230,19 +228,18 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     <timestamp> TRCE starting to handle: park
     <timestamp> INFO parking state machine
     "###);
-
-    mocks.iter().for_each(|mock| mock.assert());
 }
 
 #[test]
 fn correct_config_update_polling() {
-    let setup = Settings::default();
-    let (mut session, setup) = setup.timeout(300).polling().init_server();
-
+    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
     let mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
-    let output_server = get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
-    let (output_server_trce, output_server_info) = rewrite_log_output(output_server);
+
+    mocks.iter().for_each(|mock| mock.assert());
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -296,7 +293,7 @@ fn correct_config_update_polling() {
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
-    insta::assert_snapshot!(rewrite_log_output(output_log).0, @r###"
+    insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
@@ -327,5 +324,4 @@ fn correct_config_update_polling() {
     <timestamp> TRCE delaying transition for: <time>
     <timestamp> DEBG receiving log request
     "###);
-    mocks.iter().for_each(|mock| mock.assert());
 }
