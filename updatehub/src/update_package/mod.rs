@@ -31,10 +31,15 @@ pub enum Error {
 
     #[from(ignore)]
     IncompatibleHardware(#[error(not(source))] String),
+    #[from(ignore)]
+    #[display(fmt = "Install mode not accepted: {}", _0)]
+    IncompatibleInstallMode(#[error(not(source))] String),
 }
 
 pub(crate) trait UpdatePackageExt {
     fn compatible_with(&self, firmware: &Metadata) -> Result<()>;
+
+    fn validate_install_modes(&self, settings: &Settings, installation_set: Set) -> Result<()>;
 
     fn objects(&self, installation_set: Set) -> &Vec<Object>;
 
@@ -58,6 +63,20 @@ pub(crate) trait UpdatePackageExt {
 impl UpdatePackageExt for UpdatePackage {
     fn compatible_with(&self, firmware: &Metadata) -> Result<()> {
         self.inner.supported_hardware.compatible_with(&firmware.hardware)
+    }
+
+    fn validate_install_modes(&self, settings: &Settings, installation_set: Set) -> Result<()> {
+        let install_modes = &settings.update.supported_install_modes;
+        if let Some(mode) = self
+            .objects(installation_set)
+            .iter()
+            .map(|o| o.mode())
+            .find(|mode| !install_modes.contains(&mode))
+        {
+            return Err(Error::IncompatibleInstallMode(mode));
+        }
+
+        Ok(())
     }
 
     fn objects(&self, installation_set: Set) -> &Vec<Object> {

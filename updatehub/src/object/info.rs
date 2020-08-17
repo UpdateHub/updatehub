@@ -5,7 +5,10 @@
 use super::Result;
 use crate::utils;
 use openssl::sha::Sha256;
-use pkg_schema::{objects, Object};
+use pkg_schema::{
+    objects::{Copy, Flash, Imxkobs, Raw, Tarball, Test, Ubifs},
+    Object,
+};
 use std::{
     fs::File,
     io::{BufReader, Read},
@@ -20,13 +23,13 @@ pub(crate) enum Status {
     Ready,
 }
 
-impl_compressed_object_info!(objects::Copy);
-impl_compressed_object_info!(objects::Raw);
-impl_compressed_object_info!(objects::Ubifs);
-impl_object_info!(objects::Flash);
-impl_object_info!(objects::Imxkobs);
-impl_object_info!(objects::Tarball);
-impl_object_info!(objects::Test);
+impl_compressed_object_info!(Copy);
+impl_compressed_object_info!(Raw);
+impl_compressed_object_info!(Ubifs);
+impl_object_info!(Flash);
+impl_object_info!(Imxkobs);
+impl_object_info!(Tarball);
+impl_object_info!(Test);
 
 impl_object_for_object_types!(Copy, Flash, Imxkobs, Tarball, Ubifs, Raw, Test);
 
@@ -61,6 +64,7 @@ pub(crate) trait Info {
         Ok(Status::Ready)
     }
 
+    fn mode(&self) -> String;
     fn filename(&self) -> &str;
     fn len(&self) -> u64;
     fn sha256sum(&self) -> &str;
