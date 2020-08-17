@@ -34,6 +34,7 @@ pub struct TestEnvironmentBuilder {
     extra_binaries: Vec<String>,
     server_address: Option<String>,
     listen_socket: Option<String>,
+    supported_install_modes: Option<Vec<&'static str>>,
 }
 
 impl TestEnvironment {
@@ -70,6 +71,10 @@ impl TestEnvironmentBuilder {
 
     pub fn server_address(self, s: String) -> Self {
         TestEnvironmentBuilder { server_address: Some(s), ..self }
+    }
+
+    pub fn supported_install_modes(self, list: Vec<&'static str>) -> Self {
+        TestEnvironmentBuilder { supported_install_modes: Some(list), ..self }
     }
 
     pub fn finish(self) -> TestEnvironment {
@@ -151,6 +156,8 @@ impl TestEnvironmentBuilder {
             let mut file = tempfile::NamedTempFile::new().unwrap();
             let file_path = file.path().to_owned();
             let download_dir = tempfile::tempdir().unwrap();
+            let install_modes =
+                self.supported_install_modes.unwrap_or_else(|| vec!["copy", "tarball", "test"]);
 
             write!(
                 file,
@@ -168,7 +175,7 @@ interval="1d"
 
 [update]
 download_dir={download_dir}
-supported_install_modes=["copy", "tarball", "test"]
+supported_install_modes={install_modes}
 
 [firmware]
 metadata={metadata}"#,
@@ -182,6 +189,7 @@ metadata={metadata}"#,
                 runtime_settings = toml::to_string(&runtime_settings.stored_path).unwrap(),
                 polling_enabled = toml::to_string(&!self.disable_polling).unwrap(),
                 download_dir = toml::to_string(download_dir.path()).unwrap(),
+                install_modes = toml::to_string(&install_modes).unwrap(),
                 metadata = toml::to_string(&firmware.stored_path).unwrap()
             )
             .unwrap();

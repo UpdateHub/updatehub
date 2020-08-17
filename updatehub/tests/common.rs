@@ -35,6 +35,7 @@ pub struct Settings {
     download_dir: Option<PathBuf>,
     config_file: Option<PathBuf>,
     timeout: Option<u64>,
+    install_modes: Option<Vec<&'static str>>,
 }
 
 impl Default for Settings {
@@ -49,18 +50,24 @@ impl Default for Settings {
             download_dir: None,
             config_file: None,
             timeout: None,
+            install_modes: None,
         }
     }
 }
 
 impl Settings {
     pub fn init_server(self) -> (rexpect::session::PtySession, updatehub::tests::TestEnvironment) {
-        let setup = updatehub::tests::TestEnvironment::build()
+        let mut setup = updatehub::tests::TestEnvironment::build()
             .listen_socket(self.listen_socket)
             .server_address(self.server_address)
             .add_echo_binary("reboot");
-
-        let mut setup = if !self.polling { setup.disable_polling() } else { setup }.finish();
+        if let Some(l) = self.install_modes {
+            setup = setup.supported_install_modes(l)
+        }
+        if !self.polling {
+            setup = setup.disable_polling()
+        }
+        let mut setup = setup.finish();
 
         if let Some(download_dir) = self.download_dir {
             setup.settings.data.update.download_dir = download_dir;
@@ -108,6 +115,10 @@ impl Settings {
 
     pub fn server_address(self, s: String) -> Self {
         Settings { server_address: s, ..self }
+    }
+
+    pub fn supported_install_modes(self, l: Vec<&'static str>) -> Self {
+        Settings { install_modes: Some(l), ..self }
     }
 }
 
