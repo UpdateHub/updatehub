@@ -7,6 +7,7 @@ mod flash;
 mod imxkobs;
 mod mender;
 mod raw;
+mod raw_delta;
 mod tarball;
 mod test;
 mod ubifs;
@@ -20,8 +21,8 @@ pub mod definitions;
 /// Objects representing each possible install mode
 pub mod objects {
     pub use crate::{
-        copy::Copy, flash::Flash, imxkobs::Imxkobs, mender::Mender, raw::Raw, tarball::Tarball,
-        test::Test, ubifs::Ubifs, uboot_env::UbootEnv, zephyr::Zephyr,
+        copy::Copy, flash::Flash, imxkobs::Imxkobs, mender::Mender, raw::Raw, raw_delta::RawDelta,
+        tarball::Tarball, test::Test, ubifs::Ubifs, uboot_env::UbootEnv, zephyr::Zephyr,
     };
 }
 pub use update_package::{SupportedHardware, UpdatePackage};
@@ -38,6 +39,8 @@ pub enum Object {
     Imxkobs(Box<objects::Imxkobs>),
     Mender(Box<objects::Mender>),
     Raw(Box<objects::Raw>),
+    #[serde(rename = "raw-delta")]
+    RawDelta(Box<objects::RawDelta>),
     Tarball(Box<objects::Tarball>),
     Test(Box<objects::Test>),
     Ubifs(Box<objects::Ubifs>),
