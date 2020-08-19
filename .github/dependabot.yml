@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/updatehub"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "agent"
+
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/updatehub-cloud-sdk"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "cloud-sdk"
+
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/updatehub-package-schema"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "package-schema"
+
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/updatehub-sdk"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "sdk"
