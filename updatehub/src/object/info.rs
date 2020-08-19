@@ -6,7 +6,7 @@ use super::Result;
 use crate::utils;
 use openssl::sha::Sha256;
 use pkg_schema::{
-    objects::{Copy, Flash, Imxkobs, Mender, Raw, Tarball, Test, Ubifs, UbootEnv, Zephyr},
+    objects::{Bita, Copy, Flash, Imxkobs, Mender, Raw, Tarball, Test, Ubifs, UbootEnv, Zephyr},
     Object,
 };
 use std::{
@@ -23,6 +23,7 @@ pub(crate) enum Status {
     Ready,
 }
 
+impl_remote_object_info!(Bita);
 impl_compressed_object_info!(Copy);
 impl_compressed_object_info!(Raw);
 impl_compressed_object_info!(Ubifs);
@@ -35,7 +36,7 @@ impl_object_info!(UbootEnv);
 impl_object_info!(Zephyr);
 
 impl_object_for_object_types!(
-    Copy, Flash, Imxkobs, Mender, Tarball, Ubifs, Raw, Test, UbootEnv, Zephyr
+    Bita, Copy, Flash, Imxkobs, Mender, Tarball, Ubifs, Raw, Test, UbootEnv, Zephyr
 );
 
 pub(crate) trait Info {

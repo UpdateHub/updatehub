@@ -135,6 +135,7 @@ macro_rules! impl_remote_object_info {
 macro_rules! for_any_object {
     ($mode:ident, $alias:ident, $code:block) => {
         match $mode {
+            Object::Bita($alias) => $code,
             Object::Copy($alias) => $code,
             Object::Flash($alias) => $code,
             Object::Imxkobs($alias) => $code,
