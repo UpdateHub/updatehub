@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#![allow(dead_code)]
-
 use super::Result;
 use bitar::{Archive, ChunkIndex, CloneOutput, ReaderRemote};
 use futures_util::{StreamExt, TryStreamExt};

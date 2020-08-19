@@ -140,6 +140,7 @@ macro_rules! for_any_object {
             Object::Imxkobs($alias) => $code,
             Object::Mender($alias) => $code,
             Object::Raw($alias) => $code,
+            Object::RawDelta($alias) => $code,
             Object::Tarball($alias) => $code,
             Object::Test($alias) => $code,
             Object::Ubifs($alias) => $code,

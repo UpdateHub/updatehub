@@ -16,7 +16,7 @@ pub(super) struct Probe;
 impl CallbackReporter for Probe {}
 
 /// Implements the state change for State<Probe>.
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for Probe {
     fn name(&self) -> &'static str {
         "probe"

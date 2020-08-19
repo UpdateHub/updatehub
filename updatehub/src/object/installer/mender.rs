@@ -7,7 +7,7 @@ use crate::object::Installer;
 use pkg_schema::objects;
 use slog_scope::warn;
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Installer for objects::Mender {
     async fn check_requirements(&self, _: &Context) -> super::Result<()> {
         warn!("'mender' objects are not supported");
