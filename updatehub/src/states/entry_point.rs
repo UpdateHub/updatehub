@@ -16,7 +16,7 @@ pub(super) struct EntryPoint {}
 ///
 /// If polling is disabled it stays in `State<EntryPoint>`, otherwise, it moves
 /// to `State<Poll>` state.
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for EntryPoint {
     fn name(&self) -> &'static str {
         "entry_point"

@@ -7,6 +7,7 @@ mod flash;
 mod imxkobs;
 mod mender;
 mod raw;
+mod raw_delta;
 mod tarball;
 mod test;
 mod ubifs;
@@ -27,7 +28,7 @@ pub(crate) struct Context {
     pub(crate) base_url: String,
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 pub(crate) trait Installer {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         debug!("running default check_requirements");
@@ -37,7 +38,7 @@ pub(crate) trait Installer {
     async fn install(&self, context: &Context) -> Result<()>;
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Installer for Object {
     async fn check_requirements(&self, context: &Context) -> Result<()> {
         for_any_object!(self, o, { o.check_requirements(context).await })

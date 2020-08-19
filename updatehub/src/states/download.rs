@@ -100,7 +100,7 @@ impl ProgressReporter for Download {
 
 impl CommunicationState for Download {}
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for Download {
     fn name(&self) -> &'static str {
         "download"

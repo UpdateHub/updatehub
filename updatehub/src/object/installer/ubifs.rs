@@ -10,7 +10,7 @@ use crate::{
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Installer for objects::Ubifs {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'ubifs' handle checking requirements");

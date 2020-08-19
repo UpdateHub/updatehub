@@ -35,7 +35,7 @@ impl ProgressReporter for Install {
     }
 }
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for Install {
     fn name(&self) -> &'static str {
         "install"

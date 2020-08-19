@@ -11,7 +11,7 @@ use pkg_schema::objects;
 use slog_scope::info;
 use std::path::PathBuf;
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Installer for objects::Imxkobs {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'imxkobs' handle checking requirements");

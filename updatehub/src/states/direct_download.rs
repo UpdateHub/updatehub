@@ -17,7 +17,7 @@ pub(super) struct DirectDownload {
 
 impl CommunicationState for DirectDownload {}
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for DirectDownload {
     fn name(&self) -> &'static str {
         "direct_download"

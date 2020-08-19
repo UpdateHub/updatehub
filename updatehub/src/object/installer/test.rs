@@ -6,7 +6,7 @@ use super::Context;
 use crate::object::Installer;
 use pkg_schema::objects;
 
-#[async_trait::async_trait]
+#[async_trait::async_trait(?Send)]
 impl Installer for objects::Test {
     async fn check_requirements(&self, _: &Context) -> super::Result<()> {
         if self.force_check_requirements_fail {
