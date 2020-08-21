@@ -29,6 +29,10 @@ struct ClientOptions {
     /// change the client socket to listen
     #[argh(option, default = "String::from(\"localhost:8080\")")]
     listen_socket: String,
+
+    /// print the output in json format
+    #[argh(switch)]
+    json: bool,
 }
 
 #[derive(FromArgs)]
@@ -113,51 +117,91 @@ async fn server_main(cmd: ServerOptions) -> updatehub::Result<()> {
     Ok(())
 }
 
-async fn client_main(cmd: ClientCommands, socket: String) -> updatehub::Result<()> {
-    let client = sdk::Client::new(&socket);
+async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
+    let client = sdk::Client::new(&client_options.listen_socket);
 
-    match cmd {
-        ClientCommands::Info(_) => println!("{:#?}", client.info().await?),
+    match client_options.commands {
+        ClientCommands::Info(_) => {
+            let response = client.info().await?;
+
+            if client_options.json {
+                println!("{}", serde_json::to_string(&response)?);
+            } else {
+                println!("{:#?}", response);
+            }
+        }
         ClientCommands::Log(_) => {
-            for entry in client.log().await?.into_iter() {
-                let level = match entry.level {
-                    sdk::api::log::Level::Critical => "CRIT",
-                    sdk::api::log::Level::Error => "ERRO",
-                    sdk::api::log::Level::Warning => "WARN",
-                    sdk::api::log::Level::Info => "INFO",
-                    sdk::api::log::Level::Debug => "DEBG",
-                    sdk::api::log::Level::Trace => "TRCE",
-                };
+            let response = client.log().await?;
 
-                println!(
-                    "{timestamp} {level} {msg}",
-                    timestamp = entry.time,
-                    level = level,
-                    msg = entry.message
-                );
+            if client_options.json {
+                println!("{}", serde_json::to_string(&response)?);
+            } else {
+                for entry in response.into_iter() {
+                    let level = match entry.level {
+                        sdk::api::log::Level::Critical => "CRIT",
+                        sdk::api::log::Level::Error => "ERRO",
+                        sdk::api::log::Level::Warning => "WARN",
+                        sdk::api::log::Level::Info => "INFO",
+                        sdk::api::log::Level::Debug => "DEBG",
+                        sdk::api::log::Level::Trace => "TRCE",
+                    };
+
+                    println!(
+                        "{timestamp} {level} {msg}",
+                        timestamp = entry.time,
+                        level = level,
+                        msg = entry.message
+                    );
+                }
             }
         }
         ClientCommands::Probe(Probe { server }) => {
             let response = client.probe(server).await?;
 
-            match response {
-                sdk::api::probe::Response::Updating => {
-                    println!("Update available. The update is running in background.")
-                }
-                sdk::api::probe::Response::NoUpdate => println!("There are no updates available."),
-                sdk::api::probe::Response::TryAgain(t) => {
-                    println!("Server replied asking us to try again in {} seconds", t);
+            if client_options.json {
+                println!("{}", serde_json::to_string(&response)?);
+            } else {
+                match response {
+                    sdk::api::probe::Response::Updating => {
+                        println!("Update available. The update is running in background.")
+                    }
+                    sdk::api::probe::Response::NoUpdate => {
+                        println!("There are no updates available.")
+                    }
+                    sdk::api::probe::Response::TryAgain(t) => {
+                        println!("Server replied asking us to try again in {} seconds", t);
+                    }
                 }
             }
         }
-        ClientCommands::AbortDownload(_) => println!("{:#?}", client.abort_download().await?),
+        ClientCommands::AbortDownload(_) => {
+            let response = client.abort_download().await?;
+
+            if client_options.json {
+                println!("{}", serde_json::to_string(&response)?);
+            } else {
+                println!("{:#?}", response);
+            }
+        }
         ClientCommands::LocalInstall(LocalInstall { file }) => {
             let file =
                 if file.is_absolute() { file } else { std::env::current_dir().unwrap().join(file) };
-            println!("{:#?}", client.local_install(&file).await?)
+            let response = client.local_install(&file).await?;
+
+            if client_options.json {
+                println!("{}", serde_json::to_string(&response)?);
+            } else {
+                println!("{:#?}", response);
+            }
         }
         ClientCommands::RemoteInstall(RemoteInstall { url }) => {
-            println!("{:#?}", client.remote_install(&url).await?)
+            let response = client.remote_install(&url).await?;
+
+            if client_options.json {
+                println!("{}", serde_json::to_string(&response)?);
+            } else {
+                println!("{:#?}", response);
+            }
         }
     }
 
@@ -169,7 +213,7 @@ async fn main() {
     let cmd: TopLevel = argh::from_env();
 
     let res = match cmd.entry_point {
-        EntryPoints::Client(client) => client_main(client.commands, client.listen_socket).await,
+        EntryPoints::Client(client) => client_main(client).await,
         EntryPoints::Server(cmd) => server_main(cmd).await,
     };
 
