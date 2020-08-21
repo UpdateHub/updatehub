@@ -38,4 +38,5 @@ pub enum Error {
     Io(std::io::Error),
     Process(easy_process::Error),
     Sdk(sdk::Error),
+    Serde(serde_json::Error),
 }
