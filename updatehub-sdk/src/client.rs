@@ -93,7 +93,7 @@ impl Client {
         }
     }
 
-    pub async fn log(&self) -> Result<Vec<api::log::Entry>> {
+    pub async fn log(&self) -> Result<api::log::Log> {
         let mut response = self.client.get(&format!("{}/log", self.server_address)).await?;
 
         match response.status() {
