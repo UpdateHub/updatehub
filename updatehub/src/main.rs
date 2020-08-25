@@ -136,23 +136,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
             if client_options.json {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
-                for entry in response.into_iter() {
-                    let level = match entry.level {
-                        sdk::api::log::Level::Critical => "CRIT",
-                        sdk::api::log::Level::Error => "ERRO",
-                        sdk::api::log::Level::Warning => "WARN",
-                        sdk::api::log::Level::Info => "INFO",
-                        sdk::api::log::Level::Debug => "DEBG",
-                        sdk::api::log::Level::Trace => "TRCE",
-                    };
-
-                    println!(
-                        "{timestamp} {level} {msg}",
-                        timestamp = entry.time,
-                        level = level,
-                        msg = entry.message
-                    );
-                }
+                println!("{}", response);
             }
         }
         ClientCommands::Probe(Probe { server }) => {

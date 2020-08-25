@@ -41,7 +41,11 @@ impl Serialize for MemDrain {
     where
         S: serde::Serializer,
     {
-        self.records.serialize(serializer)
+        use serde::ser::SerializeStruct;
+
+        let mut state = serializer.serialize_struct("Log", 1)?;
+        state.serialize_field("entries", &self.records)?;
+        state.end()
     }
 }
 
@@ -168,28 +172,30 @@ mod tests {
 
     #[test]
     fn drain_serialized() {
-        let expected = r#"[
-  {
-    "level": "info",
-    "message": "info 1",
-    "time": "2017-06-29 13:59:31.831111065 -0300 -03",
-    "data": {}
-  },
-  {
-    "level": "info",
-    "message": "info 2",
-    "time": "2017-06-29 14:59:41.831111065 -0300 -03",
-    "data": {
-      "field1": "value1"
+        let expected = r#"{
+  "entries": [
+    {
+      "level": "info",
+      "message": "info 1",
+      "time": "Aug 27 16:09:48.740",
+      "data": {}
+    },
+    {
+      "level": "info",
+      "message": "info 2",
+      "time": "Aug 27 16:09:48.740",
+      "data": {
+        "field1": "value1"
+      }
+    },
+    {
+      "level": "error",
+      "message": "error n",
+      "time": "Aug 27 16:09:48.740",
+      "data": {}
     }
-  },
-  {
-    "level": "error",
-    "message": "error n",
-    "time": "2017-06-29 15:59:51.831111065 -0300 -03",
-    "data": {}
-  }
-]"#;
+  ]
+}"#;
 
         let drain = Arc::new(Mutex::new(MemDrain::default()));
         let r_vec = drain.clone();
