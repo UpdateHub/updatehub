@@ -82,15 +82,6 @@ pub mod log {
     use std::collections::HashMap;
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
-    #[serde(deny_unknown_fields)]
-    pub struct Entry {
-        pub level: Level,
-        pub message: String,
-        pub time: String,
-        pub data: HashMap<String, String>,
-    }
-
-    #[derive(Clone, Debug, Deserialize, Serialize)]
     #[serde(rename_all = "lowercase")]
     pub enum Level {
         Critical,
@@ -99,5 +90,44 @@ pub mod log {
         Info,
         Debug,
         Trace,
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
+    pub struct Log {
+        entries: Vec<Entry>,
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[serde(deny_unknown_fields)]
+    pub struct Entry {
+        level: Level,
+        message: String,
+        time: String,
+        data: HashMap<String, String>,
+    }
+
+    impl core::fmt::Display for Log {
+        fn fmt(&self, f: &mut core::fmt::Formatter) -> Result<(), core::fmt::Error> {
+            for entry in &self.entries {
+                let level = match entry.level {
+                    Level::Critical => "CRIT",
+                    Level::Error => "ERRO",
+                    Level::Warning => "WARN",
+                    Level::Info => "INFO",
+                    Level::Debug => "DEBG",
+                    Level::Trace => "TRCE",
+                };
+
+                writeln!(
+                    f,
+                    "{timestamp} {level} {msg}",
+                    timestamp = entry.time,
+                    level = level,
+                    msg = entry.message
+                )?;
+            }
+            Ok(())
+        }
     }
 }
