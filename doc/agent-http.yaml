@@ -148,9 +148,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LogEntry"
+                $ref: "#/components/schemas/Log"
 
 components:
   schemas:
@@ -378,6 +376,16 @@ components:
         applied_package_uid:
           type: string
           example: "587f984393f04c63d8e0948ffcf3860500b1981b8496e5eb2a0d0f9a7ea356a5"
+
+    Log:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/LogEntry"
 
     LogEntry:
       type: object
