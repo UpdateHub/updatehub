@@ -11,7 +11,7 @@ use crate::{
     object::{self, Info},
     update_package::{UpdatePackage, UpdatePackageExt},
 };
-use async_lock::Lock;
+use async_lock::Mutex;
 use async_std::prelude::FutureExt;
 use slog_scope::{debug, error, trace};
 
@@ -21,7 +21,7 @@ pub(super) struct Download {
 }
 
 impl Download {
-    async fn start_download(&self, context: &Lock<&mut Context>) -> Result<()> {
+    async fn start_download(&self, context: &Mutex<&mut Context>) -> Result<()> {
         let installation_set = installation_set::inactive()?;
         let download_dir = context.lock().await.settings.update.download_dir.to_owned();
 
@@ -107,7 +107,7 @@ impl StateChangeImpl for Download {
     async fn handle(mut self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         use std::ops::DerefMut;
         let communication_receiver = &context.communication.receiver.clone();
-        let context = Lock::new(context);
+        let context = Mutex::new(context);
 
         let download_future = async {
             self.start_download(&context).await?;

@@ -6,7 +6,7 @@ use super::{
     machine::{self, CommunicationState, Context},
     PrepareLocalInstall, Result, State, StateChangeImpl,
 };
-use async_lock::Lock;
+use async_lock::Mutex;
 use async_std::prelude::FutureExt;
 use slog_scope::info;
 
@@ -31,7 +31,7 @@ impl StateChangeImpl for DirectDownload {
         info!("fetching update package directly from url: {:?}", self.url);
         use std::ops::DerefMut;
         let communication_receiver = &context.communication.receiver.clone();
-        let context = Lock::new(context);
+        let context = Mutex::new(context);
 
         let download_future = async {
             let download_dir = context.lock().await.settings.update.download_dir.clone();
