@@ -803,9 +803,9 @@ dependencies = [
 
 [[package]]
 name = "find-binary-version"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "daeec584009732acd079b674c6a63828faa430e777547b0b35adc19eeb057fe8"
+checksum = "a06f3a9ec2d23ca81cee16a146e9523a2a682e2598492a1eaad39bc5cbfd9769"
 dependencies = [
  "byteorder",
  "compress-tools",
