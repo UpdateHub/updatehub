@@ -24,5 +24,6 @@ pub enum Error {
     ParseInt(std::num::ParseIntError),
 
     Http(#[error(not(source))] surf::Error),
+    #[display(fmt = "Invalid status response: {}", _0)]
     InvalidStatusResponse(#[error(not(source))] surf::StatusCode),
 }
