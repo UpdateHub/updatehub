@@ -17,10 +17,15 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[display("Invalid path formed")]
     InvalidPath,
-    Uncompress(compress_tools::Error),
+    #[display("'fw_setenv' does not support the --script command line option")]
+    FwSetEnvNoScriptOption,
+
+    Utils(crate::utils::Error),
+    Firmware(crate::firmware::Error),
+
     #[display(fmt = "Invalid target type {:?}", _0)]
     InvalidTargetType(#[error(not(source))] pkg_schema::definitions::TargetType),
-    Utils(crate::utils::Error),
     Io(std::io::Error),
     Process(easy_process::Error),
+    Uncompress(compress_tools::Error),
 }

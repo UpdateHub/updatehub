@@ -106,6 +106,7 @@ macro_rules! for_any_object {
             Object::Tarball($alias) => $code,
             Object::Test($alias) => $code,
             Object::Ubifs($alias) => $code,
+            Object::UbootEnv($alias) => $code,
         }
     };
 }
