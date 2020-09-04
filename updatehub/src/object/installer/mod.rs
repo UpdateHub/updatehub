@@ -9,6 +9,7 @@ mod raw;
 mod tarball;
 mod test;
 mod ubifs;
+mod uboot_env;
 
 use super::{Error, Result};
 use crate::utils;
