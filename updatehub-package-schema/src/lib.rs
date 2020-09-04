@@ -10,6 +10,7 @@ mod raw;
 mod tarball;
 mod test;
 mod ubifs;
+mod uboot_env;
 mod zephyr;
 
 mod update_package;
@@ -20,7 +21,7 @@ pub mod definitions;
 pub mod objects {
     pub use crate::{
         copy::Copy, flash::Flash, imxkobs::Imxkobs, raw::Raw, tarball::Tarball, test::Test,
-        ubifs::Ubifs,
+        ubifs::Ubifs, uboot_env::UbootEnv,
     };
 }
 pub use update_package::{SupportedHardware, UpdatePackage};
@@ -39,5 +40,7 @@ pub enum Object {
     Tarball(Box<objects::Tarball>),
     Test(Box<objects::Test>),
     Ubifs(Box<objects::Ubifs>),
+    #[serde(rename = "uboot-env")]
+    UbootEnv(Box<objects::UbootEnv>),
     // FIXME: Add support for the missing modes: Mende Zephyr
 }
