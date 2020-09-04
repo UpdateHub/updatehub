@@ -126,7 +126,8 @@ impl TestEnvironmentBuilder {
 
             for bin in self.extra_binaries.into_iter() {
                 let mut file = fs::File::create(&bin_dir_path.join(&bin)).unwrap();
-                writeln!(file, "#!/bin/sh\necho $0 >> {}", output_file.to_string_lossy()).unwrap();
+                writeln!(file, "#!/bin/sh\necho {} $@ >> {}", bin, output_file.to_string_lossy())
+                    .unwrap();
                 let mut permissions = file.metadata().unwrap().permissions();
                 permissions.set_mode(0o755);
                 file.set_permissions(permissions).unwrap();
