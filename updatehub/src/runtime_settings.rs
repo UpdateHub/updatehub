@@ -81,7 +81,7 @@ impl RuntimeSettings {
             return Ok(());
         }
 
-        let parent = self.path.parent().ok_or_else(|| Error::InvalidDestination)?;
+        let parent = self.path.parent().ok_or(Error::InvalidDestination)?;
         if !parent.exists() {
             debug!("creating runtime settings to store state");
             fs::create_dir_all(parent)?;

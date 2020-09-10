@@ -41,7 +41,7 @@ impl Installer for objects::Imxkobs {
             cmd += "-x "
         };
 
-        cmd += download_dir.join(self.sha256sum()).to_str().ok_or_else(|| Error::InvalidPath)?;
+        cmd += download_dir.join(self.sha256sum()).to_str().ok_or(Error::InvalidPath)?;
 
         if self.search_exponent > 0 {
             cmd += &format!(" --search_exponent={}", self.search_exponent)
