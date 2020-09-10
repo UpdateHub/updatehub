@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     firmware::installation_set,
-    object::Installer,
+    object::{Info, Installer},
     update_package::{UpdatePackage, UpdatePackageExt},
 };
 use slog_scope::info;
@@ -46,6 +46,12 @@ impl StateChangeImpl for Install {
         info!("using installation set as target {}", installation_set);
 
         let objs = self.update_package.objects_mut(installation_set);
+
+        // Objects are sorted in reverse order so the smaller objects are installed
+        // later. This postpones objects like U-Boot updates and U-Boot environment
+        // changes towards the end of the update.
+        objs.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap().reverse());
+
         objs.iter_mut().try_for_each(|obj| obj.install(&context.settings.update.download_dir))?;
 
         // Avoid installing same package twice.
