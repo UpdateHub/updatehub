@@ -17,13 +17,14 @@ fn deserialize() {
     use serde_json::json;
 
     assert_eq!(
-        Mender {
+        super::Object::Mender(Box::new(Mender {
             filename: "artifact.mender".to_string(),
             size: 1024,
             sha256sum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                 .to_string(),
-        },
-        serde_json::from_value::<Mender>(json!({
+        })),
+        serde_json::from_value::<super::Object>(json!({
+            "mode": "mender",
             "filename": "artifact.mender",
             "size": 1024,
             "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

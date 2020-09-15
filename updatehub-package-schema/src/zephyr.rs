@@ -17,13 +17,14 @@ fn deserialize() {
     use serde_json::json;
 
     assert_eq!(
-        Zephyr {
+        super::Object::Zephyr(Box::new(Zephyr {
             filename: "artifact.zephyr".to_string(),
             size: 1024,
             sha256sum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                 .to_string(),
-        },
-        serde_json::from_value::<Zephyr>(json!({
+        })),
+        serde_json::from_value::<super::Object>(json!({
+            "mode": "zephyr",
             "filename": "artifact.zephyr",
             "size": 1024,
             "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

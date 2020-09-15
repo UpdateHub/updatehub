@@ -38,7 +38,7 @@ fn deserialize() {
     use serde_json::json;
 
     assert_eq!(
-        Copy {
+        super::Object::Copy(Box::new(Copy {
             filename: "etc/passwd".to_string(),
             filesystem: Filesystem::Btrfs,
             size: 1024,
@@ -53,8 +53,9 @@ fn deserialize() {
             required_uncompressed_size: 0,
             target_format: TargetFormat::default(),
             mount_options: String::default(),
-        },
-        serde_json::from_value::<Copy>(json!({
+        })),
+        serde_json::from_value::<super::Object>(json!({
+            "mode": "copy",
             "filename": "etc/passwd",
             "size": 1024,
             "sha256sum": "cfe2be1c64b0387500853de0f48303e3de7b1c6f1508dc719eeafa0d41c36722",

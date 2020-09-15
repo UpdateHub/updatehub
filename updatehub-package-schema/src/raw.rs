@@ -38,7 +38,7 @@ fn deserialize() {
     use std::path::PathBuf;
 
     assert_eq!(
-        Raw {
+        super::Object::Raw(Box::new(Raw {
             filename: "etc/passwd".to_string(),
             size: 1024,
             sha256sum: "cfe2be1c64b0387500853de0f48303e3de7b1c6f1508dc719eeafa0d41c36722"
@@ -53,8 +53,9 @@ fn deserialize() {
             seek: u64::default(),
             count: Count::default(),
             truncate: Truncate::default(),
-        },
-        serde_json::from_value::<Raw>(json!({
+        })),
+        serde_json::from_value::<super::Object>(json!({
+            "mode": "raw",
             "filename": "etc/passwd",
             "size": 1024,
             "sha256sum": "cfe2be1c64b0387500853de0f48303e3de7b1c6f1508dc719eeafa0d41c36722",

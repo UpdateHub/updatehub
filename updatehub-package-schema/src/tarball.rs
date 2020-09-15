@@ -33,7 +33,7 @@ fn deserialize() {
     use serde_json::json;
 
     assert_eq!(
-        Tarball {
+        super::Object::Tarball(Box::new(Tarball {
             filename: "etc/passwd".to_string(),
             filesystem: Filesystem::Ext4,
             size: 1024,
@@ -46,8 +46,9 @@ fn deserialize() {
             required_uncompressed_size: 0,
             target_format: TargetFormat::default(),
             mount_options: String::default(),
-        },
-        serde_json::from_value::<Tarball>(json!({
+        })),
+        serde_json::from_value::<super::Object>(json!({
+            "mode": "tarball",
             "filename": "etc/passwd",
             "size": 1024,
             "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

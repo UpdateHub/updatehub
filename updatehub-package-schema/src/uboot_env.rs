@@ -18,13 +18,14 @@ fn deserialize() {
     use serde_json::json;
 
     assert_eq!(
-        UbootEnv {
+        super::Object::UbootEnv(Box::new(UbootEnv {
             filename: "updatehub.defenv".to_string(),
             size: 1024,
             sha256sum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
                 .to_string(),
-        },
-        serde_json::from_value::<UbootEnv>(json!({
+        })),
+        serde_json::from_value::<super::Object>(json!({
+            "mode": "uboot-env",
             "filename": "updatehub.defenv",
             "size": 1024,
             "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"

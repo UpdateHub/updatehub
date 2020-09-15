@@ -30,7 +30,7 @@ fn deserialize() {
     use serde_json::json;
 
     assert_eq!(
-        Imxkobs {
+        super::Object::Imxkobs(Box::new(Imxkobs {
             filename: "imxkobs-filename".to_string(),
             size: 1024,
             sha256sum: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -41,8 +41,9 @@ fn deserialize() {
             search_exponent: 2,
             chip_0_device_path: Some(PathBuf::from("/dev/sda1")),
             chip_1_device_path: Some(PathBuf::from("/dev/sda2")),
-        },
-        serde_json::from_value::<Imxkobs>(json!({
+        })),
+        serde_json::from_value::<super::Object>(json!({
+            "mode": "imxkobs",
             "filename": "imxkobs-filename",
             "sha256sum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             "size": 1024,

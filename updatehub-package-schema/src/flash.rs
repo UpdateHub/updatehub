@@ -23,7 +23,7 @@ fn deserialize() {
     use serde_json::json;
 
     assert_eq!(
-        Flash {
+        super::Object::Flash(Box::new(Flash {
             filename: "etc/passwd".to_string(),
             size: 1024,
             sha256sum: "cfe2be1c64b0387500853de0f48303e3de7b1c6f1508dc719eeafa0d41c36722"
@@ -31,8 +31,9 @@ fn deserialize() {
             target: TargetType::Device(std::path::PathBuf::from("/dev/sda")),
 
             install_if_different: None,
-        },
-        serde_json::from_value::<Flash>(json!({
+        })),
+        serde_json::from_value::<super::Object>(json!({
+            "mode": "flash",
             "filename": "etc/passwd",
             "size": 1024,
             "sha256sum": "cfe2be1c64b0387500853de0f48303e3de7b1c6f1508dc719eeafa0d41c36722",
