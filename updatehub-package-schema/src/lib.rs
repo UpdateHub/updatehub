@@ -20,8 +20,8 @@ pub mod definitions;
 /// Objects representing each possible install mode
 pub mod objects {
     pub use crate::{
-        copy::Copy, flash::Flash, imxkobs::Imxkobs, raw::Raw, tarball::Tarball, test::Test,
-        ubifs::Ubifs, uboot_env::UbootEnv,
+        copy::Copy, flash::Flash, imxkobs::Imxkobs, mender::Mender, raw::Raw, tarball::Tarball,
+        test::Test, ubifs::Ubifs, uboot_env::UbootEnv, zephyr::Zephyr,
     };
 }
 pub use update_package::{SupportedHardware, UpdatePackage};
@@ -36,11 +36,12 @@ pub enum Object {
     Copy(Box<objects::Copy>),
     Flash(Box<objects::Flash>),
     Imxkobs(Box<objects::Imxkobs>),
+    Mender(Box<objects::Mender>),
     Raw(Box<objects::Raw>),
     Tarball(Box<objects::Tarball>),
     Test(Box<objects::Test>),
     Ubifs(Box<objects::Ubifs>),
     #[serde(rename = "uboot-env")]
     UbootEnv(Box<objects::UbootEnv>),
-    // FIXME: Add support for the missing modes: Mende Zephyr
+    Zephyr(Box<objects::Zephyr>),
 }
