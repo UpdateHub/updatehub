@@ -5,11 +5,13 @@
 mod copy;
 mod flash;
 mod imxkobs;
+mod mender;
 mod raw;
 mod tarball;
 mod test;
 mod ubifs;
 mod uboot_env;
+mod zephyr;
 
 use super::{Error, Result};
 use crate::utils;

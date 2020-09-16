@@ -19,6 +19,8 @@ pub enum Error {
     InvalidPath,
     #[display("'fw_setenv' does not support the --script command line option")]
     FwSetEnvNoScriptOption,
+    #[display("Unsupported object model")]
+    Unsupported,
 
     Utils(crate::utils::Error),
     Firmware(crate::firmware::Error),
