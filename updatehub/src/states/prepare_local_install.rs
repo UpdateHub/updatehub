@@ -13,7 +13,7 @@ use crate::{
 use slog_scope::{debug, error, info};
 use std::{
     fs,
-    io::{Seek, SeekFrom},
+    io::{self, Seek, SeekFrom},
     path::PathBuf,
 };
 
@@ -49,7 +49,7 @@ impl StateChangeImpl for PrepareLocalInstall {
                     debug!("validating signature");
                     sign.validate(key, &update_package)?;
                 }
-                Err(compress_tools::Error::FileNotFound) => {
+                Err(compress_tools::Error::Io(e)) if e.kind() == io::ErrorKind::NotFound => {
                     error!("package does not contain a signature file");
                     return Err(super::TransitionError::SignatureNotFound);
                 }
