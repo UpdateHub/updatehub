@@ -36,6 +36,7 @@ pub struct Settings {
     config_file: Option<PathBuf>,
     timeout: Option<u64>,
     install_modes: Option<Vec<&'static str>>,
+    state_change_callback: Option<&'static str>,
 }
 
 impl Default for Settings {
@@ -51,6 +52,7 @@ impl Default for Settings {
             config_file: None,
             timeout: None,
             install_modes: None,
+            state_change_callback: None,
         }
     }
 }
@@ -61,6 +63,9 @@ impl Settings {
             .listen_socket(self.listen_socket)
             .server_address(self.server_address)
             .add_echo_binary("reboot");
+        if let Some(s) = self.state_change_callback {
+            setup = setup.state_change_callback(s.to_owned());
+        }
         if let Some(l) = self.install_modes {
             setup = setup.supported_install_modes(l)
         }
@@ -119,6 +124,10 @@ impl Settings {
 
     pub fn supported_install_modes(self, l: Vec<&'static str>) -> Self {
         Settings { install_modes: Some(l), ..self }
+    }
+
+    pub fn state_change_callback(self, s: &'static str) -> Self {
+        Settings { state_change_callback: Some(s), ..self }
     }
 }
 

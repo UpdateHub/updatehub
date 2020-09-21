@@ -4,7 +4,7 @@
 
 use crate::firmware::tests::{
     create_fake_installation_set, create_fake_starup_callbacks, create_hook, device_attributes_dir,
-    device_identity_dir, hardware_hook, product_uid_hook, version_hook,
+    device_identity_dir, hardware_hook, product_uid_hook, state_change_hook, version_hook,
 };
 use std::{any::Any, env, fs, io::Write, os::unix::fs::PermissionsExt, path::PathBuf};
 
@@ -35,6 +35,7 @@ pub struct TestEnvironmentBuilder {
     server_address: Option<String>,
     listen_socket: Option<String>,
     supported_install_modes: Option<Vec<&'static str>>,
+    state_change_callback: Option<String>,
 }
 
 impl TestEnvironment {
@@ -77,6 +78,10 @@ impl TestEnvironmentBuilder {
         TestEnvironmentBuilder { supported_install_modes: Some(list), ..self }
     }
 
+    pub fn state_change_callback(self, script: String) -> Self {
+        TestEnvironmentBuilder { state_change_callback: Some(script), ..self }
+    }
+
     pub fn finish(self) -> TestEnvironment {
         let firmware = {
             let dir = tempfile::tempdir().unwrap();
@@ -107,6 +112,10 @@ impl TestEnvironmentBuilder {
                 device_attributes_dir(dir_path),
                 "#!/bin/sh\necho attr1=attrvalue1\necho attr2=attrvalue2",
             );
+
+            if let Some(script) = self.state_change_callback {
+                create_hook(state_change_hook(dir_path), &script);
+            }
 
             Data {
                 data: Metadata::from_path(dir_path).unwrap(),
