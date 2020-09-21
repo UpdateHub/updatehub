@@ -348,6 +348,7 @@ echo "cancel"
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> INFO cancelling transition to 'download' due to state change callback request
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
@@ -365,6 +366,7 @@ echo "cancel"
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: download
+    <timestamp> INFO cancelling transition to 'download' due to state change callback request
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle: poll
@@ -376,6 +378,7 @@ echo "cancel"
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle: download
+    <timestamp> INFO cancelling transition to 'download' due to state change callback request
     <timestamp> TRCE starting to handle: entry_point
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle: poll

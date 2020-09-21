@@ -146,6 +146,10 @@ trait ProgressReporter: Sized + StateChangeImpl {
         match transition {
             Transition::Continue => Ok(self.handle_and_report_progress(context).await?),
             Transition::Cancel => {
+                info!(
+                    "cancelling transition to '{}' due to state change callback request",
+                    self.name()
+                );
                 Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
             }
         }
