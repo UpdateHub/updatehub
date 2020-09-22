@@ -77,7 +77,6 @@ impl Download {
     }
 }
 
-#[async_trait::async_trait(?Send)]
 impl ProgressReporter for Download {
     fn package_uid(&self) -> String {
         self.update_package.package_uid()
@@ -94,7 +93,7 @@ impl ProgressReporter for Download {
 
 impl CommunicationState for Download {}
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl StateChangeImpl for Download {
     fn name(&self) -> &'static str {
         "download"

@@ -13,7 +13,7 @@ pub(super) struct Park {}
 
 /// Implements the state change for `State<Park>`. It stays in
 /// `State<Park>` state.
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl StateChangeImpl for Park {
     fn name(&self) -> &'static str {
         "park"

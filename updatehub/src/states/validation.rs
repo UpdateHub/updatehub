@@ -16,7 +16,7 @@ pub(super) struct Validation {
 }
 
 /// Implements the state change for State<Validation>.
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl StateChangeImpl for Validation {
     fn name(&self) -> &'static str {
         "validation"

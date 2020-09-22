@@ -15,7 +15,7 @@ pub(super) struct Error {
     error: TransitionError,
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl StateChangeImpl for Error {
     fn name(&self) -> &'static str {
         "error"

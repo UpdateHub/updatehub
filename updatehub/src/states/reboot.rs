@@ -28,7 +28,7 @@ impl ProgressReporter for Reboot {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl StateChangeImpl for Reboot {
     fn name(&self) -> &'static str {
         "reboot"
