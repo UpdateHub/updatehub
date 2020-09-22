@@ -247,7 +247,6 @@ impl State {
         context: &mut machine::Context,
     ) -> Result<(Self, machine::StepTransition)> {
         match self {
-            State::Error(s) => s.handle(context).await,
             State::Park(s) => s.handle(context).await,
             State::EntryPoint(s) => s.handle(context).await,
             State::Poll(s) => s.handle(context).await,
@@ -255,6 +254,7 @@ impl State {
             State::Validation(s) => s.handle(context).await,
             State::DirectDownload(s) => s.handle(context).await,
             State::PrepareLocalInstall(s) => s.handle(context).await,
+            State::Error(s) => s.handle_with_callback(context).await,
             State::Download(s) => s.handle_with_callback_and_report_progress(context).await,
             State::Install(s) => s.handle_with_callback_and_report_progress(context).await,
             State::Reboot(s) => s.handle_with_callback_and_report_progress(context).await,

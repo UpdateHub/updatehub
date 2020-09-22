@@ -387,3 +387,67 @@ echo "cancel"
     <timestamp> DEBG receiving log request
     "###);
 }
+
+#[test]
+fn correct_config_error_state_callback() {
+    let state_change_script = r#"#! /bin/bash
+echo "cancel"
+"#;
+
+    let (mut session, setup) = Settings::default()
+        .timeout(300)
+        .polling()
+        .state_change_callback(state_change_script)
+        .init_server();
+    let _mocks = create_mock_server(FakeServer::CheckRequirementsTest(
+        setup.firmware.data.product_uid.clone(),
+    ));
+
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
+
+    insta::assert_snapshot!(output_server_info, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO probing server as we are in time
+    <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> INFO cancelling transition to 'error' due to state change callback request
+    "###);
+
+    insta::assert_snapshot!(output_server_trce, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> INFO probing server as we are in time
+    <timestamp> TRCE starting to handle: probe
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
+    <timestamp> TRCE starting to handle: validation
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle: error
+    <timestamp> INFO cancelling transition to 'error' due to state change callback request
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying <time> till next probe
+    "###);
+
+    insta::assert_snapshot!(output_log, @r###"
+    <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
+    <timestamp> TRCE starting to handle: validation
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle: error
+    <timestamp> INFO cancelling transition to 'error' due to state change callback request
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is enabled
+    <timestamp> TRCE starting to handle: poll
+    <timestamp> DEBG delaying <time> till next probe
+    <timestamp> TRCE delaying transition for: <time>
+    <timestamp> DEBG receiving log request
+    "###);
+}

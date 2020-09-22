@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, Context},
-    EntryPoint, Result, State, StateChangeImpl, TransitionError,
+    CallbackReporter, EntryPoint, Result, State, StateChangeImpl, TransitionError,
 };
 
 use crate::firmware;
@@ -14,6 +14,8 @@ use slog_scope::{error, info};
 pub(super) struct Error {
     error: TransitionError,
 }
+
+impl CallbackReporter for Error {}
 
 #[async_trait::async_trait]
 impl StateChangeImpl for Error {
