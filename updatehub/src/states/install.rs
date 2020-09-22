@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, Context},
-    ProgressReporter, Reboot, Result, State, StateChangeImpl,
+    CallbackReporter, ProgressReporter, Reboot, Result, State, StateChangeImpl,
 };
 use crate::{
     firmware::installation_set,
@@ -17,6 +17,8 @@ use slog_scope::info;
 pub(super) struct Install {
     pub(super) update_package: UpdatePackage,
 }
+
+impl CallbackReporter for Install {}
 
 impl ProgressReporter for Install {
     fn package_uid(&self) -> String {

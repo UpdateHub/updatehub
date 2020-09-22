@@ -83,7 +83,29 @@ trait StateChangeImpl {
 }
 
 #[async_trait]
-trait ProgressReporter: Sized + StateChangeImpl {
+trait CallbackReporter: Sized + StateChangeImpl {
+    async fn handle_with_callback(
+        self,
+        context: &mut machine::Context,
+    ) -> Result<(State, machine::StepTransition)> {
+        let transition =
+            firmware::state_change_callback(&context.settings.firmware.metadata, self.name())?;
+
+        match transition {
+            Transition::Continue => Ok(self.handle(context).await?),
+            Transition::Cancel => {
+                info!(
+                    "cancelling transition to '{}' due to state change callback request",
+                    self.name()
+                );
+                Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
+            }
+        }
+    }
+}
+
+#[async_trait]
+trait ProgressReporter: CallbackReporter {
     fn package_uid(&self) -> String;
     fn report_enter_state_name(&self) -> &'static str;
     fn report_leave_state_name(&self) -> &'static str;

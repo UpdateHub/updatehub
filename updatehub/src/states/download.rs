@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, CommunicationState, Context},
-    Install, ProgressReporter, Result, State, StateChangeImpl, TransitionError,
+    CallbackReporter, Install, ProgressReporter, Result, State, StateChangeImpl, TransitionError,
 };
 use crate::{
     firmware::installation_set,
@@ -76,6 +76,8 @@ impl Download {
         Ok(())
     }
 }
+
+impl CallbackReporter for Download {}
 
 impl ProgressReporter for Download {
     fn package_uid(&self) -> String {

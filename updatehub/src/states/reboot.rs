@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, Context},
-    EntryPoint, ProgressReporter, Result, State, StateChangeImpl,
+    CallbackReporter, EntryPoint, ProgressReporter, Result, State, StateChangeImpl,
 };
 use crate::update_package::UpdatePackage;
 use slog_scope::{info, warn};
@@ -13,6 +13,8 @@ use slog_scope::{info, warn};
 pub(super) struct Reboot {
     pub(super) update_package: UpdatePackage,
 }
+
+impl CallbackReporter for Reboot {}
 
 impl ProgressReporter for Reboot {
     fn package_uid(&self) -> String {
