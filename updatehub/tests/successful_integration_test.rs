@@ -412,6 +412,7 @@ echo "cancel"
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> INFO cancelling transition to 'error' due to state change callback request
     "###);
 
@@ -429,6 +430,7 @@ echo "cancel"
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> TRCE starting to handle: error
     <timestamp> INFO cancelling transition to 'error' due to state change callback request
     <timestamp> TRCE starting to handle: entry_point
@@ -441,6 +443,7 @@ echo "cancel"
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> TRCE starting to handle: error
     <timestamp> INFO cancelling transition to 'error' due to state change callback request
     <timestamp> TRCE starting to handle: entry_point

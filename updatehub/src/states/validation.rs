@@ -46,10 +46,19 @@ impl StateChangeImpl for Validation {
         let inactive_installation_set = context.runtime_settings.get_inactive_installation_set()?;
         self.package.compatible_with(&context.firmware)?;
         self.package.validate_install_modes(&context.settings, inactive_installation_set)?;
-        self.package
+        if let Err(e) = self
+            .package
             .objects(inactive_installation_set)
             .iter()
-            .try_for_each(object::Installer::check_requirements)?;
+            .try_for_each(object::Installer::check_requirements)
+        {
+            error!(
+                "update package: {} ({}) has failed to meet the install requirements",
+                self.package.version(),
+                self.package.package_uid()
+            );
+            return Err(e.into());
+        }
 
         if context
             .runtime_settings
