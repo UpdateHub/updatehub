@@ -200,6 +200,7 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
     "###);
@@ -218,6 +219,7 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> TRCE starting to handle: error
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
@@ -231,6 +233,7 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> TRCE starting to handle: validation
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> TRCE starting to handle: error
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
