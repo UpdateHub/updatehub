@@ -15,7 +15,7 @@ use std::time::Duration;
 pub(super) struct Probe;
 
 /// Implements the state change for State<Probe>.
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl StateChangeImpl for Probe {
     fn name(&self) -> &'static str {
         "probe"
