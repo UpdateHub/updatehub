@@ -5,6 +5,7 @@
 pub mod api;
 mod client;
 mod error;
+pub mod listener;
 mod serde_helpers;
 
 pub use client::Client;

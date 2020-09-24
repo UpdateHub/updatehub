@@ -18,4 +18,8 @@ pub enum Error {
     UnexpectedResponse(#[error(not(source))] surf::StatusCode),
 
     Client(#[error(not(source))] surf::Error),
+
+    Io(std::io::Error),
+
+    Env(std::env::VarError),
 }
