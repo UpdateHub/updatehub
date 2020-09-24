@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install libarchive-dev
+        run: sudo apt-get update; sudo apt-get install libarchive-dev socat
       - name: Checkout sources
         uses: actions/checkout@v2
       - name: Install ${{ matrix.version }}
@@ -77,6 +77,32 @@ jobs:
         with:
           command: test
           args: --release --all --all-features --no-fail-fast -- --nocapture
+
+      - name: Run listener test
+        run: |
+          export UH_LISTENER_TEST=updatehub-statechange.sock
+          cargo run --example listener &
+
+          while [ ! -S "$UH_LISTENER_TEST" ]; do
+            sleep 1
+          done
+
+          if [[ "$(echo "download" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "cancel" ]]; then
+            echo "Unexpected download response"
+            exit 1
+          fi
+          if [[ "$(echo "install" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
+            echo "Unexpected install response"
+            exit 2
+          fi
+          if [[ "$(echo "error" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
+            echo "Unexpected error response"
+            exit 3
+          fi
+          if [[ "$(echo "reboot" | socat - UNIX-CONNECT:updatehub-statechange.sock)" != "" ]]; then
+            echo "Unexpected reboot response"
+            exit 4
+          fi
 
       - name: Run cargo bloat
         if: matrix.version == '1.45.0' && 0

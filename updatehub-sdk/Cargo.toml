@@ -9,8 +9,10 @@ authors = ["asakiz <asakizin@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+async-std = { version = "1.6", default-features = false, features = ["std"] }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 derive_more = { version = "0.99", default-features = false, features = ["display", "error", "from"] }
+log = "0.4"
 ms-converter = "1"
 serde = { version = "1", default-features = false, features = ["derive"] }
 surf = { version = "2", default-features = false, features = ["h1-client"] }
@@ -19,3 +21,7 @@ surf = { version = "2", default-features = false, features = ["h1-client"] }
 async-std = { version = "1", default-features = false, features = ["attributes"] }
 tempfile = "3"
 testcontainers = "0.11"
+
+[[example]]
+name = "listener"
+path = "examples/listener.rs"
