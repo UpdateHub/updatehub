@@ -18,4 +18,4 @@ surf = { git = "https://github.com/http-rs/surf", rev = "57d0322", default-featu
 [dev-dependencies]
 async-std = { version = "1", default-features = false, features = ["attributes"] }
 tempfile = "3"
-testcontainers = "0.10"
+testcontainers = "0.11"
