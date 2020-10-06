@@ -12,7 +12,7 @@ use std::{
 use surf::{
     http::headers,
     middleware::{self, Middleware},
-    StatusCode,
+    Body, Request, Response, StatusCode,
 };
 
 struct API;
@@ -21,10 +21,10 @@ struct API;
 impl Middleware for API {
     async fn handle(
         &self,
-        mut req: middleware::Request,
-        client: std::sync::Arc<dyn middleware::HttpClient>,
+        mut req: Request,
+        client: surf::Client,
         next: middleware::Next<'_>,
-    ) -> surf::Result<middleware::Response> {
+    ) -> surf::Result<Response> {
         req.insert_header(headers::USER_AGENT, "updatehub/next");
         req.insert_header(headers::CONTENT_TYPE, "application/json");
         req.insert_header("api-content-type", "application/vnd.updatehub-v1+json");
@@ -42,11 +42,10 @@ where
     W: io::Write + Unpin,
 {
     validate_url(url)?;
-    let req = surf::get(url);
-    save_body_to(req, handle).await
+    save_body_to(surf::get(url), handle).await
 }
 
-async fn save_body_to<W>(req: surf::Request, handle: &mut W) -> Result<()>
+async fn save_body_to<W>(req: surf::RequestBuilder, handle: &mut W) -> Result<()>
 where
     W: io::Write + Unpin,
 {
@@ -87,7 +86,7 @@ where
 
 impl<'a> Client<'a> {
     pub fn new(server: &'a str) -> Self {
-        Self { server, client: surf::Client::new() }
+        Self { server, client: surf::Client::new().with(API) }
     }
 
     pub async fn probe(
@@ -100,9 +99,8 @@ impl<'a> Client<'a> {
         let mut response = self
             .client
             .post(&format!("{}/upgrades", &self.server))
-            .middleware(API)
-            .set_header("api-retries", num_retries.to_string())
-            .body_json(&firmware)?
+            .header("api-retries", num_retries.to_string())
+            .body(Body::from_json(&firmware)?)
             .await?;
 
         match response.status() {
@@ -138,13 +136,10 @@ impl<'a> Client<'a> {
         validate_url(self.server)?;
 
         // FIXME: Discuss the need of packages inside the route
-        let mut request = self
-            .client
-            .get(&format!(
-                "{}/products/{}/packages/{}/objects/{}",
-                &self.server, product_uid, package_uid, object
-            ))
-            .middleware(API);
+        let mut request = self.client.get(&format!(
+            "{}/products/{}/packages/{}/objects/{}",
+            &self.server, product_uid, package_uid, object
+        ));
 
         if !download_dir.exists() {
             fs::create_dir_all(download_dir).await.map_err(|e| {
@@ -155,10 +150,8 @@ impl<'a> Client<'a> {
 
         let file = download_dir.join(object);
         if file.exists() {
-            request = request.set_header(
-                "RANGE",
-                format!("bytes={}-", file.metadata()?.len().saturating_sub(1)),
-            );
+            request = request
+                .header("RANGE", format!("bytes={}-", file.metadata()?.len().saturating_sub(1)));
         }
 
         let mut file = fs::OpenOptions::new().create(true).append(true).open(&file).await?;
@@ -198,8 +191,7 @@ impl<'a> Client<'a> {
 
         self.client
             .post(&format!("{}/report", &self.server))
-            .middleware(API)
-            .body_json(&payload)?
+            .body(Body::from_json(&payload)?)
             .await?;
         Ok(())
     }
