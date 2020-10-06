@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - 1.42.0 # MSRV
+          - 1.45.0 # MSRV
           - stable
           - nightly
 
@@ -38,14 +38,14 @@ jobs:
           use-tool-cache: true
 
       - name: Install cargo bloat tool
-        if: matrix.version == '1.42.0' && 0
+        if: matrix.version == '1.45.0' && 0
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-bloat
           use-tool-cache: true
 
       - name: Install cargo tree tool
-        if: matrix.version == '1.42.0'
+        if: matrix.version == '1.45.0'
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-tree
@@ -79,7 +79,7 @@ jobs:
           args: --release --all --all-features --no-fail-fast -- --nocapture
 
       - name: Run cargo bloat
-        if: matrix.version == '1.42.0' && 0
+        if: matrix.version == '1.45.0' && 0
         uses: orf/cargo-bloat-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

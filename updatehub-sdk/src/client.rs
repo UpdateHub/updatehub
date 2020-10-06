@@ -4,7 +4,7 @@
 
 use crate::{api, Error, Result};
 use std::path::Path;
-use surf::StatusCode;
+use surf::{Body, StatusCode};
 
 pub struct Client {
     server_address: String,
@@ -41,7 +41,7 @@ impl Client {
         let request = self.client.post(&format!("{}/probe", self.server_address));
         let mut response = match custom {
             Some(custom_server) => {
-                request.body_json(&api::probe::Request { custom_server })?.await?
+                request.body(Body::from_json(&api::probe::Request { custom_server })?).await?
             }
             None => request.await?,
         };
@@ -57,7 +57,7 @@ impl Client {
         let mut response = self
             .client
             .post(&format!("{}/local_install", self.server_address))
-            .body_json(&api::local_install::Request { file: file.to_owned() })?
+            .body(Body::from_json(&api::local_install::Request { file: file.to_owned() })?)
             .await?;
 
         match response.status() {
@@ -71,7 +71,7 @@ impl Client {
         let mut response = self
             .client
             .post(&format!("{}/remote_install", self.server_address))
-            .body_json(&api::remote_install::Request { url: url.to_owned() })?
+            .body(Body::from_json(&api::remote_install::Request { url: url.to_owned() })?)
             .await?;
 
         match response.status() {
