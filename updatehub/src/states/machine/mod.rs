@@ -231,7 +231,7 @@ impl Context {
 
 #[derive(Debug)]
 pub(super) enum StepTransition {
-    Delayed(std::time::Duration),
+    Delayed(chrono::Duration),
     Immediate,
     Never,
 }
@@ -271,9 +271,9 @@ impl StateMachine {
             match transition {
                 StepTransition::Immediate => {}
                 StepTransition::Delayed(t) => {
-                    trace!("delaying transition for: {} seconds", t.as_secs());
+                    trace!("delaying transition for: {} seconds", t.num_seconds());
                     let waker = self.context.waker.receiver.clone();
-                    async_std::task::sleep(t)
+                    async_std::task::sleep(t.to_std().unwrap())
                         .race(async {
                             let _ = waker.recv().await;
                         })
