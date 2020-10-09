@@ -91,7 +91,7 @@ impl<'a> Client<'a> {
 
     pub async fn probe(
         &self,
-        num_retries: u64,
+        num_retries: usize,
         firmware: api::FirmwareMetadata<'_>,
     ) -> Result<api::ProbeResponse> {
         validate_url(self.server)?;

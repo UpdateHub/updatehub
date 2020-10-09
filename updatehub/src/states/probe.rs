@@ -28,7 +28,7 @@ impl StateChangeImpl for Probe {
         let server_address = context.server_address();
 
         let probe = match crate::CloudClient::new(&server_address)
-            .probe(context.runtime_settings.retries() as u64, context.firmware.as_cloud_metadata())
+            .probe(context.runtime_settings.retries(), context.firmware.as_cloud_metadata())
             .await
         {
             Err(cloud::Error::Http(e))
