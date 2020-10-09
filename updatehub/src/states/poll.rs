@@ -30,14 +30,15 @@ impl StateChangeImpl for Poll {
         let delay =
             interval - Utc::now().signed_duration_since(context.runtime_settings.last_polling());
 
-        if delay > interval || delay.num_seconds() < 0 {
+        let transition = if delay > interval || delay.num_seconds() < 0 {
             info!("probing server as we are in time");
-            return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
-        }
+            machine::StepTransition::Immediate
+        } else {
+            debug!("delaying {} seconds till next probe", delay.num_seconds());
+            machine::StepTransition::Delayed(delay)
+        };
 
-        let delay = delay.to_std().unwrap();
-        debug!("delaying {} seconds till next probe", delay.as_secs());
-        Ok((State::Probe(Probe {}), machine::StepTransition::Delayed(delay)))
+        Ok((State::Probe(Probe {}), transition))
     }
 }
 
@@ -56,8 +57,7 @@ mod tests {
 
         assert_state!(machine, Probe);
         match trans {
-            machine::StepTransition::Delayed(d)
-                if d <= context.settings.polling.interval.to_std().unwrap() => {}
+            machine::StepTransition::Delayed(d) if d <= context.settings.polling.interval => {}
             _ => panic!("Unexpected StepTransition: {:?}", trans),
         }
     }

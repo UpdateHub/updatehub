@@ -6,10 +6,9 @@ use super::{
     machine::{self, Context},
     EntryPoint, Result, State, StateChangeImpl, Validation,
 };
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use cloud::api::ProbeResponse;
 use slog_scope::{error, info};
-use std::time::Duration;
 
 #[derive(Debug)]
 pub(super) struct Probe;
@@ -42,7 +41,7 @@ impl StateChangeImpl for Probe {
                 context.runtime_settings.inc_retries();
                 return Ok((
                     State::Probe(self),
-                    machine::StepTransition::Delayed(Duration::from_secs(1)),
+                    machine::StepTransition::Delayed(Duration::seconds(1)),
                 ));
             }
             Ok(probe) => probe,
@@ -59,12 +58,8 @@ impl StateChangeImpl for Probe {
             }
 
             ProbeResponse::ExtraPoll(s) => {
-                let s = Duration::from_secs(s as u64);
-                info!(
-                    "delaying the probing for {} seconds as requested by the server",
-                    s.as_secs()
-                );
-                Ok((State::Probe(self), machine::StepTransition::Delayed(s)))
+                info!("delaying the probing for {} seconds as requested by the server", s);
+                Ok((State::Probe(self), machine::StepTransition::Delayed(Duration::seconds(s))))
             }
 
             ProbeResponse::Update(package, sign) => {
