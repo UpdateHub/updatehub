@@ -118,7 +118,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
         }
 
         match crate::CloudClient::new(&context.server_address())
-            .probe(context.runtime_settings.retries() as u64, context.firmware.as_cloud_metadata())
+            .probe(context.runtime_settings.retries(), context.firmware.as_cloud_metadata())
             .await?
         {
             ProbeResponse::ExtraPoll(s) => {

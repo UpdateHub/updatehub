@@ -39,7 +39,7 @@ impl<'a> Client<'a> {
 
     pub(crate) async fn probe(
         &self,
-        _num_retries: u64,
+        _num_retries: usize,
         _firmware: api::FirmwareMetadata<'_>,
     ) -> Result<api::ProbeResponse> {
         RESPONSE_CONFIG.with(|conf| match std::ops::Deref::deref(&conf.borrow()) {
