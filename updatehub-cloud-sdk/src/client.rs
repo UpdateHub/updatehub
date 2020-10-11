@@ -25,7 +25,7 @@ impl Middleware for API {
         client: surf::Client,
         next: middleware::Next<'_>,
     ) -> surf::Result<Response> {
-        req.insert_header(headers::USER_AGENT, "updatehub/next");
+        req.insert_header(headers::USER_AGENT, "updatehub/2.0 Linux");
         req.insert_header(headers::CONTENT_TYPE, "application/json");
         req.insert_header("api-content-type", "application/vnd.updatehub-v1+json");
         Ok(next.run(req, client).await?)
