@@ -23,7 +23,6 @@ const DEVICE_ATTRIBUTES_DIR: &str = "device-attributes.d";
 const STATE_CHANGE_CALLBACK: &str = "state-change-callback";
 const VALIDATE_CALLBACK: &str = "validate-callback";
 const ROLLBACK_CALLBACK: &str = "rollback-callback";
-const ERROR_CALLBACK: &str = "error-callback";
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -146,10 +145,6 @@ pub(crate) fn validate_callback(path: &Path) -> Result<Transition> {
 
 pub(crate) fn rollback_callback(path: &Path) -> Result<()> {
     run_callback("rollback callback", &path.join(ROLLBACK_CALLBACK))
-}
-
-pub(crate) fn error_callback(path: &Path) -> Result<()> {
-    run_callback("error callback", &path.join(ERROR_CALLBACK))
 }
 
 fn run_callback(name: &str, path: &Path) -> Result<()> {
