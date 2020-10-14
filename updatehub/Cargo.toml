@@ -46,7 +46,7 @@ infer = "0.2"
 lazy_static = "1"
 mockito = { version = "0.27", optional = true }
 ms-converter = "1"
-nix = "0.18"
+nix = "0.19"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
