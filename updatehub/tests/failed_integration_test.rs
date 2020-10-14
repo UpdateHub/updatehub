@@ -103,7 +103,7 @@ fn failing_invalid_file_config() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
-    unexpected character found: `/` at line 2 column 26
+    invalid TOML value, did you mean to use a quoted string? at line 2 column 20
     "###);
 }
 
@@ -130,7 +130,7 @@ fn failing_invalid_file_config() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
-    Parsing error: toml: unexpected character found: `/` at line 2 column 26, ini: Custom("missing field `Network`")
+    Parsing error: toml: invalid TOML value, did you mean to use a quoted string? at line 2 column 20, ini: Custom("missing field `Network`")
     "###);
 }
 
