@@ -19,6 +19,7 @@ type CallbackFn = dyn Fn(Handler) -> Pin<Box<dyn Future<Output = Result<()>>>>;
 
 #[derive(Default)]
 pub struct StateChangeListener {
+    probe_callbacks: Vec<Box<CallbackFn>>,
     download_callbacks: Vec<Box<CallbackFn>>,
     install_callbacks: Vec<Box<CallbackFn>>,
     reboot_callbacks: Vec<Box<CallbackFn>>,
@@ -27,6 +28,7 @@ pub struct StateChangeListener {
 
 #[derive(Debug)]
 pub enum State {
+    Probe,
     Download,
     Install,
     Reboot,
@@ -63,6 +65,7 @@ impl StateChangeListener {
         Fut: Future<Output = Result<()>> + 'static,
     {
         match state {
+            State::Probe => self.probe_callbacks.push(Box::new(move |d| Box::pin(f(d)))),
             State::Download => self.download_callbacks.push(Box::new(move |d| Box::pin(f(d)))),
             State::Install => self.install_callbacks.push(Box::new(move |d| Box::pin(f(d)))),
             State::Reboot => self.reboot_callbacks.push(Box::new(move |d| Box::pin(f(d)))),
@@ -100,6 +103,7 @@ impl StateChangeListener {
 
     async fn emit(&self, stream: UnixStream, input: &str) -> Result<()> {
         let callbacks = match input {
+            "probe" => &self.probe_callbacks,
             "download" => &self.download_callbacks,
             "install" => &self.install_callbacks,
             "reboot" => &self.reboot_callbacks,
