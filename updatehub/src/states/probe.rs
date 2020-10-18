@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, Context},
-    EntryPoint, Result, State, StateChangeImpl, Validation,
+    CallbackReporter, EntryPoint, Result, State, StateChangeImpl, Validation,
 };
 use chrono::{Duration, Utc};
 use cloud::api::ProbeResponse;
@@ -12,6 +12,8 @@ use slog_scope::{error, info};
 
 #[derive(Debug)]
 pub(super) struct Probe;
+
+impl CallbackReporter for Probe {}
 
 /// Implements the state change for State<Probe>.
 #[async_trait::async_trait]

@@ -250,7 +250,7 @@ impl State {
             State::Park(s) => s.handle(context).await,
             State::EntryPoint(s) => s.handle(context).await,
             State::Poll(s) => s.handle(context).await,
-            State::Probe(s) => s.handle(context).await,
+            State::Probe(s) => s.handle_with_callback(context).await,
             State::Validation(s) => s.handle(context).await,
             State::DirectDownload(s) => s.handle(context).await,
             State::PrepareLocalInstall(s) => s.handle(context).await,
