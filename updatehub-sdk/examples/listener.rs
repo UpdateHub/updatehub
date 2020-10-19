@@ -11,7 +11,7 @@ async fn download_callback(mut handler: listener::Handler) -> Result<()> {
 
 #[async_std::main]
 async fn main() -> Result<()> {
-    let mut listener = listener::StateChangeListener::default();
+    let mut listener = listener::StateChange::default();
 
     // A function callback which cancels the state transition
     listener.on_state(listener::State::Download, download_callback);
