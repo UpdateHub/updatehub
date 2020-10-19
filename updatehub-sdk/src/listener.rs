@@ -54,12 +54,7 @@ impl Handler {
 impl StateChangeListener {
     #[inline]
     pub fn new() -> Self {
-        StateChangeListener {
-            download_callbacks: Vec::new(),
-            install_callbacks: Vec::new(),
-            reboot_callbacks: Vec::new(),
-            error_callbacks: Vec::new(),
-        }
+        StateChangeListener::default()
     }
 
     pub fn on_state<F, Fut>(&mut self, state: State, f: F)
