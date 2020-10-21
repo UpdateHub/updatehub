@@ -4,8 +4,10 @@
 
 use derive_more::{Display, Error, From};
 
+/// Type alias of `Result` where the `Err` is a `updatehub_sdk::Error`.
 pub type Result<A> = std::result::Result<A, Error>;
 
+/// UpdateHub SDK error type.
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
     #[display(fmt = "Agent is busy: {:?}", _0)]
