@@ -20,7 +20,7 @@ pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
     let available = stat.block_size() as u64 * stat.blocks_free() as u64;
 
     if required > available {
-        return Err(Error::NotEnoughSpace);
+        return Err(Error::NotEnoughSpace { available, required });
     }
     Ok(())
 }
