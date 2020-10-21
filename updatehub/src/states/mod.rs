@@ -40,8 +40,8 @@ pub type Result<T> = std::result::Result<T, TransitionError>;
 
 #[derive(Debug, Display, Error, From)]
 pub enum TransitionError {
-    #[display("not all objects are ready for use")]
-    ObjectsNotReady,
+    #[display("some objects are not ready for use")]
+    SomeObjectsAreNotReady,
     #[display("signature not found")]
     SignatureNotFound,
     #[display("channel communication as failed")]

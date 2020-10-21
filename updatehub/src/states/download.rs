@@ -143,7 +143,7 @@ impl StateChangeImpl for Download {
                 machine::StepTransition::Immediate,
             ))
         } else {
-            Err(TransitionError::ObjectsNotReady)
+            Err(TransitionError::SomeObjectsAreNotReady)
         }
     }
 }
