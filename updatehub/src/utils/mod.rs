@@ -50,11 +50,13 @@ pub enum Error {
 }
 
 /// Encode a bytes stream in hex
+#[inline]
 pub(crate) fn hex_encode(data: &[u8]) -> String {
     data.iter().map(|c| format!("{:02x}", c)).collect()
 }
 
 /// Get sha256sum hash from a byte stream
+#[inline]
 pub(crate) fn sha256sum(data: &[u8]) -> String {
     hex_encode(&openssl::sha::sha256(data))
 }
