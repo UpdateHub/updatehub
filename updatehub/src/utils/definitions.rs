@@ -25,7 +25,7 @@ impl TargetTypeExt for TargetType {
         Ok(match self {
             TargetType::Device(p) => {
                 if !p.exists() {
-                    return Err(Error::DeviceDoesNotExist);
+                    return Err(Error::DeviceDoesNotExist(p.to_path_buf()));
                 }
                 if p.metadata()?.permissions().readonly() {
                     return Err(Error::MissingWritePermission(p.to_path_buf()));

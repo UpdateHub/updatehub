@@ -19,14 +19,24 @@ pub enum Error {
     Process(easy_process::Error),
     StripPrefix(std::path::StripPrefixError),
 
-    #[display("target device does not exists")]
-    DeviceDoesNotExist,
+    #[display(fmt = "{:?} target device does not exists", _0)]
+    #[from(ignore)]
+    DeviceDoesNotExist(#[error(not(source))] std::path::PathBuf),
 
     #[display(fmt = "user doesn't have write permission on target device: {:?}", _0)]
+    #[from(ignore)]
     MissingWritePermission(#[error(not(source))] std::path::PathBuf),
 
-    #[display("not enough storage space for installation")]
-    NotEnoughSpace,
+    #[display(
+        fmt = "{} is not enough storage space for installation, at least {} is required",
+        available,
+        required
+    )]
+    #[from(ignore)]
+    NotEnoughSpace {
+        available: u64,
+        required: u64,
+    },
 
     #[display(fmt = "'{}' not found on PATH", _0)]
     #[from(ignore)]
