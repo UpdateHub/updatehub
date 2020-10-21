@@ -19,22 +19,22 @@ pub enum Error {
     Process(easy_process::Error),
     StripPrefix(std::path::StripPrefixError),
 
-    #[display("Target device does not exists")]
+    #[display("target device does not exists")]
     DeviceDoesNotExist,
 
-    #[display(fmt = "User doesn't have write permission on target device: {:?}", _0)]
+    #[display(fmt = "user doesn't have write permission on target device: {:?}", _0)]
     MissingWritePermission(#[error(not(source))] std::path::PathBuf),
 
-    #[display("Not enough storage space for installation")]
+    #[display("not enough storage space for installation")]
     NotEnoughSpace,
 
     #[display(fmt = "'{}' not found on PATH", _0)]
     #[from(ignore)]
     ExecutableNotInPath(#[error(not(source))] String),
-    #[display(fmt = "Unable to find Ubi Volume: {}" _0)]
+    #[display(fmt = "unable to find Ubi Volume: {}" _0)]
     #[from(ignore)]
     NoUbiVolume(#[error(not(source))] String),
-    #[display(fmt = "Unable to find match for mtd device: {}", _0)]
+    #[display(fmt = "unable to find match for mtd device: {}", _0)]
     #[from(ignore)]
     NoMtdDevice(#[error(not(source))] String),
 }
