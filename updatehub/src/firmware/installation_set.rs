@@ -17,11 +17,10 @@ impl FromStr for Set {
     type Err = super::Error;
 
     fn from_str(s: &str) -> super::Result<Self> {
-        match s.parse::<u8>() {
-            Ok(0) => Ok(Set(InstallationSet::A)),
-            Ok(1) => Ok(Set(InstallationSet::B)),
-            Ok(v) => Err(super::Error::InvalidInstallSet(v)),
-            Err(e) => Err(e.into()),
+        match s {
+            "0" => Ok(Set(InstallationSet::A)),
+            "1" => Ok(Set(InstallationSet::B)),
+            _ => Err(super::Error::InvalidInstallSet),
         }
     }
 }

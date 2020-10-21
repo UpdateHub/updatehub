@@ -37,10 +37,8 @@ pub enum Error {
     #[display("device identity is missing")]
     MissingDeviceIdentity,
 
-    #[display(fmt = "{} is a invalid value. The only know ones are 0 or 1", _0)]
-    InvalidInstallSet(#[error(not(source))] u8),
-
-    ParseInt(std::num::ParseIntError),
+    #[display(fmt = "invalid installation set, the only know ones are 0 or 1")]
+    InvalidInstallSet,
 
     Walkdir(walkdir::Error),
 
