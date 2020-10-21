@@ -22,31 +22,17 @@ pub(crate) trait TargetTypeExt {
 
 impl TargetTypeExt for TargetType {
     fn valid(&self) -> Result<&Self> {
-        Ok(match self {
-            TargetType::Device(p) => {
-                if !p.exists() {
-                    return Err(Error::DeviceDoesNotExist(p.to_path_buf()));
-                }
-                if p.metadata()?.permissions().readonly() {
-                    return Err(Error::MissingWritePermission(p.to_path_buf()));
-                }
-                &self
-            }
-            TargetType::UBIVolume(s) => {
-                let dev = mtd::target_device_from_ubi_volume_name(s)?;
-                if dev.metadata()?.permissions().readonly() {
-                    return Err(Error::MissingWritePermission(dev));
-                }
-                &self
-            }
-            TargetType::MTDName(n) => {
-                let dev = mtd::target_device_from_mtd_name(n)?;
-                if dev.metadata()?.permissions().readonly() {
-                    return Err(Error::MissingWritePermission(dev));
-                }
-                &self
-            }
-        })
+        let device = self.get_target()?;
+
+        if !device.exists() {
+            return Err(Error::DeviceDoesNotExist(device));
+        }
+
+        if device.metadata()?.permissions().readonly() {
+            return Err(Error::MissingWritePermission(device));
+        }
+
+        Ok(&self)
     }
 
     fn get_target(&self) -> Result<PathBuf> {
