@@ -98,15 +98,13 @@ impl RuntimeSettings {
     }
 
     pub(crate) fn get_inactive_installation_set(&self) -> Result<Set> {
-        Ok(match self.update.upgrade_to_installation {
-            // If upgrade_to_installation has already been set
-            // the current inactive installation_set will already be swapped
-            // so we can just install over the same one as before
-            Some(s) => Set(s),
-            // If no installation has been made so far we can check
-            // the system for the current inactive installation set
-            None => installation_set::inactive()?,
-        })
+        // If the `upgrade_to_installation` is defined, the current inactive
+        // installation_set has already been swapped.
+        if let Some(s) = self.update.upgrade_to_installation {
+            return Ok(Set(s));
+        }
+
+        Ok(installation_set::inactive()?)
     }
 
     pub(crate) fn enable_persistency(&mut self) {
