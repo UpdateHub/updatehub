@@ -16,13 +16,13 @@ pub enum Error {
     Deserialize(toml::de::Error),
     Serialize(toml::ser::Error),
 
-    #[display("invalid interval")]
-    InvalidInterval,
-    #[display("invalid server address")]
-    InvalidServerAddress,
+    #[display("invalid setting for polling interval, it cannot be less than 60 seconds")]
+    TooSmallPollingInterval,
+    #[display("invalid setting for server address, it must use the protocol prefix")]
+    ServerAddressWithoutProtocol,
 
     #[cfg(feature = "v1-parsing")]
-    #[display(fmt = "Parsing error: toml: {}, ini: {}", _0, _1)]
+    #[display(fmt = "parsing error: toml: {}, ini: {}", _0, _1)]
     V1Parsing(toml::de::Error, serde_ini::de::Error),
 }
 
@@ -79,14 +79,14 @@ impl Settings {
 
         if settings.polling.interval < Duration::seconds(60) {
             error!("invalid setting for polling interval, it cannot be less than 60 seconds");
-            return Err(Error::InvalidInterval);
+            return Err(Error::TooSmallPollingInterval);
         }
 
         if !&settings.network.server_address.starts_with("http://")
             && !&settings.network.server_address.starts_with("https://")
         {
             error!("invalid setting for server address, it must use the protocol prefix");
-            return Err(Error::InvalidServerAddress);
+            return Err(Error::ServerAddressWithoutProtocol);
         }
 
         Ok(settings)
