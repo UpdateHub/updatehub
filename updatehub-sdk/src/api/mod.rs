@@ -2,7 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+//! Contains all the structures of the request and response
+//! from the agent.
+
+/// Body of `info` response.
 pub mod info;
+
+/// Body of `probe` request and response.
 pub mod probe {
     use serde::{Deserialize, Serialize};
 
@@ -21,6 +27,7 @@ pub mod probe {
     }
 }
 
+/// Body of `local_install` request.
 pub mod local_install {
     use serde::{Deserialize, Serialize};
 
@@ -31,6 +38,7 @@ pub mod local_install {
     }
 }
 
+/// Body of `remote_install` request.
 pub mod remote_install {
     use serde::{Deserialize, Serialize};
 
@@ -41,6 +49,7 @@ pub mod remote_install {
     }
 }
 
+/// Body of `state` response.
 pub mod state {
     use serde::{Deserialize, Serialize};
 
@@ -61,6 +70,17 @@ pub mod state {
     }
 }
 
+/// Body of `abort_download` response.
+///
+/// # Successful case
+///
+/// On a successful request, the body of response is a struct
+/// called `Response` with a successful message.
+///
+/// # Failed case
+///
+/// On a failed request, the body of response is a struct
+/// called `Refused` with a error message.
 pub mod abort_download {
     use serde::{Deserialize, Serialize};
 
@@ -77,6 +97,7 @@ pub mod abort_download {
     }
 }
 
+/// Body of `log` response.
 pub mod log {
     use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
