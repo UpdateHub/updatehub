@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-//! Used to communicate with UpdateHub and listen to appropiate callbacks
+//! Used to communicate with UpdateHub and listen to appropriate callbacks
 //! when the state changes.
 
 use crate::{Error, Result};

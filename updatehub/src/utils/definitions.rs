@@ -10,7 +10,7 @@ use pkg_schema::definitions::{
 };
 use std::path::PathBuf;
 
-/// Utility funtions for [TargetType](pkg_schema::definitions::TargetType)
+/// Utility functions for [TargetType](pkg_schema::definitions::TargetType)
 pub(crate) trait TargetTypeExt {
     /// Checks whether the device is valid to start installation, i.e.,
     /// device exists, use have write permission.
@@ -44,7 +44,7 @@ impl TargetTypeExt for TargetType {
     }
 }
 
-/// Utility funtions for [Gid](pkg_schema::definitions::target_permissions::Gid)
+/// Utility functions for [Gid](pkg_schema::definitions::target_permissions::Gid)
 /// and [Uid](pkg_schema::definitions::target_permissions::Uid)
 pub(crate) trait IdExt {
     /// Gets numeric id;

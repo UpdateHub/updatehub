@@ -31,7 +31,7 @@ pub struct Metadata {
     pub version: String,
     /// Hardware where the firmware is running
     pub hardware: String,
-    /// Path for the pub key beeing used
+    /// Path for the pub key being used
     pub pub_key: Option<PathBuf>,
     /// Device Identity
     pub device_identity: MetadataValue,

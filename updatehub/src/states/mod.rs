@@ -278,7 +278,7 @@ impl State {
     }
 }
 
-/// Runs the state machine up to completion handling all procing
+/// Runs the state machine up to completion handling all processing
 /// states without extra manual work.
 ///
 /// It supports following states, and transitions, as shown in the
