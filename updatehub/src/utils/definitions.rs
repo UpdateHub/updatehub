@@ -44,7 +44,8 @@ impl TargetTypeExt for TargetType {
     }
 }
 
-/// Utility functions for [Gid](pkg_schema::definitions::target_permissions::Gid)
+/// Utility functions for
+/// [Gid](pkg_schema::definitions::target_permissions::Gid)
 /// and [Uid](pkg_schema::definitions::target_permissions::Uid)
 pub(crate) trait IdExt {
     /// Gets numeric id;

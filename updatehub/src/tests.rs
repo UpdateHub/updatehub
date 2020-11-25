@@ -82,6 +82,7 @@ impl TestEnvironmentBuilder {
         TestEnvironmentBuilder { state_change_callback: Some(script), ..self }
     }
 
+    #[allow(clippy::field_reassign_with_default)]
     pub fn finish(self) -> TestEnvironment {
         let firmware = {
             let dir = tempfile::tempdir().unwrap();
