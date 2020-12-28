@@ -25,7 +25,7 @@ jobs:
       - name: Install ${{ matrix.version }}
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.version }}-
+          toolchain: ${{ matrix.version }}
           target: armv7-unknown-linux-gnueabihf
           profile: minimal
           override: true
