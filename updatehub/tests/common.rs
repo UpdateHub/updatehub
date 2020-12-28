@@ -315,7 +315,7 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
 
 pub fn rewrite_log_output(s: String) -> (String, String) {
     let version_re = Regex::new(r"Agent .*").unwrap();
-    let tmpfile_re = Regex::new(r#""/tmp/.tmp.*""#).unwrap();
+    let tmpfile_re = Regex::new(r#""/.*/.tmp.*""#).unwrap();
     let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3})").unwrap();
     let time_re = Regex::new(r#"(\d{5}) seconds"#).unwrap();
     let trce_re = Regex::new(r"<timestamp> TRCE.*").unwrap();
