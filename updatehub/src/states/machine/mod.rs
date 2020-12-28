@@ -8,7 +8,7 @@ use super::{
     DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, Result, RuntimeSettings, Settings,
     State, StateChangeImpl, Validation,
 };
-use async_std::{prelude::FutureExt, sync};
+use async_std::{channel, prelude::FutureExt};
 use slog_scope::{info, trace};
 use std::path::PathBuf;
 
@@ -22,7 +22,7 @@ pub(super) struct StateMachine {
 }
 
 pub struct Context {
-    pub(super) communication: Channel<(Message, sync::Sender<Result<Response>>)>,
+    pub(super) communication: Channel<(Message, channel::Sender<Result<Response>>)>,
     pub(super) waker: Channel<()>,
     pub settings: Settings,
     pub runtime_settings: RuntimeSettings,
@@ -30,13 +30,13 @@ pub struct Context {
 }
 
 pub(super) struct Channel<T> {
-    pub(super) sender: sync::Sender<T>,
-    pub(super) receiver: sync::Receiver<T>,
+    pub(super) sender: channel::Sender<T>,
+    pub(super) receiver: channel::Receiver<T>,
 }
 
 impl<T> Channel<T> {
     fn new(cap: usize) -> Self {
-        let (sender, receiver) = sync::channel(cap);
+        let (sender, receiver) = channel::bounded(cap);
         Channel { sender, receiver }
     }
 }
@@ -48,7 +48,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
     async fn handle_communication(
         &self,
         msg: address::Message,
-        responder: sync::Sender<Result<address::Response>>,
+        responder: channel::Sender<Result<address::Response>>,
         context: &mut Context,
     ) -> Option<State> {
         trace!("received external request: {:?}", msg);
@@ -87,11 +87,11 @@ pub(super) trait CommunicationState: StateChangeImpl {
 
         match res {
             Ok((response, state)) => {
-                responder.send(Ok(response)).await;
+                responder.send(Ok(response)).await.ok()?;
                 state
             }
             Err(e) => {
-                responder.send(Err(e)).await;
+                responder.send(Err(e)).await.ok()?;
                 None
             }
         }
@@ -128,7 +128,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
 
             ProbeResponse::NoUpdate => {
                 info!("no update is current available for this device");
-                context.waker.sender.send(()).await;
+                context.waker.sender.send(()).await?;
 
                 // Store timestamp of last polling
                 context.runtime_settings.set_last_polling(Utc::now())?;
@@ -137,7 +137,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
 
             ProbeResponse::Update(package, sign) => {
                 info!("update received: {} ({})", package.version(), package.package_uid());
-                context.waker.sender.send(()).await;
+                context.waker.sender.send(()).await?;
 
                 // Store timestamp of last polling
                 context.runtime_settings.set_last_polling(Utc::now())?;
@@ -173,7 +173,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
             // Starting logging a new scope of operation since we are
             // starting to handle a user request
             crate::logger::start_memory_logging();
-            context.waker.sender.send(()).await;
+            context.waker.sender.send(()).await?;
 
             Ok((
                 address::StateResponse::RequestAccepted(name),
@@ -195,7 +195,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
             // Starting logging a new scope of operation since we are
             // starting to handle a user request
             crate::logger::start_memory_logging();
-            context.waker.sender.send(()).await;
+            context.waker.sender.send(()).await?;
 
             Ok((
                 address::StateResponse::RequestAccepted(name),

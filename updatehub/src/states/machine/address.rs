@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use async_std::sync;
+use async_std::channel;
 use std::path::PathBuf;
 
 #[derive(Clone)]
 pub(crate) struct Addr {
-    pub(super) message: sync::Sender<(Message, sync::Sender<super::Result<Response>>)>,
-    pub(super) waker: sync::Sender<()>,
+    pub(super) message: channel::Sender<(Message, channel::Sender<super::Result<Response>>)>,
+    pub(super) waker: channel::Sender<()>,
 }
 
 #[derive(Debug)]
@@ -49,10 +49,16 @@ pub(crate) enum StateResponse {
     InvalidState(String),
 }
 
+impl<T> From<channel::SendError<T>> for crate::states::TransitionError {
+    fn from(err: channel::SendError<T>) -> Self {
+        unreachable!("Unexpected sending error for {:?}", err)
+    }
+}
+
 impl Addr {
     pub(crate) async fn request_info(&self) -> super::Result<sdk::api::info::Response> {
-        let (sndr, recv) = sync::channel(1);
-        self.message.send((Message::Info, sndr)).await;
+        let (sndr, recv) = channel::bounded(1);
+        self.message.send((Message::Info, sndr)).await?;
         match recv.recv().await {
             Ok(Ok(Response::Info(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
@@ -64,8 +70,8 @@ impl Addr {
         &self,
         custom_server: Option<String>,
     ) -> super::Result<ProbeResponse> {
-        let (sndr, recv) = sync::channel(1);
-        self.message.send((Message::Probe(custom_server), sndr)).await;
+        let (sndr, recv) = channel::bounded(1);
+        self.message.send((Message::Probe(custom_server), sndr)).await?;
         match recv.recv().await {
             Ok(Ok(Response::Probe(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
@@ -74,8 +80,8 @@ impl Addr {
     }
 
     pub(crate) async fn request_abort_download(&self) -> super::Result<AbortDownloadResponse> {
-        let (sndr, recv) = sync::channel(1);
-        self.message.send((Message::AbortDownload, sndr)).await;
+        let (sndr, recv) = channel::bounded(1);
+        self.message.send((Message::AbortDownload, sndr)).await?;
         match recv.recv().await {
             Ok(Ok(Response::AbortDownload(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
@@ -87,8 +93,8 @@ impl Addr {
         &self,
         path: PathBuf,
     ) -> super::Result<StateResponse> {
-        let (sndr, recv) = sync::channel(1);
-        self.message.send((Message::LocalInstall(path), sndr)).await;
+        let (sndr, recv) = channel::bounded(1);
+        self.message.send((Message::LocalInstall(path), sndr)).await?;
         match recv.recv().await {
             Ok(Ok(Response::LocalInstall(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
@@ -97,8 +103,8 @@ impl Addr {
     }
 
     pub(crate) async fn request_remote_install(&self, url: String) -> super::Result<StateResponse> {
-        let (sndr, recv) = sync::channel(1);
-        self.message.send((Message::RemoteInstall(url), sndr)).await;
+        let (sndr, recv) = channel::bounded(1);
+        self.message.send((Message::RemoteInstall(url), sndr)).await?;
         match recv.recv().await {
             Ok(Ok(Response::RemoteInstall(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
