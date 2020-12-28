@@ -20,6 +20,6 @@ slog-scope = "4"
 surf = { version = "2", default-features = false, features = ["h1-client"] }
 
 [dev-dependencies]
-mockito = "0.27"
+mockito = "0.28"
 tempfile = "3"
 

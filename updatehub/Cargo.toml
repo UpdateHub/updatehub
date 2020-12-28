@@ -38,13 +38,13 @@ async-trait = "0.1"
 async-lock = "2"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
-compress-tools = "0.7"
+compress-tools = "0.9"
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
 easy_process = "0.2"
 find-binary-version = "0.3"
-infer = "0.2"
+infer = "0.3"
 lazy_static = "1"
-mockito = { version = "0.27", optional = true }
+mockito = { version = "0.28", optional = true }
 ms-converter = "1"
 nix = "0.19"
 openssl = "0.10"
@@ -62,7 +62,7 @@ slog-term = "2"
 surf = { version = "2", default-features = false, features = ["h1-client"] }
 sys-mount = "1"
 tempfile = "3"
-tide = { version = "0.14", default-features = false, features = ["h1-server"] }
+tide = { version = "0.15", default-features = false, features = ["h1-server"] }
 timeout-readwrite = "0.3"
 toml = "0.5"
 walkdir = "2"
