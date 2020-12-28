@@ -76,7 +76,7 @@ mod tests {
         std::fs::write(
             setup.binaries.stored_path.join("fw_setenv"),
             format!(
-                r#"#! /bin/bash
+                r#"#! /bin/sh
 case $1 in
   "--help")
     echo "--script" >&2

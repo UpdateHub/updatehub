@@ -328,7 +328,7 @@ fn correct_config_update_polling() {
 
 #[test]
 fn correct_config_statechange_callback() {
-    let state_change_script = r#"#! /bin/bash
+    let state_change_script = r#"#! /bin/sh
 [ "$1" = "download" ] && echo "cancel" || echo
 "#;
 
@@ -390,7 +390,7 @@ fn correct_config_statechange_callback() {
 
 #[test]
 fn correct_config_error_state_callback() {
-    let state_change_script = r#"#! /bin/bash
+    let state_change_script = r#"#! /bin/sh
 [ "$1" = "error" ] && echo "cancel" || echo
 "#;
 
