@@ -42,8 +42,7 @@ enum ClientCommands {
     Log(Log),
     Probe(Probe),
     AbortDownload(AbortDownload),
-    LocalInstall(LocalInstall),
-    RemoteInstall(RemoteInstall),
+    InstallPackage(InstallPackage),
 }
 
 #[derive(FromArgs)]
@@ -73,21 +72,13 @@ struct Probe {
 struct AbortDownload {}
 
 #[derive(FromArgs)]
-/// Request agent to install a local update package
-#[argh(subcommand, name = "local-install")]
-struct LocalInstall {
-    /// path to the update package
+/// Request agent to install a package from a direct URL or a local
+/// path
+#[argh(subcommand, name = "install-package")]
+struct InstallPackage {
+    /// the URL or path to the update package
     #[argh(positional)]
-    file: PathBuf,
-}
-
-#[derive(FromArgs)]
-/// Request agent to download and install a package from a direct URL
-#[argh(subcommand, name = "remote-install")]
-struct RemoteInstall {
-    /// the URL to get the update package
-    #[argh(positional)]
-    url: String,
+    arg: String,
 }
 
 #[derive(FromArgs)]
@@ -167,19 +158,19 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
                 println!("{:#?}", response);
             }
         }
-        ClientCommands::LocalInstall(LocalInstall { file }) => {
-            let file =
-                if file.is_absolute() { file } else { std::env::current_dir().unwrap().join(file) };
-            let response = client.local_install(&file).await?;
-
-            if client_options.json {
-                println!("{}", serde_json::to_string(&response)?);
+        ClientCommands::InstallPackage(InstallPackage { arg }) => {
+            let response = if arg.starts_with("http://") {
+                client.remote_install(&arg).await?
             } else {
-                println!("{:#?}", response);
-            }
-        }
-        ClientCommands::RemoteInstall(RemoteInstall { url }) => {
-            let response = client.remote_install(&url).await?;
+                let file = PathBuf::from(&arg);
+                let file = if file.is_absolute() {
+                    file
+                } else {
+                    std::env::current_dir().unwrap().join(arg)
+                };
+
+                client.local_install(&file).await?
+            };
 
             if client_options.json {
                 println!("{}", serde_json::to_string(&response)?);
