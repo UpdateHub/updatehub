@@ -29,7 +29,7 @@ impl MockServer {
                 "/api.yaml",
             );
         let container = self.docker.run(apisprout);
-        let address = format!("localhost:{}", container.get_host_port(8000).unwrap());
+        let address = format!("0.0.0.0:{}", container.get_host_port(8000).unwrap());
         (address, container)
     }
 }
