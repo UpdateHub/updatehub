@@ -7,17 +7,17 @@ use sdk::api;
 use slog_scope::debug;
 use std::convert::TryFrom;
 
-pub(crate) struct API(machine::Addr);
+pub(crate) struct Api(machine::Addr);
 
-impl API {
+impl Api {
     pub(crate) fn server(addr: machine::Addr) -> tide::Server<machine::Addr> {
         let mut server = tide::with_state(addr);
-        server.at("/info").get(API::info);
-        server.at("/log").get(API::log);
-        server.at("/probe").post(API::probe);
-        server.at("/local_install").post(API::local_install);
-        server.at("/remote_install").post(API::remote_install);
-        server.at("/update/download/abort").post(API::download_abort);
+        server.at("/info").get(Api::info);
+        server.at("/log").get(Api::log);
+        server.at("/probe").post(Api::probe);
+        server.at("/local_install").post(Api::local_install);
+        server.at("/remote_install").post(Api::remote_install);
+        server.at("/update/download/abort").post(Api::download_abort);
         server
     }
 

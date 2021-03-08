@@ -39,7 +39,7 @@ impl fmt::Display for Set {
 }
 
 pub fn active() -> super::Result<Set> {
-    Ok(run_script(GET_SCRIPT)?.parse()?)
+    run_script(GET_SCRIPT)?.parse()
 }
 
 pub fn inactive() -> super::Result<Set> {

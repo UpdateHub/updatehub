@@ -13,7 +13,7 @@ pub(crate) fn run_hook(path: &Path) -> Result<String> {
         return Ok("".into());
     }
 
-    Ok(run_script(path.to_str().expect("invalid path for hook"))?)
+    run_script(path.to_str().expect("invalid path for hook"))
 }
 
 pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {

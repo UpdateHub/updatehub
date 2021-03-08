@@ -207,7 +207,9 @@ mod tests {
         let result = serde_json::to_string_pretty(&r_vec).unwrap();
         assert!(
             eq_without_time(&expected, &result),
-            format!("Expected:\n{}\n\nResult:\n{}", expected, result)
+            "Expected:\n{}\n\nResult:\n{}",
+            expected,
+            result
         );
     }
 }

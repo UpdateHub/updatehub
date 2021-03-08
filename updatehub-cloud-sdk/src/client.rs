@@ -15,10 +15,10 @@ use surf::{
     Body, Request, Response, StatusCode,
 };
 
-struct API;
+struct Api;
 
 #[surf::utils::async_trait]
-impl Middleware for API {
+impl Middleware for Api {
     async fn handle(
         &self,
         mut req: Request,
@@ -86,7 +86,7 @@ where
 
 impl<'a> Client<'a> {
     pub fn new(server: &'a str) -> Self {
-        Self { server, client: surf::Client::new().with(API) }
+        Self { server, client: surf::Client::new().with(Api) }
     }
 
     pub async fn probe(
@@ -205,10 +205,10 @@ impl TryFrom<&headers::HeaderValues> for api::Signature {
 
         // Workarround for https://github.com/sfackler/rust-openssl/issues/1325
         if value.is_empty() {
-            return Ok(Self::from_base64_str("")?);
+            return Self::from_base64_str("");
         }
 
-        Ok(Self::from_base64_str(value)?)
+        Self::from_base64_str(value)
     }
 }
 
