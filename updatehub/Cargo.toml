@@ -59,7 +59,7 @@ slog = { version = "2", default-features = false, features = ["max_level_trace",
 slog-async = { version = "2", default-features = false }
 slog-scope = "4"
 slog-term = "2"
-surf = { version = "2", default-features = false, features = ["h1-client"] }
+surf = { version = "2", default-features = false, features = ["curl-client"] }
 sys-mount = "1"
 tempfile = "3"
 tide = { version = "0.16", default-features = false, features = ["h1-server"] }
