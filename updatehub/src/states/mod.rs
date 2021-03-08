@@ -327,7 +327,7 @@ pub async fn run(settings: &Path) -> crate::Result<()> {
     let addr = machine.address();
     async_std::task::spawn_local(machine.start());
 
-    http_api::API::server(addr).listen(listen_socket).await?;
+    http_api::Api::server(addr).listen(listen_socket).await?;
 
     info!("Server has gracefully stopped");
     Ok(())
