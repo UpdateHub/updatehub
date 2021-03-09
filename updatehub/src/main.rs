@@ -16,23 +16,23 @@ struct TopLevel {
 #[argh(subcommand)]
 enum EntryPoints {
     Client(ClientOptions),
-    Server(ServerOptions),
+    Daemon(DaemonOptions),
 }
 
 #[derive(FromArgs)]
-/// Client subcommand
+/// Query or send control commands to the UpdateHub Agent daemon
 #[argh(subcommand, name = "client")]
 struct ClientOptions {
     #[argh(subcommand)]
     commands: ClientCommands,
 
-    /// change the client socket to listen
+    /// address where the UpdateHub Agent daemon is running
     #[argh(option, default = "String::from(\"localhost:8080\")")]
-    listen_socket: String,
+    daemon_address: String,
 
-    /// print the output in json format
+    /// set the output format to JSON
     #[argh(switch)]
-    json: bool,
+    json_output: bool,
 }
 
 #[derive(FromArgs)]
@@ -46,34 +46,31 @@ enum ClientCommands {
 }
 
 #[derive(FromArgs)]
-/// Fetches information about the current state of the agent
+/// Query the current state of the UpdateHub Agent
 #[argh(subcommand, name = "info")]
 struct Info {}
 
 #[derive(FromArgs)]
-/// Fetches the available log entries for the last update cycle
+/// Show the UpdateHub Agent last update/probe log
 #[argh(subcommand, name = "log")]
 struct Log {}
 
 #[derive(FromArgs)]
-/// Checks if the server has a new update for this device.
-///
-/// A custom server for the update cycle can be specified via the ´--server´
+/// Probe the UpdateHub server if there is an update available
 #[argh(subcommand, name = "probe")]
 struct Probe {
-    /// custom address to try probe
+    /// override the UpdateHub daemon to use for inquiry.
     #[argh(option)]
     server: Option<String>,
 }
 
 #[derive(FromArgs)]
-/// Abort current running download
+/// Ask UpdateHub Agent to abort any currently running download
 #[argh(subcommand, name = "abort-download")]
 struct AbortDownload {}
 
 #[derive(FromArgs)]
-/// Request agent to install a package from a direct URL or a local
-/// path
+/// Install a package from a direct URL or a local path
 #[argh(subcommand, name = "install-package")]
 struct InstallPackage {
     /// the URL or path to the update package
@@ -82,10 +79,10 @@ struct InstallPackage {
 }
 
 #[derive(FromArgs)]
-/// Server subcommand
-#[argh(subcommand, name = "server")]
-struct ServerOptions {
-    /// increase the verboseness level
+/// Starts the UpdateHub Agent daemon
+#[argh(subcommand, name = "daemon")]
+struct DaemonOptions {
+    /// increase the log level verboseness
     #[argh(option, short = 'v', from_str_fn(verbosity_level), default = "slog::Level::Info")]
     verbosity: slog::Level,
 
@@ -99,7 +96,7 @@ fn verbosity_level(value: &str) -> Result<slog::Level, String> {
     slog::Level::from_str(value).map_err(|_| format!("failed to parse verbosity level: {}", value))
 }
 
-async fn server_main(cmd: ServerOptions) -> updatehub::Result<()> {
+async fn daemon_main(cmd: DaemonOptions) -> updatehub::Result<()> {
     let _guard = updatehub::logger::init(cmd.verbosity);
     info!("starting UpdateHub Agent {}", updatehub::version());
 
@@ -109,13 +106,13 @@ async fn server_main(cmd: ServerOptions) -> updatehub::Result<()> {
 }
 
 async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
-    let client = sdk::Client::new(&client_options.listen_socket);
+    let client = sdk::Client::new(&client_options.daemon_address);
 
     match client_options.commands {
         ClientCommands::Info(_) => {
             let response = client.info().await?;
 
-            if client_options.json {
+            if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
                 println!("{:#?}", response);
@@ -124,7 +121,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
         ClientCommands::Log(_) => {
             let response = client.log().await?;
 
-            if client_options.json {
+            if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
                 println!("{}", response);
@@ -133,7 +130,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
         ClientCommands::Probe(Probe { server }) => {
             let response = client.probe(server).await?;
 
-            if client_options.json {
+            if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
                 match response {
@@ -152,14 +149,16 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
         ClientCommands::AbortDownload(_) => {
             let response = client.abort_download().await?;
 
-            if client_options.json {
+            if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
                 println!("{:#?}", response);
             }
         }
         ClientCommands::InstallPackage(InstallPackage { arg }) => {
-            let response = if arg.starts_with("http://") {
+            let is_remote_install = arg.starts_with("http://") || arg.starts_with("https://");
+
+            let response = if is_remote_install {
                 client.remote_install(&arg).await?
             } else {
                 let file = PathBuf::from(&arg);
@@ -172,7 +171,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
                 client.local_install(&file).await?
             };
 
-            if client_options.json {
+            if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
                 println!("{:#?}", response);
@@ -189,7 +188,7 @@ async fn main() {
 
     let res = match cmd.entry_point {
         EntryPoints::Client(client) => client_main(client).await,
-        EntryPoints::Server(cmd) => server_main(cmd).await,
+        EntryPoints::Daemon(cmd) => daemon_main(cmd).await,
     };
 
     if let Err(e) = res {
