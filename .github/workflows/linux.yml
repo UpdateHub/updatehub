@@ -14,7 +14,7 @@ jobs:
         version:
           - 1.45.0 # MSRV
           - stable
-          - nightly
+          - nightly-2021-03-08
 
     name: Test ${{ matrix.version }} - x86_64-unknown-linux-gnu
     runs-on: ubuntu-latest
