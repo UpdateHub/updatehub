@@ -88,7 +88,7 @@ impl Settings {
         }
 
         let cmd = format!(
-            "{} server -v trace -c {}",
+            "{} daemon -v trace -c {}",
             cargo_bin("updatehub").to_string_lossy(),
             setup.settings.stored_path.to_string_lossy()
         );
@@ -149,11 +149,11 @@ pub fn get_output_server(
     rewrite_log_output(stdout)
 }
 
-pub fn run_client_probe(server: Server, listen_socket: &str) -> String {
+pub fn run_client_probe(server: Server, daemon_address: &str) -> String {
     let cmd_string = format!(
-        "{} client --listen-socket {} probe",
+        "{} client --daemon-address {} probe",
         cargo_bin("updatehub").to_string_lossy(),
-        listen_socket
+        daemon_address
     );
     let cmd = match server {
         Server::Custom(server_address) => format!("{} --server {}", cmd_string, server_address),
@@ -163,11 +163,11 @@ pub fn run_client_probe(server: Server, listen_socket: &str) -> String {
     handle.exp_eof().expect("fail to match the EOF for client")
 }
 
-pub fn run_client_log(listen_socket: &str) -> String {
+pub fn run_client_log(daemon_address: &str) -> String {
     let cmd = format!(
-        "{} client --listen-socket {} log",
+        "{} client --daemon-address {} log",
         cargo_bin("updatehub").to_string_lossy(),
-        listen_socket
+        daemon_address
     );
     let mut handle = rexpect::spawn(&cmd, None).expect("fail to spawn log command");
     let stdout = handle.exp_eof().expect("fail to match the EOF for client");
