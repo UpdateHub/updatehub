@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use async_std::channel;
+use slog_scope::trace;
 use std::path::PathBuf;
 
 #[derive(Clone)]
@@ -93,6 +94,7 @@ impl Addr {
         &self,
         path: PathBuf,
     ) -> super::Result<StateResponse> {
+        trace!("Local install requested");
         let (sndr, recv) = channel::bounded(1);
         self.message.send((Message::LocalInstall(path), sndr)).await?;
         match recv.recv().await {
@@ -103,6 +105,7 @@ impl Addr {
     }
 
     pub(crate) async fn request_remote_install(&self, url: String) -> super::Result<StateResponse> {
+        trace!("Remote install requested");
         let (sndr, recv) = channel::bounded(1);
         self.message.send((Message::RemoteInstall(url), sndr)).await?;
         match recv.recv().await {

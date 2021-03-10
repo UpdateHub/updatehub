@@ -29,7 +29,7 @@ impl StateChangeImpl for PrepareLocalInstall {
     }
 
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
-        info!("installing local package: {}", self.update_file.display());
+        info!("installing local package: {:?}", self.update_file);
         let dest_path = context.settings.update.download_dir.clone();
         std::fs::create_dir_all(&dest_path)?;
 
