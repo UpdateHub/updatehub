@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use common::{
-    create_mock_server, get_output_server, remove_carriage_newline_characters, run_client_log,
-    run_client_probe, FakeServer, Polling, Server, Settings, StopMessage,
+    create_mock_server, get_output_server, remove_carriage_newline_characters,
+    run_client_local_install, run_client_log, run_client_probe, FakeServer, Polling, Server,
+    Settings, StopMessage,
 };
 
 pub mod common;
@@ -452,5 +453,108 @@ fn correct_config_error_state_callback() {
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
     <timestamp> DEBG receiving log request
+    "###);
+}
+
+#[test]
+fn correct_config_remote_install() {
+    let mocks = create_mock_server(FakeServer::RemoteInstall);
+    let (mut session, setup) = Settings::default().timeout(300).init_server();
+
+    let (output_server_trce_1, output_server_info_1) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let output_client = run_client_local_install(
+        &mockito::server_url(),
+        &setup.settings.data.network.listen_socket,
+    );
+    let (output_server_trce_2, output_server_info_2) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
+
+    mocks.iter().for_each(|mock| mock.assert());
+
+    insta::assert_snapshot!(output_server_info_1, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_server_info_2, @r###"
+    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
+    <timestamp> INFO installing local package: "<file>"
+    <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO using installation set as target 1
+    <timestamp> INFO swapping active installation set
+    <timestamp> INFO update installed successfully
+    <timestamp> INFO triggering reboot
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_server_trce_1, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_server_trce_2, @r###"
+    <timestamp> DEBG receiving remote_install request
+    <timestamp> TRCE Remote install requested
+    <timestamp> TRCE received external request: RemoteInstall("http://127.0.0.1:1234/some-direct-package-url")
+    <timestamp> TRCE starting to handle: direct_download
+    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
+    <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> TRCE starting to handle: prepare_local_install
+    <timestamp> INFO installing local package: "<file>"
+    <timestamp> DEBG successfuly uncompressed metadata file
+    <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> TRCE starting to handle: install
+    <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO using installation set as target 1
+    <timestamp> DEBG marking package ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62 as installed
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> DEBG setting upgrading to 1
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> INFO swapping active installation set
+    <timestamp> INFO update installed successfully
+    <timestamp> TRCE starting to handle: reboot
+    <timestamp> INFO triggering reboot
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @"Park
+");
+
+    insta::assert_snapshot!(output_log, @r###"
+    <timestamp> TRCE starting to handle: direct_download
+    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
+    <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> TRCE starting to handle: prepare_local_install
+    <timestamp> INFO installing local package: "<file>"
+    <timestamp> DEBG successfuly uncompressed metadata file
+    <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> TRCE starting to handle: install
+    <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO using installation set as target 1
+    <timestamp> DEBG marking package ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62 as installed
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> DEBG setting upgrading to 1
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> INFO swapping active installation set
+    <timestamp> INFO update installed successfully
+    <timestamp> TRCE starting to handle: reboot
+    <timestamp> INFO triggering reboot
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
     "###);
 }

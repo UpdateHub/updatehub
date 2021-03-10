@@ -11,6 +11,7 @@ pub enum FakeServer {
     NoUpdate,
     HasUpdate(String),
     CheckRequirementsTest(String),
+    RemoteInstall,
 }
 
 pub enum StopMessage {
@@ -163,6 +164,17 @@ pub fn run_client_probe(server: Server, daemon_address: &str) -> String {
     handle.exp_eof().expect("fail to match the EOF for client")
 }
 
+pub fn run_client_local_install(mock_addr: &str, daemon_address: &str) -> String {
+    let cmd = format!(
+        "{} client --daemon-address {} install-package {}/some-direct-package-url",
+        cargo_bin("updatehub").to_string_lossy(),
+        daemon_address,
+        mock_addr
+    );
+    let mut handle = rexpect::spawn(&cmd, None).expect("fail to spawn probe command");
+    handle.exp_eof().expect("fail to match the EOF for client")
+}
+
 pub fn run_client_log(daemon_address: &str) -> String {
     let cmd = format!(
         "{} client --daemon-address {} log",
@@ -310,6 +322,14 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                 .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
             .create(),
         ],
+        FakeServer::RemoteInstall => {
+            let test_uhupkg = format!("{}/fixtures/test.uhupkg", env!("CARGO_MANIFEST_DIR"));
+            vec![
+            mock("get", "/some-direct-package-url")
+                .with_status(200)
+                    .with_body_from_file(test_uhupkg)
+                .create(),
+        ]},
     }
 }
 
