@@ -8,12 +8,12 @@ use std::{
     collections::HashMap,
     fmt::{self, Write},
     io,
-    sync::Mutex,
+    sync::RwLock,
 };
 
 #[derive(Debug, Default)]
 pub struct MemDrain {
-    records: Mutex<Vec<LogRecord>>,
+    records: RwLock<Vec<LogRecord>>,
     logging: bool,
 }
 
@@ -27,7 +27,7 @@ struct LogRecord {
 
 impl MemDrain {
     pub fn start_logging(&mut self) {
-        self.records.lock().unwrap().clear();
+        self.records.write().unwrap().clear();
         self.logging = true;
     }
 
@@ -51,7 +51,7 @@ impl Serialize for MemDrain {
 
 impl ToString for MemDrain {
     fn to_string(&self) -> String {
-        let records = self.records.lock().unwrap();
+        let records = self.records.read().unwrap();
 
         let mut ret = String::new();
         for record in records.iter() {
@@ -83,7 +83,7 @@ impl Drain for MemDrain {
                 data: kv.0,
             };
 
-            self.records.lock().unwrap().push(l);
+            self.records.write().unwrap().push(l);
         }
 
         Ok(())
@@ -105,7 +105,7 @@ impl slog::ser::Serializer for KVSerializer {
 mod tests {
     use super::*;
     use slog::{o, slog_debug, slog_error, slog_info, Logger};
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
 
     fn eq_without_time(s1: &str, s2: &str) -> bool {
         let s1 = s1.split('\n');
