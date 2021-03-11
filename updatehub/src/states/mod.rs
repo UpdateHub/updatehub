@@ -325,7 +325,7 @@ pub async fn run(settings: &Path) -> crate::Result<()> {
 
     let machine = machine::StateMachine::new(State::new(), settings, runtime_settings, firmware);
     let addr = machine.address();
-    async_std::task::spawn_local(machine.start());
+    async_std::task::spawn(machine.start());
 
     http_api::Api::server(addr).listen(listen_socket).await?;
 
