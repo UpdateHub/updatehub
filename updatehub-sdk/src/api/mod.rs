@@ -105,11 +105,20 @@ pub mod log {
     #[derive(Clone, Debug, Deserialize, Serialize)]
     #[serde(rename_all = "lowercase")]
     pub enum Level {
+        // We use alias here since some string conversions of slog::Level use
+        // short names even when requesting the full name:
+        // https://github.com/slog-rs/slog/issues/282
+        #[serde(alias = "crit")]
         Critical,
+        #[serde(alias = "erro")]
         Error,
+        #[serde(alias = "warn")]
         Warning,
+        #[serde(alias = "info")]
         Info,
+        #[serde(alias = "debg")]
         Debug,
+        #[serde(alias = "trce")]
         Trace,
     }
 
