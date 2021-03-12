@@ -12,6 +12,8 @@ edition = "2018"
 [dependencies]
 async-std = { version = "1", default-features = false, features = ["attributes"] }
 derive_more = { version = "0.99", default-features = false, features = ["display", "error", "from"] }
+http-client = "6"
+isahc = "0.9"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 serde = { version = "1", default-features = false, features = ["derive"] }

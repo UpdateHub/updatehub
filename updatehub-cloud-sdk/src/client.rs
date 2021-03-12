@@ -86,7 +86,16 @@ where
 
 impl<'a> Client<'a> {
     pub fn new(server: &'a str) -> Self {
-        Self { server, client: surf::Client::new().with(Api) }
+        // Manually build inner clients since surf doesn't
+        // yet support timout config for client
+        // https://github.com/http-rs/surf/issues/274
+        use isahc::config::Configurable;
+        let duration = std::time::Duration::from_secs(10);
+        let client = isahc::HttpClient::builder().connect_timeout(duration).build().unwrap();
+        let client = http_client::isahc::IsahcClient::from_client(client);
+        let client = surf::Client::with_http_client(client);
+
+        Self { server, client: client.with(Api) }
     }
 
     pub async fn probe(
