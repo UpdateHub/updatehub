@@ -102,7 +102,7 @@ pub mod log {
     use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
 
-    #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
     #[serde(rename_all = "lowercase")]
     pub enum Level {
         // We use alias here since some string conversions of slog::Level use
@@ -125,10 +125,10 @@ pub mod log {
     #[derive(Clone, Debug, Deserialize, Serialize)]
     #[serde(deny_unknown_fields)]
     pub struct Log {
-        entries: Vec<Entry>,
+        pub entries: Vec<Entry>,
     }
 
-    #[derive(Clone, Debug, Deserialize, Serialize)]
+    #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
     #[serde(deny_unknown_fields)]
     pub struct Entry {
         level: Level,
@@ -140,23 +140,30 @@ pub mod log {
     impl core::fmt::Display for Log {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> Result<(), core::fmt::Error> {
             for entry in &self.entries {
-                let level = match entry.level {
-                    Level::Critical => "CRIT",
-                    Level::Error => "ERRO",
-                    Level::Warning => "WARN",
-                    Level::Info => "INFO",
-                    Level::Debug => "DEBG",
-                    Level::Trace => "TRCE",
-                };
-
-                writeln!(
-                    f,
-                    "{timestamp} {level} {msg}",
-                    timestamp = entry.time,
-                    level = level,
-                    msg = entry.message
-                )?;
+                writeln!(f, "{}", entry)?;
             }
+            Ok(())
+        }
+    }
+
+    impl core::fmt::Display for Entry {
+        fn fmt(&self, f: &mut core::fmt::Formatter) -> Result<(), core::fmt::Error> {
+            let level = match self.level {
+                Level::Critical => "CRIT",
+                Level::Error => "ERRO",
+                Level::Warning => "WARN",
+                Level::Info => "INFO",
+                Level::Debug => "DEBG",
+                Level::Trace => "TRCE",
+            };
+
+            write!(
+                f,
+                "{timestamp} {level} {msg}",
+                timestamp = self.time,
+                level = level,
+                msg = self.message
+            )?;
             Ok(())
         }
     }
