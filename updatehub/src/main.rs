@@ -195,7 +195,8 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
             if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
-                println!("{:#?}", response);
+                println!("Local install request accepted from {:?} state", response);
+                println!("Run 'updatehub client log --watch' to follow the log's progress");
             }
         }
     }
