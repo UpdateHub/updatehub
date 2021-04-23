@@ -524,8 +524,10 @@ fn correct_config_remote_install() {
     <timestamp> INFO parking state machine
     "###);
 
-    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @"Park
-");
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @r###"
+    Local install request accepted from Park state
+    Run 'updatehub client log --watch' to follow the log's progress
+    "###);
 
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> TRCE starting to handle: direct_download
