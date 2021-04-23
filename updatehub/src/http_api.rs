@@ -50,7 +50,6 @@ impl Api {
     }
 
     async fn log(_: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
-        debug!("receiving log request");
         Ok(tide::Response::builder(tide::StatusCode::Ok)
             .body(tide::Body::from_json(&crate::logger::buffer())?)
             .build())

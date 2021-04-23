@@ -53,7 +53,11 @@ struct Info {}
 #[derive(FromArgs)]
 /// Show the UpdateHub Agent last update/probe log
 #[argh(subcommand, name = "log")]
-struct Log {}
+struct Log {
+    /// watch for log changes
+    #[argh(switch, short = 'w')]
+    watch: bool,
+}
 
 #[derive(FromArgs)]
 /// Probe the UpdateHub server if there is an update available
@@ -118,11 +122,28 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
                 println!("{:#?}", response);
             }
         }
-        ClientCommands::Log(_) => {
+        ClientCommands::Log(log_opts) => {
             let response = client.log().await?;
 
             if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
+            } else if log_opts.watch {
+                let mut current = 0;
+                let mut last = response;
+                loop {
+                    for entry in last.entries.iter().skip(current) {
+                        println!("{}", entry);
+                    }
+                    current = last.entries.len();
+
+                    async_std::task::sleep(std::time::Duration::from_secs(1)).await;
+
+                    let new = client.log().await?;
+                    if new.entries.first() != last.entries.first() {
+                        current = 0;
+                    }
+                    last = new;
+                }
             } else {
                 println!("{}", response);
             }
