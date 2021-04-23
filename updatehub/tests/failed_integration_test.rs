@@ -76,7 +76,6 @@ fn failing_invalid_download_dir() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }
 
@@ -180,8 +179,7 @@ fn failing_invalid_server_address() {
     Unexpected response: InternalServerError
     "###);
 
-    insta::assert_snapshot!(output_log, @"<timestamp> DEBG receiving log request
-");
+    insta::assert_snapshot!(output_log, @"");
 }
 
 #[test]
@@ -242,7 +240,6 @@ fn failing_fail_check_requirements() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }
 
@@ -303,7 +300,6 @@ fn failing_supported_install_modes() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }
 
@@ -366,6 +362,5 @@ fn invalid_server_response() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }

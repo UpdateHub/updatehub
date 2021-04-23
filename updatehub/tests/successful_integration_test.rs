@@ -94,7 +94,6 @@ fn correct_config_no_update_polling() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }
 
@@ -164,7 +163,6 @@ fn correct_config_no_update_polling_with_probe_api() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }
 
@@ -323,7 +321,6 @@ fn correct_config_update_polling() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }
 
@@ -385,7 +382,6 @@ fn correct_config_statechange_callback() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }
 
@@ -452,7 +448,6 @@ fn correct_config_error_state_callback() {
     <timestamp> TRCE starting to handle: poll
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
-    <timestamp> DEBG receiving log request
     "###);
 }
 
