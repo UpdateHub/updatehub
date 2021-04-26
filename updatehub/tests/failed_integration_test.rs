@@ -179,7 +179,10 @@ fn failing_invalid_server_address() {
     Unexpected response: InternalServerError
     "###);
 
-    insta::assert_snapshot!(output_log, @"");
+    insta::assert_snapshot!(output_log, @r###"
+    <timestamp> INFO Probing the server as requested by the user
+    <timestamp> ERRO Request failed with: invalid port number
+    "###);
 }
 
 #[test]

@@ -118,7 +118,10 @@ fn correct_config_no_update_polling_with_probe_api() {
     <timestamp> INFO no update is current available for this device
     "###);
 
-    insta::assert_snapshot!(output_server_info_2, @"<timestamp> INFO no update is current available for this device");
+    insta::assert_snapshot!(output_server_info_2, @r###"
+    <timestamp> INFO Probing the server as requested by the user
+    <timestamp> INFO no update is current available for this device
+    "###);
 
     insta::assert_snapshot!(output_server_trce_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -141,6 +144,7 @@ fn correct_config_no_update_polling_with_probe_api() {
     insta::assert_snapshot!(output_server_trce_2, @r###"
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
+    <timestamp> INFO Probing the server as requested by the user
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -155,6 +159,7 @@ fn correct_config_no_update_polling_with_probe_api() {
     "###);
 
     insta::assert_snapshot!(output_log, @r###"
+    <timestamp> INFO Probing the server as requested by the user
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -187,6 +192,7 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     "###);
 
     insta::assert_snapshot!(output_server_info_2, @r###"
+    <timestamp> INFO Probing the server as requested by the user
     <timestamp> INFO no update is current available for this device
     <timestamp> INFO parking state machine
     "###);
@@ -202,9 +208,9 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     "###);
 
     insta::assert_snapshot!(output_server_trce_2, @r###"
-
     <timestamp> DEBG receiving probe request
     <timestamp> TRCE received external request: Probe(None)
+    <timestamp> INFO Probing the server as requested by the user
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -219,6 +225,7 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     "###);
 
     insta::assert_snapshot!(output_log, @r###"
+    <timestamp> INFO Probing the server as requested by the user
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
