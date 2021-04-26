@@ -31,11 +31,6 @@ jobs:
           override: true
           default: true
 
-      - name: Generate Cargo.lock
-        uses: actions-rs/cargo@v1
-        with:
-          command: generate-lockfile
-
       - name: Cache build contents
         uses: actions/cache@v2
         with:
@@ -50,7 +45,7 @@ jobs:
         with:
           use-cross: true
           command: check
-          args: --target aarch64-unknown-linux-gnu --release --all --bins --examples --tests --all-features
+          args: --locked --target aarch64-unknown-linux-gnu --release --all --bins --examples --tests --all-features
 
       - name: Tests
         uses: actions-rs/cargo@v1
@@ -58,7 +53,7 @@ jobs:
         with:
           use-cross: true
           command: test
-          args: --target aarch64-unknown-linux-gnu -p updatehub --release --all-features --no-fail-fast --lib -- --nocapture
+          args: --locked --target aarch64-unknown-linux-gnu -p updatehub --release --all-features --no-fail-fast --lib -- --nocapture
 
       - name: Clear the cargo caches
         run: |

@@ -51,11 +51,6 @@ jobs:
           crate: cargo-tree
           use-tool-cache: true
 
-      - name: Generate Cargo.lock
-        uses: actions-rs/cargo@v1
-        with:
-          command: generate-lockfile
-
       - name: Cache build contents
         uses: actions/cache@v2
         with:
@@ -69,14 +64,14 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --release --all --bins --examples --tests --all-features
+          args: --locked --release --all --bins --examples --tests --all-features
 
       - name: Tests
         uses: actions-rs/cargo@v1
         timeout-minutes: 10
         with:
           command: test
-          args: --release --all --all-features --no-fail-fast -- --nocapture
+          args: --locked --release --all --all-features --no-fail-fast -- --nocapture
 
       - name: Run listener test
         run: |
@@ -116,7 +111,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args:  --all --all-features --no-fail-fast -- --nocapture
+          args: --locked --all --all-features --no-fail-fast -- --nocapture
         env:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Zpanic_abort_tests -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort'
