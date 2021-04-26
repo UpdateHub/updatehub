@@ -113,8 +113,7 @@ fn complete_object_file() {
     assert_eq!(
         update_package
             .filter_objects(settings, Set(InstallationSet::A), object::info::Status::Ready)
-            .iter()
-            .count(),
+            .len(),
         1
     );
 }
