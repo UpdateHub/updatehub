@@ -135,14 +135,13 @@ mod tests {
     #[test]
     fn unmatched_checksum() {
         let mut f = tempfile::NamedTempFile::new().unwrap();
-        assert_eq!(
-            check_if_different(
+        assert!(
+            !check_if_different(
                 &mut f,
                 &definitions::InstallIfDifferent::CheckSum,
                 "some_sha256sum"
             )
             .unwrap(),
-            false,
             "Empty fille should not be validated to the checksum"
         );
     }
@@ -151,14 +150,13 @@ mod tests {
     fn checksum() {
         let mut f = tempfile::NamedTempFile::new().unwrap();
         io::Write::write_all(&mut f, b"some_sha256sum").unwrap();
-        assert_eq!(
-            check_if_different(
+        assert!(
+            !check_if_different(
                 &mut f,
                 &definitions::InstallIfDifferent::CheckSum,
                 "7dc201ce54a835790d78835363a0bce4db704dd23c0c05e399d2a7d1f8fcef19",
             )
             .unwrap(),
-            false,
             "Empty fille should not be validated to the checksum"
         );
     }
