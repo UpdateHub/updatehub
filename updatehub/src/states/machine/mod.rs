@@ -9,7 +9,7 @@ use super::{
     State, StateChangeImpl, Validation,
 };
 use async_std::{channel, prelude::FutureExt};
-use slog_scope::{info, trace};
+use slog_scope::{error, info, trace};
 use std::path::PathBuf;
 
 pub(crate) use address::{
@@ -91,6 +91,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
                 state
             }
             Err(e) => {
+                error!("Request failed with: {}", e);
                 responder.send(Err(e)).await.ok()?;
                 None
             }
@@ -112,6 +113,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
         // Starting logging a new scope of operation since we are
         // starting to handle a user request
         crate::logger::start_memory_logging();
+        info!("Probing the server as requested by the user");
 
         if let Some(server_address) = custom_server {
             context.runtime_settings.set_custom_server_address(&server_address);
