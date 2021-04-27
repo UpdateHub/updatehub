@@ -11,12 +11,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - 1.49.0 # MSRV
-          - stable
-          - nightly-2021-03-08
+        name: [MSRV, stable, nightly]
+        include:
+          - name: MSRV
+            version: 1.49.0
+          - name: stable
+            version: stable
+          - name: nightly
+            version: nightly
 
-    name: Test ${{ matrix.version }} - x86_64-unknown-linux-gnu
+    name: Test ${{ matrix.name }} - x86_64-unknown-linux-gnu
     runs-on: ubuntu-latest
 
     steps:
@@ -31,21 +35,21 @@ jobs:
           profile: minimal
           override: true
       - name: Install grcov tool
-        if: matrix.version == 'nightly'
+        if: matrix.name == 'nightly'
         uses: actions-rs/install@v0.1
         with:
           crate: grcov
           use-tool-cache: true
 
       - name: Install cargo bloat tool
-        if: matrix.version == '1.45.0' && 0
+        if: matrix.name == 'MSRV' && 0
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-bloat
           use-tool-cache: true
 
       - name: Install cargo tree tool
-        if: matrix.version == '1.45.0'
+        if: matrix.name == 'MSRV'
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-tree
@@ -100,14 +104,14 @@ jobs:
           fi
 
       - name: Run cargo bloat
-        if: matrix.version == '1.45.0' && 0
+        if: matrix.name == 'MSRV' && 0
         uses: orf/cargo-bloat-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           bloat_args: --release --package updatehub
 
       - name: Run cargo test with coverage
-        if: matrix.version == 'nightly'
+        if: matrix.name == 'nightly'
         uses: actions-rs/cargo@v1
         with:
           command: test
@@ -116,16 +120,16 @@ jobs:
           CARGO_INCREMENTAL: '0'
           RUSTFLAGS: '-Zprofile -Zpanic_abort_tests -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort'
       - id: coverage
-        if: matrix.version == 'nightly'
+        if: matrix.name == 'nightly'
         uses: actions-rs/grcov@master
       - name: Coveralls upload
-        if: matrix.version == 'nightly'
+        if: matrix.name == 'nightly'
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ${{ steps.coverage.outputs.report }}
       - name: Clear the coverage files from cache
-        if: matrix.version == 'nightly'
+        if: matrix.name == 'nightly'
         run: |
           find target/ -name "*.gcda" -exec rm {} +
 

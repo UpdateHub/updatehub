@@ -11,12 +11,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - 1.49.0 # MSRV
-          - stable
-          - nightly
+        name: [MSRV, stable, nightly]
+        include:
+          - name: MSRV
+            version: 1.49.0
+          - name: stable
+            version: stable
+          - name: nightly
+            version: nightly
 
-    name: Test ${{ matrix.version }} - armv7-unknown-linux-gnueabihf
+    name: Test ${{ matrix.name }} - armv7-unknown-linux-gnueabihf
     runs-on: ubuntu-latest
 
     steps:
