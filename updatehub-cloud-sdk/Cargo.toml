@@ -22,6 +22,6 @@ slog-scope = "4"
 surf = { version = "2", default-features = false, features = ["curl-client"] }
 
 [dev-dependencies]
-mockito = "0.29"
+mockito = "0.30"
 tempfile = "3"
 
