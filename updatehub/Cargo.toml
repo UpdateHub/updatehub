@@ -9,6 +9,7 @@ authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 license = "Apache-2.0"
 edition = "2018"
 default-run = "updatehub"
+publish = false
 
 [features]
 default = ["test-env"]
