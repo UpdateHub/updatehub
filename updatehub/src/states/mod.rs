@@ -325,7 +325,10 @@ pub async fn run(settings: &Path) -> crate::Result<()> {
 
     let machine = machine::StateMachine::new(State::new(), settings, runtime_settings, firmware);
     let addr = machine.address();
-    async_std::task::spawn(machine.start());
+    // Use a local spawn since spawned file write operations can get stucked on
+    // single threaded envirements:
+    // https://github.com/async-rs/async-std/issues/973
+    async_std::task::spawn_local(machine.start());
 
     http_api::Api::server(addr).listen(listen_socket).await?;
 
