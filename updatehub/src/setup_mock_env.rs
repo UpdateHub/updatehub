@@ -12,7 +12,7 @@ async fn main() {
     let _mocks = start_mock(&setup.firmware.data.product_uid);
 
     println!(
-        r#"PATH="{bin_dir}:$PATH" cargo run --bin updatehub server -v trace -c {conf_file}"#,
+        r#"PATH="{bin_dir}:$PATH" cargo run --bin updatehub daemon -v trace -c {conf_file}"#,
         bin_dir = setup.binaries.stored_path.to_string_lossy(),
         conf_file = setup.settings.stored_path.to_string_lossy()
     );
