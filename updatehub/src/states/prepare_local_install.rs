@@ -62,6 +62,8 @@ impl StateChangeImpl for PrepareLocalInstall {
         for object in update_package
             .objects(installation_set::active()?)
             .iter()
+            // We ignore object's allow_remote_install property since we are doing
+            // a local install and hence offline update is implied
             .map(crate::object::Info::sha256sum)
         {
             source.seek(SeekFrom::Start(0))?;
