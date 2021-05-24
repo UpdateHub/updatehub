@@ -38,6 +38,10 @@ impl Download {
             .iter()
             .filter_map(|o| {
                 let name = o.filename();
+                if o.allow_remote_install() {
+                    trace!("Skiping download for {} as it can be installed without download", name);
+                    return None;
+                }
                 let shasum = o.sha256sum();
                 let obj_status = o
                     .status(&download_dir)
@@ -137,6 +141,7 @@ impl StateChangeImpl for Download {
             .update_package
             .objects(installation_set::inactive()?)
             .iter()
+            .filter(|o| !o.allow_remote_install())
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
             let object_context = object::installer::Context {
