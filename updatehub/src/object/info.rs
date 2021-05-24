@@ -69,6 +69,10 @@ pub(crate) trait Info {
         Ok(Status::Ready)
     }
 
+    fn allow_remote_install(&self) -> bool {
+        false
+    }
+
     fn mode(&self) -> String;
     fn filename(&self) -> &str;
     fn len(&self) -> u64;

@@ -40,6 +40,12 @@ macro_rules! impl_object_for_object_types {
                     $( Object::$objtype(ref o) => o.required_install_size(), )*
                 }
             }
+
+            fn allow_remote_install(&self) -> bool {
+                match *self {
+                    $( Object::$objtype(ref o) => o.allow_remote_install(), )*
+                }
+            }
         }
     };
 }
@@ -91,6 +97,36 @@ macro_rules! impl_compressed_object_info {
 
             fn required_install_size(&self) -> u64 {
                 if self.compressed { self.required_uncompressed_size } else { self.size }
+            }
+        }
+    };
+}
+
+macro_rules! impl_remote_object_info {
+    ($objtype:ty) => {
+        impl Info for $objtype {
+            fn mode(&self) -> String {
+                stringify!($objtype).to_lowercase()
+            }
+
+            fn filename(&self) -> &str {
+                &self.filename
+            }
+
+            fn len(&self) -> u64 {
+                self.size
+            }
+
+            fn sha256sum(&self) -> &str {
+                &self.sha256sum
+            }
+
+            fn required_install_size(&self) -> u64 {
+                self.size
+            }
+
+            fn allow_remote_install(&self) -> bool {
+                true
             }
         }
     };
