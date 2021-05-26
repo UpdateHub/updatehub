@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Error, Result};
+use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
@@ -25,11 +25,11 @@ impl Installer for objects::Ubifs {
         Err(Error::InvalidTargetType(self.target.clone()))
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
+    fn install(&self, context: &Context) -> Result<()> {
         info!("'ubifs' handler Install {} ({})", self.filename, self.sha256sum);
 
         let target = self.target.get_target()?;
-        let source = download_dir.join(self.sha256sum());
+        let source = context.download_dir.join(self.sha256sum());
 
         if self.compressed {
             easy_process::run_with_stdin(
@@ -99,7 +99,12 @@ mod tests {
         let (_handle, calls) = create_echo_bins(&["ubiupdatevol"]).unwrap();
 
         ubifs_obj.check_requirements().unwrap();
-        ubifs_obj.install(download_dir.path()).unwrap();
+        ubifs_obj
+            .install(&Context {
+                download_dir: download_dir.path().to_owned(),
+                ..Context::default()
+            })
+            .unwrap();
 
         let expected = format!("ubiupdatevol {} {}\n", target.display(), source.display());
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);

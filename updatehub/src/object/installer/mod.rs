@@ -18,7 +18,14 @@ use crate::utils;
 use find_binary_version::{self as fbv, BinaryKind};
 use pkg_schema::{definitions, Object};
 use slog_scope::debug;
-use std::io;
+use std::{io, path::PathBuf};
+
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Context {
+    pub(crate) download_dir: PathBuf,
+    pub(crate) offline_update: bool,
+    pub(crate) base_url: String,
+}
 
 pub(crate) trait Installer {
     fn check_requirements(&self) -> Result<()> {
@@ -26,7 +33,7 @@ pub(crate) trait Installer {
         Ok(())
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<()>;
+    fn install(&self, context: &Context) -> Result<()>;
 }
 
 impl Installer for Object {
@@ -34,8 +41,8 @@ impl Installer for Object {
         for_any_object!(self, o, { o.check_requirements() })
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
-        for_any_object!(self, o, { o.install(download_dir) })
+    fn install(&self, context: &Context) -> Result<()> {
+        for_any_object!(self, o, { o.install(context) })
     }
 }
 

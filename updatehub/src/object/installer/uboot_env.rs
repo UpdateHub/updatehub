@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Error, Result};
+use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
     utils,
@@ -22,10 +22,10 @@ impl Installer for objects::UbootEnv {
         Ok(())
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
+    fn install(&self, context: &Context) -> Result<()> {
         info!("'uboot-env' handler Install {} ({})", self.filename, self.sha256sum);
 
-        let source = download_dir.join(self.sha256sum());
+        let source = context.download_dir.join(self.sha256sum());
         let active_install_set = crate::firmware::installation_set::active()?;
 
         // The call to `fw_setenv` here serves to synchronize the U-Boot environment
@@ -97,7 +97,7 @@ esac
         let source = download_dir.join(&uboot_env_obj.sha256sum);
 
         uboot_env_obj.check_requirements().unwrap();
-        uboot_env_obj.install(&download_dir).unwrap();
+        uboot_env_obj.install(&Context { download_dir, ..Context::default() }).unwrap();
 
         let output_file = &setup.binaries.data;
         let expected = format!(

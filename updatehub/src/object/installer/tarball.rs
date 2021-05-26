@@ -2,14 +2,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::Result;
+use super::{Context, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
-use std::path::Path;
 
 impl Installer for objects::Tarball {
     fn check_requirements(&self) -> Result<()> {
@@ -29,7 +28,7 @@ impl Installer for objects::Tarball {
         }
     }
 
-    fn install(&self, download_dir: &Path) -> Result<()> {
+    fn install(&self, context: &Context) -> Result<()> {
         info!("'tarball' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = self.target.get_target()?;
@@ -38,7 +37,7 @@ impl Installer for objects::Tarball {
         let format_options = &self.target_format.format_options;
         let sha256sum = self.sha256sum();
         let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
-        let source = download_dir.join(sha256sum);
+        let source = context.download_dir.join(sha256sum);
 
         if self.target_format.should_format {
             utils::fs::format(&device, filesystem, format_options)?;
@@ -118,7 +117,7 @@ mod tests {
 
         // Peform Install
         obj.check_requirements()?;
-        obj.install(&PathBuf::from("fixtures"))?;
+        obj.install(&Context { download_dir: PathBuf::from("fixtures"), ..Context::default() })?;
 
         // Validade File
         #[allow(clippy::redundant_clone)]

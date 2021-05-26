@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::Context;
 use crate::object::Installer;
 use pkg_schema::objects;
 
@@ -17,7 +18,7 @@ impl Installer for objects::Test {
         Ok(())
     }
 
-    fn install(&self, _: &std::path::Path) -> super::Result<()> {
+    fn install(&self, _: &Context) -> super::Result<()> {
         Ok(())
     }
 }

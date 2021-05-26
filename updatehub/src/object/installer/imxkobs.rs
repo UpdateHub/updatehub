@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Error, Result};
+use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
     utils,
@@ -19,7 +19,7 @@ impl Installer for objects::Imxkobs {
         Ok(())
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
+    fn install(&self, context: &Context) -> Result<()> {
         info!("'imxkobs' handler Install {} ({})", self.filename, self.sha256sum);
 
         handle_install_if_different!(self.install_if_different, &self.sha256sum, {
@@ -41,7 +41,7 @@ impl Installer for objects::Imxkobs {
             cmd += "-x "
         };
 
-        cmd += download_dir.join(self.sha256sum()).to_str().ok_or(Error::InvalidPath)?;
+        cmd += context.download_dir.join(self.sha256sum()).to_str().ok_or(Error::InvalidPath)?;
 
         if self.search_exponent > 0 {
             cmd += &format!(" --search_exponent={}", self.search_exponent)
@@ -104,7 +104,12 @@ mod tests {
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
         imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj.install(download_dir.path()).unwrap();
+        imxkobs_obj
+            .install(&Context {
+                download_dir: download_dir.path().to_owned(),
+                ..Context::default()
+            })
+            .unwrap();
 
         let expected = format!("kobs-ng init {} -v\n", source.to_str().unwrap());
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
@@ -122,7 +127,12 @@ mod tests {
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
         imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj.install(download_dir.path()).unwrap();
+        imxkobs_obj
+            .install(&Context {
+                download_dir: download_dir.path().to_owned(),
+                ..Context::default()
+            })
+            .unwrap();
 
         let expected = format!("kobs-ng init -x {} -v\n", source.to_str().unwrap());
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
@@ -140,7 +150,12 @@ mod tests {
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
         imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj.install(download_dir.path()).unwrap();
+        imxkobs_obj
+            .install(&Context {
+                download_dir: download_dir.path().to_owned(),
+                ..Context::default()
+            })
+            .unwrap();
 
         let expected = format!(
             "kobs-ng init {} --search_exponent={} -v\n",
@@ -162,7 +177,12 @@ mod tests {
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
         imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj.install(download_dir.path()).unwrap();
+        imxkobs_obj
+            .install(&Context {
+                download_dir: download_dir.path().to_owned(),
+                ..Context::default()
+            })
+            .unwrap();
 
         let expected = format!(
             "kobs-ng init {} --chip_0_device_path={} -v\n",
@@ -184,7 +204,12 @@ mod tests {
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
         imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj.install(download_dir.path()).unwrap();
+        imxkobs_obj
+            .install(&Context {
+                download_dir: download_dir.path().to_owned(),
+                ..Context::default()
+            })
+            .unwrap();
 
         let expected = format!(
             "kobs-ng init {} --chip_1_device_path={} -v\n",
@@ -203,7 +228,12 @@ mod tests {
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
         imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj.install(download_dir.path()).unwrap();
+        imxkobs_obj
+            .install(&Context {
+                download_dir: download_dir.path().to_owned(),
+                ..Context::default()
+            })
+            .unwrap();
 
         let expected = format!(
             "kobs-ng init -x {} --search_exponent={} --chip_0_device_path={} --chip_1_device_path={} -v\n",

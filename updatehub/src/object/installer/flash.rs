@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Error, Result};
+use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
@@ -31,11 +31,11 @@ impl Installer for objects::Flash {
         }
     }
 
-    fn install(&self, download_dir: &std::path::Path) -> Result<()> {
+    fn install(&self, context: &Context) -> Result<()> {
         info!("'flash' handler Install {} ({})", self.filename, self.sha256sum);
 
         let target = self.target.get_target()?;
-        let source = download_dir.join(self.sha256sum());
+        let source = context.download_dir.join(self.sha256sum());
 
         handle_install_if_different!(self.install_if_different, &self.sha256sum, {
             std::fs::File::open(&target).map_err(Error::from)
@@ -118,7 +118,12 @@ mod tests {
         let (_handle, calls) = create_echo_bins(&["flash_erase", "flashcp", "nandwrite"]).unwrap();
 
         flash_obj.check_requirements().unwrap();
-        flash_obj.install(download_dir.path()).unwrap();
+        flash_obj
+            .install(&Context {
+                download_dir: download_dir.path().to_owned(),
+                ..Context::default()
+            })
+            .unwrap();
 
         let expected = format!(
             "flash_erase {} 0 0\nflashcp {} {}\n",

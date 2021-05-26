@@ -131,15 +131,27 @@ impl StateChangeImpl for Download {
             return Ok((new_state, machine::StepTransition::Immediate));
         }
 
-        let download_dir = &context.lock().await.settings.update.download_dir;
+        let context = context.lock().await;
+        let download_dir = &context.settings.update.download_dir;
         if self
             .update_package
             .objects(installation_set::inactive()?)
             .iter()
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
+            let object_context = object::installer::Context {
+                download_dir: context.settings.update.download_dir.clone(),
+                offline_update: false,
+                base_url: format!(
+                    "{server_url}/products/{product_uid}/packages/{package_uid}/objects",
+                    server_url = &context.server_address(),
+                    product_uid = &context.firmware.product_uid,
+                    package_uid = &self.update_package.package_uid(),
+                ),
+            };
+
             Ok((
-                State::Install(Install { update_package: self.update_package }),
+                State::Install(Install { update_package: self.update_package, object_context }),
                 machine::StepTransition::Immediate,
             ))
         } else {

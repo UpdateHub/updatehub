@@ -5,7 +5,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Error, Result};
+use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
@@ -15,7 +15,6 @@ use slog_scope::info;
 use std::{
     fs,
     io::{BufRead, Read, Seek, SeekFrom, Write},
-    path::Path,
 };
 
 impl Installer for objects::Raw {
@@ -30,14 +29,14 @@ impl Installer for objects::Raw {
         Err(Error::InvalidTargetType(self.target_type.clone()))
     }
 
-    fn install(&self, download_dir: &Path) -> Result<()> {
+    fn install(&self, context: &Context) -> Result<()> {
         info!("'raw' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = match self.target_type {
             definitions::TargetType::Device(ref p) => p,
             _ => unreachable!("device should be secured by check_requirements"),
         };
-        let source = download_dir.join(self.sha256sum());
+        let source = context.download_dir.join(self.sha256sum());
         let chunk_size = self.chunk_size.0;
         let seek = self.seek * chunk_size as u64;
         let skip = self.skip.0 * chunk_size as u64;
@@ -211,7 +210,11 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.install(download_dir.path()).unwrap();
+        obj.install(&Context {
+            download_dir: download_dir.path().to_owned(),
+            ..Context::default()
+        })
+        .unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -231,7 +234,11 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.install(download_dir.path()).unwrap();
+        obj.install(&Context {
+            download_dir: download_dir.path().to_owned(),
+            ..Context::default()
+        })
+        .unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -251,7 +258,11 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.install(download_dir.path()).unwrap();
+        obj.install(&Context {
+            download_dir: download_dir.path().to_owned(),
+            ..Context::default()
+        })
+        .unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -272,7 +283,11 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.install(download_dir.path()).unwrap();
+        obj.install(&Context {
+            download_dir: download_dir.path().to_owned(),
+            ..Context::default()
+        })
+        .unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -293,7 +308,11 @@ mod tests {
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         obj.check_requirements().unwrap();
-        obj.install(download_dir.path()).unwrap();
+        obj.install(&Context {
+            download_dir: download_dir.path().to_owned(),
+            ..Context::default()
+        })
+        .unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();

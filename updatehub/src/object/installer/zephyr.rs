@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use super::Context;
 use crate::object::Installer;
 use pkg_schema::objects;
 use slog_scope::warn;
@@ -12,7 +13,7 @@ impl Installer for objects::Zephyr {
         Err(super::Error::Unsupported)
     }
 
-    fn install(&self, _: &std::path::Path) -> super::Result<()> {
+    fn install(&self, _: &Context) -> super::Result<()> {
         warn!("'zephyr' objects are not supported");
         Err(super::Error::Unsupported)
     }

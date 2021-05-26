@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Error, Result};
+use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{self, definitions::TargetTypeExt},
@@ -13,7 +13,6 @@ use std::{
     fs,
     io::{self, Write},
     os::unix::fs::PermissionsExt,
-    path::Path,
 };
 
 impl Installer for objects::Copy {
@@ -28,7 +27,7 @@ impl Installer for objects::Copy {
         Err(Error::InvalidTargetType(self.target_type.clone()))
     }
 
-    fn install(&self, download_dir: &Path) -> Result<()> {
+    fn install(&self, context: &Context) -> Result<()> {
         info!("'copy' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = self.target_type.get_target()?;
@@ -38,7 +37,7 @@ impl Installer for objects::Copy {
         let chunk_size = definitions::ChunkSize::default().0;
         let sha256sum = self.sha256sum();
         let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
-        let source = download_dir.join(sha256sum);
+        let source = context.download_dir.join(sha256sum);
 
         handle_install_if_different!(self.install_if_different, sha256sum, {
             utils::fs::mount_map(&device, filesystem, mount_options, |path| {
@@ -191,7 +190,7 @@ mod tests {
 
         // Peform Install
         obj.check_requirements()?;
-        obj.install(&download_dir.path())?;
+        obj.install(&Context::default())?;
 
         // Validade File
         #[allow(clippy::redundant_clone)]

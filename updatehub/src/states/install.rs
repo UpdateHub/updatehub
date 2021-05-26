@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     firmware::installation_set,
-    object::{Info, Installer},
+    object::{self, Info, Installer},
     update_package::{UpdatePackage, UpdatePackageExt},
 };
 use slog_scope::info;
@@ -16,6 +16,7 @@ use slog_scope::info;
 #[derive(Debug)]
 pub(super) struct Install {
     pub(super) update_package: UpdatePackage,
+    pub(super) object_context: object::installer::Context,
 }
 
 impl CallbackReporter for Install {}
@@ -47,6 +48,7 @@ impl StateChangeImpl for Install {
         let installation_set = context.runtime_settings.get_inactive_installation_set()?;
         info!("using installation set as target {}", installation_set);
 
+        let obj_context = self.object_context;
         let objs = self.update_package.objects_mut(installation_set);
 
         // Objects are sorted in reverse order so the smaller objects are installed
@@ -54,17 +56,18 @@ impl StateChangeImpl for Install {
         // changes towards the end of the update.
         objs.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap().reverse());
 
-        objs.iter_mut().try_for_each(|obj| obj.install(&context.settings.update.download_dir))?;
+        // Run the install routine for every object.
+        objs.iter_mut().try_for_each(|obj| obj.install(&obj_context))?;
 
         // Avoid installing same package twice.
         context.runtime_settings.set_applied_package_uid(&package_uid)?;
 
-        // Set upgrading to the new installation set
+        // Set upgrading to the new installation set.
         context.runtime_settings.set_upgrading_to(installation_set)?;
 
         // Swap installation set so it is used next device boot.
-        installation_set::swap_active()?;
         info!("swapping active installation set");
+        installation_set::swap_active()?;
 
         info!("update installed successfully");
         Ok((
@@ -84,7 +87,10 @@ mod test {
     async fn has_package_uid_if_succeed() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
-        let state = Install { update_package: get_update_package() };
+        let state = Install {
+            update_package: get_update_package(),
+            object_context: object::installer::Context::default(),
+        };
 
         let machine = State::Install(state).move_to_next_state(&mut context).await.unwrap().0;
 

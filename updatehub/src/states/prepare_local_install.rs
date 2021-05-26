@@ -80,6 +80,16 @@ impl StateChangeImpl for PrepareLocalInstall {
             &context.settings,
         )?;
 
-        Ok((State::Install(Install { update_package }), machine::StepTransition::Immediate))
+        Ok((
+            State::Install(Install {
+                update_package,
+                object_context: crate::object::installer::Context {
+                    download_dir: context.settings.update.download_dir.clone(),
+                    offline_update: true,
+                    base_url: String::default(),
+                },
+            }),
+            machine::StepTransition::Immediate,
+        ))
     }
 }
