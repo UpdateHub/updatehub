@@ -16,9 +16,9 @@ pub enum Error {
     Deserialize(toml::de::Error),
     Serialize(toml::ser::Error),
 
-    #[display("invalid setting for polling interval, it cannot be less than 60 seconds")]
+    #[display(fmt = "invalid setting for polling interval, it cannot be less than 60 seconds")]
     TooSmallPollingInterval,
-    #[display("invalid setting for server address, it must use the protocol prefix")]
+    #[display(fmt = "invalid setting for server address, it must use the protocol prefix")]
     ServerAddressWithoutProtocol,
 
     #[cfg(feature = "v1-parsing")]

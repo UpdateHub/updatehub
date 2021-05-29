@@ -40,11 +40,11 @@ pub type Result<T> = std::result::Result<T, TransitionError>;
 
 #[derive(Debug, Display, Error, From)]
 pub enum TransitionError {
-    #[display("some objects are not ready for use")]
+    #[display(fmt = "some objects are not ready for use")]
     SomeObjectsAreNotReady,
-    #[display("signature not found")]
+    #[display(fmt = "signature not found")]
     SignatureNotFound,
-    #[display("channel communication as failed")]
+    #[display(fmt = "channel communication as failed")]
     CommunicationFailed,
 
     Firmware(crate::firmware::Error),

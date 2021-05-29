@@ -28,13 +28,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[display("invalid product UID")]
+    #[display(fmt = "invalid product UID")]
     InvalidProductUid,
 
-    #[display("product UID is missing")]
+    #[display(fmt = "product UID is missing")]
     MissingProductUid,
 
-    #[display("device identity is missing")]
+    #[display(fmt = "device identity is missing")]
     MissingDeviceIdentity,
 
     #[display(fmt = "invalid installation set, the only know ones are 0 or 1")]
