@@ -43,7 +43,7 @@ compress-tools = "0.11"
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
 easy_process = "0.2"
 find-binary-version = "0.3"
-infer = "0.4"
+infer = "0.5"
 lazy_static = "1"
 mockito = { version = "0.30", optional = true }
 ms-converter = "1"
