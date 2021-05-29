@@ -15,6 +15,7 @@ use std::{
     fs,
     io::{self, Seek, SeekFrom},
     path::PathBuf,
+    str,
 };
 
 #[derive(Debug)]
@@ -44,8 +45,7 @@ impl StateChangeImpl for PrepareLocalInstall {
             source.seek(SeekFrom::Start(0))?;
             match compress_tools::uncompress_archive_file(&mut source, &mut sign, "signature") {
                 Ok(_) => {
-                    let sign = String::from_utf8(sign)?;
-                    let sign = Signature::from_base64_str(&sign)?;
+                    let sign = Signature::from_base64_str(str::from_utf8(&sign)?)?;
                     debug!("validating signature");
                     sign.validate(key, &update_package)?;
                 }

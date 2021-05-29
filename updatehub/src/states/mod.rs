@@ -55,7 +55,7 @@ pub enum TransitionError {
     Uncompress(compress_tools::Error),
     SerdeJson(serde_json::error::Error),
     Io(std::io::Error),
-    NonUtf8(std::string::FromUtf8Error),
+    NonUtf8(std::str::Utf8Error),
     Process(easy_process::Error),
 }
 
