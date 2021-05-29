@@ -15,11 +15,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[display("invalid path formed")]
+    #[display(fmt = "invalid path formed")]
     InvalidPath,
-    #[display("'fw_setenv' does not support the --script command line option")]
+    #[display(fmt = "'fw_setenv' does not support the --script command line option")]
     FwSetEnvNoScriptOption,
-    #[display("unsupported object model")]
+    #[display(fmt = "unsupported object model")]
     Unsupported,
 
     Utils(crate::utils::Error),

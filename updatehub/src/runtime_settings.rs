@@ -20,7 +20,7 @@ pub enum Error {
     SerdeJson(serde_json::Error),
     FirmwareError(firmware::Error),
 
-    #[display("invalid runtime settings destination")]
+    #[display(fmt = "invalid runtime settings destination")]
     InvalidDestination,
 }
 

@@ -13,9 +13,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[display("Package's signature validation has failed")]
+    #[display(fmt = "Package's signature validation has failed")]
     InvalidSignature,
-    #[display("Http response is missing Content Length")]
+    #[display(fmt = "Http response is missing Content Length")]
     MissingContentLength,
 
     Io(std::io::Error),
