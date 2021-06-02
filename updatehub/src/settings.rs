@@ -73,9 +73,7 @@ impl Settings {
     // needed validations for all fields, and returns either `Self` or
     // `Err`.
     fn parse(content: &str) -> Result<Self> {
-        let res = toml::from_str::<api::Settings>(content);
-        let res = res.or_else(|e| v1_parse(content, e));
-        let settings = Settings(res?);
+        let settings = Settings(toml::from_str(content).or_else(|e| v1_parse(content, e))?);
 
         if settings.polling.interval < Duration::seconds(60) {
             error!("invalid setting for polling interval, it cannot be less than 60 seconds");
@@ -229,10 +227,8 @@ fn v1_parse(content: &str, toml_err: toml::de::Error) -> Result<api::Settings> {
         }
     }
 
-    let old_settings = match serde_ini::de::from_str::<Settings>(content) {
-        Ok(s) => s,
-        Err(err) => return Err(Error::V1Parsing(toml_err, err)),
-    };
+    let old_settings = serde_ini::de::from_str::<Settings>(content)
+        .map_err(|ini_err| Error::V1Parsing(toml_err, ini_err))?;
 
     Ok(api::Settings {
         firmware: api::Firmware { metadata: old_settings.firmware.metadata_path },
