@@ -190,62 +190,67 @@ impl RuntimeSettings {
     }
 }
 
-#[test]
-fn default() {
+#[cfg(test)]
+mod tests {
+    use super::*;
     use pretty_assertions::assert_eq;
-    let settings = RuntimeSettings::default();
-    let expected = RuntimeSettings(api::RuntimeSettings {
-        polling: api::RuntimePolling {
-            last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
-            retries: 0,
-            now: false,
-            server_address: api::ServerAddress::Default,
-        },
-        update: api::RuntimeUpdate { upgrade_to_installation: None, applied_package_uid: None },
-        path: std::path::PathBuf::new(),
-        persistent: false,
-    });
 
-    assert_eq!(Some(settings), Some(expected));
-}
+    #[test]
+    fn default() {
+        let settings = RuntimeSettings::default();
+        let expected = RuntimeSettings(api::RuntimeSettings {
+            polling: api::RuntimePolling {
+                last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+                retries: 0,
+                now: false,
+                server_address: api::ServerAddress::Default,
+            },
+            update: api::RuntimeUpdate { upgrade_to_installation: None, applied_package_uid: None },
+            path: std::path::PathBuf::new(),
+            persistent: false,
+        });
 
-#[test]
-fn load_and_save() {
-    use pretty_assertions::assert_eq;
-    use std::fs;
-    use tempfile::NamedTempFile;
+        assert_eq!(Some(settings), Some(expected));
+    }
 
-    let tempfile = NamedTempFile::new().unwrap();
-    let settings_file = tempfile.path();
-    fs::remove_file(&settings_file).unwrap();
+    #[test]
+    fn load_and_save() {
+        use std::fs;
+        use tempfile::NamedTempFile;
 
-    let mut settings = RuntimeSettings::load(settings_file).unwrap();
-    settings.reset_installation_settings().unwrap();
+        let tempfile = NamedTempFile::new().unwrap();
+        let settings_file = tempfile.path();
+        fs::remove_file(&settings_file).unwrap();
 
-    let new_settings = RuntimeSettings::load(settings_file).unwrap();
+        let mut settings = RuntimeSettings::load(settings_file).unwrap();
+        settings.reset_installation_settings().unwrap();
 
-    assert_eq!(settings.update, new_settings.update);
-}
+        let new_settings = RuntimeSettings::load(settings_file).unwrap();
 
-#[test]
-fn load_bad_formated_file() {
-    use pretty_assertions::assert_eq;
-    use std::fs;
-    use tempfile::NamedTempFile;
+        assert_eq!(settings.update, new_settings.update);
+    }
 
-    let tempfile = NamedTempFile::new().unwrap();
-    let settings_file = tempfile.path();
-    fs::write(&settings_file, "foo").unwrap();
+    #[test]
+    fn load_bad_formated_file() {
+        use std::fs;
+        use tempfile::NamedTempFile;
 
-    let load_result = RuntimeSettings::load(settings_file);
-    assert!(load_result.is_ok(), "We should fail when reading a unformated formatted file");
+        let tempfile = NamedTempFile::new().unwrap();
+        let settings_file = tempfile.path();
+        fs::write(&settings_file, "foo").unwrap();
 
-    let old_file = settings_file
-        .with_file_name(format!("{}.old", settings_file.file_name().unwrap().to_str().unwrap()));
-    let old_content = fs::read_to_string(&old_file).unwrap();
-    assert_eq!(
-        old_content, "foo",
-        "Old file should still be accessible as a .old file in the same directory"
-    );
-    fs::remove_file(old_file).unwrap();
+        let load_result = RuntimeSettings::load(settings_file);
+        assert!(load_result.is_ok(), "We should fail when reading a unformated formatted file");
+
+        let old_file = settings_file.with_file_name(format!(
+            "{}.old",
+            settings_file.file_name().unwrap().to_str().unwrap()
+        ));
+        let old_content = fs::read_to_string(&old_file).unwrap();
+        assert_eq!(
+            old_content, "foo",
+            "Old file should still be accessible as a .old file in the same directory"
+        );
+        fs::remove_file(old_file).unwrap();
+    }
 }
