@@ -47,6 +47,10 @@ pub(crate) fn state_change_hook(path: &Path) -> PathBuf {
     path.join(STATE_CHANGE_CALLBACK)
 }
 
+pub(crate) fn validate_hook(path: &Path) -> PathBuf {
+    path.join(VALIDATE_CALLBACK)
+}
+
 pub(crate) fn device_identity_dir(path: &Path) -> PathBuf {
     path.join(DEVICE_IDENTITY_DIR).join("identity")
 }

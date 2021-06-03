@@ -562,3 +562,295 @@ fn correct_config_remote_install() {
     <timestamp> INFO parking state machine
     "###);
 }
+
+#[test]
+fn validation_callback() {
+    let validate_script = r#"#! /bin/sh
+exit 0
+"#;
+
+    // Even tho we don't update we start the mock for the probe performed on update
+    let mocks = create_mock_server(FakeServer::NoUpdate);
+    let (mut session, setup) = Settings::default()
+        .timeout(300)
+        .validate_callback(validate_script)
+        .booting_from_update()
+        .init_server();
+
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
+
+    mocks.iter().for_each(|mock| mock.assert());
+
+    insta::assert_snapshot!(output_server_info, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO booting from a recent installation
+    <timestamp> INFO triggering Probe to finish update
+    <timestamp> INFO no update is current available for this device
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_server_trce, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG loading runtime settings from "<file>"
+    <timestamp> INFO booting from a recent installation
+    <timestamp> TRCE validate callback has exit with success
+    <timestamp> DEBG reseting installation settings
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> INFO triggering Probe to finish update
+    <timestamp> DEBG disabling foce poll
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: probe
+    <timestamp> INFO no update is current available for this device
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_log, @r###"
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG loading runtime settings from "<file>"
+    <timestamp> INFO booting from a recent installation
+    <timestamp> TRCE validate callback has exit with success
+    <timestamp> DEBG reseting installation settings
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> INFO triggering Probe to finish update
+    <timestamp> DEBG disabling foce poll
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: probe
+    <timestamp> INFO no update is current available for this device
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
+    "###);
+}
+
+#[test]
+fn failed_validation_callback() {
+    let validate_script = r#"#! /bin/sh
+exit 1
+"#;
+
+    let (mut session, _setup) = Settings::default()
+        .timeout(300)
+        .validate_callback(validate_script)
+        .booting_from_update()
+        .init_server();
+
+    let (output_server_trce, output_server_info) = get_output_server(
+        &mut session,
+        StopMessage::Custom(
+            r#"\r\n.* WARN swapped active installation set and running rollback"#.to_string(),
+        ),
+    );
+
+    insta::assert_snapshot!(output_server_info, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO booting from a recent installation
+    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> WARN validate callback has failed
+    "###);
+
+    insta::assert_snapshot!(output_server_trce, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG loading runtime settings from "<file>"
+    <timestamp> INFO booting from a recent installation
+    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> WARN validate callback has failed
+    "###);
+}
+
+#[test]
+#[cfg(feature = "v1-parsing")]
+fn v1_validation_callback() {
+    let validate_script = r#"#! /bin/sh
+exit 0
+"#;
+
+    // Even tho we don't update we start the mock for the probe performed on update
+    let mocks = create_mock_server(FakeServer::NoUpdate);
+    let (mut session, setup) = Settings::default()
+        .timeout(300)
+        .validate_callback(validate_script)
+        .booting_from_update()
+        .init_server();
+
+    // Overwrite runtimesettings with a v1 model
+    std::fs::write(
+        &setup.runtime_settings.stored_path,
+        r#"
+[Polling]
+LastPoll=2021-06-01T14:38:57-03:00
+FirstPoll=2021-05-01T13:33:33-03:00
+ExtraInterval=0
+Retries=0
+ProbeASAP=false
+
+[Update]
+UpgradeToInstallation=1
+"#,
+    )
+    .unwrap();
+
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
+
+    mocks.iter().for_each(|mock| mock.assert());
+
+    insta::assert_snapshot!(output_server_info, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> WARN loaded v1 runtime settings successfully
+    <timestamp> INFO booting from a recent installation
+    <timestamp> INFO triggering Probe to finish update
+    <timestamp> INFO no update is current available for this device
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_server_trce, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG loading runtime settings from "<file>"
+    <timestamp> WARN loaded v1 runtime settings successfully
+    <timestamp> INFO booting from a recent installation
+    <timestamp> DEBG reseting installation settings
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> INFO triggering Probe to finish update
+    <timestamp> DEBG disabling foce poll
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: probe
+    <timestamp> INFO no update is current available for this device
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_log, @r###"
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG loading runtime settings from "<file>"
+    <timestamp> WARN loaded v1 runtime settings successfully
+    <timestamp> INFO booting from a recent installation
+    <timestamp> DEBG reseting installation settings
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> INFO triggering Probe to finish update
+    <timestamp> DEBG disabling foce poll
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: probe
+    <timestamp> INFO no update is current available for this device
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle: park
+    <timestamp> INFO parking state machine
+    "###);
+}
+
+#[test]
+#[cfg(feature = "v1-parsing")]
+fn v1_failed_from_v1_validation_callback() {
+    let validate_script = r#"#! /bin/sh
+exit 1
+"#;
+
+    let (mut session, setup) = Settings::default()
+        .timeout(300)
+        .validate_callback(validate_script)
+        .booting_from_update()
+        .init_server();
+
+    // Overwrite runtimesettings with a v1 model
+    std::fs::write(
+        &setup.runtime_settings.stored_path,
+        r#"
+[Polling]
+LastPoll=2021-06-01T14:38:57-03:00
+FirstPoll=2021-05-01T13:33:33-03:00
+ExtraInterval=0
+Retries=0
+ProbeASAP=false
+
+[Update]
+UpgradeToInstallation=0
+"#,
+    )
+    .unwrap();
+
+    let (output_server_trce, output_server_info) = get_output_server(
+        &mut session,
+        StopMessage::Custom(
+            r#"\r\n.* WARN swapped active installation set and running rollback"#.to_string(),
+        ),
+    );
+
+    insta::assert_snapshot!(output_server_info, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> WARN loaded v1 runtime settings successfully
+    <timestamp> INFO booting from a recent installation
+    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> WARN validate callback has failed
+    "###);
+
+    insta::assert_snapshot!(output_server_trce, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG loading runtime settings from "<file>"
+    <timestamp> WARN loaded v1 runtime settings successfully
+    <timestamp> INFO booting from a recent installation
+    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> WARN validate callback has failed
+    "###);
+}
+
+#[test]
+#[cfg(feature = "v1-parsing")]
+fn v1_failed_from_v2_validation_callback() {
+    let validate_script = r#"#! /bin/sh
+exit 1
+"#;
+
+    let (mut session, _setup) = Settings::default()
+        .timeout(300)
+        .validate_callback(validate_script)
+        .booting_from_update()
+        .init_server();
+
+    let (output_server_trce, output_server_info) = get_output_server(
+        &mut session,
+        StopMessage::Custom(
+            r#"\r\n.* WARN swapped active installation set and running rollback"#.to_string(),
+        ),
+    );
+
+    insta::assert_snapshot!(output_server_info, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> INFO booting from a recent installation
+    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> WARN validate callback has failed
+    "###);
+
+    insta::assert_snapshot!(output_server_trce, @r###"
+    <timestamp> INFO starting UpdateHub Agent <version>
+    <timestamp> DEBG loading system settings from "<file>"
+    <timestamp> DEBG loading runtime settings from "<file>"
+    <timestamp> INFO booting from a recent installation
+    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> WARN validate callback has failed
+    "###);
+}

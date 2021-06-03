@@ -62,7 +62,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
                         version: crate::version().to_string(),
                         config: context.settings.0.clone(),
                         firmware: context.firmware.0.clone(),
-                        runtime_settings: context.runtime_settings.0.clone(),
+                        runtime_settings: context.runtime_settings.inner.clone(),
                     }),
                     None,
                 ))

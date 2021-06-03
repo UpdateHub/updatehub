@@ -2,10 +2,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::firmware::tests::{
-    create_fake_installation_set, create_fake_starup_callbacks, create_hook, device_attributes_dir,
-    device_identity_dir, hardware_hook, product_uid_hook, state_change_hook, version_hook,
+use crate::firmware::{
+    installation_set::Set,
+    tests::{
+        create_fake_installation_set, create_fake_starup_callbacks, create_hook,
+        device_attributes_dir, device_identity_dir, hardware_hook, product_uid_hook,
+        state_change_hook, validate_hook, version_hook,
+    },
 };
+use sdk::api::info::runtime_settings::InstallationSet;
 use std::{any::Any, env, fs, io::Write, os::unix::fs::PermissionsExt, path::PathBuf};
 
 pub use crate::{
@@ -36,6 +41,8 @@ pub struct TestEnvironmentBuilder {
     listen_socket: Option<String>,
     supported_install_modes: Option<Vec<&'static str>>,
     state_change_callback: Option<String>,
+    validate_callback: Option<String>,
+    booting_from_update: bool,
 }
 
 impl TestEnvironment {
@@ -80,6 +87,14 @@ impl TestEnvironmentBuilder {
 
     pub fn state_change_callback(self, script: String) -> Self {
         TestEnvironmentBuilder { state_change_callback: Some(script), ..self }
+    }
+
+    pub fn validate_callback(self, script: String) -> Self {
+        TestEnvironmentBuilder { validate_callback: Some(script), ..self }
+    }
+
+    pub fn booting_from_update(self) -> Self {
+        TestEnvironmentBuilder { booting_from_update: true, ..self }
     }
 
     #[allow(clippy::field_reassign_with_default)]
@@ -134,6 +149,11 @@ impl TestEnvironmentBuilder {
             // Startup callbacks will be stored in the firmware directory
             create_fake_starup_callbacks(&firmware.stored_path, &output_file);
 
+            if let Some(script) = self.validate_callback {
+                // Overwrite the validate callback
+                create_hook(validate_hook(&firmware.stored_path), &script);
+            }
+
             for bin in self.extra_binaries.into_iter() {
                 let mut file = fs::File::create(&bin_dir_path.join(&bin)).unwrap();
                 writeln!(file, "#!/bin/sh\necho {} $@ >> {}", bin, output_file.to_string_lossy())
@@ -159,6 +179,10 @@ impl TestEnvironmentBuilder {
 
             let mut runtime_settings = RuntimeSettings::default();
             runtime_settings.path = file_path.clone();
+            if self.booting_from_update {
+                runtime_settings.enable_persistency();
+                runtime_settings.set_upgrading_to(Set(InstallationSet::A)).unwrap();
+            }
 
             Data { data: runtime_settings, stored_path: file_path, guard: vec![Box::new(file)] }
         };
