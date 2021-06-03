@@ -93,43 +93,9 @@ impl Settings {
 
 #[cfg(feature = "v1-parsing")]
 fn v1_parse(content: &str, toml_err: toml::de::Error) -> Result<api::Settings> {
+    use crate::utils::deserialize;
     use serde::Deserialize;
     use std::path::PathBuf;
-
-    mod deserialize {
-        use chrono::Duration;
-        use serde::{de, Deserialize, Deserializer};
-
-        pub(crate) fn duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            use ms_converter::ms;
-
-            let s = String::deserialize(deserializer)?;
-            Ok(Duration::milliseconds(ms(&s).map_err(de::Error::custom)?))
-        }
-
-        pub fn boolean<'de, D>(deserializer: D) -> Result<bool, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            use std::str::FromStr;
-
-            let s = String::deserialize(deserializer)?;
-            bool::from_str(&s).map_err(de::Error::custom)
-        }
-
-        pub fn string_list<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
-        where
-            D: Deserializer<'de>,
-        {
-            Ok(String::deserialize(deserializer)?
-                .split(',')
-                .map(std::string::ToString::to_string)
-                .collect())
-        }
-    }
 
     #[derive(Deserialize)]
     #[serde(rename_all = "PascalCase")]

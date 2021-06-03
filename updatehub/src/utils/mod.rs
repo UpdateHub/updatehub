@@ -7,6 +7,9 @@ pub(crate) mod fs;
 pub(crate) mod io;
 pub(crate) mod mtd;
 
+#[cfg(feature = "v1-parsing")]
+pub(crate) mod deserialize;
+
 use derive_more::{Display, Error, From};
 
 pub type Result<T> = std::result::Result<T, Error>;
