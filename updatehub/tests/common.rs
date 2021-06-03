@@ -38,6 +38,8 @@ pub struct Settings {
     timeout: Option<u64>,
     install_modes: Option<Vec<&'static str>>,
     state_change_callback: Option<&'static str>,
+    validate_callback: Option<&'static str>,
+    booting_from_update: bool,
 }
 
 impl Default for Settings {
@@ -54,6 +56,8 @@ impl Default for Settings {
             timeout: None,
             install_modes: None,
             state_change_callback: None,
+            validate_callback: None,
+            booting_from_update: false,
         }
     }
 }
@@ -64,8 +68,15 @@ impl Settings {
             .listen_socket(self.listen_socket)
             .server_address(self.server_address)
             .add_echo_binary("reboot");
+
+        if self.booting_from_update {
+            setup = setup.booting_from_update();
+        }
         if let Some(s) = self.state_change_callback {
             setup = setup.state_change_callback(s.to_owned());
+        }
+        if let Some(s) = self.validate_callback {
+            setup = setup.validate_callback(s.to_owned());
         }
         if let Some(l) = self.install_modes {
             setup = setup.supported_install_modes(l)
@@ -129,6 +140,14 @@ impl Settings {
 
     pub fn state_change_callback(self, s: &'static str) -> Self {
         Settings { state_change_callback: Some(s), ..self }
+    }
+
+    pub fn validate_callback(self, s: &'static str) -> Self {
+        Settings { validate_callback: Some(s), ..self }
+    }
+
+    pub fn booting_from_update(self) -> Self {
+        Settings { booting_from_update: true, ..self }
     }
 }
 

@@ -22,24 +22,43 @@ pub enum Error {
 
     #[display(fmt = "invalid runtime settings destination")]
     InvalidDestination,
+
+    #[cfg(feature = "v1-parsing")]
+    #[display(fmt = "parsing error: json: {}, ini: {}", _0, _1)]
+    V1Parsing(serde_json::Error, serde_ini::de::Error),
 }
 
 #[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
-pub struct RuntimeSettings(pub api::RuntimeSettings);
+pub struct RuntimeSettings {
+    #[deref]
+    #[deref_mut]
+    pub inner: api::RuntimeSettings,
+
+    #[cfg(feature = "v1-parsing")]
+    v1_content: Option<String>,
+}
 
 impl Default for RuntimeSettings {
     fn default() -> Self {
-        RuntimeSettings(api::RuntimeSettings {
-            polling: api::RuntimePolling {
-                last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
-                retries: 0,
-                now: false,
-                server_address: api::ServerAddress::Default,
+        RuntimeSettings {
+            inner: api::RuntimeSettings {
+                polling: api::RuntimePolling {
+                    last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+                    retries: 0,
+                    now: false,
+                    server_address: api::ServerAddress::Default,
+                },
+                update: api::RuntimeUpdate {
+                    upgrade_to_installation: None,
+                    applied_package_uid: None,
+                },
+                path: std::path::PathBuf::new(),
+                persistent: false,
             },
-            update: api::RuntimeUpdate { upgrade_to_installation: None, applied_package_uid: None },
-            path: std::path::PathBuf::new(),
-            persistent: false,
-        })
+
+            #[cfg(feature = "v1-parsing")]
+            v1_content: None,
+        }
     }
 }
 
@@ -72,7 +91,19 @@ impl RuntimeSettings {
     }
 
     fn parse(content: &str) -> Result<Self> {
-        Ok(RuntimeSettings(serde_json::from_str::<api::RuntimeSettings>(content)?))
+        let runtime_settings = serde_json::from_str(content).map(|s| RuntimeSettings {
+            inner: s,
+            #[cfg(feature = "v1-parsing")]
+            v1_content: None,
+        });
+
+        #[cfg(feature = "v1-parsing")]
+        let runtime_settings = runtime_settings.or_else(|e| {
+            v1_parse(content, e)
+                .map(|s| RuntimeSettings { inner: s, v1_content: Some(content.to_string()) })
+        });
+
+        runtime_settings.map_err(Error::from)
     }
 
     fn save(&self) -> Result<()> {
@@ -94,7 +125,7 @@ impl RuntimeSettings {
     }
 
     fn serialize(&self) -> Result<String> {
-        Ok(serde_json::to_string(&self.0)?)
+        Ok(serde_json::to_string(&self.inner)?)
     }
 
     pub(crate) fn get_inactive_installation_set(&self) -> Result<Set> {
@@ -188,6 +219,72 @@ impl RuntimeSettings {
 
         self.save()
     }
+
+    #[cfg(feature = "v1-parsing")]
+    pub(crate) fn restore_v1_content(&mut self) -> Result<()> {
+        // Restore the original content of the file to not break the rollback
+        // procedure when rebooting.
+        if let Some(content) = &self.v1_content {
+            warn!("restoring previous content of runtime settings for v1 compatibility");
+            fs::write(&self.path, content)?;
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(feature = "v1-parsing")]
+fn v1_parse(content: &str, json_err: serde_json::Error) -> Result<api::RuntimeSettings> {
+    use crate::utils::deserialize;
+    use serde::Deserialize;
+
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    #[serde(rename_all = "PascalCase")]
+    struct RuntimeSettings {
+        polling: RuntimePolling,
+        update: RuntimeUpdate,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct RuntimePolling {
+        last_poll: DateTime<Utc>,
+        retries: usize,
+        #[serde(rename = "ProbeASAP")]
+        #[serde(deserialize_with = "deserialize::boolean")]
+        probe_asap: bool,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    pub struct RuntimeUpdate {
+        pub upgrade_to_installation: i8,
+    }
+
+    let old_runtime_settings = serde_ini::de::from_str::<RuntimeSettings>(content)
+        .map_err(|ini_err| Error::V1Parsing(json_err, ini_err))?;
+
+    warn!("loaded v1 runtime settings successfully");
+
+    Ok(api::RuntimeSettings {
+        polling: api::RuntimePolling {
+            last: old_runtime_settings.polling.last_poll,
+            retries: old_runtime_settings.polling.retries,
+            now: old_runtime_settings.polling.probe_asap,
+            server_address: api::ServerAddress::Default,
+        },
+        update: api::RuntimeUpdate {
+            upgrade_to_installation: match old_runtime_settings.update.upgrade_to_installation {
+                0 => Some(api::InstallationSet::A),
+                1 => Some(api::InstallationSet::B),
+                _ => None,
+            },
+            applied_package_uid: None,
+        },
+        path: std::path::PathBuf::new(),
+        persistent: false,
+    })
 }
 
 #[cfg(test)]
@@ -198,17 +295,25 @@ mod tests {
     #[test]
     fn default() {
         let settings = RuntimeSettings::default();
-        let expected = RuntimeSettings(api::RuntimeSettings {
-            polling: api::RuntimePolling {
-                last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
-                retries: 0,
-                now: false,
-                server_address: api::ServerAddress::Default,
+        let expected = RuntimeSettings {
+            inner: api::RuntimeSettings {
+                polling: api::RuntimePolling {
+                    last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+                    retries: 0,
+                    now: false,
+                    server_address: api::ServerAddress::Default,
+                },
+                update: api::RuntimeUpdate {
+                    upgrade_to_installation: None,
+                    applied_package_uid: None,
+                },
+                path: std::path::PathBuf::new(),
+                persistent: false,
             },
-            update: api::RuntimeUpdate { upgrade_to_installation: None, applied_package_uid: None },
-            path: std::path::PathBuf::new(),
-            persistent: false,
-        });
+
+            #[cfg(feature = "v1-parsing")]
+            v1_content: None,
+        };
 
         assert_eq!(Some(settings), Some(expected));
     }
@@ -252,5 +357,46 @@ mod tests {
             "Old file should still be accessible as a .old file in the same directory"
         );
         fs::remove_file(old_file).unwrap();
+    }
+
+    #[cfg(feature = "v1-parsing")]
+    #[test]
+    fn v1_parsing() {
+        let sample = r"
+[Polling]
+LastPoll=2021-06-01T14:38:57-03:00
+FirstPoll=2021-05-01T13:33:33-03:00
+ExtraInterval=0
+Retries=0
+ProbeASAP=false
+
+[Update]
+UpgradeToInstallation=1
+";
+
+        let expected = RuntimeSettings {
+            inner: api::RuntimeSettings {
+                polling: api::RuntimePolling {
+                    last: DateTime::from_utc(
+                        DateTime::parse_from_rfc3339("2021-06-01T14:38:57-03:00")
+                            .unwrap()
+                            .naive_utc(),
+                        Utc,
+                    ),
+                    retries: 0,
+                    now: false,
+                    server_address: api::ServerAddress::Default,
+                },
+                update: api::RuntimeUpdate {
+                    upgrade_to_installation: Some(api::InstallationSet::B),
+                    applied_package_uid: None,
+                },
+                path: std::path::PathBuf::new(),
+                persistent: false,
+            },
+            v1_content: Some(sample.to_string()),
+        };
+
+        assert_eq!(RuntimeSettings::parse(sample).unwrap(), expected);
     }
 }
