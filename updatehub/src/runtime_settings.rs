@@ -18,7 +18,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     Io(io::Error),
     SerdeJson(serde_json::Error),
-    FirmwareError(firmware::Error),
+    Firmware(firmware::Error),
 
     #[display(fmt = "invalid runtime settings destination")]
     InvalidDestination,
