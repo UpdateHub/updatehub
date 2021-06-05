@@ -129,7 +129,7 @@ impl StateChange {
 
         reader.read_line(&mut line).await?;
 
-        self.emit(stream, &line.trim()).await
+        self.emit(stream, line.trim()).await
     }
 
     async fn emit(&self, stream: UnixStream, input: &str) -> Result<()> {

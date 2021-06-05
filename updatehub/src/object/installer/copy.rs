@@ -20,7 +20,7 @@ impl Installer for objects::Copy {
         info!("'copy' handle checking requirements");
 
         if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
-            utils::fs::ensure_disk_space(&dev, self.required_install_size())?;
+            utils::fs::ensure_disk_space(dev, self.required_install_size())?;
             return Ok(());
         }
 
@@ -48,7 +48,7 @@ impl Installer for objects::Copy {
         });
 
         if self.target_format.should_format {
-            utils::fs::format(&device, filesystem, &format_options)?;
+            utils::fs::format(&device, filesystem, format_options)?;
         }
 
         utils::fs::mount_map(&device, filesystem, mount_options, |path| {
@@ -154,7 +154,7 @@ mod tests {
 
         // When needed, create a file inside the mounted device
         if let Some(perm) = original_permissions {
-            utils::fs::mount_map(&device, definitions::Filesystem::Ext4, &"", |path| {
+            utils::fs::mount_map(&device, definitions::Filesystem::Ext4, "", |path| {
                 let file = path.join(&"original_file");
                 fs::File::create(&file)?
                     .write_all(&iter::repeat(ORIGINAL_BYTE).take(FILE_SIZE).collect::<Vec<_>>())?;

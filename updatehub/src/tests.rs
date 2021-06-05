@@ -96,7 +96,7 @@ impl TestEnvironmentBuilder {
 
             create_hook(version_hook(dir_path), "#!/bin/sh\necho 1.1");
             create_hook(
-                hardware_hook(&dir_path),
+                hardware_hook(dir_path),
                 &format!(
                     "#!/bin/sh\necho {}",
                     match self.invalid_hardware {

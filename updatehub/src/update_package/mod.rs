@@ -71,7 +71,7 @@ impl UpdatePackageExt for UpdatePackage {
             .objects(installation_set)
             .iter()
             .map(|o| o.mode())
-            .find(|mode| !install_modes.contains(&mode))
+            .find(|mode| !install_modes.contains(mode))
         {
             return Err(Error::IncompatibleInstallMode(mode));
         }
@@ -145,7 +145,7 @@ impl UpdatePackageExt for UpdatePackage {
 
         // Prune corrupted files
         for object in
-            self.filter_objects(&settings, installation_set, object::info::Status::Corrupted)
+            self.filter_objects(settings, installation_set, object::info::Status::Corrupted)
         {
             fs::remove_file(dir.join(object.sha256sum()))?;
         }

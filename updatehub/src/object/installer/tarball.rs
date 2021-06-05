@@ -110,7 +110,7 @@ mod tests {
         f(&mut obj);
 
         // Setup preinstall structure
-        utils::fs::mount_map(&device, definitions::Filesystem::Ext4, &"", |path| {
+        utils::fs::mount_map(&device, definitions::Filesystem::Ext4, "", |path| {
             fs::create_dir(path.join("existing_dir"))?;
             utils::Result::Ok(())
         })??;

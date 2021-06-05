@@ -206,7 +206,7 @@ mod tests {
         slog_error!(log, "{}", "error n");
         let result = serde_json::to_string_pretty(&r_vec).unwrap();
         assert!(
-            eq_without_time(&expected, &result),
+            eq_without_time(expected, &result),
             "Expected:\n{}\n\nResult:\n{}",
             expected,
             result

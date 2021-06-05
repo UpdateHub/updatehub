@@ -29,7 +29,7 @@ impl StateChangeImpl for Probe {
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         let server_address = context.server_address();
 
-        let probe = match crate::CloudClient::new(&server_address)
+        let probe = match crate::CloudClient::new(server_address)
             .probe(context.runtime_settings.retries(), context.firmware.as_cloud_metadata())
             .await
         {

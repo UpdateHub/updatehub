@@ -22,7 +22,7 @@ impl Installer for objects::Raw {
         info!("'raw' handle checking requirements");
 
         if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
-            utils::fs::ensure_disk_space(&dev, self.required_install_size())?;
+            utils::fs::ensure_disk_space(dev, self.required_install_size())?;
             return Ok(());
         }
 
@@ -81,7 +81,7 @@ impl Installer for objects::Raw {
                     break;
                 }
 
-                output.write_all(&buf)?;
+                output.write_all(buf)?;
                 input.consume(len);
             }
         }

@@ -63,7 +63,7 @@ where
 
     // We need to keep a guard otherwise it is dropped before the
     // closure is run.
-    let _guard = mount(source, &tmpdir, fs, options)?;
+    let _guard = mount(source, tmpdir, fs, options)?;
 
     Ok(f(tmpdir))
 }

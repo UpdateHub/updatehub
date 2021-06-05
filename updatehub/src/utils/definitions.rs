@@ -32,7 +32,7 @@ impl TargetTypeExt for TargetType {
             return Err(Error::MissingWritePermission(device));
         }
 
-        Ok(&self)
+        Ok(self)
     }
 
     fn get_target(&self) -> Result<PathBuf> {

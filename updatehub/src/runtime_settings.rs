@@ -72,7 +72,7 @@ impl RuntimeSettings {
     }
 
     fn parse(content: &str) -> Result<Self> {
-        Ok(RuntimeSettings(serde_json::from_str::<api::RuntimeSettings>(&content)?))
+        Ok(RuntimeSettings(serde_json::from_str::<api::RuntimeSettings>(content)?))
     }
 
     fn save(&self) -> Result<()> {

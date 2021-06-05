@@ -295,7 +295,7 @@ async fn download_object() {
 
     // Download the object.
     sdk::Client::new(&url)
-        .download_object(&FakeMetadata::PRODUCT_UID, "package_id", &dir.path(), "object")
+        .download_object(FakeMetadata::PRODUCT_UID, "package_id", dir.path(), "object")
         .await
         .unwrap();
 
@@ -304,7 +304,7 @@ async fn download_object() {
 
     // Download the remaining bytes of the object.
     sdk::Client::new(&url)
-        .download_object(&FakeMetadata::PRODUCT_UID, "package_id", &dir.path(), "object")
+        .download_object(FakeMetadata::PRODUCT_UID, "package_id", dir.path(), "object")
         .await
         .unwrap();
 

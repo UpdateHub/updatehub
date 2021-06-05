@@ -119,7 +119,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
             context.runtime_settings.set_custom_server_address(&server_address);
         }
 
-        match crate::CloudClient::new(&context.server_address())
+        match crate::CloudClient::new(context.server_address())
             .probe(context.runtime_settings.retries(), context.firmware.as_cloud_metadata())
             .await?
         {

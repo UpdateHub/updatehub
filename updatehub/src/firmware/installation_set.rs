@@ -83,7 +83,7 @@ fn works() {
     // - active is A
     // - inactive is B
     // - swap works
-    create_fake_installation_set(&tmpdir, 0);
+    create_fake_installation_set(tmpdir, 0);
     assert_eq!(active().unwrap(), Set(InstallationSet::A));
     assert_eq!(inactive().unwrap(), Set(InstallationSet::B));
     assert!(swap_active().is_ok());
@@ -93,7 +93,7 @@ fn works() {
     // - active is B
     // - inactive is A
     // - swap works
-    create_fake_installation_set(&tmpdir, 1);
+    create_fake_installation_set(tmpdir, 1);
     assert_eq!(active().unwrap(), Set(InstallationSet::B));
     assert_eq!(inactive().unwrap(), Set(InstallationSet::A));
     assert!(swap_active().is_ok());

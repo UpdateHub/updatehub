@@ -206,7 +206,7 @@ mod test {
             .expect("Fail to open the temporary directory")
             .read_to_string(&mut object_content);
 
-        assert_eq!(&utils::sha256sum(&object_content.as_bytes()), &shasum, "Checksum mismatch");
+        assert_eq!(&utils::sha256sum(object_content.as_bytes()), &shasum, "Checksum mismatch");
     }
 
     #[async_std::test]

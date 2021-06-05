@@ -38,7 +38,7 @@ impl MockServer {
 async fn info() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
-    let client = sdk::Client::new(&addr);
+    let client = sdk::Client::new(addr);
     let response = client.info().await;
     assert!(dbg!(response).is_ok());
 }
@@ -47,7 +47,7 @@ async fn info() {
 async fn probe_default() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
-    let client = sdk::Client::new(&addr);
+    let client = sdk::Client::new(addr);
     let response = client.probe(None).await;
     match dbg!(response) {
         Ok(_) => {}
@@ -60,7 +60,7 @@ async fn probe_default() {
 async fn probe_custom() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
-    let client = sdk::Client::new(&addr);
+    let client = sdk::Client::new(addr);
     let response = client.probe(Some(String::from("http://foo.bar"))).await;
     match dbg!(response) {
         Ok(_) => {}
@@ -73,7 +73,7 @@ async fn probe_custom() {
 async fn local_install() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
-    let client = sdk::Client::new(&addr);
+    let client = sdk::Client::new(addr);
     let file = tempfile::NamedTempFile::new().unwrap();
     let response = client.local_install(file.path()).await;
 
@@ -88,7 +88,7 @@ async fn local_install() {
 async fn remote_install() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
-    let client = sdk::Client::new(&addr);
+    let client = sdk::Client::new(addr);
     let response = client.remote_install("http://foo.bar").await;
     match dbg!(response) {
         Ok(_) => {}
@@ -101,7 +101,7 @@ async fn remote_install() {
 async fn abort_download() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
-    let client = sdk::Client::new(&addr);
+    let client = sdk::Client::new(addr);
     let response = client.abort_download().await;
     match dbg!(response) {
         Ok(_) => {}
@@ -114,7 +114,7 @@ async fn abort_download() {
 async fn log() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
-    let client = sdk::Client::new(&addr);
+    let client = sdk::Client::new(addr);
     let response = client.log().await;
     assert!(dbg!(response).is_ok());
 }

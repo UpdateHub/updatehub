@@ -66,8 +66,8 @@ pub(crate) fn create_fake_metadata() -> (PathBuf, tempfile::TempDir) {
         "#!/bin/sh\necho 229ffd7e08721d716163fc81a2dbaf6c90d449f0a3b009b6a2defe8a0b0d7381",
     );
     create_hook(version_hook(&tmpdir), "#!/bin/sh\necho 1.1");
-    create_hook(hardware_hook(&tmpdir), &"#!/bin/sh\necho board");
-    create_hook(device_identity_dir(&tmpdir), &"#!/bin/sh\necho id1=value1\necho id2=value2");
+    create_hook(hardware_hook(&tmpdir), "#!/bin/sh\necho board");
+    create_hook(device_identity_dir(&tmpdir), "#!/bin/sh\necho id1=value1\necho id2=value2");
     create_hook(
         device_attributes_dir(&tmpdir),
         "#!/bin/sh\necho attr1=attrvalue1\necho attr2=attrvalue2",
@@ -217,9 +217,9 @@ fn create_state_change_callback_hook(content: &str) -> tempfile::TempDir {
 #[test]
 fn state_callback_cancel() {
     let script = "#!/bin/sh\necho cancel";
-    let tmpdir = create_state_change_callback_hook(&script);
+    let tmpdir = create_state_change_callback_hook(script);
     assert_eq!(
-        state_change_callback(&tmpdir.path(), CALLBACK_STATE_NAME).unwrap(),
+        state_change_callback(tmpdir.path(), CALLBACK_STATE_NAME).unwrap(),
         Transition::Cancel,
         "Unexpected result using content {:?}",
         script,
@@ -229,9 +229,9 @@ fn state_callback_cancel() {
 #[test]
 fn state_callback_continue_transition() {
     let script = "#!/bin/sh\necho ";
-    let tmpdir = create_state_change_callback_hook(&script);
+    let tmpdir = create_state_change_callback_hook(script);
     assert_eq!(
-        state_change_callback(&tmpdir.path(), CALLBACK_STATE_NAME).unwrap(),
+        state_change_callback(tmpdir.path(), CALLBACK_STATE_NAME).unwrap(),
         Transition::Continue,
         "Unexpected result using content {:?}",
         script,
@@ -241,7 +241,7 @@ fn state_callback_continue_transition() {
 #[test]
 fn state_callback_non_existing_hook() {
     assert_eq!(
-        state_change_callback(&Path::new("/NaN"), CALLBACK_STATE_NAME).unwrap(),
+        state_change_callback(Path::new("/NaN"), CALLBACK_STATE_NAME).unwrap(),
         Transition::Continue,
         "Unexpected result for non-existing hook",
     );
@@ -251,6 +251,6 @@ fn state_callback_non_existing_hook() {
 fn state_callback_is_error() {
     for script in &["#!/bin/sh\necho 123", "#!/bin/sh\necho 123\ncancel"] {
         let tmpdir = create_state_change_callback_hook(script);
-        assert!(state_change_callback(&tmpdir.path(), CALLBACK_STATE_NAME).is_err());
+        assert!(state_change_callback(tmpdir.path(), CALLBACK_STATE_NAME).is_err());
     }
 }
