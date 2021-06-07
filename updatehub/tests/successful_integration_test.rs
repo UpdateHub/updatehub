@@ -57,6 +57,7 @@ fn correct_config_no_update_polling() {
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     "###);
 
@@ -69,6 +70,7 @@ fn correct_config_no_update_polling() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -86,6 +88,7 @@ fn correct_config_no_update_polling() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -115,6 +118,7 @@ fn correct_config_no_update_polling_with_probe_api() {
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     "###);
 
@@ -132,6 +136,7 @@ fn correct_config_no_update_polling_with_probe_api() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -250,12 +255,16 @@ fn correct_config_update_polling() {
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> INFO running state change callback for 'download' state
+    <timestamp> INFO running state change callback for 'install' state
     <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
+    <timestamp> INFO running state change callback for 'reboot' state
     <timestamp> INFO triggering reboot
     "###);
 
@@ -268,12 +277,14 @@ fn correct_config_update_polling() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
+    <timestamp> INFO running state change callback for 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> DEBG <percentage>% of the file has been downloaded
@@ -283,6 +294,7 @@ fn correct_config_update_polling() {
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> TRCE starting to handle 'install' state
+    <timestamp> INFO running state change callback for 'install' state
     <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO using installation set as target 1
     <timestamp> DEBG marking package 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d as installed
@@ -292,6 +304,7 @@ fn correct_config_update_polling() {
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
     <timestamp> TRCE starting to handle 'reboot' state
+    <timestamp> INFO running state change callback for 'reboot' state
     <timestamp> INFO triggering reboot
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
@@ -304,6 +317,7 @@ fn correct_config_update_polling() {
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
+    <timestamp> INFO running state change callback for 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> DEBG <percentage>% of the file has been downloaded
@@ -313,6 +327,7 @@ fn correct_config_update_polling() {
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> TRCE starting to handle 'install' state
+    <timestamp> INFO running state change callback for 'install' state
     <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO using installation set as target 1
     <timestamp> DEBG marking package 87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d as installed
@@ -322,6 +337,7 @@ fn correct_config_update_polling() {
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
     <timestamp> TRCE starting to handle 'reboot' state
+    <timestamp> INFO running state change callback for 'reboot' state
     <timestamp> INFO triggering reboot
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
@@ -351,8 +367,10 @@ fn correct_config_statechange_callback() {
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> INFO running state change callback for 'download' state
     <timestamp> INFO cancelling transition to 'download' due to state change callback request
     "###);
 
@@ -365,12 +383,14 @@ fn correct_config_statechange_callback() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
+    <timestamp> INFO running state change callback for 'download' state
     <timestamp> INFO cancelling transition to 'download' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
@@ -383,6 +403,7 @@ fn correct_config_statechange_callback() {
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
+    <timestamp> INFO running state change callback for 'download' state
     <timestamp> INFO cancelling transition to 'download' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
@@ -414,9 +435,11 @@ fn correct_config_error_state_callback() {
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
+    <timestamp> INFO running state change callback for 'error' state
     <timestamp> INFO cancelling transition to 'error' due to state change callback request
     "###);
 
@@ -429,6 +452,7 @@ fn correct_config_error_state_callback() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
@@ -436,6 +460,7 @@ fn correct_config_error_state_callback() {
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> TRCE starting to handle 'error' state
+    <timestamp> INFO running state change callback for 'error' state
     <timestamp> INFO cancelling transition to 'error' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
@@ -449,6 +474,7 @@ fn correct_config_error_state_callback() {
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> TRCE starting to handle 'error' state
+    <timestamp> INFO running state change callback for 'error' state
     <timestamp> INFO cancelling transition to 'error' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
@@ -484,10 +510,12 @@ fn correct_config_remote_install() {
     <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
     <timestamp> INFO installing local package: "<file>"
     <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO running state change callback for 'install' state
     <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
+    <timestamp> INFO running state change callback for 'reboot' state
     <timestamp> INFO triggering reboot
     <timestamp> INFO parking state machine
     "###);
@@ -515,6 +543,7 @@ fn correct_config_remote_install() {
     <timestamp> DEBG successfuly uncompressed metadata file
     <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> TRCE starting to handle 'install' state
+    <timestamp> INFO running state change callback for 'install' state
     <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> INFO using installation set as target 1
     <timestamp> DEBG marking package ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62 as installed
@@ -524,6 +553,7 @@ fn correct_config_remote_install() {
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
     <timestamp> TRCE starting to handle 'reboot' state
+    <timestamp> INFO running state change callback for 'reboot' state
     <timestamp> INFO triggering reboot
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled
@@ -546,6 +576,7 @@ fn correct_config_remote_install() {
     <timestamp> DEBG successfuly uncompressed metadata file
     <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> TRCE starting to handle 'install' state
+    <timestamp> INFO running state change callback for 'install' state
     <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> INFO using installation set as target 1
     <timestamp> DEBG marking package ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62 as installed
@@ -555,6 +586,7 @@ fn correct_config_remote_install() {
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
     <timestamp> TRCE starting to handle 'reboot' state
+    <timestamp> INFO running state change callback for 'reboot' state
     <timestamp> INFO triggering reboot
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled
@@ -588,6 +620,7 @@ exit 0
     <timestamp> INFO booting from a recent installation
     <timestamp> INFO running validate callback
     <timestamp> INFO triggering Probe to finish update
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> INFO parking state machine
     "###);
@@ -606,6 +639,7 @@ exit 0
     <timestamp> DEBG disabling foce poll
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -628,6 +662,7 @@ exit 0
     <timestamp> DEBG disabling foce poll
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -719,6 +754,7 @@ UpgradeToInstallation=1
     <timestamp> WARN loaded v1 runtime settings successfully
     <timestamp> INFO booting from a recent installation
     <timestamp> INFO triggering Probe to finish update
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> INFO parking state machine
     "###);
@@ -736,6 +772,7 @@ UpgradeToInstallation=1
     <timestamp> DEBG disabling foce poll
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -757,6 +794,7 @@ UpgradeToInstallation=1
     <timestamp> DEBG disabling foce poll
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'probe' state
+    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO no update is current available for this device
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
