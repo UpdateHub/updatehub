@@ -39,41 +39,41 @@ fn failing_invalid_download_dir() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
-    <timestamp> TRCE starting to handle: probe
+    <timestamp> TRCE starting to handle 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
-    <timestamp> TRCE starting to handle: validation
+    <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> TRCE starting to handle: download
+    <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
-    <timestamp> TRCE starting to handle: error
+    <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
-    <timestamp> TRCE starting to handle: validation
+    <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> TRCE starting to handle: download
+    <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
-    <timestamp> TRCE starting to handle: error
+    <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
     "###);
@@ -164,9 +164,9 @@ fn failing_invalid_server_address() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle: park
+    <timestamp> TRCE starting to handle 'park' state
     <timestamp> INFO parking state machine
     "###);
 
@@ -210,37 +210,37 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
-    <timestamp> TRCE starting to handle: probe
+    <timestamp> TRCE starting to handle 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
-    <timestamp> TRCE starting to handle: validation
+    <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
-    <timestamp> TRCE starting to handle: error
+    <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
-    <timestamp> TRCE starting to handle: validation
+    <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
-    <timestamp> TRCE starting to handle: error
+    <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
     "###);
@@ -272,35 +272,35 @@ fn failing_supported_install_modes() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
-    <timestamp> TRCE starting to handle: probe
+    <timestamp> TRCE starting to handle 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
-    <timestamp> TRCE starting to handle: validation
+    <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> TRCE starting to handle: error
+    <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
-    <timestamp> TRCE starting to handle: validation
+    <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> TRCE starting to handle: error
+    <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
     "###);
@@ -328,41 +328,41 @@ fn invalid_server_response() {
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
-    <timestamp> TRCE starting to handle: probe
+    <timestamp> TRCE starting to handle 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
-    <timestamp> TRCE starting to handle: validation
+    <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> TRCE starting to handle: download
+    <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
-    <timestamp> TRCE starting to handle: error
+    <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Invalid status response: 501
     <timestamp> INFO returning to machine's entry point
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> DEBG delaying <time> till next probe
     "###);
 
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
-    <timestamp> TRCE starting to handle: validation
+    <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> TRCE starting to handle: download
+    <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
-    <timestamp> TRCE starting to handle: error
+    <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Invalid status response: 501
     <timestamp> INFO returning to machine's entry point
-    <timestamp> TRCE starting to handle: entry_point
+    <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle: poll
+    <timestamp> TRCE starting to handle 'poll' state
     <timestamp> DEBG delaying <time> till next probe
     <timestamp> TRCE delaying transition for: <time>
     "###);
