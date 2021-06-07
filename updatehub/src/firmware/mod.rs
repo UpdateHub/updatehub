@@ -101,6 +101,8 @@ impl Metadata {
 }
 
 pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transition> {
+    info!("running state change callback for '{}' state", state);
+
     let callback = path.join(STATE_CHANGE_CALLBACK);
     if !callback.exists() {
         return Ok(Transition::Continue);
