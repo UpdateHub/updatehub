@@ -89,14 +89,22 @@ trait CallbackReporter: Sized + StateChangeImpl {
         context: &mut machine::Context,
     ) -> Result<(State, machine::StepTransition)> {
         let transition =
-            firmware::state_change_callback(&context.settings.firmware.metadata, self.name())?;
+            firmware::state_change_callback(&context.settings.firmware.metadata, self.name());
 
         match transition {
-            Transition::Continue => Ok(self.handle(context).await?),
-            Transition::Cancel => {
+            Ok(Transition::Continue) => Ok(self.handle(context).await?),
+            Ok(Transition::Cancel) => {
                 info!(
                     "cancelling transition to '{}' due to state change callback request",
                     self.name()
+                );
+                Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
+            }
+            Err(e) => {
+                error!(
+                    "cancelling transition to '{}' as state change callback has failed with: {}",
+                    self.name(),
+                    e
                 );
                 Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
             }
