@@ -393,3 +393,68 @@ fn invalid_server_response() {
     <timestamp> TRCE delaying transition for: <time>
     "###);
 }
+
+#[test]
+fn invalid_statechange_callback() {
+    let state_change_script = r#"#! /bin/sh
+exit 1
+"#;
+
+    let (mut session, setup) =
+        Settings::default().timeout(300).state_change_callback(state_change_script).init_server();
+    let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
+
+    let _ = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let _ = run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);
+    let (output_server_trce, output_server_info) =
+        get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
+    let output_log = run_client_log(&setup.settings.data.network.listen_socket);
+
+    insta::assert_snapshot!(output_server_info, @r###"
+    <timestamp> INFO Probing the server as requested by the user
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> INFO running state change callback for 'download' state
+    <timestamp> INFO running state change callback for 'error' state
+    <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_server_trce, @r###"
+    <timestamp> DEBG receiving probe request
+    <timestamp> TRCE received external request: Probe(None)
+    <timestamp> INFO Probing the server as requested by the user
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle 'validation' state
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle 'download' state
+    <timestamp> INFO running state change callback for 'download' state
+    <timestamp> TRCE starting to handle 'error' state
+    <timestamp> INFO running state change callback for 'error' state
+    <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
+    <timestamp> TRCE starting to handle 'entry_point' state
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle 'park' state
+    <timestamp> INFO parking state machine
+    "###);
+
+    insta::assert_snapshot!(output_log, @r###"
+    <timestamp> INFO Probing the server as requested by the user
+    <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
+    <timestamp> DEBG updating last polling time
+    <timestamp> DEBG saved runtime settings to "<file>"
+    <timestamp> TRCE starting to handle 'validation' state
+    <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> TRCE starting to handle 'download' state
+    <timestamp> INFO running state change callback for 'download' state
+    <timestamp> TRCE starting to handle 'error' state
+    <timestamp> INFO running state change callback for 'error' state
+    <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
+    <timestamp> TRCE starting to handle 'entry_point' state
+    <timestamp> DEBG polling is disabled
+    <timestamp> TRCE starting to handle 'park' state
+    <timestamp> INFO parking state machine
+    "###);
+}
