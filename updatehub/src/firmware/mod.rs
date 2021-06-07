@@ -11,7 +11,7 @@ pub mod tests;
 use self::hook::{run_hook, run_hooks_from_dir};
 use derive_more::{Deref, DerefMut, Display, Error, From};
 pub use sdk::api::info::firmware as api;
-use slog_scope::{error, info, trace};
+use slog_scope::{error, info};
 use std::{io, path::Path};
 
 const PRODUCT_UID_HOOK: &str = "product-uid";
@@ -101,17 +101,17 @@ impl Metadata {
 }
 
 pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transition> {
-    info!("running state change callback for '{}' state", state);
-
     let callback = path.join(STATE_CHANGE_CALLBACK);
     if !callback.exists() {
         return Ok(Transition::Continue);
     }
 
-    let output = easy_process::run(&format!("{} {}", &callback.to_string_lossy(), &state))?;
-    for err in output.stderr.lines() {
-        error!("{} (stderr): {}", path.display(), err);
-    }
+    info!("running state change callback for '{}' state", state);
+
+    let output = run_command_for_state(
+        &format!("{} callback", state),
+        &format!("{} {}", &callback.to_string_lossy(), &state),
+    )?;
 
     match output.stdout.trim() {
         "cancel" => Ok(Transition::Cancel),
@@ -128,7 +128,14 @@ pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transiti
 }
 
 pub(crate) fn validate_callback(path: &Path) -> Result<Transition> {
-    match run_callback("validate callback", &path.join(VALIDATE_CALLBACK)) {
+    let callback = path.join(VALIDATE_CALLBACK);
+    if !callback.exists() {
+        return Ok(Transition::Continue);
+    }
+
+    info!("running validate callback");
+
+    match run_command_for_state("validate callback", &callback.to_string_lossy()) {
         // We continue the transition in case the validation callback executes fine.
         Ok(_) => Ok(Transition::Continue),
 
@@ -144,30 +151,32 @@ pub(crate) fn validate_callback(path: &Path) -> Result<Transition> {
 }
 
 pub(crate) fn rollback_callback(path: &Path) -> Result<()> {
-    run_callback("rollback callback", &path.join(ROLLBACK_CALLBACK))
-}
-
-fn run_callback(name: &str, path: &Path) -> Result<()> {
-    info!("running {}", name);
-
-    let callback = path.join(path);
+    let callback = path.join(ROLLBACK_CALLBACK);
     if !callback.exists() {
         return Ok(());
     }
 
-    match easy_process::run(&callback.to_string_lossy()) {
+    info!("running rollback callback");
+
+    run_command_for_state("rollback callback", &callback.to_string_lossy())?;
+
+    Ok(())
+}
+
+fn run_command_for_state(name: &str, cmd: &str) -> Result<easy_process::Output> {
+    match easy_process::run(cmd) {
         Ok(output) => {
-            trace!("{} has exit with success", name);
+            info!("{} has exit with success", name);
             for err in output.stderr.lines() {
-                error!("{} (stderr): {}", path.display(), err);
+                error!("{} (stderr): {}", name, err);
             }
 
-            Ok(())
+            Ok(output)
         }
         Err(easy_process::Error::Failure(status, output)) => {
             error!("{} has failed with status: {:?}", name, status);
             for err in output.stderr.lines() {
-                error!("{} (stderr): {}", path.display(), err);
+                error!("{} (stderr): {}", name, err);
             }
             Err(easy_process::Error::Failure(status, output).into())
         }

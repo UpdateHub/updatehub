@@ -29,11 +29,8 @@ fn failing_invalid_download_dir() {
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
-    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> INFO running state change callback for 'download' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
     "###);
@@ -47,18 +44,15 @@ fn failing_invalid_download_dir() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
-    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
-    <timestamp> INFO running state change callback for 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -72,11 +66,9 @@ fn failing_invalid_download_dir() {
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
-    <timestamp> INFO running state change callback for 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -207,11 +199,9 @@ fn failing_fail_check_requirements() {
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
-    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
     "###);
@@ -225,7 +215,6 @@ fn failing_fail_check_requirements() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
-    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3)
@@ -233,7 +222,6 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -248,7 +236,6 @@ fn failing_fail_check_requirements() {
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -275,10 +262,8 @@ fn failing_supported_install_modes() {
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
-    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
     "###);
@@ -292,14 +277,12 @@ fn failing_supported_install_modes() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
-    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -313,7 +296,6 @@ fn failing_supported_install_modes() {
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -336,11 +318,8 @@ fn invalid_server_response() {
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO probing server as we are in time
-    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> INFO running state change callback for 'download' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Invalid status response: 501
     <timestamp> INFO returning to machine's entry point
     "###);
@@ -354,18 +333,15 @@ fn invalid_server_response() {
     <timestamp> TRCE starting to handle 'poll' state
     <timestamp> INFO probing server as we are in time
     <timestamp> TRCE starting to handle 'probe' state
-    <timestamp> INFO running state change callback for 'probe' state
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
-    <timestamp> INFO running state change callback for 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Invalid status response: 501
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -379,11 +355,9 @@ fn invalid_server_response() {
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
-    <timestamp> INFO running state change callback for 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error state reached: Invalid status response: 501
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -415,7 +389,9 @@ exit 1
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> INFO running state change callback for 'download' state
+    <timestamp> ERRO download callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> INFO running state change callback for 'error' state
+    <timestamp> ERRO error callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> INFO parking state machine
     "###);
@@ -431,8 +407,10 @@ exit 1
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> INFO running state change callback for 'download' state
+    <timestamp> ERRO download callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> INFO running state change callback for 'error' state
+    <timestamp> ERRO error callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled
@@ -449,8 +427,10 @@ exit 1
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> INFO running state change callback for 'download' state
+    <timestamp> ERRO download callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> INFO running state change callback for 'error' state
+    <timestamp> ERRO error callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled
