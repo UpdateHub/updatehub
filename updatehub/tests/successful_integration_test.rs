@@ -586,6 +586,7 @@ exit 0
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> INFO triggering Probe to finish update
     <timestamp> INFO no update is current available for this device
     <timestamp> INFO parking state machine
@@ -596,6 +597,7 @@ exit 0
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> TRCE validate callback has exit with success
     <timestamp> DEBG reseting installation settings
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -617,6 +619,7 @@ exit 0
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> TRCE validate callback has exit with success
     <timestamp> DEBG reseting installation settings
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -657,6 +660,7 @@ exit 1
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> WARN validate callback has failed
     "###);
@@ -666,6 +670,7 @@ exit 1
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> WARN validate callback has failed
     "###);
@@ -803,6 +808,7 @@ UpgradeToInstallation=0
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> WARN loaded v1 runtime settings successfully
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> WARN validate callback has failed
     "###);
@@ -813,6 +819,7 @@ UpgradeToInstallation=0
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> WARN loaded v1 runtime settings successfully
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> WARN validate callback has failed
     "###);
@@ -841,6 +848,7 @@ exit 1
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> WARN validate callback has failed
     "###);
@@ -850,6 +858,7 @@ exit 1
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> INFO booting from a recent installation
+    <timestamp> INFO running validate callback
     <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
     <timestamp> WARN validate callback has failed
     "###);
