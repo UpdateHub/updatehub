@@ -4,7 +4,7 @@
 
 [package]
 name = "updatehub-sdk"
-version = "2.0.2"
+version = "2.0.3"
 authors = ["asakiz <asakizin@gmail.com>"]
 edition = "2018"
 license = "Apache-2.0"
