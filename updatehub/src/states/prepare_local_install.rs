@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, Context},
-    Install, Result, State, StateChangeImpl,
+    CallbackReporter, Install, Result, State, StateChangeImpl,
 };
 use crate::{
     firmware::installation_set,
@@ -22,6 +22,8 @@ use std::{
 pub(super) struct PrepareLocalInstall {
     pub(super) update_file: PathBuf,
 }
+
+impl CallbackReporter for PrepareLocalInstall {}
 
 #[async_trait::async_trait]
 impl StateChangeImpl for PrepareLocalInstall {
