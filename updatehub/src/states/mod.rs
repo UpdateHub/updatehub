@@ -269,7 +269,7 @@ impl State {
             State::Probe(s) => s.handle_with_callback(context).await,
             State::Validation(s) => s.handle(context).await,
             State::DirectDownload(s) => s.handle(context).await,
-            State::PrepareLocalInstall(s) => s.handle(context).await,
+            State::PrepareLocalInstall(s) => s.handle_with_callback(context).await,
             State::Error(s) => s.handle_with_callback(context).await,
             State::Download(s) => s.handle_with_callback_and_report_progress(context).await,
             State::Install(s) => s.handle_with_callback_and_report_progress(context).await,
