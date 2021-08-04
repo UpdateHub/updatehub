@@ -39,7 +39,7 @@ async-trait = "0.1"
 async-lock = "2"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
-compress-tools = "0.11"
+compress-tools = "0.12"
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
 easy_process = "0.2"
 find-binary-version = "0.3"
@@ -47,7 +47,7 @@ infer = "0.5"
 lazy_static = "1"
 mockito = { version = "0.30", optional = true }
 ms-converter = "1"
-nix = "0.20"
+nix = "0.22"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
@@ -61,7 +61,7 @@ slog-async = { version = "2", default-features = false }
 slog-scope = "4"
 slog-term = "2"
 surf = { version = "2", default-features = false, features = ["curl-client"] }
-sys-mount = "1"
+sys-mount = { version = "1", default-features = false }
 tempfile = "3"
 tide = { version = "0.16", default-features = false, features = ["h1-server"] }
 timeout-readwrite = "0.3"
@@ -74,7 +74,10 @@ git-version = "0.3"
 [dev-dependencies]
 flate2 = "1"
 insta = { version = "1", features = ["backtrace"] }
-loopdev = "0.2"
+
+# Pin version as this is the last one not using bindgen
+loopdev = "=0.2.1"
+
 pretty_assertions = "0.7"
 regex = "1"
 rexpect = "0.4"
