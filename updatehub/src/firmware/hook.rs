@@ -26,12 +26,20 @@ pub(crate) fn run_hooks_from_dir(path: &Path) -> Result<MetadataValue> {
 }
 
 pub(crate) fn run_script(cmd: &str) -> Result<String> {
-    let output = easy_process::run(cmd)?;
-    if !output.stderr.is_empty() {
-        output.stderr.lines().for_each(|err| error!("{} (stderr): {}", cmd, err))
+    match easy_process::run(cmd) {
+        Ok(output) => Ok(output.stdout.trim().into()),
+        Err(easy_process::Error::Io(e)) => {
+            error!("Failed to run {}: {}", cmd, e);
+            Err(easy_process::Error::Io(e).into())
+        }
+        Err(easy_process::Error::Failure(status, output)) => {
+            error!("Script {} failed to run: {}", cmd, status);
+            if !output.stderr.is_empty() {
+                output.stderr.lines().for_each(|err| error!("{} (stderr): {}", cmd, err))
+            }
+            Err(easy_process::Error::Failure(status, output).into())
+        }
     }
-
-    Ok(output.stdout.trim().into())
 }
 
 fn metadata_value_from_str(s: &str) -> io::Result<MetadataValue> {
