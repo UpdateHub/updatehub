@@ -6,8 +6,9 @@ use super::Context;
 use crate::object::Installer;
 use pkg_schema::objects;
 
+#[async_trait::async_trait]
 impl Installer for objects::Test {
-    fn check_requirements(&self, _: &Context) -> super::Result<()> {
+    async fn check_requirements(&self, _: &Context) -> super::Result<()> {
         if self.force_check_requirements_fail {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
@@ -18,7 +19,7 @@ impl Installer for objects::Test {
         Ok(())
     }
 
-    fn install(&self, _: &Context) -> super::Result<()> {
+    async fn install(&self, _: &Context) -> super::Result<()> {
         Ok(())
     }
 }

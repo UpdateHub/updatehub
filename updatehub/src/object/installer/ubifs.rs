@@ -10,8 +10,9 @@ use crate::{
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
+#[async_trait::async_trait]
 impl Installer for objects::Ubifs {
-    fn check_requirements(&self, _: &Context) -> Result<()> {
+    async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'ubifs' handle checking requirements");
 
         utils::fs::is_executable_in_path("ubiupdatevol")?;
@@ -25,7 +26,7 @@ impl Installer for objects::Ubifs {
         Err(Error::InvalidTargetType(self.target.clone()))
     }
 
-    fn install(&self, context: &Context) -> Result<()> {
+    async fn install(&self, context: &Context) -> Result<()> {
         info!("'ubifs' handler Install {} ({})", self.filename, self.sha256sum);
 
         let target = self.target.get_target()?;
@@ -70,25 +71,25 @@ mod tests {
         }
     }
 
-    #[test]
-    fn check_requirements_with_missing_binaries() {
+    #[async_std::test]
+    async fn check_requirements_with_missing_binaries() {
         let ubifs_obj = fake_ubifs_obj("home");
 
         env::set_var("PATH", "");
-        assert!(ubifs_obj.check_requirements(&Context::default()).is_err());
+        assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["ubinfo"]).unwrap();
-        assert!(ubifs_obj.check_requirements(&Context::default()).is_err());
+        assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["ubiupdatevol"]).unwrap();
-        assert!(ubifs_obj.check_requirements(&Context::default()).is_err());
+        assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn install() {
+    async fn install() {
         let _mtd_lock = SERIALIZE.lock();
         let _ubi = FakeUbi::new(&["home"], MtdKind::Nor).unwrap();
         let ubifs_obj = fake_ubifs_obj("home");
@@ -100,8 +101,8 @@ mod tests {
 
         let (_handle, calls) = create_echo_bins(&["ubiupdatevol"]).unwrap();
 
-        ubifs_obj.check_requirements(&context).unwrap();
-        ubifs_obj.install(&context).unwrap();
+        ubifs_obj.check_requirements(&context).await.unwrap();
+        ubifs_obj.install(&context).await.unwrap();
 
         let expected = format!("ubiupdatevol {} {}\n", target.display(), source.display());
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);

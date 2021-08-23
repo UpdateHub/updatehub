@@ -15,8 +15,9 @@ use std::{
     os::unix::fs::PermissionsExt,
 };
 
+#[async_trait::async_trait]
 impl Installer for objects::Copy {
-    fn check_requirements(&self, _: &Context) -> Result<()> {
+    async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'copy' handle checking requirements");
 
         if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
@@ -27,7 +28,7 @@ impl Installer for objects::Copy {
         Err(Error::InvalidTargetType(self.target_type.clone()))
     }
 
-    fn install(&self, context: &Context) -> Result<()> {
+    async fn install(&self, context: &Context) -> Result<()> {
         info!("'copy' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = self.target_type.get_target()?;
@@ -112,7 +113,7 @@ mod tests {
     const ORIGINAL_BYTE: u8 = 0xA;
     const FILE_SIZE: usize = 2048;
 
-    fn exec_test_with_copy<F>(
+    async fn exec_test_with_copy<F>(
         mut f: F,
         original_permissions: Option<definitions::TargetPermissions>,
         compressed: bool,
@@ -189,8 +190,8 @@ mod tests {
         f(&mut obj);
 
         // Peform Install
-        obj.check_requirements(&Context::default())?;
-        obj.install(&Context::default())?;
+        obj.check_requirements(&Context::default()).await?;
+        obj.install(&Context::default()).await?;
 
         // Validade File
         #[allow(clippy::redundant_clone)]
@@ -237,21 +238,23 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn copy_compressed_file() {
-        exec_test_with_copy(|obj| obj.compressed = true, None, true).unwrap();
+    async fn copy_compressed_file() {
+        exec_test_with_copy(|obj| obj.compressed = true, None, true).await.unwrap();
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn copy_over_formated_partion() {
-        exec_test_with_copy(|obj| obj.target_format.should_format = true, None, false).unwrap();
+    async fn copy_over_formated_partion() {
+        exec_test_with_copy(|obj| obj.target_format.should_format = true, None, false)
+            .await
+            .unwrap();
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn copy_over_existing_file() {
+    async fn copy_over_existing_file() {
         exec_test_with_copy(
             |_| (),
             Some(definitions::TargetPermissions {
@@ -261,12 +264,13 @@ mod tests {
             }),
             false,
         )
+        .await
         .unwrap();
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn copy_change_uid() {
+    async fn copy_change_uid() {
         exec_test_with_copy(
             |obj| {
                 obj.target_permissions.target_uid =
@@ -275,12 +279,13 @@ mod tests {
             None,
             false,
         )
+        .await
         .unwrap();
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn copy_change_gid() {
+    async fn copy_change_gid() {
         exec_test_with_copy(
             |obj| {
                 obj.target_permissions.target_gid =
@@ -293,12 +298,13 @@ mod tests {
             }),
             false,
         )
+        .await
         .unwrap();
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn copy_change_mode() {
+    async fn copy_change_mode() {
         exec_test_with_copy(
             |obj| obj.target_permissions.target_mode = Some(0o444),
             Some(definitions::TargetPermissions {
@@ -308,6 +314,7 @@ mod tests {
             }),
             false,
         )
+        .await
         .unwrap();
     }
 }

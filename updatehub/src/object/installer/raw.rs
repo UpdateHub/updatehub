@@ -17,8 +17,9 @@ use std::{
     io::{BufRead, Read, Seek, SeekFrom, Write},
 };
 
+#[async_trait::async_trait]
 impl Installer for objects::Raw {
-    fn check_requirements(&self, _: &Context) -> Result<()> {
+    async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'raw' handle checking requirements");
 
         if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
@@ -29,7 +30,7 @@ impl Installer for objects::Raw {
         Err(Error::InvalidTargetType(self.target_type.clone()))
     }
 
-    fn install(&self, context: &Context) -> Result<()> {
+    async fn install(&self, context: &Context) -> Result<()> {
         info!("'raw' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = match self.target_type {
@@ -196,8 +197,8 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn raw_full_copy_compressed() {
+    #[async_std::test]
+    async fn raw_full_copy_compressed() {
         let size = 2048;
         let chunk_size = 8;
         let count = definitions::Count::All;
@@ -211,15 +212,15 @@ mod tests {
                 .unwrap();
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
-        obj.check_requirements(&context).unwrap();
-        obj.install(&context).unwrap();
+        obj.check_requirements(&context).await.unwrap();
+        obj.install(&context).await.unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
     }
 
-    #[test]
-    fn raw_full_copy() {
+    #[async_std::test]
+    async fn raw_full_copy() {
         let size = 2048;
         let chunk_size = 8;
         let count = definitions::Count::All;
@@ -233,15 +234,15 @@ mod tests {
                 .unwrap();
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
-        obj.check_requirements(&context).unwrap();
-        obj.install(&context).unwrap();
+        obj.check_requirements(&context).await.unwrap();
+        obj.install(&context).await.unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
     }
 
-    #[test]
-    fn raw_partial_copy_with_skip() {
+    #[async_std::test]
+    async fn raw_partial_copy_with_skip() {
         let size = 2048;
         let chunk_size = 128;
         let count = definitions::Count::All;
@@ -255,16 +256,16 @@ mod tests {
                 .unwrap();
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
-        obj.check_requirements(&context).unwrap();
-        obj.install(&context).unwrap();
+        obj.check_requirements(&context).await.unwrap();
+        obj.install(&context).await.unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
         check_unwritten_blocks(target_guard.as_file_mut(), 1024, 1024).unwrap();
     }
 
-    #[test]
-    fn raw_partial_copy_with_seek() {
+    #[async_std::test]
+    async fn raw_partial_copy_with_seek() {
         let size = 2048;
         let chunk_size = 128;
         let count = definitions::Count::All;
@@ -278,16 +279,16 @@ mod tests {
                 .unwrap();
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
-        obj.check_requirements(&context).unwrap();
-        obj.install(&context).unwrap();
+        obj.check_requirements(&context).await.unwrap();
+        obj.install(&context).await.unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
         check_unwritten_blocks(target_guard.as_file_mut(), 0, 1024).unwrap();
     }
 
-    #[test]
-    fn raw_partial_copy_with_count() {
+    #[async_std::test]
+    async fn raw_partial_copy_with_count() {
         let size = 2048;
         let chunk_size = 128;
         let count = definitions::Count::Limited(8);
@@ -301,8 +302,8 @@ mod tests {
                 .unwrap();
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
-        obj.check_requirements(&context).unwrap();
-        obj.install(&context).unwrap();
+        obj.check_requirements(&context).await.unwrap();
+        obj.install(&context).await.unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
