@@ -18,7 +18,7 @@ use std::{
 };
 
 impl Installer for objects::Raw {
-    fn check_requirements(&self) -> Result<()> {
+    fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'raw' handle checking requirements");
 
         if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
@@ -209,12 +209,10 @@ mod tests {
         let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
-        obj.check_requirements().unwrap();
-        obj.install(&Context {
-            download_dir: download_dir.path().to_owned(),
-            ..Context::default()
-        })
-        .unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+        obj.check_requirements(&context).unwrap();
+        obj.install(&context).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -233,12 +231,10 @@ mod tests {
         let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
-        obj.check_requirements().unwrap();
-        obj.install(&Context {
-            download_dir: download_dir.path().to_owned(),
-            ..Context::default()
-        })
-        .unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+        obj.check_requirements(&context).unwrap();
+        obj.install(&context).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -257,12 +253,10 @@ mod tests {
         let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
-        obj.check_requirements().unwrap();
-        obj.install(&Context {
-            download_dir: download_dir.path().to_owned(),
-            ..Context::default()
-        })
-        .unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+        obj.check_requirements(&context).unwrap();
+        obj.install(&context).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -282,12 +276,10 @@ mod tests {
         let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
-        obj.check_requirements().unwrap();
-        obj.install(&Context {
-            download_dir: download_dir.path().to_owned(),
-            ..Context::default()
-        })
-        .unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+        obj.check_requirements(&context).unwrap();
+        obj.install(&context).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();
@@ -307,12 +299,10 @@ mod tests {
         let (obj, download_dir, _source_guard, mut target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
-        obj.check_requirements().unwrap();
-        obj.install(&Context {
-            download_dir: download_dir.path().to_owned(),
-            ..Context::default()
-        })
-        .unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+        obj.check_requirements(&context).unwrap();
+        obj.install(&context).unwrap();
 
         validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
             .unwrap();

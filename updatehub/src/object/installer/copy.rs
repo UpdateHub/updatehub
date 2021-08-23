@@ -16,7 +16,7 @@ use std::{
 };
 
 impl Installer for objects::Copy {
-    fn check_requirements(&self) -> Result<()> {
+    fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'copy' handle checking requirements");
 
         if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
@@ -189,7 +189,7 @@ mod tests {
         f(&mut obj);
 
         // Peform Install
-        obj.check_requirements()?;
+        obj.check_requirements(&Context::default())?;
         obj.install(&Context::default())?;
 
         // Validade File
