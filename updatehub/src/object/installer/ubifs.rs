@@ -11,7 +11,7 @@ use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
 impl Installer for objects::Ubifs {
-    fn check_requirements(&self) -> Result<()> {
+    fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'ubifs' handle checking requirements");
 
         utils::fs::is_executable_in_path("ubiupdatevol")?;
@@ -75,15 +75,15 @@ mod tests {
         let ubifs_obj = fake_ubifs_obj("home");
 
         env::set_var("PATH", "");
-        assert!(ubifs_obj.check_requirements().is_err());
+        assert!(ubifs_obj.check_requirements(&Context::default()).is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["ubinfo"]).unwrap();
-        assert!(ubifs_obj.check_requirements().is_err());
+        assert!(ubifs_obj.check_requirements(&Context::default()).is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["ubiupdatevol"]).unwrap();
-        assert!(ubifs_obj.check_requirements().is_err());
+        assert!(ubifs_obj.check_requirements(&Context::default()).is_err());
     }
 
     #[test]
@@ -95,16 +95,13 @@ mod tests {
         let download_dir = tempfile::tempdir().unwrap();
         let target = ubifs_obj.target.get_target().unwrap();
         let source = download_dir.path().join(&ubifs_obj.sha256sum);
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
         let (_handle, calls) = create_echo_bins(&["ubiupdatevol"]).unwrap();
 
-        ubifs_obj.check_requirements().unwrap();
-        ubifs_obj
-            .install(&Context {
-                download_dir: download_dir.path().to_owned(),
-                ..Context::default()
-            })
-            .unwrap();
+        ubifs_obj.check_requirements(&context).unwrap();
+        ubifs_obj.install(&context).unwrap();
 
         let expected = format!("ubiupdatevol {} {}\n", target.display(), source.display());
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);

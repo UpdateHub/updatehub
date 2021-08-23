@@ -12,7 +12,7 @@ use slog_scope::info;
 use std::path::PathBuf;
 
 impl Installer for objects::Imxkobs {
-    fn check_requirements(&self) -> Result<()> {
+    fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'imxkobs' handle checking requirements");
         utils::fs::is_executable_in_path("kobs-ng")?;
 
@@ -88,7 +88,7 @@ mod tests {
         let imxkobs_obj = fake_imxkobs_obj();
 
         env::set_var("PATH", "");
-        assert!(imxkobs_obj.check_requirements().is_err());
+        assert!(imxkobs_obj.check_requirements(&Context::default()).is_err());
     }
 
     #[test]
@@ -100,16 +100,13 @@ mod tests {
         imxkobs_obj.chip_1_device_path = None;
         let download_dir = tempfile::tempdir().unwrap();
         let source = download_dir.path().join(&imxkobs_obj.sha256sum);
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
-        imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj
-            .install(&Context {
-                download_dir: download_dir.path().to_owned(),
-                ..Context::default()
-            })
-            .unwrap();
+        imxkobs_obj.check_requirements(&context).unwrap();
+        imxkobs_obj.install(&context).unwrap();
 
         let expected = format!("kobs-ng init {} -v\n", source.to_str().unwrap());
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
@@ -123,16 +120,13 @@ mod tests {
         imxkobs_obj.chip_1_device_path = None;
         let download_dir = tempfile::tempdir().unwrap();
         let source = download_dir.path().join(&imxkobs_obj.sha256sum);
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
-        imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj
-            .install(&Context {
-                download_dir: download_dir.path().to_owned(),
-                ..Context::default()
-            })
-            .unwrap();
+        imxkobs_obj.check_requirements(&context).unwrap();
+        imxkobs_obj.install(&context).unwrap();
 
         let expected = format!("kobs-ng init -x {} -v\n", source.to_str().unwrap());
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
@@ -146,16 +140,13 @@ mod tests {
         imxkobs_obj.chip_1_device_path = None;
         let download_dir = tempfile::tempdir().unwrap();
         let source = download_dir.path().join(&imxkobs_obj.sha256sum);
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
-        imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj
-            .install(&Context {
-                download_dir: download_dir.path().to_owned(),
-                ..Context::default()
-            })
-            .unwrap();
+        imxkobs_obj.check_requirements(&context).unwrap();
+        imxkobs_obj.install(&context).unwrap();
 
         let expected = format!(
             "kobs-ng init {} --search_exponent={} -v\n",
@@ -173,16 +164,13 @@ mod tests {
         imxkobs_obj.chip_1_device_path = None;
         let download_dir = tempfile::tempdir().unwrap();
         let source = download_dir.path().join(&imxkobs_obj.sha256sum);
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
-        imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj
-            .install(&Context {
-                download_dir: download_dir.path().to_owned(),
-                ..Context::default()
-            })
-            .unwrap();
+        imxkobs_obj.check_requirements(&context).unwrap();
+        imxkobs_obj.install(&context).unwrap();
 
         let expected = format!(
             "kobs-ng init {} --chip_0_device_path={} -v\n",
@@ -200,16 +188,13 @@ mod tests {
         imxkobs_obj.chip_0_device_path = None;
         let download_dir = tempfile::tempdir().unwrap();
         let source = download_dir.path().join(&imxkobs_obj.sha256sum);
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
-        imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj
-            .install(&Context {
-                download_dir: download_dir.path().to_owned(),
-                ..Context::default()
-            })
-            .unwrap();
+        imxkobs_obj.check_requirements(&context).unwrap();
+        imxkobs_obj.install(&context).unwrap();
 
         let expected = format!(
             "kobs-ng init {} --chip_1_device_path={} -v\n",
@@ -224,16 +209,13 @@ mod tests {
         let imxkobs_obj = fake_imxkobs_obj();
         let download_dir = tempfile::tempdir().unwrap();
         let source = download_dir.path().join(&imxkobs_obj.sha256sum);
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
         let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
 
-        imxkobs_obj.check_requirements().unwrap();
-        imxkobs_obj
-            .install(&Context {
-                download_dir: download_dir.path().to_owned(),
-                ..Context::default()
-            })
-            .unwrap();
+        imxkobs_obj.check_requirements(&context).unwrap();
+        imxkobs_obj.install(&context).unwrap();
 
         let expected = format!(
             "kobs-ng init -x {} --search_exponent={} --chip_0_device_path={} --chip_1_device_path={} -v\n",

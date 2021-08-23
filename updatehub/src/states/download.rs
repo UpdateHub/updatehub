@@ -18,6 +18,7 @@ use slog_scope::{debug, error, trace};
 #[derive(Debug)]
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
+    pub(super) object_context: object::installer::Context,
 }
 
 impl Download {
@@ -144,19 +145,11 @@ impl StateChangeImpl for Download {
             .filter(|o| !o.allow_remote_install())
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
-            let object_context = object::installer::Context {
-                download_dir: context.settings.update.download_dir.clone(),
-                offline_update: false,
-                base_url: format!(
-                    "{server_url}/products/{product_uid}/packages/{package_uid}/objects",
-                    server_url = &context.server_address(),
-                    product_uid = &context.firmware.product_uid,
-                    package_uid = &self.update_package.package_uid(),
-                ),
-            };
-
             Ok((
-                State::Install(Install { update_package: self.update_package, object_context }),
+                State::Install(Install {
+                    update_package: self.update_package,
+                    object_context: self.object_context,
+                }),
                 machine::StepTransition::Immediate,
             ))
         } else {
@@ -183,7 +176,19 @@ mod test {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
         let (obj, shasum) = fake_download_object(size);
-        let download_state = Download { update_package: get_update_package_with_shasum(&shasum) };
+        let update_package = get_update_package_with_shasum(&shasum);
+        let object_context = object::installer::Context {
+            download_dir: context.settings.update.download_dir.clone(),
+            offline_update: false,
+            base_url: format!(
+                "{server_url}/products/{product_uid}/packages/{package_uid}/objects",
+                server_url = &context.server_address(),
+                product_uid = &context.firmware.product_uid,
+                package_uid = &update_package.package_uid(),
+            ),
+        };
+
+        let download_state = Download { update_package, object_context };
         let download_dir = context.settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed

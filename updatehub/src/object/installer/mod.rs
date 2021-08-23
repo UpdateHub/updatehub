@@ -28,7 +28,7 @@ pub(crate) struct Context {
 }
 
 pub(crate) trait Installer {
-    fn check_requirements(&self) -> Result<()> {
+    fn check_requirements(&self, _: &Context) -> Result<()> {
         debug!("running default check_requirements");
         Ok(())
     }
@@ -37,8 +37,8 @@ pub(crate) trait Installer {
 }
 
 impl Installer for Object {
-    fn check_requirements(&self) -> Result<()> {
-        for_any_object!(self, o, { o.check_requirements() })
+    fn check_requirements(&self, context: &Context) -> Result<()> {
+        for_any_object!(self, o, { o.check_requirements(context) })
     }
 
     fn install(&self, context: &Context) -> Result<()> {

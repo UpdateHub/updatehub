@@ -12,7 +12,7 @@ use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
 impl Installer for objects::Flash {
-    fn check_requirements(&self) -> Result<()> {
+    fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'flash' handle checking requirements");
         utils::fs::is_executable_in_path("nandwrite")?;
         utils::fs::is_executable_in_path("flashcp")?;
@@ -79,30 +79,31 @@ mod tests {
     #[test]
     fn check_requirements_with_missing_binaries() {
         let flash_obj = fake_flash_obj("system0");
+        let context = Context::default();
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["flash_erase"]).unwrap();
-        assert!(flash_obj.check_requirements().is_err());
+        assert!(flash_obj.check_requirements(&context).is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["flashcp"]).unwrap();
-        assert!(flash_obj.check_requirements().is_err());
+        assert!(flash_obj.check_requirements(&context).is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["nandwrite"]).unwrap();
-        assert!(flash_obj.check_requirements().is_err());
+        assert!(flash_obj.check_requirements(&context).is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["flash_erase", "nandwrite"]).unwrap();
-        assert!(flash_obj.check_requirements().is_err());
+        assert!(flash_obj.check_requirements(&context).is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["flash_erase", "flashcp"]).unwrap();
-        assert!(flash_obj.check_requirements().is_err());
+        assert!(flash_obj.check_requirements(&context).is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["nandwrite", "nandwrite"]).unwrap();
-        assert!(flash_obj.check_requirements().is_err());
+        assert!(flash_obj.check_requirements(&context).is_err());
     }
 
     #[test]
@@ -114,16 +115,13 @@ mod tests {
         let flash_obj = fake_flash_obj("system0");
         let download_dir = tempfile::tempdir().unwrap();
         let source = download_dir.path().join(&flash_obj.sha256sum);
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
         let (_handle, calls) = create_echo_bins(&["flash_erase", "flashcp", "nandwrite"]).unwrap();
 
-        flash_obj.check_requirements().unwrap();
-        flash_obj
-            .install(&Context {
-                download_dir: download_dir.path().to_owned(),
-                ..Context::default()
-            })
-            .unwrap();
+        flash_obj.check_requirements(&context).unwrap();
+        flash_obj.install(&context).unwrap();
 
         let expected = format!(
             "flash_erase {} 0 0\nflashcp {} {}\n",

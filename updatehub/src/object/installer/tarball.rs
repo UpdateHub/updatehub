@@ -11,7 +11,7 @@ use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
 impl Installer for objects::Tarball {
-    fn check_requirements(&self) -> Result<()> {
+    fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'tarball' handle checking requirements");
 
         match self.target {
@@ -108,6 +108,7 @@ mod tests {
             mount_options: String::default(),
         };
         f(&mut obj);
+        let context = Context { download_dir: PathBuf::from("fixtures"), ..Context::default() };
 
         // Setup preinstall structure
         utils::fs::mount_map(&device, definitions::Filesystem::Ext4, "", |path| {
@@ -116,8 +117,8 @@ mod tests {
         })??;
 
         // Peform Install
-        obj.check_requirements()?;
-        obj.install(&Context { download_dir: PathBuf::from("fixtures"), ..Context::default() })?;
+        obj.check_requirements(&context)?;
+        obj.install(&context)?;
 
         // Validade File
         #[allow(clippy::redundant_clone)]

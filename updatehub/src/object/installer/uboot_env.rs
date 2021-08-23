@@ -11,7 +11,7 @@ use pkg_schema::objects;
 use slog_scope::info;
 
 impl Installer for objects::UbootEnv {
-    fn check_requirements(&self) -> Result<()> {
+    fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'uboot-env' handle checking requirements");
 
         utils::fs::is_executable_in_path("fw_setenv")?;
@@ -65,7 +65,7 @@ mod tests {
         let uboot_env_obj = fake_uboot_env_obj();
 
         std::env::set_var("PATH", "");
-        assert!(uboot_env_obj.check_requirements().is_err());
+        assert!(uboot_env_obj.check_requirements(&Context::default()).is_err());
     }
 
     #[test]
@@ -95,9 +95,10 @@ esac
         let download_dir = setup.settings.data.update.download_dir.clone();
         let expected_install_set = Set(InstallationSet::A);
         let source = download_dir.join(&uboot_env_obj.sha256sum);
+        let context = Context { download_dir, ..Context::default() };
 
-        uboot_env_obj.check_requirements().unwrap();
-        uboot_env_obj.install(&Context { download_dir, ..Context::default() }).unwrap();
+        uboot_env_obj.check_requirements(&context).unwrap();
+        uboot_env_obj.install(&context).unwrap();
 
         let output_file = &setup.binaries.data;
         let expected = format!(
