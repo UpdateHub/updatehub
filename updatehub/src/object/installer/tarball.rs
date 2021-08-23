@@ -10,8 +10,9 @@ use crate::{
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
+#[async_trait::async_trait]
 impl Installer for objects::Tarball {
-    fn check_requirements(&self, _: &Context) -> Result<()> {
+    async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'tarball' handle checking requirements");
 
         match self.target {
@@ -28,7 +29,7 @@ impl Installer for objects::Tarball {
         }
     }
 
-    fn install(&self, context: &Context) -> Result<()> {
+    async fn install(&self, context: &Context) -> Result<()> {
         info!("'tarball' handler Install {} ({})", self.filename, self.sha256sum);
 
         let device = self.target.get_target()?;
@@ -70,7 +71,7 @@ mod tests {
 
     const CONTENT_SIZE: usize = 10240;
 
-    fn exec_test_with_tarball<F>(mut f: F) -> Result<()>
+    async fn exec_test_with_tarball<F>(mut f: F) -> Result<()>
     where
         F: FnMut(&mut objects::Tarball),
     {
@@ -117,8 +118,8 @@ mod tests {
         })??;
 
         // Peform Install
-        obj.check_requirements(&context)?;
-        obj.install(&context)?;
+        obj.check_requirements(&context).await?;
+        obj.install(&context).await?;
 
         // Validade File
         #[allow(clippy::redundant_clone)]
@@ -143,15 +144,17 @@ mod tests {
         Ok(())
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn install_over_formated_partion() {
-        exec_test_with_tarball(|obj| obj.target_format.should_format = true).unwrap();
+    async fn install_over_formated_partion() {
+        exec_test_with_tarball(|obj| obj.target_format.should_format = true).await.unwrap();
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn install_over_unformated_partion() {
-        exec_test_with_tarball(|obj| obj.target_path = PathBuf::from("/existing_dir")).unwrap();
+    async fn install_over_unformated_partion() {
+        exec_test_with_tarball(|obj| obj.target_path = PathBuf::from("/existing_dir"))
+            .await
+            .unwrap();
     }
 }

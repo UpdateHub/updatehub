@@ -7,13 +7,14 @@ use crate::object::Installer;
 use pkg_schema::objects;
 use slog_scope::warn;
 
+#[async_trait::async_trait]
 impl Installer for objects::Zephyr {
-    fn check_requirements(&self, _: &Context) -> super::Result<()> {
+    async fn check_requirements(&self, _: &Context) -> super::Result<()> {
         warn!("'zephyr' objects are not supported");
         Err(super::Error::Unsupported)
     }
 
-    fn install(&self, _: &Context) -> super::Result<()> {
+    async fn install(&self, _: &Context) -> super::Result<()> {
         warn!("'zephyr' objects are not supported");
         Err(super::Error::Unsupported)
     }

@@ -11,8 +11,9 @@ use crate::{
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
 
+#[async_trait::async_trait]
 impl Installer for objects::Flash {
-    fn check_requirements(&self, _: &Context) -> Result<()> {
+    async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'flash' handle checking requirements");
         utils::fs::is_executable_in_path("nandwrite")?;
         utils::fs::is_executable_in_path("flashcp")?;
@@ -31,7 +32,7 @@ impl Installer for objects::Flash {
         }
     }
 
-    fn install(&self, context: &Context) -> Result<()> {
+    async fn install(&self, context: &Context) -> Result<()> {
         info!("'flash' handler Install {} ({})", self.filename, self.sha256sum);
 
         let target = self.target.get_target()?;
@@ -76,39 +77,39 @@ mod tests {
         }
     }
 
-    #[test]
-    fn check_requirements_with_missing_binaries() {
+    #[async_std::test]
+    async fn check_requirements_with_missing_binaries() {
         let flash_obj = fake_flash_obj("system0");
         let context = Context::default();
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["flash_erase"]).unwrap();
-        assert!(flash_obj.check_requirements(&context).is_err());
+        assert!(flash_obj.check_requirements(&context).await.is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["flashcp"]).unwrap();
-        assert!(flash_obj.check_requirements(&context).is_err());
+        assert!(flash_obj.check_requirements(&context).await.is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["nandwrite"]).unwrap();
-        assert!(flash_obj.check_requirements(&context).is_err());
+        assert!(flash_obj.check_requirements(&context).await.is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["flash_erase", "nandwrite"]).unwrap();
-        assert!(flash_obj.check_requirements(&context).is_err());
+        assert!(flash_obj.check_requirements(&context).await.is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["flash_erase", "flashcp"]).unwrap();
-        assert!(flash_obj.check_requirements(&context).is_err());
+        assert!(flash_obj.check_requirements(&context).await.is_err());
 
         env::set_var("PATH", "");
         let (_handle, _) = create_echo_bins(&["nandwrite", "nandwrite"]).unwrap();
-        assert!(flash_obj.check_requirements(&context).is_err());
+        assert!(flash_obj.check_requirements(&context).await.is_err());
     }
 
-    #[test]
+    #[async_std::test]
     #[ignore]
-    fn install_nor() {
+    async fn install_nor() {
         let _mtd_lock = SERIALIZE.lock();
         let mtd = FakeMtd::new(&["system0"], MtdKind::Nor).unwrap();
         let target = &mtd.devices[0];
@@ -120,8 +121,8 @@ mod tests {
 
         let (_handle, calls) = create_echo_bins(&["flash_erase", "flashcp", "nandwrite"]).unwrap();
 
-        flash_obj.check_requirements(&context).unwrap();
-        flash_obj.install(&context).unwrap();
+        flash_obj.check_requirements(&context).await.unwrap();
+        flash_obj.install(&context).await.unwrap();
 
         let expected = format!(
             "flash_erase {} 0 0\nflashcp {} {}\n",

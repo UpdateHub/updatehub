@@ -27,22 +27,24 @@ pub(crate) struct Context {
     pub(crate) base_url: String,
 }
 
+#[async_trait::async_trait]
 pub(crate) trait Installer {
-    fn check_requirements(&self, _: &Context) -> Result<()> {
+    async fn check_requirements(&self, _: &Context) -> Result<()> {
         debug!("running default check_requirements");
         Ok(())
     }
 
-    fn install(&self, context: &Context) -> Result<()>;
+    async fn install(&self, context: &Context) -> Result<()>;
 }
 
+#[async_trait::async_trait]
 impl Installer for Object {
-    fn check_requirements(&self, context: &Context) -> Result<()> {
-        for_any_object!(self, o, { o.check_requirements(context) })
+    async fn check_requirements(&self, context: &Context) -> Result<()> {
+        for_any_object!(self, o, { o.check_requirements(context).await })
     }
 
-    fn install(&self, context: &Context) -> Result<()> {
-        for_any_object!(self, o, { o.install(context) })
+    async fn install(&self, context: &Context) -> Result<()> {
+        for_any_object!(self, o, { o.install(context).await })
     }
 }
 
