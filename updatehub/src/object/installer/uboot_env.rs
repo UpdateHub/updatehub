@@ -10,8 +10,9 @@ use crate::{
 use pkg_schema::objects;
 use slog_scope::info;
 
+#[async_trait::async_trait]
 impl Installer for objects::UbootEnv {
-    fn check_requirements(&self, _: &Context) -> Result<()> {
+    async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'uboot-env' handle checking requirements");
 
         utils::fs::is_executable_in_path("fw_setenv")?;
@@ -22,7 +23,7 @@ impl Installer for objects::UbootEnv {
         Ok(())
     }
 
-    fn install(&self, context: &Context) -> Result<()> {
+    async fn install(&self, context: &Context) -> Result<()> {
         info!("'uboot-env' handler Install {} ({})", self.filename, self.sha256sum);
 
         let source = context.download_dir.join(self.sha256sum());
@@ -60,16 +61,16 @@ mod tests {
         }
     }
 
-    #[test]
-    fn check_requirements_with_missing_binary() {
+    #[async_std::test]
+    async fn check_requirements_with_missing_binary() {
         let uboot_env_obj = fake_uboot_env_obj();
 
         std::env::set_var("PATH", "");
-        assert!(uboot_env_obj.check_requirements(&Context::default()).is_err());
+        assert!(uboot_env_obj.check_requirements(&Context::default()).await.is_err());
     }
 
-    #[test]
-    fn install() {
+    #[async_std::test]
+    async fn install() {
         let setup = crate::tests::TestEnvironment::build().add_echo_binary("fw_setenv").finish();
         let output_file = &setup.binaries.data;
 
@@ -97,8 +98,8 @@ esac
         let source = download_dir.join(&uboot_env_obj.sha256sum);
         let context = Context { download_dir, ..Context::default() };
 
-        uboot_env_obj.check_requirements(&context).unwrap();
-        uboot_env_obj.install(&context).unwrap();
+        uboot_env_obj.check_requirements(&context).await.unwrap();
+        uboot_env_obj.install(&context).await.unwrap();
 
         let output_file = &setup.binaries.data;
         let expected = format!(

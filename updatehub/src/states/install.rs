@@ -57,7 +57,9 @@ impl StateChangeImpl for Install {
         objs.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap().reverse());
 
         // Run the install routine for every object.
-        objs.iter_mut().try_for_each(|obj| obj.install(&obj_context))?;
+        for obj in objs.iter_mut() {
+            obj.install(&obj_context).await?;
+        }
 
         // Avoid installing same package twice.
         context.runtime_settings.set_applied_package_uid(&package_uid)?;

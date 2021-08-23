@@ -6,7 +6,10 @@ use super::{
     machine::{self, Context},
     Download, EntryPoint, Result, State, StateChangeImpl,
 };
-use crate::{object, update_package::UpdatePackageExt};
+use crate::{
+    object::{self, Installer},
+    update_package::UpdatePackageExt,
+};
 use slog_scope::{debug, error, info};
 
 #[derive(Debug)]
@@ -57,18 +60,15 @@ impl StateChangeImpl for Validation {
         let inactive_installation_set = context.runtime_settings.get_inactive_installation_set()?;
         self.package.compatible_with(&context.firmware)?;
         self.package.validate_install_modes(&context.settings, inactive_installation_set)?;
-        if let Err(e) = self
-            .package
-            .objects(inactive_installation_set)
-            .iter()
-            .try_for_each(|o| object::Installer::check_requirements(o, &object_context))
-        {
-            error!(
-                "update package: {} ({}) has failed to meet the install requirements",
-                self.package.version(),
-                self.package.package_uid()
-            );
-            return Err(e.into());
+        for obj in self.package.objects(inactive_installation_set).iter() {
+            if let Err(e) = obj.check_requirements(&object_context).await {
+                error!(
+                    "update package: {} ({}) has failed to meet the install requirements",
+                    self.package.version(),
+                    self.package.package_uid()
+                );
+                return Err(e.into());
+            }
         }
 
         if context
