@@ -42,6 +42,17 @@ impl StateChangeImpl for Validation {
             info!("no signature key available on device, ignoring signature validation");
         }
 
+        let object_context = object::installer::Context {
+            download_dir: context.settings.update.download_dir.clone(),
+            offline_update: false,
+            base_url: format!(
+                "{server_url}/products/{product_uid}/packages/{package_uid}/objects",
+                server_url = &context.server_address(),
+                product_uid = &context.firmware.product_uid,
+                package_uid = &self.package.package_uid(),
+            ),
+        };
+
         // Ensure the package is compatible
         let inactive_installation_set = context.runtime_settings.get_inactive_installation_set()?;
         self.package.compatible_with(&context.firmware)?;
@@ -50,7 +61,7 @@ impl StateChangeImpl for Validation {
             .package
             .objects(inactive_installation_set)
             .iter()
-            .try_for_each(object::Installer::check_requirements)
+            .try_for_each(|o| object::Installer::check_requirements(o, &object_context))
         {
             error!(
                 "update package: {} ({}) has failed to meet the install requirements",
@@ -70,7 +81,7 @@ impl StateChangeImpl for Validation {
             Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
         } else {
             Ok((
-                State::Download(Download { update_package: self.package }),
+                State::Download(Download { update_package: self.package, object_context }),
                 machine::StepTransition::Immediate,
             ))
         }

@@ -7,7 +7,7 @@ use crate::object::Installer;
 use pkg_schema::objects;
 
 impl Installer for objects::Test {
-    fn check_requirements(&self) -> super::Result<()> {
+    fn check_requirements(&self, _: &Context) -> super::Result<()> {
         if self.force_check_requirements_fail {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::Other,

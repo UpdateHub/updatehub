@@ -8,7 +8,7 @@ use pkg_schema::objects;
 use slog_scope::warn;
 
 impl Installer for objects::Mender {
-    fn check_requirements(&self) -> super::Result<()> {
+    fn check_requirements(&self, _: &Context) -> super::Result<()> {
         warn!("'mender' objects are not supported");
         Err(super::Error::Unsupported)
     }
