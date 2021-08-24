@@ -34,15 +34,17 @@ required-features = ["test-env"]
 [dependencies]
 argh = "0.1.3"
 async-ctrlc = { version = "1", optional = true }
-async-std = { version = "1", features = ["unstable"] }
-async-trait = "0.1"
 async-lock = "2"
+async-std = { version = "1", features = ["unstable", "tokio1"] }
+async-trait = "0.1"
+bitar = { version = "0.8", git = "https://github.com/oll3/bita" }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
 compress-tools = "0.12"
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
 easy_process = "0.2"
 find-binary-version = "0.3"
+futures-util = { version = "0.3", default-features = false }
 infer = "0.5"
 lazy_static = "1"
 mockito = { version = "0.30", optional = true }
@@ -65,7 +67,9 @@ sys-mount = { version = "1", default-features = false }
 tempfile = "3"
 tide = { version = "0.16", default-features = false, features = ["h1-server"] }
 timeout-readwrite = "0.3"
+tokio = { version = "1", default-features = false, features = ["fs"] }
 toml = "0.5"
+url = "2"
 walkdir = "2"
 
 [build-dependencies]
