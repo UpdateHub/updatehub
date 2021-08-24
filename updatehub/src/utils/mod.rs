@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub(crate) mod definitions;
+pub(crate) mod delta;
 pub(crate) mod fs;
 pub(crate) mod io;
 pub(crate) mod mtd;
@@ -50,6 +51,19 @@ pub enum Error {
     #[display(fmt = "unable to find match for mtd device: {}", _0)]
     #[from(ignore)]
     NoMtdDevice(#[error(not(source))] String),
+
+    #[display(fmt = "bita operation failed due to io error: {}", _0)]
+    BitaArchiveIO(bitar::ArchiveError<std::io::Error>),
+    #[display(fmt = "bita operation failed due to remote read error: {}", _0)]
+    BitaArchiveRemote(bitar::ArchiveError<bitar::ReaderRemoteError>),
+    #[display(fmt = "bita operation failed due to remote read error: {}", _0)]
+    BitaRemote(bitar::ReaderRemoteError),
+    #[display(fmt = "bita operation failed due to compression error: {}", _0)]
+    BitaCompression(bitar::CompressionError),
+    #[display(fmt = "bita operation failed due to hash sum mismatch error: {}", _0)]
+    BitaHashSum(bitar::HashSumMismatchError),
+    #[display(fmt = "bita operation failed due to invalid url: {}", _0)]
+    BitaUrl(url::ParseError),
 }
 
 /// Encode a bytes stream in hex
