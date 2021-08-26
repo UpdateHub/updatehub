@@ -2786,7 +2786,7 @@ dependencies = [
 
 [[package]]
 name = "updatehub-sdk"
-version = "2.0.3"
+version = "2.0.5"
 dependencies = [
  "async-std",
  "chrono",
