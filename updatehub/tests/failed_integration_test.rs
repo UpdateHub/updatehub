@@ -31,6 +31,7 @@ fn failing_invalid_download_dir() {
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO failed to download object from update package: Permission denied (os error 13) (Io(Os { code: 13, kind: PermissionDenied, message: "Permission denied" }))
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
     "###);
@@ -52,6 +53,7 @@ fn failing_invalid_download_dir() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
+    <timestamp> ERRO failed to download object from update package: Permission denied (os error 13) (Io(Os { code: 13, kind: PermissionDenied, message: "Permission denied" }))
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
@@ -68,6 +70,7 @@ fn failing_invalid_download_dir() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
+    <timestamp> ERRO failed to download object from update package: Permission denied (os error 13) (Io(Os { code: 13, kind: PermissionDenied, message: "Permission denied" }))
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Permission denied (os error 13)
     <timestamp> INFO returning to machine's entry point
@@ -264,6 +267,7 @@ fn failing_supported_install_modes() {
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO install mode failed validation: Install mode not accepted: test (IncompatibleInstallMode("test"))
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
     "###);
@@ -282,6 +286,7 @@ fn failing_supported_install_modes() {
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO install mode failed validation: Install mode not accepted: test (IncompatibleInstallMode("test"))
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
@@ -295,6 +300,7 @@ fn failing_supported_install_modes() {
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO install mode failed validation: Install mode not accepted: test (IncompatibleInstallMode("test"))
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
@@ -320,6 +326,7 @@ fn invalid_server_response() {
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> ERRO failed to download object from update package: Invalid status response: 501 (InvalidStatusResponse(NotImplemented))
     <timestamp> ERRO error state reached: Invalid status response: 501
     <timestamp> INFO returning to machine's entry point
     "###);
@@ -341,6 +348,7 @@ fn invalid_server_response() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
+    <timestamp> ERRO failed to download object from update package: Invalid status response: 501 (InvalidStatusResponse(NotImplemented))
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Invalid status response: 501
     <timestamp> INFO returning to machine's entry point
@@ -357,6 +365,7 @@ fn invalid_server_response() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
+    <timestamp> ERRO failed to download object from update package: Invalid status response: 501 (InvalidStatusResponse(NotImplemented))
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> ERRO error state reached: Invalid status response: 501
     <timestamp> INFO returning to machine's entry point

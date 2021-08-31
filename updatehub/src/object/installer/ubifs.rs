@@ -5,7 +5,7 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt},
+    utils::{self, definitions::TargetTypeExt, log::LogContent},
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
@@ -15,11 +15,15 @@ impl Installer for objects::Ubifs {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'ubifs' handle checking requirements");
 
-        utils::fs::is_executable_in_path("ubiupdatevol")?;
-        utils::fs::is_executable_in_path("ubinfo")?;
+        utils::fs::is_executable_in_path("ubiupdatevol")
+            .log_error_msg("ubiupdatevol not on PATH")?;
+        utils::fs::is_executable_in_path("ubinfo").log_error_msg("ubinfo not on PATH")?;
 
-        if let definitions::TargetType::UBIVolume(_) = self.target.valid()? {
-            utils::fs::ensure_disk_space(&self.target.get_target()?, self.required_install_size())?;
+        if let definitions::TargetType::UBIVolume(_) =
+            self.target.valid().log_error_msg("device failed validation")?
+        {
+            utils::fs::ensure_disk_space(&self.target.get_target()?, self.required_install_size())
+                .log_error_msg("not enough disk space")?;
             return Ok(());
         }
 
@@ -29,20 +33,24 @@ impl Installer for objects::Ubifs {
     async fn install(&self, context: &Context) -> Result<()> {
         info!("'ubifs' handler Install {} ({})", self.filename, self.sha256sum);
 
-        let target = self.target.get_target()?;
+        let target = self.target.get_target().log_error_msg("failed to get target device")?;
         let source = context.download_dir.join(self.sha256sum());
 
         if self.compressed {
             easy_process::run_with_stdin(
                 &format!("ubiupdatevol {} -", target.display()),
                 |stdin| {
-                    let mut file = std::fs::File::open(source)?;
-                    compress_tools::uncompress_data(&mut file, stdin)?;
+                    let mut file =
+                        std::fs::File::open(source).log_error_msg("failed open object")?;
+                    compress_tools::uncompress_data(&mut file, stdin)
+                        .log_error_msg("failed object to stdin of ubiupdatevol")?;
                     Result::Ok(())
                 },
-            )?;
+            )
+            .log_error_msg("ubiupdatevol failed to run")?;
         } else {
-            easy_process::run(&format!("ubiupdatevol {} {}", target.display(), source.display()))?;
+            easy_process::run(&format!("ubiupdatevol {} {}", target.display(), source.display()))
+                .log_error_msg("ubiupdatevol failed to run")?;
         }
 
         Ok(())

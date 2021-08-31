@@ -1630,6 +1630,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "logging_content"
+version = "0.1.0"
+source = "git+https://github.com/OSSystems/logging_content.git#64d19c21c59dc99d5375441ac528f91826acf3cf"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "loopdev"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3059,6 +3067,7 @@ dependencies = [
  "infer 0.5.0",
  "insta",
  "lazy_static",
+ "logging_content",
  "loopdev",
  "mockito",
  "ms-converter",

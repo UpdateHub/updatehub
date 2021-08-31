@@ -6,6 +6,7 @@ use super::{
     machine::{self, Context},
     Park, Poll, Probe, Result, State, StateChangeImpl,
 };
+use crate::utils::log::LogContent;
 use slog_scope::{debug, info};
 
 #[derive(Debug)]
@@ -29,7 +30,10 @@ impl StateChangeImpl for EntryPoint {
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         if context.runtime_settings.is_polling_forced() {
             info!("triggering Probe to finish update");
-            context.runtime_settings.disable_force_poll()?;
+            context
+                .runtime_settings
+                .disable_force_poll()
+                .log_error_msg("failed to disable force poll")?;
             return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
         }
 

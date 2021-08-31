@@ -8,7 +8,7 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt},
+    utils::{self, definitions::TargetTypeExt, log::LogContent},
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
@@ -22,8 +22,11 @@ impl Installer for objects::Raw {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'raw' handle checking requirements");
 
-        if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
-            utils::fs::ensure_disk_space(dev, self.required_install_size())?;
+        if let definitions::TargetType::Device(dev) =
+            self.target_type.valid().log_error_msg("device failed vaidation")?
+        {
+            utils::fs::ensure_disk_space(dev, self.required_install_size())
+                .log_error_msg("not enough disk space")?;
             return Ok(());
         }
 
@@ -56,13 +59,21 @@ impl Installer for objects::Raw {
                 .map_err(Error::from)
         });
 
-        let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
-        input.seek(SeekFrom::Start(skip))?;
+        let mut input = utils::io::timed_buf_reader(
+            chunk_size,
+            fs::File::open(source).log_error_msg("failed to open source file")?,
+        );
+        input.seek(SeekFrom::Start(skip)).log_error_msg("failed to seek source file")?;
         let mut output = utils::io::timed_buf_writer(
             chunk_size,
-            fs::OpenOptions::new().read(true).write(true).truncate(truncate).open(device)?,
+            fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .truncate(truncate)
+                .open(device)
+                .log_error_msg("failed to open output file")?,
         );
-        output.seek(SeekFrom::Start(seek))?;
+        output.seek(SeekFrom::Start(seek)).log_error_msg("failed to seek output file")?;
 
         if self.compressed {
             match count {
@@ -70,10 +81,11 @@ impl Installer for objects::Raw {
                 definitions::Count::Limited(n) => {
                     compress_tools::uncompress_data(&mut input.take(n as u64), &mut output)
                 }
-            }?;
+            }
+            .log_error_msg("failed to uncompress data")?;
         } else {
             for _ in count {
-                let buf = input.fill_buf()?;
+                let buf = input.fill_buf().log_error_msg("failed to read from source file")?;
                 let len = buf.len();
 
                 // We break the loop in case we have no bytes left for
@@ -82,7 +94,7 @@ impl Installer for objects::Raw {
                     break;
                 }
 
-                output.write_all(buf)?;
+                output.write_all(buf).log_error_msg("failed to write to output file")?;
                 input.consume(len);
             }
         }

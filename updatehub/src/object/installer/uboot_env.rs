@@ -5,7 +5,7 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils,
+    utils::{self, log::LogContent},
 };
 use pkg_schema::objects;
 use slog_scope::info;
@@ -15,8 +15,13 @@ impl Installer for objects::UbootEnv {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'uboot-env' handle checking requirements");
 
-        utils::fs::is_executable_in_path("fw_setenv")?;
-        if !easy_process::run("fw_setenv --help")?.stderr.contains("--script") {
+        utils::fs::is_executable_in_path("fw_setenv")
+            .log_error_msg("fw_setenv not found in PATH")?;
+        if !easy_process::run("fw_setenv --help")
+            .log_error_msg("fw_setenv --help failed to run")?
+            .stderr
+            .contains("--script")
+        {
             return Err(Error::FwSetEnvNoScriptOption);
         }
 
@@ -27,7 +32,8 @@ impl Installer for objects::UbootEnv {
         info!("'uboot-env' handler Install {} ({})", self.filename, self.sha256sum);
 
         let source = context.download_dir.join(self.sha256sum());
-        let active_install_set = crate::firmware::installation_set::active()?;
+        let active_install_set = crate::firmware::installation_set::active()
+            .log_error_msg("failed to get installation current active set")?;
 
         // The call to `fw_setenv` here serves to synchronize the U-Boot environment
         // on storage to the new one (which might have been changed). The
@@ -36,11 +42,13 @@ impl Installer for objects::UbootEnv {
         easy_process::run(&format!(
             "fw_setenv -c /etc/fw_env.config --script {}",
             source.to_string_lossy(),
-        ))?;
+        ))
+        .log_error_msg("fw_setenv failed to update")?;
         easy_process::run(&format!(
             "fw_setenv -c /etc/fw_env.config updatehub_active {}",
             active_install_set,
-        ))?;
+        ))
+        .log_error_msg("fw_setenv failed to update updatehub_active")?;
 
         Ok(())
     }

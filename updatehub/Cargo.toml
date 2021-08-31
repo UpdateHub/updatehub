@@ -47,6 +47,7 @@ find-binary-version = "0.3"
 futures-util = { version = "0.3", default-features = false }
 infer = "0.5"
 lazy_static = "1"
+logging_content = { version = "0.1", git = "https://github.com/OSSystems/logging_content.git" }
 mockito = { version = "0.30", optional = true }
 ms-converter = "1"
 nix = "0.22"

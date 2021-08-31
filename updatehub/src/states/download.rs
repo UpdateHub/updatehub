@@ -10,6 +10,7 @@ use crate::{
     firmware::installation_set,
     object::{self, Info},
     update_package::{UpdatePackage, UpdatePackageExt},
+    utils::log::LogContent,
 };
 use async_lock::Mutex;
 use async_std::prelude::FutureExt;
@@ -23,14 +24,13 @@ pub(super) struct Download {
 
 impl Download {
     async fn start_download(&self, context: &Mutex<&mut Context>) -> Result<()> {
-        let installation_set = installation_set::inactive()?;
+        let installation_set =
+            installation_set::inactive().log_error_msg("unable to get current isntall set")?;
         let download_dir = context.lock().await.settings.update.download_dir.to_owned();
 
-        self.update_package.clear_unrelated_files(
-            &download_dir,
-            installation_set,
-            &context.lock().await.settings,
-        )?;
+        self.update_package
+            .clear_unrelated_files(&download_dir, installation_set, &context.lock().await.settings)
+            .log_error_msg("failed to cleanup files unrelated to current update")?;
 
         // Get shasums of missing or incomplete objects
         let shasum_list: Vec<_> = self
@@ -75,7 +75,8 @@ impl Download {
                 &download_dir,
                 &shasum,
             )
-            .await?;
+            .await
+            .log_error_msg("failed to download object from update package")?;
         }
 
         Ok(())
@@ -140,7 +141,9 @@ impl StateChangeImpl for Download {
         let download_dir = &context.settings.update.download_dir;
         if self
             .update_package
-            .objects(installation_set::inactive()?)
+            .objects(
+                installation_set::inactive().log_error_msg("unable to get inactive install set")?,
+            )
             .iter()
             .filter(|o| !o.allow_remote_install())
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))

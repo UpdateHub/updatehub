@@ -6,7 +6,7 @@ use super::{
     machine::{self, Context},
     CallbackReporter, EntryPoint, ProgressReporter, Result, State, StateChangeImpl,
 };
-use crate::update_package::UpdatePackage;
+use crate::{update_package::UpdatePackage, utils::log::LogContent};
 use slog_scope::{info, warn};
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ impl StateChangeImpl for Reboot {
 
     async fn handle(self, _: &mut Context) -> Result<(State, machine::StepTransition)> {
         info!("triggering reboot");
-        let output = easy_process::run("reboot")?;
+        let output = easy_process::run("reboot").log_error_msg("failed to run reboot command")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
             warn!("  reboot output: stdout: {}, stderr: {}", output.stdout, output.stderr);
         }
