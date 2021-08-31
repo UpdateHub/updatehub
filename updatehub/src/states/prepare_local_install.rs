@@ -9,6 +9,7 @@ use super::{
 use crate::{
     firmware::installation_set,
     update_package::{Signature, UpdatePackage, UpdatePackageExt},
+    utils::log::LogContent,
 };
 use slog_scope::{debug, error, info};
 use std::{
@@ -34,22 +35,31 @@ impl StateChangeImpl for PrepareLocalInstall {
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         info!("installing local package: {:?}", self.update_file);
         let dest_path = context.settings.update.download_dir.clone();
-        std::fs::create_dir_all(&dest_path)?;
+        std::fs::create_dir_all(&dest_path).log_error_msg("unable to create download dir")?;
 
         let mut metadata = Vec::with_capacity(1024);
-        let mut source = fs::File::open(self.update_file)?;
-        compress_tools::uncompress_archive_file(&mut source, &mut metadata, "metadata")?;
-        let update_package = UpdatePackage::parse(&metadata)?;
+        let mut source = fs::File::open(self.update_file).log_error_msg("unable to open uhupkg")?;
+        compress_tools::uncompress_archive_file(&mut source, &mut metadata, "metadata")
+            .log_error_msg("failed to uncompress metadata from uhupkg")?;
+        let update_package =
+            UpdatePackage::parse(&metadata).log_error_msg("failed to parse extracted metadata")?;
         debug!("successfuly uncompressed metadata file");
 
         if let Some(key) = context.firmware.pub_key.as_ref() {
             let mut sign = Vec::with_capacity(512);
-            source.seek(SeekFrom::Start(0))?;
+            source
+                .seek(SeekFrom::Start(0))
+                .log_error_msg("failed to seek uhupkg back to the start")?;
             match compress_tools::uncompress_archive_file(&mut source, &mut sign, "signature") {
                 Ok(_) => {
-                    let sign = Signature::from_base64_str(str::from_utf8(&sign)?)?;
+                    let sign = Signature::from_base64_str(
+                        str::from_utf8(&sign)
+                            .log_error_msg("failed to parse utf8 from signature")?,
+                    )
+                    .log_error_msg("failed to parse base64 from signature")?;
                     debug!("validating signature");
-                    sign.validate(key, &update_package)?;
+                    sign.validate(key, &update_package)
+                        .log_error_msg("uhupkg has failed signature validation")?;
                 }
                 Err(compress_tools::Error::Io(e)) if e.kind() == io::ErrorKind::NotFound => {
                     error!("package does not contain a signature file");
@@ -60,16 +70,21 @@ impl StateChangeImpl for PrepareLocalInstall {
         }
 
         for object in update_package
-            .objects(installation_set::active()?)
+            .objects(
+                installation_set::active()
+                    .log_error_msg("failed to get active installation set")?,
+            )
             .iter()
             // We ignore object's allow_remote_install property since we are doing
             // a local install and hence offline update is implied
             .map(crate::object::Info::sha256sum)
         {
-            source.seek(SeekFrom::Start(0))?;
+            source.seek(SeekFrom::Start(0)).log_error_msg("failed to seek uhupkg to the start")?;
 
-            let mut target = fs::File::create(dest_path.join(object))?;
-            compress_tools::uncompress_archive_file(&mut source, &mut target, object)?;
+            let mut target = fs::File::create(dest_path.join(object))
+                .log_error_msg("failed to create output file for object")?;
+            compress_tools::uncompress_archive_file(&mut source, &mut target, object)
+                .log_error_msg("failed to uncompress object")?;
         }
 
         info!(
@@ -78,11 +93,14 @@ impl StateChangeImpl for PrepareLocalInstall {
             update_package.package_uid()
         );
 
-        update_package.clear_unrelated_files(
-            &dest_path,
-            installation_set::inactive()?,
-            &context.settings,
-        )?;
+        update_package
+            .clear_unrelated_files(
+                &dest_path,
+                installation_set::inactive()
+                    .log_error_msg("failed to get inactive installation set")?,
+                &context.settings,
+            )
+            .log_error_msg("unable to cleanup unrequired files from download dir")?;
 
         Ok((
             State::Install(Install {

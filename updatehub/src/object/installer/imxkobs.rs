@@ -5,7 +5,7 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils,
+    utils::{self, log::LogContent},
 };
 use pkg_schema::objects;
 use slog_scope::info;
@@ -15,7 +15,7 @@ use std::path::PathBuf;
 impl Installer for objects::Imxkobs {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'imxkobs' handle checking requirements");
-        utils::fs::is_executable_in_path("kobs-ng")?;
+        utils::fs::is_executable_in_path("kobs-ng").log_error_msg("kobs-ng not in PATH")?;
 
         Ok(())
     }
@@ -42,7 +42,12 @@ impl Installer for objects::Imxkobs {
             cmd += "-x "
         };
 
-        cmd += context.download_dir.join(self.sha256sum()).to_str().ok_or(Error::InvalidPath)?;
+        cmd += context
+            .download_dir
+            .join(self.sha256sum())
+            .to_str()
+            .ok_or(Error::InvalidPath)
+            .log_error_msg("invalid path from download_dir for kobs-ng command")?;
 
         if self.search_exponent > 0 {
             cmd += &format!(" --search_exponent={}", self.search_exponent)
@@ -58,7 +63,7 @@ impl Installer for objects::Imxkobs {
 
         cmd += " -v";
 
-        easy_process::run(&cmd)?;
+        easy_process::run(&cmd).log_error_msg("kobs-ng command failed")?;
         Ok(())
     }
 }

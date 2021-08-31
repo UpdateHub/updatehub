@@ -5,7 +5,7 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt},
+    utils::{self, definitions::TargetTypeExt, log::LogContent},
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
@@ -20,8 +20,11 @@ impl Installer for objects::Copy {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'copy' handle checking requirements");
 
-        if let definitions::TargetType::Device(dev) = self.target_type.valid()? {
-            utils::fs::ensure_disk_space(dev, self.required_install_size())?;
+        if let definitions::TargetType::Device(dev) =
+            self.target_type.valid().log_error_msg("device failed vaidation")?
+        {
+            utils::fs::ensure_disk_space(dev, self.required_install_size())
+                .log_error_msg("not enough disk space")?;
             return Ok(());
         }
 
@@ -31,7 +34,7 @@ impl Installer for objects::Copy {
     async fn install(&self, context: &Context) -> Result<()> {
         info!("'copy' handler Install {} ({})", self.filename, self.sha256sum);
 
-        let device = self.target_type.get_target()?;
+        let device = self.target_type.get_target().log_error_msg("failed to get target device")?;
         let filesystem = self.filesystem;
         let mount_options = &self.mount_options;
         let format_options = &self.target_format.format_options;
@@ -49,12 +52,16 @@ impl Installer for objects::Copy {
         });
 
         if self.target_format.should_format {
-            utils::fs::format(&device, filesystem, format_options)?;
+            utils::fs::format(&device, filesystem, format_options)
+                .log_error_msg("failed to format partition")?;
         }
 
         utils::fs::mount_map(&device, filesystem, mount_options, |path| {
             let dest = path.join(&target_path);
-            let mut input = utils::io::timed_buf_reader(chunk_size, fs::File::open(source)?);
+            let mut input = utils::io::timed_buf_reader(
+                chunk_size,
+                fs::File::open(source).log_error_msg("failed to open source object")?,
+            );
             let mut output = utils::io::timed_buf_writer(
                 chunk_size,
                 fs::OpenOptions::new()
@@ -62,32 +69,36 @@ impl Installer for objects::Copy {
                     .write(true)
                     .create(true)
                     .truncate(true)
-                    .open(&dest)?,
+                    .open(&dest)
+                    .log_error_msg("failed to open target file")?,
             );
 
             // File's access mode is changed here as we might not have write permission over
             // it. It will be restored or overwritten later on by the target_mode parameter
-            let metadata = dest.metadata()?;
+            let metadata = dest.metadata().log_error_msg("failed to get target metadata")?;
             let orig_mode = metadata.permissions().mode();
             metadata.permissions().set_mode(0o100_666);
 
             if self.compressed {
-                compress_tools::uncompress_data(&mut input, &mut output)?;
+                compress_tools::uncompress_data(&mut input, &mut output)
+                    .log_error_msg("failed to uncompress data")?;
             } else {
-                io::copy(&mut input, &mut output)?;
+                io::copy(&mut input, &mut output)
+                    .log_error_msg("failed to copy from object to target")?;
             }
-            output.flush()?;
+            output.flush().log_error_msg("failed to flush disk write")?;
             metadata.permissions().set_mode(orig_mode);
 
             if let Some(mode) = self.target_permissions.target_mode {
-                utils::fs::chmod(&dest, mode)?;
+                utils::fs::chmod(&dest, mode).log_error_msg("failed to update permission")?;
             }
 
             utils::fs::chown(
                 &dest,
                 &self.target_permissions.target_uid,
                 &self.target_permissions.target_gid,
-            )?;
+            )
+            .log_error_msg("failed to update ownership")?;
 
             Ok(())
         })

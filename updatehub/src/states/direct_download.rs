@@ -6,6 +6,7 @@ use super::{
     machine::{self, CommunicationState, Context},
     PrepareLocalInstall, Result, State, StateChangeImpl,
 };
+use crate::utils::log::LogContent;
 use async_lock::Mutex;
 use async_std::prelude::FutureExt;
 use slog_scope::info;
@@ -35,10 +36,14 @@ impl StateChangeImpl for DirectDownload {
 
         let download_future = async {
             let download_dir = context.lock().await.settings.update.download_dir.clone();
-            async_std::fs::create_dir_all(&download_dir).await?;
+            async_std::fs::create_dir_all(&download_dir)
+                .await
+                .log_error_msg("unable to create download dir")?;
             let update_file = download_dir.join("fetched_pkg");
-            let mut file = async_std::fs::File::create(&update_file).await?;
-            cloud::get(&self.url, &mut file).await?;
+            let mut file = async_std::fs::File::create(&update_file)
+                .await
+                .log_error_msg("unable to open file for fatching package")?;
+            cloud::get(&self.url, &mut file).await.log_error_msg("failed to fetch package")?;
 
             Ok(State::PrepareLocalInstall(PrepareLocalInstall { update_file }))
         };

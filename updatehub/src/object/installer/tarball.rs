@@ -5,7 +5,7 @@
 use super::{Context, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt},
+    utils::{self, definitions::TargetTypeExt, log::LogContent},
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
@@ -20,10 +20,11 @@ impl Installer for objects::Tarball {
             | definitions::TargetType::UBIVolume(_)
             | definitions::TargetType::MTDName(_) => {
                 utils::fs::ensure_disk_space(
-                    &self.target.get_target()?,
+                    &self.target.get_target().log_error_msg("failed to get target device")?,
                     self.required_install_size(),
-                )?;
-                self.target.valid()?;
+                )
+                .log_error_msg("not enough disk space")?;
+                self.target.valid().log_error_msg("device failed validation")?;
                 Ok(())
             }
         }
@@ -32,7 +33,7 @@ impl Installer for objects::Tarball {
     async fn install(&self, context: &Context) -> Result<()> {
         info!("'tarball' handler Install {} ({})", self.filename, self.sha256sum);
 
-        let device = self.target.get_target()?;
+        let device = self.target.get_target().log_error_msg("failed to get target device")?;
         let filesystem = self.filesystem;
         let mount_options = &self.mount_options;
         let format_options = &self.target_format.format_options;
@@ -41,17 +42,20 @@ impl Installer for objects::Tarball {
         let source = context.download_dir.join(sha256sum);
 
         if self.target_format.should_format {
-            utils::fs::format(&device, filesystem, format_options)?;
+            utils::fs::format(&device, filesystem, format_options)
+                .log_error_msg("failed to format partition")?;
         }
 
         Ok(utils::fs::mount_map(&device, filesystem, mount_options, |path| {
             let dest = path.join(target_path);
-            let mut source = std::fs::File::open(source)?;
+            let mut source =
+                std::fs::File::open(source).log_error_msg("failed to open source object")?;
             compress_tools::uncompress_archive(
                 &mut source,
                 &dest,
                 compress_tools::Ownership::Preserve,
-            )?;
+            )
+            .log_error_msg("failed to uncompress tar object to target")?;
             utils::Result::Ok(())
         })??)
     }

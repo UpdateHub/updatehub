@@ -10,6 +10,7 @@ use crate::{
     firmware::installation_set,
     object::{self, Info, Installer},
     update_package::{UpdatePackage, UpdatePackageExt},
+    utils::log::LogContent,
 };
 use slog_scope::info;
 
@@ -45,7 +46,10 @@ impl StateChangeImpl for Install {
         let package_uid = self.update_package.package_uid();
         info!("installing update: {} ({})", self.update_package.version(), &package_uid);
 
-        let installation_set = context.runtime_settings.get_inactive_installation_set()?;
+        let installation_set = context
+            .runtime_settings
+            .get_inactive_installation_set()
+            .log_error_msg("unable to get inactive installation set")?;
         info!("using installation set as target {}", installation_set);
 
         let obj_context = self.object_context;
@@ -62,14 +66,21 @@ impl StateChangeImpl for Install {
         }
 
         // Avoid installing same package twice.
-        context.runtime_settings.set_applied_package_uid(&package_uid)?;
+        context
+            .runtime_settings
+            .set_applied_package_uid(&package_uid)
+            .log_error_msg("failed to set applied package uid to runtime settings")?;
 
         // Set upgrading to the new installation set.
-        context.runtime_settings.set_upgrading_to(installation_set)?;
+        context
+            .runtime_settings
+            .set_upgrading_to(installation_set)
+            .log_error_msg("failed to upgrade installation set to runtime settings ")?;
 
         // Swap installation set so it is used next device boot.
         info!("swapping active installation set");
-        installation_set::swap_active()?;
+        installation_set::swap_active()
+            .log_error_msg("unable to update active installation set")?;
 
         info!("update installed successfully");
         Ok((

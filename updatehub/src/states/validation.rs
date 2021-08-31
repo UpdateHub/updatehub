@@ -9,6 +9,7 @@ use super::{
 use crate::{
     object::{self, Installer},
     update_package::UpdatePackageExt,
+    utils::log::LogContent,
 };
 use slog_scope::{debug, error, info};
 
@@ -34,7 +35,8 @@ impl StateChangeImpl for Validation {
             match self.sign.as_ref() {
                 Some(sign) => {
                     debug!("validating signature");
-                    sign.validate(key, &self.package)?;
+                    sign.validate(key, &self.package)
+                        .log_error_msg("uhupkg failed signature validation")?;
                 }
                 None => {
                     error!("missing signature key");
@@ -57,9 +59,16 @@ impl StateChangeImpl for Validation {
         };
 
         // Ensure the package is compatible
-        let inactive_installation_set = context.runtime_settings.get_inactive_installation_set()?;
-        self.package.compatible_with(&context.firmware)?;
-        self.package.validate_install_modes(&context.settings, inactive_installation_set)?;
+        let inactive_installation_set = context
+            .runtime_settings
+            .get_inactive_installation_set()
+            .log_error_msg("unable to get inactive installation set")?;
+        self.package
+            .compatible_with(&context.firmware)
+            .log_error_msg("uhupkg is not compatible with this device")?;
+        self.package
+            .validate_install_modes(&context.settings, inactive_installation_set)
+            .log_error_msg("install mode failed validation")?;
         for obj in self.package.objects(inactive_installation_set).iter() {
             if let Err(e) = obj.check_requirements(&object_context).await {
                 error!(

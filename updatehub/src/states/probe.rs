@@ -6,6 +6,7 @@ use super::{
     machine::{self, Context},
     CallbackReporter, EntryPoint, Result, State, StateChangeImpl, Validation,
 };
+use crate::utils::log::LogContent;
 use chrono::{Duration, Utc};
 use cloud::api::ProbeResponse;
 use slog_scope::{error, info};
@@ -55,7 +56,10 @@ impl StateChangeImpl for Probe {
                 info!("no update is current available for this device");
 
                 // Store timestamp of last polling
-                context.runtime_settings.set_last_polling(Utc::now())?;
+                context
+                    .runtime_settings
+                    .set_last_polling(Utc::now())
+                    .log_error_msg("unable to update last polling to runtime settings")?;
                 Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
             }
 
@@ -66,7 +70,10 @@ impl StateChangeImpl for Probe {
 
             ProbeResponse::Update(package, sign) => {
                 // Store timestamp of last polling
-                context.runtime_settings.set_last_polling(Utc::now())?;
+                context
+                    .runtime_settings
+                    .set_last_polling(Utc::now())
+                    .log_error_msg("failed to update last polling to runtime settings")?;
 
                 // Starting logging a new scope of operation since we are
                 // beginning the installation process of a new update package
