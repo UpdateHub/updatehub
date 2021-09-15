@@ -249,13 +249,13 @@ mod tests {
         Ok(())
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn copy_compressed_file() {
         exec_test_with_copy(|obj| obj.compressed = true, None, true).await.unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn copy_over_formated_partion() {
         exec_test_with_copy(|obj| obj.target_format.should_format = true, None, false)
@@ -263,7 +263,7 @@ mod tests {
             .unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn copy_over_existing_file() {
         exec_test_with_copy(
@@ -279,7 +279,7 @@ mod tests {
         .unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn copy_change_uid() {
         exec_test_with_copy(
@@ -294,7 +294,7 @@ mod tests {
         .unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn copy_change_gid() {
         exec_test_with_copy(
@@ -313,7 +313,7 @@ mod tests {
         .unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn copy_change_mode() {
         exec_test_with_copy(

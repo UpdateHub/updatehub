@@ -50,8 +50,8 @@ impl<'a> Client<'a> {
                 None,
             )),
             FakeResponse::InvalidUri => {
-                let uri_error = surf::http::Url::parse("http://foo:--").unwrap_err();
-                Err(Error::Http(surf::Error::new(surf::StatusCode::InternalServerError, uri_error)))
+                let uri_error = url::Url::parse("http://foo:--").unwrap_err();
+                Err(Error::UrlParse(uri_error))
             }
         })
     }
@@ -64,7 +64,7 @@ impl<'a> Client<'a> {
         object: &str,
     ) -> Result<()> {
         if let Some(data) = OBJECT_DATA.with(|conf| conf.borrow_mut().take()) {
-            async_std::fs::write(download_dir.join(object), data).await?
+            tokio::fs::write(download_dir.join(object), data).await?
         }
 
         Ok(())

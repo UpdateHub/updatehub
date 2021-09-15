@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     let setup = updatehub::tests::TestEnvironment::build()
         .server_address(mockito::server_url())

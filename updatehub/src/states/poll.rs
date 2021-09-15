@@ -47,7 +47,7 @@ mod tests {
     use super::*;
     use chrono::{Duration, Utc};
 
-    #[async_std::test]
+    #[tokio::test]
     async fn normal_delay() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
@@ -62,7 +62,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn update_in_time() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
@@ -76,7 +76,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn least_probe_in_the_future() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();

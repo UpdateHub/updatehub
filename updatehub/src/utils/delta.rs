@@ -96,19 +96,17 @@ where
 mod tests {
     use super::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn test_inplace_clone() {
         // Create file with incomplete data
         let output_file = tempfile::NamedTempFile::new().unwrap();
-        async_std::fs::write(output_file.path(), "Test message sample: [...], in Rio.")
-            .await
-            .unwrap();
+        fs::write(output_file.path(), "Test message sample: [...], in Rio.").await.unwrap();
 
         clone("fixtures/message.bita", output_file.path(), 0).await.unwrap();
 
         // Assert that the file now has the full predefined message
         assert_eq!(
-            async_std::fs::read_to_string(output_file.path()).await.unwrap().as_str(),
+            fs::read_to_string(output_file.path()).await.unwrap().as_str(),
             "Test message sample: The Brazilian campaign at the Tokyo Games ended with positive results. With 21 medals, the country surpassed the record of 19 registered in 2016, in Rio.",
         );
     }

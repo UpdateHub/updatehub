@@ -54,7 +54,7 @@ impl StateChangeImpl for EntryPoint {
 mod tests {
     use super::*;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn polling_disable() {
         let setup = crate::tests::TestEnvironment::build().disable_polling().finish();
         let mut context = setup.gen_context();
@@ -65,7 +65,7 @@ mod tests {
         assert_state!(machine, Park);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn polling_enabled() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
@@ -76,7 +76,7 @@ mod tests {
         assert_state!(machine, Poll);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn forced_probe() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();

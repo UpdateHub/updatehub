@@ -34,8 +34,8 @@ required-features = ["test-env"]
 [dependencies]
 argh = "0.1.3"
 async-ctrlc = { version = "1", optional = true }
+async-channel = "1"
 async-lock = "2"
-async-std = { version = "1", features = ["unstable", "tokio1"] }
 async-trait = "0.1"
 bitar = { version = "0.8", git = "https://github.com/oll3/bita" }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
@@ -55,6 +55,7 @@ openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
 regex = { version = "1", default-features = false }
+reqwest = { version = "0.11", default-features = false, features = ["json", "native-tls"] }
 sdk = { path = "../updatehub-sdk", package = "updatehub-sdk" }
 serde = { version = "1", default-features = false, features = ["rc", "derive"] }
 serde_ini = { version = "0.2", default-features = false, optional = true }
@@ -63,15 +64,14 @@ slog = { version = "2", default-features = false, features = ["max_level_trace",
 slog-async = { version = "2", default-features = false }
 slog-scope = "4"
 slog-term = "2"
-surf = { version = "2", default-features = false, features = ["curl-client"] }
 sys-mount = { version = "1", default-features = false }
 tempfile = "3"
-tide = { version = "0.16", default-features = false, features = ["h1-server"] }
 timeout-readwrite = "0.3"
-tokio = { version = "1", default-features = false, features = ["fs"] }
+tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "fs", "macros"] }
 toml = "0.5"
 url = "2"
 walkdir = "2"
+warp = "0.3"
 
 [build-dependencies]
 git-version = "0.3"

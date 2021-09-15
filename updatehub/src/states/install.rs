@@ -96,7 +96,7 @@ mod test {
     use crate::update_package::tests::get_update_package;
     use pretty_assertions::assert_eq;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn has_package_uid_if_succeed() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();

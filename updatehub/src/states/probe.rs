@@ -34,10 +34,8 @@ impl StateChangeImpl for Probe {
             .probe(context.runtime_settings.retries(), context.firmware.as_cloud_metadata())
             .await
         {
-            Err(cloud::Error::Http(e))
-                if e.downcast_ref::<surf::http::url::ParseError>().is_some() =>
-            {
-                return Err(cloud::Error::Http(e).into());
+            Err(err @ cloud::Error::UrlParse(_)) => {
+                return Err(err.into());
             }
             Err(e) => {
                 error!("Probe failed: {}", e);
@@ -94,7 +92,7 @@ mod tests {
     use super::*;
     use crate::cloud_mock;
 
-    #[async_std::test]
+    #[tokio::test]
     async fn invalid_uri() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
@@ -109,7 +107,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn update_not_available() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
@@ -120,7 +118,7 @@ mod tests {
         assert_state!(machine, EntryPoint);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn update_available() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
@@ -131,7 +129,7 @@ mod tests {
         assert_state!(machine, Validation);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn extra_poll_interval() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();

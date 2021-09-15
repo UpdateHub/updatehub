@@ -69,7 +69,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn check_requirements_with_missing_binary() {
         let uboot_env_obj = fake_uboot_env_obj();
 
@@ -77,7 +77,7 @@ mod tests {
         assert!(uboot_env_obj.check_requirements(&Context::default()).await.is_err());
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn install() {
         let setup = crate::tests::TestEnvironment::build().add_echo_binary("fw_setenv").finish();
         let output_file = &setup.binaries.data;

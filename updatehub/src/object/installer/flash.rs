@@ -77,7 +77,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn check_requirements_with_missing_binaries() {
         let flash_obj = fake_flash_obj("system0");
         let context = Context::default();
@@ -107,7 +107,7 @@ mod tests {
         assert!(flash_obj.check_requirements(&context).await.is_err());
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn install_nor() {
         let _mtd_lock = SERIALIZE.lock();

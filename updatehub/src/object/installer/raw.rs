@@ -209,7 +209,7 @@ mod tests {
         Ok(())
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn raw_full_copy_compressed() {
         let size = 2048;
         let chunk_size = 8;
@@ -231,7 +231,7 @@ mod tests {
             .unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn raw_full_copy() {
         let size = 2048;
         let chunk_size = 8;
@@ -253,7 +253,7 @@ mod tests {
             .unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn raw_partial_copy_with_skip() {
         let size = 2048;
         let chunk_size = 128;
@@ -276,7 +276,7 @@ mod tests {
         check_unwritten_blocks(target_guard.as_file_mut(), 1024, 1024).unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn raw_partial_copy_with_seek() {
         let size = 2048;
         let chunk_size = 128;
@@ -299,7 +299,7 @@ mod tests {
         check_unwritten_blocks(target_guard.as_file_mut(), 0, 1024).unwrap();
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn raw_partial_copy_with_count() {
         let size = 2048;
         let chunk_size = 128;
