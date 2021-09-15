@@ -102,7 +102,7 @@ mod tests {
     use super::*;
     use crate::{states::TransitionError, update_package::tests::get_update_package};
 
-    #[async_std::test]
+    #[tokio::test]
     async fn normal_transition() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
@@ -117,7 +117,7 @@ mod tests {
         assert_state!(machine, Download);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn invalid_hardware() {
         let setup = crate::tests::TestEnvironment::build().invalid_hardware().finish();
         let mut context = setup.gen_context();
@@ -133,7 +133,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn skip_same_package_uid() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();
@@ -149,7 +149,7 @@ mod tests {
         assert_state!(machine, EntryPoint);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn missing_signature() {
         let setup = crate::tests::TestEnvironment::build().finish();
         let mut context = setup.gen_context();

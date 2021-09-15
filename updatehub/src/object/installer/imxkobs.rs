@@ -89,7 +89,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn check_requirements_with_missing_binaries() {
         let imxkobs_obj = fake_imxkobs_obj();
 
@@ -97,7 +97,7 @@ mod tests {
         assert!(imxkobs_obj.check_requirements(&Context::default()).await.is_err());
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn install_no_args() {
         let mut imxkobs_obj = fake_imxkobs_obj();
         imxkobs_obj.padding_1k = false;
@@ -118,7 +118,7 @@ mod tests {
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn install_padding_1k() {
         let mut imxkobs_obj = fake_imxkobs_obj();
         imxkobs_obj.search_exponent = 0;
@@ -138,7 +138,7 @@ mod tests {
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn install_search_exponent() {
         let mut imxkobs_obj = fake_imxkobs_obj();
         imxkobs_obj.padding_1k = false;
@@ -162,7 +162,7 @@ mod tests {
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn install_chip_0() {
         let mut imxkobs_obj = fake_imxkobs_obj();
         imxkobs_obj.padding_1k = false;
@@ -186,7 +186,7 @@ mod tests {
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn install_chip_1() {
         let mut imxkobs_obj = fake_imxkobs_obj();
         imxkobs_obj.padding_1k = false;
@@ -210,7 +210,7 @@ mod tests {
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn install_all_fields() {
         let imxkobs_obj = fake_imxkobs_obj();
         let download_dir = tempfile::tempdir().unwrap();

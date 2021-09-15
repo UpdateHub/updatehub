@@ -5,123 +5,148 @@
 use crate::states::machine;
 use sdk::api;
 use slog_scope::debug;
-use std::convert::TryFrom;
+use warp::Filter;
+
+type Result<T> = std::result::Result<T, warp::Rejection>;
 
 pub(crate) struct Api(machine::Addr);
 
 impl Api {
-    pub(crate) fn server(addr: machine::Addr) -> tide::Server<machine::Addr> {
-        let mut server = tide::with_state(addr);
-        server.at("/info").get(Api::info);
-        server.at("/log").get(Api::log);
-        server.at("/probe").post(Api::probe);
-        server.at("/local_install").post(Api::local_install);
-        server.at("/remote_install").post(Api::remote_install);
-        server.at("/update/download/abort").post(Api::download_abort);
-        server
+    pub(crate) fn server(
+        addr: machine::Addr,
+    ) -> warp::Server<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
+        let state = warp::any().map(move || addr.clone());
+
+        let info = warp::get().and(warp::path("info")).and(state.clone()).and_then(Api::info);
+        let log = warp::get().and(warp::path("log")).and_then(Api::log);
+        let probe = warp::post()
+            .and(warp::path("probe"))
+            .and(
+                warp::body::json()
+                    .map(Some)
+                    .or_else(|_| async { Ok::<(Option<_>,), std::convert::Infallible>((None,)) }),
+            )
+            .and(state.clone())
+            .and_then(Api::probe);
+        let local_install = warp::post()
+            .and(warp::path("local_install"))
+            .and(warp::body::json())
+            .and(state.clone())
+            .and_then(Api::local_install);
+        let remote_install = warp::post()
+            .and(warp::path("remote_install"))
+            .and(warp::body::json())
+            .and(state.clone())
+            .and_then(Api::remote_install);
+        let download_abort = warp::post()
+            .and(warp::path!("update" / "download" / "abort"))
+            .and(state)
+            .and_then(Api::download_abort);
+
+        let main_filter = warp::any()
+            .and(info.or(log).or(probe).or(local_install).or(remote_install).or(download_abort))
+            .boxed();
+        warp::serve(main_filter)
     }
 
-    async fn info(req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
+    async fn info(addr: machine::Addr) -> Result<warp::reply::Json> {
         debug!("receiving info request");
-        let res = req.state().request_info().await?;
-        Ok(tide::Response::builder(tide::StatusCode::Ok).body(tide::Body::from_json(&res)?).build())
+        let res = addr.request_info().await?;
+        Ok(warp::reply::json(&res))
     }
 
-    async fn probe(mut req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
+    async fn log() -> Result<warp::reply::Json> {
+        Ok(warp::reply::json(&crate::logger::buffer()))
+    }
+
+    async fn probe(
+        req: Option<api::probe::Request>,
+        addr: machine::Addr,
+    ) -> Result<machine::ProbeResponse> {
         debug!("receiving probe request");
-        let body = req.take_body();
-        let server_address = match body.is_empty() {
-            Some(true) => None,
-            _ => Some(body.into_json::<api::probe::Request>().await?.custom_server),
-        };
-        Ok(tide::Response::try_from(req.state().request_probe(server_address).await?)?)
+        let server_address = req.map(|b| b.custom_server);
+        Ok(addr.request_probe(server_address).await?)
     }
 
-    async fn local_install(mut req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
+    async fn local_install(
+        req: api::local_install::Request,
+        addr: machine::Addr,
+    ) -> Result<machine::StateResponse> {
         debug!("receiving local_install request");
-        let file = req.body_json::<api::local_install::Request>().await?.file;
-        Ok(tide::Response::try_from(req.state().request_local_install(file).await?)?)
+        Ok(addr.request_local_install(req.file).await?)
     }
 
-    async fn remote_install(mut req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
+    async fn remote_install(
+        req: api::remote_install::Request,
+        addr: machine::Addr,
+    ) -> Result<machine::StateResponse> {
         debug!("receiving remote_install request");
-        let url = req.body_json::<api::remote_install::Request>().await?.url;
-        Ok(tide::Response::try_from(req.state().request_remote_install(url).await?)?)
+        Ok(addr.request_remote_install(req.url).await?)
     }
 
-    async fn log(_: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
-        Ok(tide::Response::builder(tide::StatusCode::Ok)
-            .body(tide::Body::from_json(&crate::logger::buffer())?)
-            .build())
-    }
-
-    async fn download_abort(req: tide::Request<machine::Addr>) -> tide::Result<tide::Response> {
+    async fn download_abort(addr: machine::Addr) -> Result<machine::AbortDownloadResponse> {
         debug!("receiving abort download request");
-        Ok(tide::Response::try_from(req.state().request_abort_download().await?)?)
+        Ok(addr.request_abort_download().await?)
     }
 }
 
-impl TryFrom<machine::AbortDownloadResponse> for tide::Response {
-    type Error = tide::Error;
+impl warp::reject::Reject for crate::states::TransitionError {}
 
-    fn try_from(res: machine::AbortDownloadResponse) -> tide::Result<tide::Response> {
-        Ok(match res {
-            machine::AbortDownloadResponse::RequestAccepted => {
-                tide::Response::builder(tide::StatusCode::Ok)
-                    .body(tide::Body::from_json(&api::abort_download::Response {
-                        message: "request accepted, download aborted".to_owned(),
-                    })?)
-                    .build()
-            }
-            machine::AbortDownloadResponse::InvalidState => {
-                tide::Response::builder(tide::StatusCode::NotAcceptable)
-                    .body(tide::Body::from_json(&api::abort_download::Refused {
+impl warp::reply::Reply for machine::AbortDownloadResponse {
+    fn into_response(self) -> warp::reply::Response {
+        match self {
+            machine::AbortDownloadResponse::RequestAccepted => warp::reply::Response::new(
+                serde_json::to_vec(&api::abort_download::Response {
+                    message: "request accepted, download aborted".to_owned(),
+                })
+                .unwrap()
+                .into(),
+            ),
+            machine::AbortDownloadResponse::InvalidState => warp::reply::with_status(
+                warp::reply::Response::new(
+                    serde_json::to_vec(&api::abort_download::Refused {
                         error: "there is no download to be aborted".to_owned(),
-                    })?)
-                    .build()
-            }
-        })
+                    })
+                    .unwrap()
+                    .into(),
+                ),
+                warp::http::StatusCode::NOT_ACCEPTABLE,
+            )
+            .into_response(),
+        }
     }
 }
 
-impl TryFrom<machine::ProbeResponse> for tide::Response {
-    type Error = tide::Error;
-
-    fn try_from(res: machine::ProbeResponse) -> tide::Result<tide::Response> {
-        Ok(match res {
-            machine::ProbeResponse::Available => tide::Response::builder(tide::StatusCode::Ok)
-                .body(tide::Body::from_json(&api::probe::Response::Updating)?)
-                .build(),
-            machine::ProbeResponse::Unavailable => tide::Response::builder(tide::StatusCode::Ok)
-                .body(tide::Body::from_json(&api::probe::Response::NoUpdate)?)
-                .build(),
-            machine::ProbeResponse::Delayed(d) => tide::Response::builder(tide::StatusCode::Ok)
-                .body(tide::Body::from_json(&api::probe::Response::TryAgain(d))?)
-                .build(),
+impl warp::reply::Reply for machine::ProbeResponse {
+    fn into_response(self) -> warp::reply::Response {
+        match self {
+            machine::ProbeResponse::Available => warp::reply::Response::new(
+                serde_json::to_vec(&api::probe::Response::Updating).unwrap().into(),
+            ),
+            machine::ProbeResponse::Unavailable => warp::reply::Response::new(
+                serde_json::to_vec(&api::probe::Response::NoUpdate).unwrap().into(),
+            ),
+            machine::ProbeResponse::Delayed(d) => warp::reply::Response::new(
+                serde_json::to_vec(&api::probe::Response::TryAgain(d)).unwrap().into(),
+            ),
             machine::ProbeResponse::Busy(current_state) => {
-                tide::Response::builder(tide::StatusCode::Ok)
-                    .body(tide::Body::from_json(&current_state)?)
-                    .build()
+                warp::reply::Response::new(serde_json::to_vec(&current_state).unwrap().into())
             }
-        })
+        }
     }
 }
 
-impl TryFrom<machine::StateResponse> for tide::Response {
-    type Error = tide::Error;
-
-    fn try_from(res: machine::StateResponse) -> tide::Result<tide::Response> {
-        Ok(match res {
+impl warp::reply::Reply for machine::StateResponse {
+    fn into_response(self) -> warp::reply::Response {
+        match self {
             machine::StateResponse::RequestAccepted(current_state) => {
-                tide::Response::builder(tide::StatusCode::Ok)
-                    .body(tide::Body::from_json(&current_state)?)
-                    .build()
+                warp::reply::Response::new(serde_json::to_vec(&current_state).unwrap().into())
             }
-            machine::StateResponse::InvalidState(current_state) => {
-                tide::Response::builder(tide::StatusCode::NotAcceptable)
-                    .body(tide::Body::from_json(&current_state)?)
-                    .build()
-            }
-        })
+            machine::StateResponse::InvalidState(current_state) => warp::reply::with_status(
+                warp::reply::Response::new(serde_json::to_vec(&current_state).unwrap().into()),
+                warp::http::StatusCode::NOT_ACCEPTABLE,
+            )
+            .into_response(),
+        }
     }
 }

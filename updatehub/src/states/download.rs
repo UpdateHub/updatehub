@@ -13,7 +13,6 @@ use crate::{
     utils::log::LogContent,
 };
 use async_lock::Mutex;
-use async_std::prelude::FutureExt;
 use slog_scope::{debug, error, trace};
 
 #[derive(Debug)]
@@ -23,18 +22,20 @@ pub(super) struct Download {
 }
 
 impl Download {
-    async fn start_download(&self, context: &Mutex<&mut Context>) -> Result<()> {
+    async fn start_download(
+        update_package: UpdatePackage,
+        context: &Mutex<&mut Context>,
+    ) -> Result<()> {
         let installation_set =
             installation_set::inactive().log_error_msg("unable to get current isntall set")?;
         let download_dir = context.lock().await.settings.update.download_dir.to_owned();
 
-        self.update_package
+        update_package
             .clear_unrelated_files(&download_dir, installation_set, &context.lock().await.settings)
             .log_error_msg("failed to cleanup files unrelated to current update")?;
 
         // Get shasums of missing or incomplete objects
-        let shasum_list: Vec<_> = self
-            .update_package
+        let shasum_list: Vec<_> = update_package
             .objects(installation_set)
             .iter()
             .filter_map(|o| {
@@ -71,7 +72,7 @@ impl Download {
             debug!("starting download of: {} ({})", name, shasum);
             api.download_object(
                 &product_uid,
-                &self.update_package.package_uid(),
+                &update_package.package_uid(),
                 &download_dir,
                 &shasum,
             )
@@ -116,8 +117,9 @@ impl StateChangeImpl for Download {
         let communication_receiver = &context.communication.receiver.clone();
         let context = Mutex::new(context);
 
+        let update_package = self.update_package.clone();
         let download_future = async {
-            self.start_download(&context).await?;
+            Download::start_download(update_package.clone(), &context).await?;
             Result::Ok(None)
         };
 
@@ -133,14 +135,27 @@ impl StateChangeImpl for Download {
             Ok(None)
         };
 
-        if let Some(new_state) = download_future.race(message_handle_future).await? {
+        // Clone update package and object_context so self can be freely held by
+        // message_handle_future
+        let update_package = self.update_package.clone();
+        let object_context = self.object_context.clone();
+
+        // download_future dones't need to be pinned as it doesn't borrow context
+        futures_util::pin_mut!(download_future);
+        futures_util::pin_mut!(message_handle_future);
+
+        if let Some(new_state) =
+            futures_util::future::select(download_future, message_handle_future)
+                .await
+                .factor_first()
+                .0?
+        {
             return Ok((new_state, machine::StepTransition::Immediate));
         }
 
         let context = context.lock().await;
         let download_dir = &context.settings.update.download_dir;
-        if self
-            .update_package
+        if update_package
             .objects(
                 installation_set::inactive().log_error_msg("unable to get inactive install set")?,
             )
@@ -149,10 +164,7 @@ impl StateChangeImpl for Download {
             .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
         {
             Ok((
-                State::Install(Install {
-                    update_package: self.update_package,
-                    object_context: self.object_context,
-                }),
+                State::Install(Install { update_package, object_context }),
                 machine::StepTransition::Immediate,
             ))
         } else {
@@ -222,13 +234,13 @@ mod test {
         assert_eq!(&utils::sha256sum(object_content.as_bytes()), &shasum, "Checksum mismatch");
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn download_small_object() {
         test_object_download(16).await
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn download_large_object() {
         test_object_download(100_000_000).await

@@ -278,9 +278,6 @@ fn correct_config_update_polling() {
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
-    <timestamp> DEBG <percentage>% of the file has been downloaded
-    <timestamp> DEBG <percentage>% of the file has been downloaded
-    <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> TRCE starting to handle 'install' state
     <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
@@ -306,9 +303,6 @@ fn correct_config_update_polling() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
-    <timestamp> DEBG <percentage>% of the file has been downloaded
-    <timestamp> DEBG <percentage>% of the file has been downloaded
-    <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
@@ -529,7 +523,6 @@ fn correct_config_remote_install() {
     <timestamp> TRCE starting to handle 'direct_download' state
     <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
     <timestamp> DEBG 100% of the file has been downloaded
-    <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> TRCE starting to handle 'prepare_local_install' state
     <timestamp> INFO installing local package: "<file>"
     <timestamp> DEBG successfuly uncompressed metadata file
@@ -559,7 +552,6 @@ fn correct_config_remote_install() {
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> TRCE starting to handle 'direct_download' state
     <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
-    <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> TRCE starting to handle 'prepare_local_install' state
     <timestamp> INFO installing local package: "<file>"

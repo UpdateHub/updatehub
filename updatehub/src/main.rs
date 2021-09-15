@@ -136,7 +136,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
                     }
                     current = last.entries.len();
 
-                    async_std::task::sleep(std::time::Duration::from_secs(1)).await;
+                    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
                     let new = client.log().await?;
                     if new.entries.first() != last.entries.first() {
@@ -204,17 +204,22 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
     Ok(())
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() {
     let cmd: TopLevel = argh::from_env();
 
-    let res = match cmd.entry_point {
-        EntryPoints::Client(client) => client_main(client).await,
-        EntryPoints::Daemon(cmd) => daemon_main(cmd).await,
-    };
+    // System runs on a LocalSet so we can spawn !Send futures
+    tokio::task::LocalSet::new()
+        .run_until(async {
+            let res = match cmd.entry_point {
+                EntryPoints::Client(client) => client_main(client).await,
+                EntryPoints::Daemon(cmd) => daemon_main(cmd).await,
+            };
 
-    if let Err(e) = res {
-        eprintln!("{}", e);
-        std::process::exit(1);
-    }
+            if let Err(e) = res {
+                eprintln!("{}", e);
+                std::process::exit(1);
+            }
+        })
+        .await;
 }

@@ -8,7 +8,6 @@ use super::{
     DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, Result, RuntimeSettings, Settings,
     State, StateChangeImpl, Validation,
 };
-use async_std::{channel, prelude::FutureExt};
 use slog_scope::{error, info, trace};
 use std::path::PathBuf;
 
@@ -22,7 +21,7 @@ pub(super) struct StateMachine {
 }
 
 pub struct Context {
-    pub(super) communication: Channel<(Message, channel::Sender<Result<Response>>)>,
+    pub(super) communication: Channel<(Message, async_channel::Sender<Result<Response>>)>,
     pub(super) waker: Channel<()>,
     pub settings: Settings,
     pub runtime_settings: RuntimeSettings,
@@ -30,13 +29,13 @@ pub struct Context {
 }
 
 pub(super) struct Channel<T> {
-    pub(super) sender: channel::Sender<T>,
-    pub(super) receiver: channel::Receiver<T>,
+    pub(super) sender: async_channel::Sender<T>,
+    pub(super) receiver: async_channel::Receiver<T>,
 }
 
 impl<T> Channel<T> {
     fn new(cap: usize) -> Self {
-        let (sender, receiver) = channel::bounded(cap);
+        let (sender, receiver) = async_channel::bounded(cap);
         Channel { sender, receiver }
     }
 }
@@ -48,7 +47,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
     async fn handle_communication(
         &self,
         msg: address::Message,
-        responder: channel::Sender<Result<address::Response>>,
+        responder: async_channel::Sender<Result<address::Response>>,
         context: &mut Context,
     ) -> Option<State> {
         trace!("received external request: {:?}", msg);
@@ -272,26 +271,35 @@ impl StateMachine {
                 StepTransition::Delayed(t) => {
                     trace!("delaying transition for: {} seconds", t.num_seconds());
                     let waker = self.context.waker.receiver.clone();
-                    async_std::task::sleep(t.to_std().unwrap())
-                        .race(async {
-                            let _ = waker.recv().await;
-                        })
-                        .race(self.await_communication())
-                        .await;
+
+                    let sleep_fut = tokio::time::sleep(t.to_std().unwrap());
+                    let waker_fut = async {
+                        let _ = waker.recv().await;
+                    };
+                    let comm_fut = self.await_communication();
+
+                    futures_util::pin_mut!(sleep_fut);
+                    futures_util::pin_mut!(waker_fut);
+                    futures_util::pin_mut!(comm_fut);
+
+                    let _ = futures_util::future::select(
+                        futures_util::future::select(sleep_fut, waker_fut),
+                        comm_fut,
+                    )
+                    .await;
                 }
                 StepTransition::Never => {
                     trace!("stopping transition until awoken");
-                    let _ = self
-                        .context
-                        .waker
-                        .receiver
-                        .clone()
-                        .recv()
-                        .race(async {
-                            self.await_communication().await;
-                            Ok(())
-                        })
-                        .await;
+                    let waker_recv = self.context.waker.receiver.clone();
+                    let recv_fut = waker_recv.recv();
+                    let comm_fut = async {
+                        self.await_communication().await;
+                        std::result::Result::<_, async_channel::RecvError>::Ok(())
+                    };
+
+                    // recv_fut dones't need to be pinned as it doesn't capture any context
+                    futures_util::pin_mut!(comm_fut);
+                    let _ = futures_util::future::select(recv_fut, comm_fut).await;
                 }
             }
         }

@@ -39,4 +39,5 @@ pub enum Error {
     Process(easy_process::Error),
     Sdk(sdk::Error),
     Serde(serde_json::Error),
+    AddrParseError(std::net::AddrParseError),
 }

@@ -79,7 +79,7 @@ mod tests {
         }
     }
 
-    #[async_std::test]
+    #[tokio::test]
     async fn check_requirements_with_missing_binaries() {
         let ubifs_obj = fake_ubifs_obj("home");
 
@@ -95,7 +95,7 @@ mod tests {
         assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
     }
 
-    #[async_std::test]
+    #[tokio::test]
     #[ignore]
     async fn install() {
         let _mtd_lock = SERIALIZE.lock();
