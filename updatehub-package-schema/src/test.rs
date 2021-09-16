@@ -4,7 +4,7 @@
 
 use serde::Deserialize;
 
-#[derive(Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Test {
     pub filename: String,

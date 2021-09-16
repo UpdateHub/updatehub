@@ -6,7 +6,7 @@ use crate::definitions::InstallIfDifferent;
 use serde::Deserialize;
 use std::path::PathBuf;
 
-#[derive(Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Debug)]
 pub struct Imxkobs {
     pub filename: String,
     pub size: u64,

@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 /// True if the file pointed to by the `target_path` should be open in
 /// truncate mode (erase content before writing).
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 pub struct Truncate(pub bool);
 
 impl Default for Truncate {

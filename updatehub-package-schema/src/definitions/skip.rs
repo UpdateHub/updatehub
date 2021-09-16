@@ -5,7 +5,7 @@
 use serde::Deserialize;
 
 /// How many chunk-size blocks must be skipped in the source file
-#[derive(PartialEq, Debug, Default, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Default, Deserialize)]
 pub struct Skip(pub u64);
 
 #[cfg(test)]
