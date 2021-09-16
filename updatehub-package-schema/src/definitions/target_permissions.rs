@@ -5,7 +5,7 @@
 use serde::{de, Deserialize, Deserializer};
 
 /// Options to set permissions after installing on target.
-#[derive(PartialEq, Debug, Deserialize, Default)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct TargetPermissions {
@@ -15,7 +15,7 @@ pub struct TargetPermissions {
     pub target_uid: Option<Uid>,
 }
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 #[serde(untagged)]
 pub enum Gid {
     /// Group name.
@@ -25,7 +25,7 @@ pub enum Gid {
     Number(u32),
 }
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize)]
 #[serde(untagged)]
 pub enum Uid {
     /// User name.

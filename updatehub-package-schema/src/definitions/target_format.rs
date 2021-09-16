@@ -5,7 +5,7 @@
 use serde::Deserialize;
 
 /// Information about formatting the partition before installing.
-#[derive(PartialEq, Debug, Deserialize, Default)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
 pub struct TargetFormat {
     #[serde(rename = "format?", default)]

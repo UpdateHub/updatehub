@@ -4,7 +4,7 @@
 
 use serde::Deserialize;
 
-#[derive(Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Debug)]
 pub struct Mender {
     pub filename: String,
     pub size: u64,

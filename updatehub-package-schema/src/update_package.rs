@@ -4,7 +4,7 @@
 
 use serde::Deserialize;
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 pub struct UpdatePackage {
     #[serde(rename = "product")]
     pub product_uid: String,
@@ -14,7 +14,7 @@ pub struct UpdatePackage {
     pub objects: (Vec<crate::Object>, Vec<crate::Object>),
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 #[serde(untagged)]
 pub enum SupportedHardware {
     #[serde(deserialize_with = "any")]
