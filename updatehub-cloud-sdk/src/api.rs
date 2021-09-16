@@ -12,7 +12,7 @@ pub enum ProbeResponse {
     ExtraPoll(i64),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UpdatePackage {
     pub inner: pkg_schema::UpdatePackage,
     pub raw: Vec<u8>,
