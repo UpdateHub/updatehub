@@ -23,7 +23,11 @@ pub enum Error {
     OpenSsl(openssl::error::ErrorStack),
     ParseInt(std::num::ParseIntError),
 
-    Http(#[error(not(source))] surf::Error),
+    Http(reqwest::Error),
     #[display(fmt = "Invalid status response: {}", _0)]
-    InvalidStatusResponse(#[error(not(source))] surf::StatusCode),
+    InvalidStatusResponse(#[error(not(source))] reqwest::StatusCode),
+    #[display(fmt = "Invalid header value: {}", _0)]
+    HeaderParse(reqwest::header::ToStrError),
+    #[display(fmt = "Invalid url: {}", _0)]
+    UrlParse(url::ParseError),
 }

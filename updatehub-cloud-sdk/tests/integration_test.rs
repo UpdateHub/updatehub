@@ -203,33 +203,33 @@ impl FakeMetadata {
     }
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn direct_get_invalid_url() {
-    let res = sdk::get("http://foo.bar:---", &mut async_std::io::sink()).await;
+    let res = sdk::get("http://foo.bar:---", &mut tokio::io::sink()).await;
     assert!(res.is_err());
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn probe_requirements() {
     let (url, mocks) = create_mock_server(FakeServer::NoUpdate);
     sdk::Client::new(&url).probe(0, FakeMetadata::new().get()).await.unwrap();
     mocks.iter().for_each(Mock::assert);
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn probe_invalid_url() {
     let res = sdk::Client::new("http://foo.bar:---").probe(0, FakeMetadata::new().get()).await;
     assert!(res.is_err());
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn probe_with_retry() {
     let (url, mocks) = create_mock_server(FakeServer::WithRetry);
     sdk::Client::new(&url).probe(1, FakeMetadata::new().get()).await.unwrap();
     mocks.iter().for_each(Mock::assert);
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn probe_response_with_signature() {
     use sdk::api::ProbeResponse;
     let (url, mocks) = create_mock_server(FakeServer::HasUpdate);
@@ -246,7 +246,7 @@ async fn probe_response_with_signature() {
     mocks.iter().for_each(Mock::assert);
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn probe_response_with_extra_poll() {
     use sdk::api::ProbeResponse;
     let (url, mocks) = create_mock_server(FakeServer::ExtraPoll);
@@ -258,7 +258,7 @@ async fn probe_response_with_extra_poll() {
     mocks.iter().for_each(Mock::assert);
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn report_success() {
     let (url, mocks) = create_mock_server(FakeServer::ReportSuccess);
     sdk::Client::new(&url)
@@ -268,7 +268,7 @@ async fn report_success() {
     mocks.iter().for_each(Mock::assert);
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn report_error() {
     let (url, mocks) = create_mock_server(FakeServer::ReportError);
     sdk::Client::new(&url)
@@ -285,9 +285,9 @@ async fn report_error() {
     mocks.iter().for_each(Mock::assert);
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn download_object() {
-    use async_std::fs;
+    use tokio::fs;
 
     let (url, mocks) = create_mock_server(FakeServer::DownloadInParts);
     let dir = tempfile::tempdir().unwrap();
