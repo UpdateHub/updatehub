@@ -3,74 +3,48 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{api, Error, Result};
-use async_std::{fs, io};
+use reqwest::{header, StatusCode};
 use slog_scope::{debug, error};
 use std::{
     convert::{TryFrom, TryInto},
     path::Path,
 };
-use surf::{
-    http::headers,
-    middleware::{self, Middleware},
-    Body, Request, Response, StatusCode,
-};
-
-struct Api;
-
-#[surf::utils::async_trait]
-impl Middleware for Api {
-    async fn handle(
-        &self,
-        mut req: Request,
-        client: surf::Client,
-        next: middleware::Next<'_>,
-    ) -> surf::Result<Response> {
-        req.insert_header(headers::USER_AGENT, "updatehub/2.0 Linux");
-        req.insert_header(headers::CONTENT_TYPE, "application/json");
-        req.insert_header("api-content-type", "application/vnd.updatehub-v1+json");
-        Ok(next.run(req, client).await?)
-    }
-}
+use tokio::{fs, io};
 
 pub struct Client<'a> {
-    client: surf::Client,
+    client: reqwest::Client,
     server: &'a str,
 }
 
 pub async fn get<W>(url: &str, handle: &mut W) -> Result<()>
 where
-    W: io::Write + Unpin,
+    W: io::AsyncWrite + Unpin,
 {
-    validate_url(url)?;
-    save_body_to(surf::get(url), handle).await
+    let url = reqwest::Url::parse(url)?;
+    save_body_to(reqwest::get(url).await?, handle).await
 }
 
-async fn save_body_to<W>(req: surf::RequestBuilder, handle: &mut W) -> Result<()>
+async fn save_body_to<W>(mut resp: reqwest::Response, handle: &mut W) -> Result<()>
 where
-    W: io::Write + Unpin,
+    W: io::AsyncWrite + Unpin,
 {
-    use io::prelude::{ReadExt, WriteExt};
+    use io::AsyncWriteExt;
     use std::str::FromStr;
 
-    let mut rep = req.await?;
-    if !rep.status().is_success() {
-        return Err(Error::InvalidStatusResponse(rep.status()));
+    if !resp.status().is_success() {
+        return Err(Error::InvalidStatusResponse(resp.status()));
     }
 
     let mut written: f32 = 0.;
     let mut threshold = 10;
-    let length = match rep.header(headers::CONTENT_LENGTH) {
-        Some(v) => usize::from_str(v.as_str())?,
+    let length = match resp.headers().get(header::CONTENT_LENGTH) {
+        Some(v) => usize::from_str(&v.to_str()?)?,
         None => 0,
     };
 
-    loop {
-        let mut buf = [0; 4096];
-        let read = rep.read(&mut buf).await?;
-        if read == 0 {
-            break;
-        }
-        handle.write_all(&buf[..read]).await?;
+    while let Some(chunk) = resp.chunk().await? {
+        let read = chunk.len();
+        handle.write_all(&chunk).await?;
         if length > 0 {
             written += read as f32 / (length as f32 / 100.);
             if written as usize >= threshold {
@@ -79,23 +53,27 @@ where
             }
         }
     }
-    debug!("100% of the file has been downloaded");
 
     Ok(())
 }
 
 impl<'a> Client<'a> {
     pub fn new(server: &'a str) -> Self {
-        // Manually build inner clients since surf doesn't
-        // yet support timout config for client
-        // https://github.com/http-rs/surf/issues/274
-        use isahc::config::Configurable;
-        let duration = std::time::Duration::from_secs(10);
-        let client = isahc::HttpClient::builder().connect_timeout(duration).build().unwrap();
-        let client = http_client::isahc::IsahcClient::from_client(client);
-        let client = surf::Client::with_http_client(client);
+        let mut headers = header::HeaderMap::new();
+        headers.insert(header::USER_AGENT, header::HeaderValue::from_static("updatehub/2.0 Linux"));
+        headers.insert(header::CONTENT_TYPE, header::HeaderValue::from_static("application/json"));
+        headers.insert(
+            "api-content-type",
+            header::HeaderValue::from_static("application/vnd.updatehub-v1+json"),
+        );
 
-        Self { server, client: client.with(Api) }
+        let client = reqwest::Client::builder()
+            .connect_timeout(std::time::Duration::from_secs(10))
+            .default_headers(headers)
+            .build()
+            .unwrap();
+
+        Self { server, client }
     }
 
     pub async fn probe(
@@ -103,29 +81,34 @@ impl<'a> Client<'a> {
         num_retries: usize,
         firmware: api::FirmwareMetadata<'_>,
     ) -> Result<api::ProbeResponse> {
-        validate_url(self.server)?;
+        reqwest::Url::parse(self.server)?;
 
-        let mut response = self
+        let response = self
             .client
             .post(&format!("{}/upgrades", &self.server))
             .header("api-retries", num_retries.to_string())
-            .body(Body::from_json(&firmware)?)
+            .json(&firmware)
+            .send()
             .await?;
 
         match response.status() {
-            StatusCode::NotFound => Ok(api::ProbeResponse::NoUpdate),
-            StatusCode::Ok => {
+            StatusCode::NOT_FOUND => Ok(api::ProbeResponse::NoUpdate),
+            StatusCode::OK => {
                 match response
-                    .header("add-extra-poll")
-                    .map(|extra_poll| extra_poll.as_str())
+                    .headers()
+                    .get("add-extra-poll")
+                    .and_then(|extra_poll| extra_poll.to_str().ok())
                     .and_then(|extra_poll| extra_poll.parse().ok())
                 {
                     Some(extra_poll) => Ok(api::ProbeResponse::ExtraPoll(extra_poll)),
                     None => {
-                        let signature =
-                            response.header("UH-Signature").map(TryInto::try_into).transpose()?;
+                        let signature = response
+                            .headers()
+                            .get("UH-Signature")
+                            .map(TryInto::try_into)
+                            .transpose()?;
                         Ok(api::ProbeResponse::Update(
-                            api::UpdatePackage::parse(&response.body_bytes().await?)?,
+                            api::UpdatePackage::parse(&response.bytes().await?)?,
                             signature,
                         ))
                     }
@@ -165,7 +148,7 @@ impl<'a> Client<'a> {
 
         let mut file = fs::OpenOptions::new().create(true).append(true).open(&file).await?;
 
-        save_body_to(request, &mut file).await
+        save_body_to(request.send().await?, &mut file).await
     }
 
     pub async fn report(
@@ -198,19 +181,16 @@ impl<'a> Client<'a> {
         let payload =
             Payload { state, firmware, package_uid, previous_state, error_message, current_log };
 
-        self.client
-            .post(&format!("{}/report", &self.server))
-            .body(Body::from_json(&payload)?)
-            .await?;
+        self.client.post(&format!("{}/report", &self.server)).json(&payload).send().await?;
         Ok(())
     }
 }
 
-impl TryFrom<&headers::HeaderValues> for api::Signature {
+impl TryFrom<&header::HeaderValue> for api::Signature {
     type Error = Error;
 
-    fn try_from(value: &headers::HeaderValues) -> Result<Self> {
-        let value = value.as_str();
+    fn try_from(value: &header::HeaderValue) -> Result<Self> {
+        let value = value.to_str()?;
 
         // Workarround for https://github.com/sfackler/rust-openssl/issues/1325
         if value.is_empty() {
@@ -221,7 +201,7 @@ impl TryFrom<&headers::HeaderValues> for api::Signature {
     }
 }
 
-fn validate_url(url: &str) -> surf::Result<()> {
-    surf::http::Url::parse(url)?;
+fn validate_url(url: &str) -> Result<()> {
+    url::Url::parse(url)?;
     Ok(())
 }
