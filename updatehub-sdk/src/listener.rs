@@ -6,13 +6,16 @@
 //! when the state changes.
 
 use crate::{Error, Result};
-use async_std::{
-    io::BufReader,
-    os::unix::net::{UnixListener, UnixStream},
-    prelude::*,
-};
 use log::warn;
-use std::{collections::HashMap, env, fs, io, path::Path, pin::Pin, result, str::FromStr};
+use std::{
+    collections::HashMap, env, fs, future::Future, io, path::Path, pin::Pin, result, str::FromStr,
+    sync::Arc,
+};
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::{UnixListener, UnixStream},
+    sync::Mutex,
+};
 
 const SDK_TRIGGER_FILENAME: &str =
     "/usr/share/updatehub/state-change-callbacks.d/10-updatehub-sdk-statechange-trigger";
@@ -57,13 +60,13 @@ impl FromStr for State {
 /// Handler used to communicate with UpdateHub
 /// to call commands on the state callbacks.
 pub struct Handler {
-    stream: UnixStream,
+    stream: Arc<Mutex<UnixStream>>,
 }
 
 impl Handler {
     /// Cancels the current action on the agent.
     pub async fn cancel(&mut self) -> Result<()> {
-        self.stream.write_all(b"cancel").await.map_err(Error::Io)
+        self.stream.lock().await.write_all(b"cancel").await.map_err(Error::Io)
     }
 
     /// Tell the agent to proceed with the transition.
@@ -116,18 +119,20 @@ impl StateChange {
             fs::remove_file(&socket_path)?;
         }
 
-        let listener = UnixListener::bind(socket_path).await?;
+        let listener = UnixListener::bind(socket_path)?;
         loop {
             let (socket, ..) = listener.accept().await?;
             self.handle_connection(socket).await?;
         }
     }
 
-    async fn handle_connection(&self, stream: UnixStream) -> Result<()> {
-        let mut reader = BufReader::new(&stream);
+    async fn handle_connection(&self, mut stream: UnixStream) -> Result<()> {
         let mut line = String::new();
 
-        reader.read_line(&mut line).await?;
+        {
+            let mut reader = BufReader::new(&mut stream);
+            reader.read_line(&mut line).await?;
+        }
 
         self.emit(stream, line.trim()).await
     }
@@ -135,6 +140,10 @@ impl StateChange {
     async fn emit(&self, stream: UnixStream, input: &str) -> Result<()> {
         let state = State::from_str(input)?;
         if let Some(callbacks) = self.callbacks.get(&state) {
+            // Since tokio::net::UnixStream doesn implement clone (or try_clone)
+            // we use an Arc + Mutex in order to be able to clone it into the handle (hance
+            // Arc) and to ensure we can get an mutable reference to it (hance the Mutex)
+            let stream = Arc::new(Mutex::new(stream));
             for f in callbacks {
                 let stream = stream.clone();
                 f(Handler { stream }).await?;

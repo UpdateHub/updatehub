@@ -17,9 +17,9 @@ pub enum Error {
     AbortDownloadRefused(#[error(not(source))] crate::api::abort_download::Refused),
 
     #[display(fmt = "Unexpected response: {:?}", _0)]
-    UnexpectedResponse(#[error(not(source))] surf::StatusCode),
+    UnexpectedResponse(#[error(not(source))] reqwest::StatusCode),
 
-    Client(#[error(not(source))] surf::Error),
+    Client(reqwest::Error),
 
     Io(std::io::Error),
 

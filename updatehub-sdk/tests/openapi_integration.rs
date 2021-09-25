@@ -34,7 +34,7 @@ impl MockServer {
     }
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn info() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -43,7 +43,7 @@ async fn info() {
     assert!(dbg!(response).is_ok());
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn probe_default() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -56,7 +56,7 @@ async fn probe_default() {
     }
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn probe_custom() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -69,7 +69,7 @@ async fn probe_custom() {
     }
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn local_install() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -84,7 +84,7 @@ async fn local_install() {
     }
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn remote_install() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -97,7 +97,7 @@ async fn remote_install() {
     }
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn abort_download() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();
@@ -110,7 +110,7 @@ async fn abort_download() {
     }
 }
 
-#[async_std::test]
+#[tokio::test]
 async fn log() {
     let mock = MockServer::new();
     let (addr, _guard) = &mock.start();

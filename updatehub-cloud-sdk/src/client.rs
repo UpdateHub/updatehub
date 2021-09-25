@@ -38,7 +38,7 @@ where
     let mut written: f32 = 0.;
     let mut threshold = 10;
     let length = match resp.headers().get(header::CONTENT_LENGTH) {
-        Some(v) => usize::from_str(&v.to_str()?)?,
+        Some(v) => usize::from_str(v.to_str()?)?,
         None => 0,
     };
 
