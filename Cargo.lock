@@ -156,16 +156,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "async-attributes"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3203e79f4dd9bdda415ed03cf14dae5a2bf775c683a00f94e9cd1faf0f596e5"
-dependencies = [
- "quote",
- "syn",
-]
-
-[[package]]
 name = "async-channel"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -318,7 +308,6 @@ version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8056f1455169ab86dd47b47391e4ab0cbd25410a70e9fe675544f49bafaf952"
 dependencies = [
- "async-attributes",
  "async-channel",
  "async-global-executor",
  "async-io",
@@ -3060,15 +3049,15 @@ dependencies = [
 name = "updatehub-sdk"
 version = "2.0.6"
 dependencies = [
- "async-std",
  "chrono",
  "derive_more",
  "log",
  "ms-converter",
+ "reqwest",
  "serde",
- "surf",
  "tempfile",
  "testcontainers",
+ "tokio",
 ]
 
 [[package]]

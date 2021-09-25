@@ -9,7 +9,7 @@ async fn download_callback(mut handler: listener::Handler) -> Result<()> {
     handler.cancel().await
 }
 
-#[async_std::main]
+#[tokio::main]
 async fn main() -> Result<()> {
     let mut listener = listener::StateChange::default();
 

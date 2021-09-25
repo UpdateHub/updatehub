@@ -3,24 +3,22 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{api, Error, Result};
+use reqwest::StatusCode;
 use std::path::Path;
-use surf::{Body, StatusCode};
 
 /// The `Client` allow for requests to be sent.
+#[derive(Clone)]
 pub struct Client {
     server_address: String,
-    client: surf::Client,
-}
-
-impl Clone for Client {
-    fn clone(&self) -> Self {
-        Client { server_address: self.server_address.clone(), client: surf::Client::new() }
-    }
+    client: reqwest::Client,
 }
 
 impl Default for Client {
     fn default() -> Self {
-        Client { server_address: "http://localhost:8080".to_string(), client: surf::Client::new() }
+        Client {
+            server_address: "http://localhost:8080".to_string(),
+            client: reqwest::Client::new(),
+        }
     }
 }
 
@@ -45,10 +43,10 @@ impl Client {
     /// This method fails when cannot complete the request at the address or
     /// cannot parse the body json as a `info::Response`.
     pub async fn info(&self) -> Result<api::info::Response> {
-        let mut response = self.client.get(&format!("{}/info", self.server_address)).await?;
+        let response = self.client.get(&format!("{}/info", self.server_address)).send().await?;
 
         match response.status() {
-            StatusCode::Ok => Ok(response.body_json().await?),
+            StatusCode::OK => Ok(response.json().await?),
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
@@ -78,16 +76,16 @@ impl Client {
     /// cannot parse the body json as a `probe::Response`.
     pub async fn probe(&self, custom: Option<String>) -> Result<api::probe::Response> {
         let request = self.client.post(&format!("{}/probe", self.server_address));
-        let mut response = match custom {
-            Some(custom_server) => {
-                request.body(Body::from_json(&api::probe::Request { custom_server })?).await?
-            }
-            None => request.await?,
-        };
+        let response = match custom {
+            Some(custom_server) => request.json(&api::probe::Request { custom_server }),
+            None => request,
+        }
+        .send()
+        .await?;
 
         match response.status() {
-            StatusCode::Ok => Ok(response.body_json().await?),
-            StatusCode::NotAcceptable => Err(Error::AgentIsBusy(response.body_json().await?)),
+            StatusCode::OK => Ok(response.json().await?),
+            StatusCode::NOT_ACCEPTABLE => Err(Error::AgentIsBusy(response.json().await?)),
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
@@ -110,15 +108,16 @@ impl Client {
     /// This method fails when cannot complete the request at the address or
     /// cannot parse the body json as a `state::Response`.
     pub async fn local_install(&self, file: &Path) -> Result<api::state::Response> {
-        let mut response = self
+        let response = self
             .client
             .post(&format!("{}/local_install", self.server_address))
-            .body(Body::from_json(&api::local_install::Request { file: file.to_owned() })?)
+            .json(&api::local_install::Request { file: file.to_owned() })
+            .send()
             .await?;
 
         match response.status() {
-            StatusCode::Ok => Ok(response.body_json().await?),
-            StatusCode::NotAcceptable => Err(Error::AgentIsBusy(response.body_json().await?)),
+            StatusCode::OK => Ok(response.json().await?),
+            StatusCode::NOT_ACCEPTABLE => Err(Error::AgentIsBusy(response.json().await?)),
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
@@ -138,14 +137,15 @@ impl Client {
     /// This method fails when cannot complete the request at the address or
     /// cannot parse the body json as a `state::Response`.
     pub async fn remote_install(&self, url: &str) -> Result<api::state::Response> {
-        let mut response = self
+        let response = self
             .client
             .post(&format!("{}/remote_install", self.server_address))
-            .body(Body::from_json(&api::remote_install::Request { url: url.to_owned() })?)
+            .json(&api::remote_install::Request { url: url.to_owned() })
+            .send()
             .await?;
 
         match response.status() {
-            StatusCode::Ok => Ok(response.body_json().await?),
+            StatusCode::OK => Ok(response.json().await?),
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
@@ -165,14 +165,15 @@ impl Client {
     /// This method fails when cannot complete the request at the address or
     /// cannot parse the body json as a `state::Response`.
     pub async fn abort_download(&self) -> Result<api::state::Response> {
-        let mut response =
-            self.client.post(&format!("{}/update/download/abort", self.server_address)).await?;
+        let response = self
+            .client
+            .post(&format!("{}/update/download/abort", self.server_address))
+            .send()
+            .await?;
 
         match response.status() {
-            StatusCode::Ok => Ok(response.body_json().await?),
-            StatusCode::NotAcceptable => {
-                Err(Error::AbortDownloadRefused(response.body_json().await?))
-            }
+            StatusCode::OK => Ok(response.json().await?),
+            StatusCode::NOT_ACCEPTABLE => Err(Error::AbortDownloadRefused(response.json().await?)),
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
@@ -192,10 +193,10 @@ impl Client {
     /// This method fails when cannot complete the request at the address or
     /// cannot parse the body json as a `log::Log`.
     pub async fn log(&self) -> Result<api::log::Log> {
-        let mut response = self.client.get(&format!("{}/log", self.server_address)).await?;
+        let response = self.client.get(&format!("{}/log", self.server_address)).send().await?;
 
         match response.status() {
-            StatusCode::Ok => Ok(response.body_json().await?),
+            StatusCode::OK => Ok(response.json().await?),
             s => Err(Error::UnexpectedResponse(s)),
         }
     }
