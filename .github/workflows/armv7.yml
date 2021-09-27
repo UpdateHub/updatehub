@@ -19,7 +19,7 @@ jobs:
           - name: stable
             version: stable
           - name: nightly
-            version: nightly
+            version: nightly-2021-07-02
 
     name: Test ${{ matrix.name }} - armv7-unknown-linux-gnueabihf
     runs-on: ubuntu-latest
