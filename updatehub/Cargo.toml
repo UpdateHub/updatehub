@@ -82,7 +82,7 @@ insta = { version = "1", features = ["backtrace"] }
 # Pin version as this is the last one not using bindgen
 loopdev = "=0.2.1"
 
+expectrl = { version = "0.1", git = "https://github.com/zhiburt/expectrl"}
 pretty_assertions = "0.7"
 regex = "1"
-rexpect = "0.4"
 tempfile = "3"

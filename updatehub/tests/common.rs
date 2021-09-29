@@ -63,7 +63,7 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn init_server(self) -> (rexpect::session::PtySession, updatehub::tests::TestEnvironment) {
+    pub fn init_server(self) -> (expectrl::Session, updatehub::tests::TestEnvironment) {
         let mut setup = updatehub::tests::TestEnvironment::build()
             .listen_socket(self.listen_socket)
             .server_address(self.server_address)
@@ -105,7 +105,8 @@ impl Settings {
             setup.settings.stored_path.to_string_lossy()
         );
 
-        let handle = rexpect::spawn(&cmd, self.timeout).expect("fail to spawn server command");
+        let mut handle = expectrl::spawn(&cmd).expect("fail to spawn server command");
+        handle.set_expect_timeout(self.timeout.map(std::time::Duration::from_secs));
 
         (handle, setup)
     }
@@ -152,19 +153,24 @@ impl Settings {
 }
 
 pub fn get_output_server(
-    handle: &mut rexpect::session::PtySession,
+    handle: &mut expectrl::Session,
     stop_message: StopMessage,
 ) -> (String, String) {
-    let stdout = handle
-        .exp_regex(match stop_message {
-            StopMessage::Custom(ref s) => s,
-            StopMessage::Polling(Polling::Enable) => "\r\n.* TRCE delaying transition for:.*",
-            StopMessage::Polling(Polling::Disable) => {
-                "\r\n.* TRCE stopping transition until awoken.*"
-            }
-        })
-        .expect("fail to match the required string")
-        .0;
+    let stdout = String::from_utf8_lossy(
+        handle
+            .expect(expectrl::Regex(match stop_message {
+                StopMessage::Custom(ref s) => s,
+                StopMessage::Polling(Polling::Enable) => {
+                    "\r\n.* TRCE delaying transition for: .* seconds$"
+                }
+                StopMessage::Polling(Polling::Disable) => {
+                    "\r\n.* TRCE stopping transition until awoken$"
+                }
+            }))
+            .expect("fail to match the required string")
+            .before(),
+    )
+    .into_owned();
 
     rewrite_log_output(stdout)
 }
@@ -179,8 +185,9 @@ pub fn run_client_probe(server: Server, daemon_address: &str) -> String {
         Server::Custom(server_address) => format!("{} --server {}", cmd_string, server_address),
         Server::Standard => cmd_string,
     };
-    let mut handle = rexpect::spawn(&cmd, None).expect("fail to spawn probe command");
-    handle.exp_eof().expect("fail to match the EOF for client")
+    let mut handle = expectrl::spawn(&cmd).expect("fail to spawn probe command");
+    let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
+    String::from_utf8_lossy(m.first()).into_owned()
 }
 
 pub fn run_client_local_install(mock_addr: &str, daemon_address: &str) -> String {
@@ -190,8 +197,9 @@ pub fn run_client_local_install(mock_addr: &str, daemon_address: &str) -> String
         daemon_address,
         mock_addr
     );
-    let mut handle = rexpect::spawn(&cmd, None).expect("fail to spawn probe command");
-    handle.exp_eof().expect("fail to match the EOF for client")
+    let mut handle = expectrl::spawn(&cmd).expect("fail to spawn probe command");
+    let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
+    String::from_utf8_lossy(m.first()).into_owned()
 }
 
 pub fn run_client_log(daemon_address: &str) -> String {
@@ -200,9 +208,10 @@ pub fn run_client_log(daemon_address: &str) -> String {
         cargo_bin("updatehub").to_string_lossy(),
         daemon_address
     );
-    let mut handle = rexpect::spawn(&cmd, None).expect("fail to spawn log command");
-    let stdout = handle.exp_eof().expect("fail to match the EOF for client");
-    rewrite_log_output(stdout).0
+    let mut handle = expectrl::spawn(&cmd).expect("fail to spawn log command");
+    handle.set_expect_timeout(Some(std::time::Duration::from_secs(60)));
+    let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
+    rewrite_log_output(String::from_utf8_lossy(m.first()).into_owned()).0
 }
 
 pub fn cargo_bin<S: AsRef<str>>(name: S) -> PathBuf {
