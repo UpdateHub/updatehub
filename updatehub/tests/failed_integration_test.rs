@@ -99,7 +99,8 @@ fn failing_invalid_file_config() {
     .unwrap();
 
     let (mut session, _setup) = setup.config_file(file_path).init_server();
-    let output_server = session.exp_eof().unwrap();
+    let output_server =
+        String::from_utf8_lossy(session.expect(expectrl::Eof).unwrap().first()).into_owned();
     let (output_server_trce, ..) = rewrite_log_output(output_server);
 
     insta::assert_snapshot!(output_server_trce, @r###"
@@ -126,7 +127,8 @@ fn failing_invalid_file_config() {
     .unwrap();
 
     let (mut session, _setup) = setup.config_file(file_path).init_server();
-    let output_server = session.exp_eof().unwrap();
+    let output_server =
+        String::from_utf8_lossy(session.expect(expectrl::Eof).unwrap().first()).into_owned();
     let (output_server_trce, ..) = rewrite_log_output(output_server);
 
     insta::assert_snapshot!(output_server_trce, @r###"
