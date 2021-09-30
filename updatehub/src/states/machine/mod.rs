@@ -249,10 +249,7 @@ impl StateMachine {
     }
 
     pub(super) fn address(&self) -> Addr {
-        Addr {
-            message: self.context.communication.sender.clone(),
-            waker: self.context.waker.sender.clone(),
-        }
+        Addr { message: self.context.communication.sender.clone() }
     }
 
     pub(super) async fn start(mut self) {

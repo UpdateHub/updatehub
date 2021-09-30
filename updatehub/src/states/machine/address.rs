@@ -9,7 +9,6 @@ use std::path::PathBuf;
 #[derive(Clone)]
 pub(crate) struct Addr {
     pub(super) message: channel::Sender<(Message, channel::Sender<super::Result<Response>>)>,
-    pub(super) waker: channel::Sender<()>,
 }
 
 #[derive(Debug)]
