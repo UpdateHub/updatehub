@@ -7,7 +7,10 @@ use bitar::{Archive, ChunkIndex, CloneOutput, ReaderRemote};
 use futures_util::{StreamExt, TryStreamExt};
 use slog_scope::trace;
 use std::path::Path;
-use tokio::{fs, io::AsyncSeekExt};
+use tokio::{
+    fs,
+    io::{AsyncSeekExt, AsyncWriteExt},
+};
 
 pub(crate) async fn get_required_size(seed: &str, output: &Path) -> Result<u64> {
     let archive_source_size = {
@@ -73,7 +76,7 @@ where
     }
 
     // Create output to contain the clone of the archive's source
-    let mut output = CloneOutput::new(output_file, archive.build_source_index());
+    let mut output = CloneOutput::new(&mut output_file, archive.build_source_index());
 
     // Reorder chunks in the output
     let _reused_bytes = output.reorder_in_place(output_index).await?;
@@ -88,6 +91,9 @@ where
         let verified = unverified.verify()?;
         output.feed(&verified).await?;
     }
+
+    // Ensure that the output file has been fully updated before returning
+    output_file.flush().await?;
 
     Ok(())
 }
