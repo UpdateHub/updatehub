@@ -206,11 +206,11 @@ pub(crate) mod tests {
 
         {
             let _mtd = FakeMtd::new(&[], MtdKind::Nand).unwrap();
-            assert_eq!(is_nand(&PathBuf::from("/dev/mtd0")).unwrap(), true);
+            assert!(is_nand(&PathBuf::from("/dev/mtd0")).unwrap());
         }
         {
             let _mtd = FakeMtd::new(&[], MtdKind::Nor).unwrap();
-            assert_eq!(is_nand(&PathBuf::from("/dev/mtd0")).unwrap(), false);
+            assert!(!is_nand(&PathBuf::from("/dev/mtd0")).unwrap());
         }
     }
 
