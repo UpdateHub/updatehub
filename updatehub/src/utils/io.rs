@@ -4,7 +4,7 @@
 
 use slog_scope::trace;
 use std::{
-    io::{BufReader, BufWriter, Read, Seek, Write},
+    io::{BufReader, BufWriter, Read, Write},
     os::unix::io::AsRawFd,
     time::Duration,
 };
@@ -12,7 +12,7 @@ use timeout_readwrite::{TimeoutReader, TimeoutWriter};
 
 pub(crate) fn timed_buf_reader<R>(chunk_size: usize, reader: R) -> BufReader<TimeoutReader<R>>
 where
-    R: Read + Seek + AsRawFd,
+    R: Read + AsRawFd,
 {
     trace!("starting IO read with 5 seconds of timeout");
     BufReader::with_capacity(chunk_size, TimeoutReader::new(reader, Duration::from_secs(5)))
@@ -20,7 +20,7 @@ where
 
 pub(crate) fn timed_buf_writer<W>(chunk_size: usize, writer: W) -> BufWriter<TimeoutWriter<W>>
 where
-    W: Write + Seek + AsRawFd,
+    W: Write + AsRawFd,
 {
     trace!("starting IO write with 5 seconds of timeout");
     BufWriter::with_capacity(chunk_size, TimeoutWriter::new(writer, Duration::from_secs(5)))
