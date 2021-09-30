@@ -12,9 +12,10 @@ use crate::{
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
-use std::{
+use std::io::SeekFrom;
+use tokio::{
     fs,
-    io::{BufRead, Read, Seek, SeekFrom, Write},
+    io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, AsyncWriteExt},
 };
 
 #[async_trait::async_trait(?Send)]
@@ -47,23 +48,23 @@ impl Installer for objects::Raw {
         let truncate = self.truncate.0;
         let count = self.count.clone();
 
-        handle_install_if_different!(self.install_if_different, &self.sha256sum, {
-            fs::OpenOptions::new()
-                .read(true)
-                .open(device)
-                .map(|h| utils::io::timed_buf_reader(chunk_size, h))
-                .and_then(|mut h| {
-                    h.seek(SeekFrom::Start(seek))?;
-                    Ok(h)
-                })
-                .map_err(Error::from)
-        });
+        // handle_install_if_different!(self.install_if_different, &self.sha256sum, {
+        //     fs::OpenOptions::new()
+        //         .read(true)
+        //         .open(device)
+        //         .map(|h| utils::io::timed_buf_reader(chunk_size, h))
+        //         .and_then(|mut h| {
+        //             h.seek(SeekFrom::Start(seek))?;
+        //             Ok(h)
+        //         })
+        //         .map_err(Error::from)
+        // });
 
         let mut input = utils::io::timed_buf_reader(
             chunk_size,
-            fs::File::open(source).log_error_msg("failed to open source file")?,
+            fs::File::open(source).await.log_error_msg("failed to open source file")?,
         );
-        input.seek(SeekFrom::Start(skip)).log_error_msg("failed to seek source file")?;
+        input.seek(SeekFrom::Start(skip)).await.log_error_msg("failed to seek source file")?;
         let mut output = utils::io::timed_buf_writer(
             chunk_size,
             fs::OpenOptions::new()
@@ -71,21 +72,29 @@ impl Installer for objects::Raw {
                 .write(true)
                 .truncate(truncate)
                 .open(device)
+                .await
                 .log_error_msg("failed to open output file")?,
         );
-        output.seek(SeekFrom::Start(seek)).log_error_msg("failed to seek output file")?;
+        output.seek(SeekFrom::Start(seek)).await.log_error_msg("failed to seek output file")?;
 
         if self.compressed {
             match count {
-                definitions::Count::All => compress_tools::uncompress_data(&mut input, &mut output),
+                definitions::Count::All => {
+                    compress_tools::tokio_support::uncompress_data(&mut input, &mut output).await
+                }
                 definitions::Count::Limited(n) => {
-                    compress_tools::uncompress_data(&mut input.take(n as u64), &mut output)
+                    compress_tools::tokio_support::uncompress_data(
+                        &mut input.take(n as u64),
+                        &mut output,
+                    )
+                    .await
                 }
             }
             .log_error_msg("failed to uncompress data")?;
         } else {
             for _ in count {
-                let buf = input.fill_buf().log_error_msg("failed to read from source file")?;
+                let buf =
+                    input.fill_buf().await.log_error_msg("failed to read from source file")?;
                 let len = buf.len();
 
                 // We break the loop in case we have no bytes left for
@@ -94,7 +103,7 @@ impl Installer for objects::Raw {
                     break;
                 }
 
-                output.write_all(buf).log_error_msg("failed to write to output file")?;
+                output.write_all(buf).await.log_error_msg("failed to write to output file")?;
                 input.consume(len);
             }
         }
@@ -108,8 +117,12 @@ mod tests {
     use super::*;
     use flate2::{write::GzEncoder, Compression};
     use pretty_assertions::assert_eq;
-    use std::{io, iter};
+    use std::{
+        io::{Seek, Write},
+        iter,
+    };
     use tempfile::{tempdir, NamedTempFile, TempDir};
+    use tokio::io;
 
     const DEFAULT_BYTE: u8 = 0xF;
     const ORIGINAL_BYTE: u8 = 0xA;
@@ -164,11 +177,16 @@ mod tests {
         ))
     }
 
-    fn check_unwritten_blocks(f: &mut fs::File, offset: u64, byte_count: u64) -> io::Result<()> {
+    async fn check_unwritten_blocks(
+        f: &std::path::Path,
+        offset: u64,
+        byte_count: u64,
+    ) -> io::Result<()> {
+        let f = fs::File::open(f).await?;
         let mut f = io::BufReader::with_capacity(1, f);
-        f.seek(SeekFrom::Start(offset))?;
+        f.seek(SeekFrom::Start(offset)).await?;
         for i in 0..byte_count {
-            let buf = f.fill_buf()?;
+            let buf = f.fill_buf().await?;
             let len = buf.len();
 
             assert_eq!(buf, [DEFAULT_BYTE], "Error on byte {}", i);
@@ -178,23 +196,24 @@ mod tests {
         Ok(())
     }
 
-    fn validate_file(
+    async fn validate_file(
         data: Vec<u8>,
-        file: &mut fs::File,
+        file: &std::path::Path,
         chunk_size: usize,
         skip: u64,
         seek: u64,
         count: definitions::Count,
     ) -> io::Result<()> {
         let skip = skip as usize * chunk_size;
+        let file = fs::File::open(file).await?;
         let mut f1 = io::BufReader::with_capacity(chunk_size, &data[skip..]);
         let mut f2 = io::BufReader::with_capacity(chunk_size, file);
-        f2.seek(SeekFrom::Start(seek * chunk_size as u64))?;
+        f2.seek(SeekFrom::Start(seek * chunk_size as u64)).await?;
 
         for _ in count {
-            let buf1 = f1.fill_buf()?;
+            let buf1 = f1.fill_buf().await?;
             let len1 = buf1.len();
-            let buf2 = f2.fill_buf()?;
+            let buf2 = f2.fill_buf().await?;
             let len2 = buf2.len();
 
             // Stop comparing if either the files reach EOF
@@ -219,7 +238,7 @@ mod tests {
         let truncate = false;
         let compressed = true;
 
-        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         let context =
@@ -227,7 +246,8 @@ mod tests {
         obj.check_requirements(&context).await.unwrap();
         obj.install(&context).await.unwrap();
 
-        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+        validate_file(original_data, target_guard.path(), chunk_size, skip, seek, count)
+            .await
             .unwrap();
     }
 
@@ -241,7 +261,7 @@ mod tests {
         let truncate = false;
         let compressed = false;
 
-        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         let context =
@@ -249,7 +269,8 @@ mod tests {
         obj.check_requirements(&context).await.unwrap();
         obj.install(&context).await.unwrap();
 
-        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+        validate_file(original_data, target_guard.path(), chunk_size, skip, seek, count)
+            .await
             .unwrap();
     }
 
@@ -263,7 +284,7 @@ mod tests {
         let truncate = false;
         let compressed = false;
 
-        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         let context =
@@ -271,9 +292,10 @@ mod tests {
         obj.check_requirements(&context).await.unwrap();
         obj.install(&context).await.unwrap();
 
-        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+        validate_file(original_data, target_guard.path(), chunk_size, skip, seek, count)
+            .await
             .unwrap();
-        check_unwritten_blocks(target_guard.as_file_mut(), 1024, 1024).unwrap();
+        check_unwritten_blocks(target_guard.path(), 1024, 1024).await.unwrap();
     }
 
     #[tokio::test]
@@ -286,7 +308,7 @@ mod tests {
         let truncate = false;
         let compressed = false;
 
-        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         let context =
@@ -294,9 +316,10 @@ mod tests {
         obj.check_requirements(&context).await.unwrap();
         obj.install(&context).await.unwrap();
 
-        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+        validate_file(original_data, target_guard.path(), chunk_size, skip, seek, count)
+            .await
             .unwrap();
-        check_unwritten_blocks(target_guard.as_file_mut(), 0, 1024).unwrap();
+        check_unwritten_blocks(target_guard.path(), 0, 1024).await.unwrap();
     }
 
     #[tokio::test]
@@ -309,7 +332,7 @@ mod tests {
         let truncate = false;
         let compressed = false;
 
-        let (obj, download_dir, _source_guard, mut target_guard, original_data) =
+        let (obj, download_dir, _source_guard, target_guard, original_data) =
             fake_raw_object(size, chunk_size, skip, seek, count.clone(), truncate, compressed)
                 .unwrap();
         let context =
@@ -317,8 +340,9 @@ mod tests {
         obj.check_requirements(&context).await.unwrap();
         obj.install(&context).await.unwrap();
 
-        validate_file(original_data, target_guard.as_file_mut(), chunk_size, skip, seek, count)
+        validate_file(original_data, target_guard.path(), chunk_size, skip, seek, count)
+            .await
             .unwrap();
-        check_unwritten_blocks(target_guard.as_file_mut(), 1024, 1024).unwrap();
+        check_unwritten_blocks(target_guard.path(), 1024, 1024).await.unwrap();
     }
 }

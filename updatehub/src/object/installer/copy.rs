@@ -9,10 +9,10 @@ use crate::{
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
-use std::{
+use std::os::unix::fs::PermissionsExt;
+use tokio::{
     fs,
-    io::{self, Write},
-    os::unix::fs::PermissionsExt,
+    io::{self, AsyncWriteExt},
 };
 
 #[async_trait::async_trait(?Send)]
@@ -45,7 +45,7 @@ impl Installer for objects::Copy {
 
         handle_install_if_different!(self.install_if_different, sha256sum, {
             utils::fs::mount_map(&device, filesystem, mount_options, |path| {
-                fs::File::open(&path.join(&target_path)).map_err(Error::from)
+                std::fs::File::open(&path.join(&target_path)).map_err(Error::from)
             })
             .map_err(Error::from)
             .and_then(|r| r)
@@ -56,11 +56,11 @@ impl Installer for objects::Copy {
                 .log_error_msg("failed to format partition")?;
         }
 
-        utils::fs::mount_map(&device, filesystem, mount_options, |path| {
+        utils::fs::mount_map_async(&device, filesystem, mount_options, |path| async move {
             let dest = path.join(&target_path);
             let mut input = utils::io::timed_buf_reader(
                 chunk_size,
-                fs::File::open(source).log_error_msg("failed to open source object")?,
+                fs::File::open(source).await.log_error_msg("failed to open source object")?,
             );
             let mut output = utils::io::timed_buf_writer(
                 chunk_size,
@@ -70,6 +70,7 @@ impl Installer for objects::Copy {
                     .create(true)
                     .truncate(true)
                     .open(&dest)
+                    .await
                     .log_error_msg("failed to open target file")?,
             );
 
@@ -80,13 +81,15 @@ impl Installer for objects::Copy {
             metadata.permissions().set_mode(0o100_666);
 
             if self.compressed {
-                compress_tools::uncompress_data(&mut input, &mut output)
+                compress_tools::tokio_support::uncompress_data(&mut input, &mut output)
+                    .await
                     .log_error_msg("failed to uncompress data")?;
             } else {
                 io::copy(&mut input, &mut output)
+                    .await
                     .log_error_msg("failed to copy from object to target")?;
             }
-            output.flush().log_error_msg("failed to flush disk write")?;
+            output.flush().await.log_error_msg("failed to flush disk write")?;
             metadata.permissions().set_mode(orig_mode);
 
             if let Some(mode) = self.target_permissions.target_mode {
@@ -102,6 +105,7 @@ impl Installer for objects::Copy {
 
             Ok(())
         })
+        .await
         .map_err(Error::from)
         .and_then(|r| r)
     }
@@ -114,11 +118,12 @@ mod tests {
     use flate2::{write::GzEncoder, Compression};
     use pretty_assertions::assert_eq;
     use std::{
-        io::{BufRead, Seek, SeekFrom, Write},
+        io::{Seek, SeekFrom, Write},
         iter,
         os::unix::fs::MetadataExt,
         path::PathBuf,
     };
+    use tokio::io::AsyncBufReadExt;
 
     const DEFAULT_BYTE: u8 = 0xF;
     const ORIGINAL_BYTE: u8 = 0xA;
@@ -166,19 +171,27 @@ mod tests {
 
         // When needed, create a file inside the mounted device
         if let Some(perm) = original_permissions {
-            utils::fs::mount_map(&device, definitions::Filesystem::Ext4, "", |path| {
-                let file = path.join(&"original_file");
-                fs::File::create(&file)?
-                    .write_all(&iter::repeat(ORIGINAL_BYTE).take(FILE_SIZE).collect::<Vec<_>>())?;
+            utils::fs::mount_map_async(
+                &device,
+                definitions::Filesystem::Ext4,
+                "",
+                |path| async move {
+                    let file = path.join(&"original_file");
+                    fs::File::create(&file)
+                        .await?
+                        .write_all(&iter::repeat(ORIGINAL_BYTE).take(FILE_SIZE).collect::<Vec<_>>())
+                        .await?;
 
-                if let Some(mode) = perm.target_mode {
-                    utils::fs::chmod(&file, mode)?;
-                }
+                    if let Some(mode) = perm.target_mode {
+                        utils::fs::chmod(&file, mode)?;
+                    }
 
-                utils::fs::chown(&file, &perm.target_uid, &perm.target_gid)?;
+                    utils::fs::chown(&file, &perm.target_uid, &perm.target_gid)?;
 
-                utils::Result::Ok(())
-            })??;
+                    utils::Result::Ok(())
+                },
+            )
+            .await??;
         }
 
         // Generate base copy object
@@ -206,43 +219,50 @@ mod tests {
 
         // Validade File
         #[allow(clippy::redundant_clone)]
-        utils::fs::mount_map(&device, obj.filesystem, &obj.mount_options.clone(), |path| {
-            let chunk_size = definitions::ChunkSize::default().0;
-            let dest = path.join(&obj.target_path);
-            let mut rd1 = io::BufReader::with_capacity(chunk_size, original_data.as_slice());
-            let mut rd2 = io::BufReader::with_capacity(chunk_size, fs::File::open(&dest)?);
+        utils::fs::mount_map_async(
+            &device,
+            obj.filesystem,
+            &obj.mount_options.clone(),
+            |path| async move {
+                let chunk_size = definitions::ChunkSize::default().0;
+                let dest = path.join(&obj.target_path);
+                let mut rd1 = io::BufReader::with_capacity(chunk_size, original_data.as_slice());
+                let mut rd2 =
+                    io::BufReader::with_capacity(chunk_size, fs::File::open(&dest).await?);
 
-            loop {
-                let buf1 = rd1.fill_buf()?;
-                let len1 = buf1.len();
-                let buf2 = rd2.fill_buf()?;
-                let len2 = buf2.len();
-                // Stop comparing when both the files reach EOF
-                if len1 == 0 && len2 == 0 {
-                    break;
+                loop {
+                    let buf1 = rd1.fill_buf().await?;
+                    let len1 = buf1.len();
+                    let buf2 = rd2.fill_buf().await?;
+                    let len2 = buf2.len();
+                    // Stop comparing when both the files reach EOF
+                    if len1 == 0 && len2 == 0 {
+                        break;
+                    }
+                    assert_eq!(buf1, buf2);
+                    rd1.consume(len1);
+                    rd2.consume(len2);
                 }
-                assert_eq!(buf1, buf2);
-                rd1.consume(len1);
-                rd2.consume(len2);
-            }
 
-            let metadata = dest.metadata()?;
-            if let Some(mode) = obj.target_permissions.target_mode {
-                assert_eq!(mode, metadata.mode() % 0o1000);
-            };
+                let metadata = dest.metadata()?;
+                if let Some(mode) = obj.target_permissions.target_mode {
+                    assert_eq!(mode, metadata.mode() % 0o1000);
+                };
 
-            if let Some(uid) = obj.target_permissions.target_uid {
-                let uid = uid.as_u32();
-                assert_eq!(uid, metadata.uid());
-            };
+                if let Some(uid) = obj.target_permissions.target_uid {
+                    let uid = uid.as_u32();
+                    assert_eq!(uid, metadata.uid());
+                };
 
-            if let Some(gid) = obj.target_permissions.target_gid {
-                let gid = gid.as_u32();
-                assert_eq!(gid, metadata.gid());
-            };
+                if let Some(gid) = obj.target_permissions.target_gid {
+                    let gid = gid.as_u32();
+                    assert_eq!(gid, metadata.gid());
+                };
 
-            std::io::Result::Ok(())
-        })??;
+                std::io::Result::Ok(())
+            },
+        )
+        .await??;
 
         loopdev.detach()?;
 

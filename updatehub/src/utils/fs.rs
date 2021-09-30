@@ -9,7 +9,10 @@ use pkg_schema::definitions::{
     Filesystem,
 };
 use slog_scope::trace;
-use std::{io, path::Path};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
 pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
@@ -66,6 +69,26 @@ where
     let _guard = mount(source, tmpdir, fs, options)?;
 
     Ok(f(tmpdir))
+}
+
+pub(crate) async fn mount_map_async<Fun, Fut, T>(
+    source: &Path,
+    fs: Filesystem,
+    options: &str,
+    f: Fun,
+) -> Result<T>
+where
+    Fun: FnOnce(PathBuf) -> Fut,
+    Fut: std::future::Future<Output = T>,
+{
+    let tmpdir = tempfile::tempdir()?;
+    let tmpdir = tmpdir.path();
+
+    // We need to keep a guard otherwise it is dropped before the
+    // closure is run.
+    let _guard = mount(source, &tmpdir, fs, options)?;
+
+    Ok(f(tmpdir.to_owned()).await)
 }
 
 pub(crate) fn mount(

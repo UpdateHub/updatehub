@@ -40,7 +40,7 @@ async-trait = "0.1"
 bitar = { version = "0.8", git = "https://github.com/oll3/bita" }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
-compress-tools = "0.12"
+compress-tools = { version = "0.12", features = ["tokio_support"] }
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
 easy_process = "0.2"
 find-binary-version = "0.3"
@@ -65,7 +65,7 @@ slog-scope = "4"
 slog-term = "2"
 sys-mount = { version = "1", default-features = false }
 tempfile = "3"
-timeout-readwrite = "0.3"
+tokio-io-timeout = "1"
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "fs", "macros"] }
 toml = "0.5"
 url = "2"
