@@ -5,11 +5,11 @@ with pkgs;
 stdenv.mkDerivation {
   name = "updatehub";
   buildInputs = [
-    pkg-config
-    openssl
     libarchive
-    llvmPackages.libclang
     linuxHeaders
+    llvmPackages.libclang
+    openssl
+    pkg-config
     protobuf
   ];
 
