@@ -10,6 +10,7 @@ stdenv.mkDerivation {
     libarchive
     llvmPackages.libclang
     linuxHeaders
+    protobuf
   ];
 
   # loopdev 0.3.0 uses bindgen to generate its bindings
