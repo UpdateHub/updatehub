@@ -60,39 +60,48 @@ impl TestEnvironment {
 }
 
 impl TestEnvironmentBuilder {
+    #[must_use]
     pub fn add_echo_binary(mut self, binary_name: &str) -> Self {
         self.extra_binaries.push(binary_name.to_owned());
         self
     }
 
+    #[must_use]
     pub fn invalid_hardware(self) -> Self {
         TestEnvironmentBuilder { invalid_hardware: true, ..self }
     }
 
+    #[must_use]
     pub fn disable_polling(self) -> Self {
         TestEnvironmentBuilder { disable_polling: true, ..self }
     }
 
+    #[must_use]
     pub fn listen_socket(self, s: String) -> Self {
         TestEnvironmentBuilder { listen_socket: Some(s), ..self }
     }
 
+    #[must_use]
     pub fn server_address(self, s: String) -> Self {
         TestEnvironmentBuilder { server_address: Some(s), ..self }
     }
 
+    #[must_use]
     pub fn supported_install_modes(self, list: Vec<&'static str>) -> Self {
         TestEnvironmentBuilder { supported_install_modes: Some(list), ..self }
     }
 
+    #[must_use]
     pub fn state_change_callback(self, script: String) -> Self {
         TestEnvironmentBuilder { state_change_callback: Some(script), ..self }
     }
 
+    #[must_use]
     pub fn validate_callback(self, script: String) -> Self {
         TestEnvironmentBuilder { validate_callback: Some(script), ..self }
     }
 
+    #[must_use]
     pub fn booting_from_update(self) -> Self {
         TestEnvironmentBuilder { booting_from_update: true, ..self }
     }

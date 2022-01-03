@@ -111,42 +111,52 @@ impl Settings {
         (handle, setup)
     }
 
+    #[must_use]
     pub fn timeout(self, t: u64) -> Self {
         Settings { timeout: Some(t), ..self }
     }
 
+    #[must_use]
     pub fn config_file(self, p: PathBuf) -> Self {
         Settings { config_file: Some(p), ..self }
     }
 
+    #[must_use]
     pub fn download_dir(self, p: PathBuf) -> Self {
         Settings { download_dir: Some(p), ..self }
     }
 
+    #[must_use]
     pub fn polling(self) -> Self {
         Settings { polling: true, ..self }
     }
 
+    #[must_use]
     pub fn listen_socket(self, s: String) -> Self {
         Settings { listen_socket: s, ..self }
     }
 
+    #[must_use]
     pub fn server_address(self, s: String) -> Self {
         Settings { server_address: s, ..self }
     }
 
+    #[must_use]
     pub fn supported_install_modes(self, l: Vec<&'static str>) -> Self {
         Settings { install_modes: Some(l), ..self }
     }
 
+    #[must_use]
     pub fn state_change_callback(self, s: &'static str) -> Self {
         Settings { state_change_callback: Some(s), ..self }
     }
 
+    #[must_use]
     pub fn validate_callback(self, s: &'static str) -> Self {
         Settings { validate_callback: Some(s), ..self }
     }
 
+    #[must_use]
     pub fn booting_from_update(self) -> Self {
         Settings { booting_from_update: true, ..self }
     }

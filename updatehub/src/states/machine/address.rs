@@ -22,7 +22,7 @@ pub(crate) enum Message {
 
 #[derive(Debug)]
 pub(crate) enum Response {
-    Info(sdk::api::info::Response),
+    Info(Box<sdk::api::info::Response>),
     Probe(ProbeResponse),
     AbortDownload(AbortDownloadResponse),
     LocalInstall(StateResponse),
@@ -60,7 +60,7 @@ impl Addr {
         let (sndr, recv) = async_channel::bounded(1);
         self.message.send((Message::Info, sndr)).await?;
         match recv.recv().await {
-            Ok(Ok(Response::Info(resp))) => Ok(resp),
+            Ok(Ok(Response::Info(resp))) => Ok(*resp),
             Ok(Err(e)) => Err(e),
             res => unreachable!("Unexpected response: {:?}", res),
         }

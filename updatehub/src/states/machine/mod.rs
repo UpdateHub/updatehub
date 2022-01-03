@@ -56,13 +56,13 @@ pub(super) trait CommunicationState: StateChangeImpl {
             address::Message::Info => {
                 let state = self.name().to_owned();
                 Ok((
-                    address::Response::Info(sdk::api::info::Response {
+                    address::Response::Info(Box::new(sdk::api::info::Response {
                         state,
                         version: crate::version().to_string(),
                         config: context.settings.0.clone(),
                         firmware: context.firmware.0.clone(),
                         runtime_settings: context.runtime_settings.inner.clone(),
-                    }),
+                    })),
                     None,
                 ))
             }

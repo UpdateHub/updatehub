@@ -3,8 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use slog_scope::trace;
-use std::pin::Pin;
-use std::time::Duration;
+use std::{pin::Pin, time::Duration};
 use tokio::io::{AsyncRead, AsyncWrite, BufReader, BufWriter};
 use tokio_io_timeout::{TimeoutReader, TimeoutWriter};
 

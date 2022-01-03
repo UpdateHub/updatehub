@@ -6,7 +6,7 @@
 name = "updatehub-sdk"
 version = "2.0.6"
 authors = ["asakiz <asakizin@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 description = "UpdateHub SDK used to interact with a running instance of the UpdateHub Agent"
 repository = "https://github.com/UpdateHub/updatehub"
