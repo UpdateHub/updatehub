@@ -674,7 +674,7 @@ exit 1
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO booting from a recent installation
     <timestamp> INFO running validate callback
-    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO validate callback has failed with status: exit status: 1
     <timestamp> WARN validate callback has failed
     "###);
 
@@ -684,7 +684,7 @@ exit 1
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> INFO booting from a recent installation
     <timestamp> INFO running validate callback
-    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO validate callback has failed with status: exit status: 1
     <timestamp> WARN validate callback has failed
     "###);
 }
@@ -822,7 +822,7 @@ UpgradeToInstallation=0
     <timestamp> WARN loaded v1 runtime settings successfully
     <timestamp> INFO booting from a recent installation
     <timestamp> INFO running validate callback
-    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO validate callback has failed with status: exit status: 1
     <timestamp> WARN validate callback has failed
     "###);
 
@@ -833,7 +833,7 @@ UpgradeToInstallation=0
     <timestamp> WARN loaded v1 runtime settings successfully
     <timestamp> INFO booting from a recent installation
     <timestamp> INFO running validate callback
-    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO validate callback has failed with status: exit status: 1
     <timestamp> WARN validate callback has failed
     "###);
 }
@@ -862,7 +862,7 @@ exit 1
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> INFO booting from a recent installation
     <timestamp> INFO running validate callback
-    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO validate callback has failed with status: exit status: 1
     <timestamp> WARN validate callback has failed
     "###);
 
@@ -872,7 +872,7 @@ exit 1
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> INFO booting from a recent installation
     <timestamp> INFO running validate callback
-    <timestamp> ERRO validate callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO validate callback has failed with status: exit status: 1
     <timestamp> WARN validate callback has failed
     "###);
 }

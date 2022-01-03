@@ -396,9 +396,9 @@ exit 1
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> INFO running state change callback for 'download' state
-    <timestamp> ERRO download callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO download callback has failed with status: exit status: 1
     <timestamp> INFO running state change callback for 'error' state
-    <timestamp> ERRO error callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO error callback has failed with status: exit status: 1
     <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> INFO parking state machine
     "###);
@@ -414,10 +414,10 @@ exit 1
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> INFO running state change callback for 'download' state
-    <timestamp> ERRO download callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO download callback has failed with status: exit status: 1
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> INFO running state change callback for 'error' state
-    <timestamp> ERRO error callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO error callback has failed with status: exit status: 1
     <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled
@@ -434,10 +434,10 @@ exit 1
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> INFO running state change callback for 'download' state
-    <timestamp> ERRO download callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO download callback has failed with status: exit status: 1
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> INFO running state change callback for 'error' state
-    <timestamp> ERRO error callback has failed with status: ExitStatus(ExitStatus(256))
+    <timestamp> ERRO error callback has failed with status: exit status: 1
     <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled

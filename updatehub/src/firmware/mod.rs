@@ -174,7 +174,7 @@ fn run_command_for_state(name: &str, cmd: &str) -> Result<easy_process::Output> 
             Ok(output)
         }
         Err(easy_process::Error::Failure(status, output)) => {
-            error!("{} has failed with status: {:?}", name, status);
+            error!("{} has failed with status: {}", name, status);
             for err in output.stderr.lines() {
                 error!("{} (stderr): {}", name, err);
             }
