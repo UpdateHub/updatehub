@@ -11,15 +11,12 @@ pub mod common;
 
 #[test]
 fn failing_invalid_download_dir() {
-    let tmp_dir = tempfile::tempdir().unwrap();
-    let mut perms = std::fs::metadata(tmp_dir.path()).unwrap().permissions();
-    perms.set_readonly(true);
-    std::fs::set_permissions(tmp_dir.path(), perms).unwrap();
-    let (mut session, setup) = Settings::default()
-        .download_dir(tmp_dir.path().to_path_buf())
-        .polling()
-        .timeout(300)
-        .init_server();
+    // Use /dev/null as a download directory
+    // so no user will have permission for it
+    let fake_dir = std::path::PathBuf::from("/dev/null");
+    let (mut session, setup) =
+        Settings::default().download_dir(fake_dir).polling().timeout(300).init_server();
+
     let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
 
     let (output_server_trce, output_server_info) =
@@ -31,8 +28,8 @@ fn failing_invalid_download_dir() {
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> ERRO failed to download object from update package: Permission denied (os error 13) (Io(Os { code: 13, kind: PermissionDenied, message: "Permission denied" }))
-    <timestamp> ERRO error state reached: Permission denied (os error 13)
+    <timestamp> ERRO failed to download object from update package: Not a directory (os error 20) (Io(Os { code: 20, kind: NotADirectory, message: "Not a directory" }))
+    <timestamp> ERRO error state reached: Not a directory (os error 20)
     <timestamp> INFO returning to machine's entry point
     "###);
 
@@ -53,9 +50,9 @@ fn failing_invalid_download_dir() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
-    <timestamp> ERRO failed to download object from update package: Permission denied (os error 13) (Io(Os { code: 13, kind: PermissionDenied, message: "Permission denied" }))
+    <timestamp> ERRO failed to download object from update package: Not a directory (os error 20) (Io(Os { code: 20, kind: NotADirectory, message: "Not a directory" }))
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> ERRO error state reached: Permission denied (os error 13)
+    <timestamp> ERRO error state reached: Not a directory (os error 20)
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
@@ -70,9 +67,9 @@ fn failing_invalid_download_dir() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> TRCE the following objects are missing: [("testfile", "23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")]
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
-    <timestamp> ERRO failed to download object from update package: Permission denied (os error 13) (Io(Os { code: 13, kind: PermissionDenied, message: "Permission denied" }))
+    <timestamp> ERRO failed to download object from update package: Not a directory (os error 20) (Io(Os { code: 20, kind: NotADirectory, message: "Not a directory" }))
     <timestamp> TRCE starting to handle 'error' state
-    <timestamp> ERRO error state reached: Permission denied (os error 13)
+    <timestamp> ERRO error state reached: Not a directory (os error 20)
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
