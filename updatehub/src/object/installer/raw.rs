@@ -15,7 +15,7 @@ use slog_scope::info;
 use std::io::SeekFrom;
 use tokio::{
     fs,
-    io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, AsyncWriteExt},
+    io::{AsyncRead, AsyncReadExt, AsyncSeekExt},
 };
 
 #[async_trait::async_trait(?Send)]
@@ -48,64 +48,53 @@ impl Installer for objects::Raw {
         let truncate = self.truncate.0;
         let count = self.count.clone();
 
-        // handle_install_if_different!(self.install_if_different, &self.sha256sum, {
-        //     fs::OpenOptions::new()
-        //         .read(true)
-        //         .open(device)
-        //         .map(|h| utils::io::timed_buf_reader(chunk_size, h))
-        //         .and_then(|mut h| {
-        //             h.seek(SeekFrom::Start(seek))?;
-        //             Ok(h)
-        //         })
-        //         .map_err(Error::from)
-        // });
+        let should_skip_install =
+            super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
+                let h = fs::OpenOptions::new().read(true).open(device).await?;
+                let mut h = utils::io::timed_buf_reader(chunk_size, h);
+                h.seek(SeekFrom::Start(seek)).await?;
+                Ok(h)
+            })
+            .await?;
+        if should_skip_install {
+            return Ok(());
+        }
 
-        let mut input = utils::io::timed_buf_reader(
-            chunk_size,
-            fs::File::open(source).await.log_error_msg("failed to open source file")?,
-        );
-        input.seek(SeekFrom::Start(skip)).await.log_error_msg("failed to seek source file")?;
-        let mut output = utils::io::timed_buf_writer(
-            chunk_size,
-            fs::OpenOptions::new()
-                .read(true)
-                .write(true)
-                .truncate(truncate)
-                .open(device)
-                .await
-                .log_error_msg("failed to open output file")?,
-        );
-        output.seek(SeekFrom::Start(seek)).await.log_error_msg("failed to seek output file")?;
+        let mut input: Box<dyn AsyncRead + Unpin> = {
+            let mut input = utils::io::timed_buf_reader(
+                chunk_size,
+                fs::File::open(source).await.log_error_msg("failed to open source file")?,
+            );
+            input.seek(SeekFrom::Start(skip)).await.log_error_msg("failed to seek source file")?;
+            match count {
+                definitions::Count::All => Box::new(input),
+                definitions::Count::Limited(n) => {
+                    Box::new(input.take((n as usize * chunk_size) as u64))
+                }
+            }
+        };
+        let mut target = {
+            let mut target = utils::io::timed_buf_writer(
+                chunk_size,
+                fs::OpenOptions::new()
+                    .write(true)
+                    .truncate(truncate)
+                    .open(device)
+                    .await
+                    .log_error_msg("failed to open target file")?,
+            );
+            target.seek(SeekFrom::Start(seek)).await.log_error_msg("failed to seek target file")?;
+            target
+        };
 
         if self.compressed {
-            match count {
-                definitions::Count::All => {
-                    compress_tools::tokio_support::uncompress_data(&mut input, &mut output).await
-                }
-                definitions::Count::Limited(n) => {
-                    compress_tools::tokio_support::uncompress_data(
-                        &mut input.take(n as u64),
-                        &mut output,
-                    )
-                    .await
-                }
-            }
-            .log_error_msg("failed to uncompress data")?;
+            compress_tools::tokio_support::uncompress_data(&mut input, &mut target)
+                .await
+                .log_error_msg("failed to uncompress data")?;
         } else {
-            for _ in count {
-                let buf =
-                    input.fill_buf().await.log_error_msg("failed to read from source file")?;
-                let len = buf.len();
-
-                // We break the loop in case we have no bytes left for
-                // read (EOF is reached).
-                if len == 0 {
-                    break;
-                }
-
-                output.write_all(buf).await.log_error_msg("failed to write to output file")?;
-                input.consume(len);
-            }
+            tokio::io::copy(&mut input, &mut target)
+                .await
+                .log_error_msg("failed copy from source into target")?;
         }
 
         Ok(())
@@ -122,7 +111,7 @@ mod tests {
         iter,
     };
     use tempfile::{tempdir, NamedTempFile, TempDir};
-    use tokio::io;
+    use tokio::io::{self, AsyncBufReadExt};
 
     const DEFAULT_BYTE: u8 = 0xF;
     const ORIGINAL_BYTE: u8 = 0xA;

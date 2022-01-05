@@ -38,9 +38,13 @@ impl Installer for objects::Flash {
         let target = self.target.get_target()?;
         let source = context.download_dir.join(self.sha256sum());
 
-        handle_install_if_different!(self.install_if_different, &self.sha256sum, {
-            std::fs::File::open(&target).map_err(Error::from)
-        });
+        if super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
+            tokio::fs::File::open(&target).await.map_err(Error::from)
+        })
+        .await?
+        {
+            return Ok(());
+        }
 
         let is_nand = utils::mtd::is_nand(&target)?;
 

@@ -43,13 +43,19 @@ impl Installer for objects::Copy {
         let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
         let source = context.download_dir.join(sha256sum);
 
-        handle_install_if_different!(self.install_if_different, sha256sum, {
-            utils::fs::mount_map(&device, filesystem, mount_options, |path| {
-                std::fs::File::open(&path.join(&target_path)).map_err(Error::from)
+        let should_skip_install =
+            super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
+                utils::fs::mount_map_async(&device, filesystem, mount_options, |path| async move {
+                    fs::File::open(&path.join(&target_path)).await.map_err(Error::from)
+                })
+                .await
+                .map_err(Error::from)
+                .and_then(|r| r)
             })
-            .map_err(Error::from)
-            .and_then(|r| r)
-        });
+            .await?;
+        if should_skip_install {
+            return Ok(());
+        }
 
         if self.target_format.should_format {
             utils::fs::format(&device, filesystem, format_options)
