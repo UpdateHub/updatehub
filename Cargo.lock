@@ -609,13 +609,14 @@ dependencies = [
 
 [[package]]
 name = "find-binary-version"
-version = "0.3.9"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "382690ca23548a2996a44d83f05fee863debc881f8ee7a698bb5b2272549b5f7"
+checksum = "76ea6db929f8acc4abee8650c3b4b5e9142c56fa33a4bf6a9f9906cad8102851"
 dependencies = [
- "byteorder",
+ "async-trait",
  "compress-tools",
  "regex",
+ "tokio",
 ]
 
 [[package]]

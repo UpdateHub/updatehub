@@ -43,7 +43,7 @@ cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
 compress-tools = { version = "0.12", features = ["tokio_support"] }
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
 easy_process = "0.2"
-find-binary-version = "0.3"
+find-binary-version = "0.4"
 futures-util = { version = "0.3", default-features = false }
 lazy_static = "1"
 logging_content = { version = "0.1", git = "https://github.com/OSSystems/logging_content.git" }

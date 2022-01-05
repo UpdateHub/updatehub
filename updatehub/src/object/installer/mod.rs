@@ -18,8 +18,9 @@ use super::{Error, Result};
 use crate::utils;
 use find_binary_version::{self as fbv, BinaryKind};
 use pkg_schema::{definitions, Object};
-use slog_scope::debug;
+use slog_scope::{debug, error, info, trace};
 use std::{io, path::PathBuf};
+use tokio::io::{AsyncRead, AsyncReadExt, AsyncSeek, AsyncSeekExt, BufReader};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Context {
@@ -49,7 +50,7 @@ impl Installer for Object {
     }
 }
 
-fn check_if_different<R: io::Read + io::Seek>(
+async fn check_if_different<R: AsyncRead + AsyncSeek + Unpin>(
     handle: &mut R,
     rule: &definitions::InstallIfDifferent,
     sha256sum: &str,
@@ -57,7 +58,7 @@ fn check_if_different<R: io::Read + io::Seek>(
     match rule {
         definitions::InstallIfDifferent::CheckSum => {
             let mut buffer = Vec::default();
-            handle.read_to_end(&mut buffer)?;
+            handle.read_to_end(&mut buffer).await?;
             if utils::sha256sum(&buffer) == sha256sum {
                 return Ok(true);
             }
@@ -69,16 +70,18 @@ fn check_if_different<R: io::Read + io::Seek>(
                     BinaryKind::LinuxKernel
                 }
             };
-            if let Some(ref cur_version) = fbv::version(handle, pattern) {
+            if let Some(ref cur_version) = fbv::version(handle, pattern).await {
                 if version == cur_version {
                     return Ok(true);
                 }
             }
         }
         definitions::InstallIfDifferent::CustomPattern { version, pattern } => {
-            io::Seek::seek(handle, io::SeekFrom::Start(pattern.seek))?;
-            let mut src = io::BufReader::with_capacity(pattern.buffer_size as usize, handle);
-            if let Some(ref cur_version) = fbv::version_with_pattern(&mut src, &pattern.regexp) {
+            handle.seek(io::SeekFrom::Start(pattern.seek)).await?;
+            let mut src = BufReader::with_capacity(pattern.buffer_size as usize, handle);
+            if let Some(ref cur_version) =
+                fbv::version_with_pattern(&mut src, &pattern.regexp).await
+            {
                 if version == cur_version {
                     return Ok(true);
                 }
@@ -86,6 +89,43 @@ fn check_if_different<R: io::Read + io::Seek>(
         }
     }
     Ok(false)
+}
+
+async fn should_skip_install<F, R>(
+    rule: &Option<definitions::InstallIfDifferent>,
+    sha256sum: &str,
+    handler: F,
+) -> Result<bool>
+where
+    F: std::future::Future<Output = Result<R>>,
+    R: AsyncRead + AsyncSeek + Unpin,
+{
+    match rule {
+        None => {
+            trace!("no install if different rule set, proceeding");
+            Ok(false)
+        }
+        Some(ref rule) => {
+            let mut h = handler.await?;
+            match check_if_different(&mut h, rule, sha256sum).await {
+                Ok(true) => {
+                    info!(
+                        "installation of {} has been skipped (install if different): {}",
+                        sha256sum, rule,
+                    );
+                    Ok(true)
+                }
+                Ok(false) => {
+                    debug!("installation will proceed (installation if different): {}", rule);
+                    Ok(false)
+                }
+                Err(e) => {
+                    error!("install if different check ({}) check failed, error: {}", rule, e);
+                    Err(e)
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -142,31 +182,34 @@ mod tests {
         Ok((mocks, calls))
     }
 
-    #[test]
-    fn unmatched_checksum() {
-        let mut f = tempfile::NamedTempFile::new().unwrap();
+    #[tokio::test]
+    async fn unmatched_checksum() {
+        let f = tempfile::NamedTempFile::new().unwrap();
+        let mut h = tokio::fs::File::open(f.path()).await.unwrap();
         assert!(
             !check_if_different(
-                &mut f,
+                &mut h,
                 &definitions::InstallIfDifferent::CheckSum,
                 "some_sha256sum"
             )
+            .await
             .unwrap(),
             "Empty fille should not be validated to the checksum"
         );
     }
 
-    #[test]
-    fn checksum() {
-        let mut f = tempfile::NamedTempFile::new().unwrap();
-        io::Write::write_all(&mut f, b"some_sha256sum").unwrap();
-        io::Seek::seek(&mut f, io::SeekFrom::Start(0)).unwrap();
+    #[tokio::test]
+    async fn checksum() {
+        let f = tempfile::NamedTempFile::new().unwrap();
+        tokio::fs::write(f.path(), b"some_sha256sum").await.unwrap();
+        let mut h = tokio::fs::File::open(f.path()).await.unwrap();
         assert!(
             check_if_different(
-                &mut f,
+                &mut h,
                 &definitions::InstallIfDifferent::CheckSum,
                 "7dc201ce54a835790d78835363a0bce4db704dd23c0c05e399d2a7d1f8fcef19",
             )
+            .await
             .unwrap(),
             "Empty fille should not be validated to the checksum"
         );
