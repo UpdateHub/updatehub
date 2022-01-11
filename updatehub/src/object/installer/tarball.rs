@@ -46,18 +46,18 @@ impl Installer for objects::Tarball {
                 .log_error_msg("failed to format partition")?;
         }
 
-        Ok(utils::fs::mount_map(&device, filesystem, mount_options, |path| {
-            let dest = path.join(target_path);
-            let mut source =
-                std::fs::File::open(source).log_error_msg("failed to open source object")?;
-            compress_tools::uncompress_archive(
-                &mut source,
-                &dest,
-                compress_tools::Ownership::Preserve,
-            )
-            .log_error_msg("failed to uncompress tar object to target")?;
-            utils::Result::Ok(())
-        })??)
+        let mount_guard = utils::fs::mount(&device, filesystem, mount_options)?;
+        let dest = mount_guard.mount_point().join(target_path);
+        let mut source =
+            tokio::fs::File::open(source).await.log_error_msg("failed to open source object")?;
+        compress_tools::tokio_support::uncompress_archive(
+            &mut source,
+            &dest,
+            compress_tools::Ownership::Preserve,
+        )
+        .await
+        .log_error_msg("failed to uncompress tar object to target")?;
+        Ok(())
     }
 }
 
@@ -67,7 +67,6 @@ mod tests {
     use crate::object::installer::tests::SERIALIZE;
     use pretty_assertions::assert_eq;
     use std::{
-        fs,
         io::{Seek, SeekFrom, Write},
         os::unix::fs::MetadataExt,
         path::{Path, PathBuf},
@@ -116,18 +115,18 @@ mod tests {
         let context = Context { download_dir: PathBuf::from("fixtures"), ..Context::default() };
 
         // Setup preinstall structure
-        utils::fs::mount_map(&device, definitions::Filesystem::Ext4, "", |path| {
-            fs::create_dir(path.join("existing_dir"))?;
-            utils::Result::Ok(())
-        })??;
+        {
+            let mount_guard = utils::fs::mount(&device, definitions::Filesystem::Ext4, "")?;
+            tokio::fs::create_dir(mount_guard.mount_point().join("existing_dir")).await?;
+        }
 
         // Peform Install
         obj.check_requirements(&context).await?;
         obj.install(&context).await?;
 
         // Validade File
-        #[allow(clippy::redundant_clone)]
-        utils::fs::mount_map(&device, obj.filesystem, &obj.mount_options.clone(), |path| {
+        {
+            let mount_guard = utils::fs::mount(&device, obj.filesystem, &obj.mount_options)?;
             let assert_metadata = |p: &Path| -> crate::utils::Result<()> {
                 let metadata = p.metadata()?;
                 assert_eq!(metadata.mode() % 0o1000, 0o664);
@@ -136,12 +135,12 @@ mod tests {
 
                 Ok(())
             };
-            let dest = path.join(&obj.target_path.strip_prefix("/")?);
+            let dest = mount_guard
+                .mount_point()
+                .join(&obj.target_path.strip_prefix("/").map_err(utils::Error::from)?);
             assert_metadata(&dest.join("tree/branch1/leaf"))?;
             assert_metadata(&dest.join("tree/branch2/leaf"))?;
-
-            utils::Result::Ok(())
-        })??;
+        }
 
         loopdev.detach()?;
 
