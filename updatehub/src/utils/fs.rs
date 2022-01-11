@@ -9,11 +9,19 @@ use pkg_schema::definitions::{
     Filesystem,
 };
 use slog_scope::trace;
-use std::{
-    io,
-    path::{Path, PathBuf},
-};
+use std::{io, path::Path};
 use sys_mount::{Mount, Unmount, UnmountDrop};
+
+pub(crate) struct MountGuard {
+    _mount: UnmountDrop<Mount>,
+    directory: tempfile::TempDir,
+}
+
+impl MountGuard {
+    pub(crate) fn mount_point(&self) -> &Path {
+        self.directory.path()
+    }
+}
 
 pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
     trace!("looking for {} free bytes on {:?}", required, target);
@@ -57,55 +65,22 @@ pub(crate) fn format(target: &Path, fs: Filesystem, options: &Option<String>) ->
     Ok(())
 }
 
-pub(crate) fn mount_map<F, T>(source: &Path, fs: Filesystem, options: &str, f: F) -> Result<T>
-where
-    F: FnOnce(&Path) -> T,
-{
-    let tmpdir = tempfile::tempdir()?;
-    let tmpdir = tmpdir.path();
+pub(crate) fn mount(source: &Path, fs: Filesystem, options: &str) -> io::Result<MountGuard> {
+    let directory = tempfile::tempdir()?;
+    let dest = directory.path();
 
-    // We need to keep a guard otherwise it is dropped before the
-    // closure is run.
-    let _guard = mount(source, tmpdir, fs, options)?;
+    trace!("mounting {:?} as {} at {:?}", source, fs, &dest);
 
-    Ok(f(tmpdir))
-}
-
-pub(crate) async fn mount_map_async<Fun, Fut, T>(
-    source: &Path,
-    fs: Filesystem,
-    options: &str,
-    f: Fun,
-) -> Result<T>
-where
-    Fun: FnOnce(PathBuf) -> Fut,
-    Fut: std::future::Future<Output = T>,
-{
-    let tmpdir = tempfile::tempdir()?;
-    let tmpdir = tmpdir.path();
-
-    // We need to keep a guard otherwise it is dropped before the
-    // closure is run.
-    let _guard = mount(source, tmpdir, fs, options)?;
-
-    Ok(f(tmpdir.to_owned()).await)
-}
-
-pub(crate) fn mount(
-    source: &Path,
-    dest: &Path,
-    fs: Filesystem,
-    options: &str,
-) -> io::Result<UnmountDrop<Mount>> {
-    trace!("mounting {:?} as {} at {:?}", source, fs, dest);
-    Ok(Mount::new(
+    let _mount = Mount::new(
         source,
-        dest,
+        &dest,
         format!("{}", fs).as_str(),
         sys_mount::MountFlags::empty(),
         Some(options),
     )?
-    .into_unmount_drop(sys_mount::UnmountFlags::DETACH))
+    .into_unmount_drop(sys_mount::UnmountFlags::FORCE);
+
+    Ok(MountGuard { _mount, directory })
 }
 
 pub(crate) fn chmod(path: &Path, mode: u32) -> Result<()> {

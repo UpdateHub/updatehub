@@ -43,18 +43,18 @@ impl Installer for objects::Copy {
         let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
         let source = context.download_dir.join(sha256sum);
 
-        let should_skip_install =
-            super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
-                utils::fs::mount_map_async(&device, filesystem, mount_options, |path| async move {
-                    fs::File::open(&path.join(&target_path)).await.map_err(Error::from)
-                })
-                .await
-                .map_err(Error::from)
-                .and_then(|r| r)
-            })
+        {
+            let mount_guard = utils::fs::mount(&device, filesystem, mount_options)?;
+            let file_path = mount_guard.mount_point().join(&target_path);
+            let should_skip_install = super::should_skip_install(
+                &self.install_if_different,
+                &self.sha256sum,
+                async move { Ok(fs::File::open(file_path).await?) },
+            )
             .await?;
-        if should_skip_install {
-            return Ok(());
+            if should_skip_install {
+                return Ok(());
+            }
         }
 
         if self.target_format.should_format {
@@ -62,58 +62,54 @@ impl Installer for objects::Copy {
                 .log_error_msg("failed to format partition")?;
         }
 
-        utils::fs::mount_map_async(&device, filesystem, mount_options, |path| async move {
-            let dest = path.join(&target_path);
-            let mut input = utils::io::timed_buf_reader(
-                chunk_size,
-                fs::File::open(source).await.log_error_msg("failed to open source object")?,
-            );
-            let mut output = utils::io::timed_buf_writer(
-                chunk_size,
-                fs::OpenOptions::new()
-                    .read(true)
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&dest)
-                    .await
-                    .log_error_msg("failed to open target file")?,
-            );
+        let mount_guard = utils::fs::mount(&device, filesystem, mount_options)?;
+        let dest = mount_guard.mount_point().join(&target_path);
+        let mut input = utils::io::timed_buf_reader(
+            chunk_size,
+            fs::File::open(source).await.log_error_msg("failed to open source object")?,
+        );
+        let mut output = utils::io::timed_buf_writer(
+            chunk_size,
+            fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(&dest)
+                .await
+                .log_error_msg("failed to open target file")?,
+        );
 
-            // File's access mode is changed here as we might not have write permission over
-            // it. It will be restored or overwritten later on by the target_mode parameter
-            let metadata = dest.metadata().log_error_msg("failed to get target metadata")?;
-            let orig_mode = metadata.permissions().mode();
-            metadata.permissions().set_mode(0o100_666);
+        // File's access mode is changed here as we might not have write permission over
+        // it. It will be restored or overwritten later on by the target_mode parameter
+        let metadata = dest.metadata().log_error_msg("failed to get target metadata")?;
+        let orig_mode = metadata.permissions().mode();
+        metadata.permissions().set_mode(0o100_666);
 
-            if self.compressed {
-                compress_tools::tokio_support::uncompress_data(&mut input, &mut output)
-                    .await
-                    .log_error_msg("failed to uncompress data")?;
-            } else {
-                io::copy(&mut input, &mut output)
-                    .await
-                    .log_error_msg("failed to copy from object to target")?;
-            }
-            output.flush().await.log_error_msg("failed to flush disk write")?;
-            metadata.permissions().set_mode(orig_mode);
+        if self.compressed {
+            compress_tools::tokio_support::uncompress_data(&mut input, &mut output)
+                .await
+                .log_error_msg("failed to uncompress data")?;
+        } else {
+            io::copy(&mut input, &mut output)
+                .await
+                .log_error_msg("failed to copy from object to target")?;
+        }
+        output.flush().await.log_error_msg("failed to flush disk write")?;
+        metadata.permissions().set_mode(orig_mode);
 
-            if let Some(mode) = self.target_permissions.target_mode {
-                utils::fs::chmod(&dest, mode).log_error_msg("failed to update permission")?;
-            }
+        if let Some(mode) = self.target_permissions.target_mode {
+            utils::fs::chmod(&dest, mode).log_error_msg("failed to update permission")?;
+        }
 
-            utils::fs::chown(
-                &dest,
-                &self.target_permissions.target_uid,
-                &self.target_permissions.target_gid,
-            )
-            .log_error_msg("failed to update ownership")?;
+        utils::fs::chown(
+            &dest,
+            &self.target_permissions.target_uid,
+            &self.target_permissions.target_gid,
+        )
+        .log_error_msg("failed to update ownership")?;
 
-            Ok(())
-        })
-        .await
-        .map_err(Error::from)
-        .and_then(|r| r)
+        Ok(())
     }
 }
 
@@ -177,27 +173,19 @@ mod tests {
 
         // When needed, create a file inside the mounted device
         if let Some(perm) = original_permissions {
-            utils::fs::mount_map_async(
-                &device,
-                definitions::Filesystem::Ext4,
-                "",
-                |path| async move {
-                    let file = path.join(&"original_file");
-                    fs::File::create(&file)
-                        .await?
-                        .write_all(&iter::repeat(ORIGINAL_BYTE).take(FILE_SIZE).collect::<Vec<_>>())
-                        .await?;
+            let mount_guard = utils::fs::mount(&device, definitions::Filesystem::Ext4, "")?;
+            let file = mount_guard.mount_point().join(&"original_file");
 
-                    if let Some(mode) = perm.target_mode {
-                        utils::fs::chmod(&file, mode)?;
-                    }
+            fs::File::create(&file)
+                .await?
+                .write_all(&iter::repeat(ORIGINAL_BYTE).take(FILE_SIZE).collect::<Vec<_>>())
+                .await?;
 
-                    utils::fs::chown(&file, &perm.target_uid, &perm.target_gid)?;
+            if let Some(mode) = perm.target_mode {
+                utils::fs::chmod(&file, mode)?;
+            }
 
-                    utils::Result::Ok(())
-                },
-            )
-            .await??;
+            utils::fs::chown(&file, &perm.target_uid, &perm.target_gid)?;
         }
 
         // Generate base copy object
@@ -224,51 +212,43 @@ mod tests {
         obj.install(&Context::default()).await?;
 
         // Validade File
-        #[allow(clippy::redundant_clone)]
-        utils::fs::mount_map_async(
-            &device,
-            obj.filesystem,
-            &obj.mount_options.clone(),
-            |path| async move {
-                let chunk_size = definitions::ChunkSize::default().0;
-                let dest = path.join(&obj.target_path);
-                let mut rd1 = io::BufReader::with_capacity(chunk_size, original_data.as_slice());
-                let mut rd2 =
-                    io::BufReader::with_capacity(chunk_size, fs::File::open(&dest).await?);
+        {
+            let mount_guard =
+                utils::fs::mount(&device, obj.filesystem, &obj.mount_options.clone())?;
+            let chunk_size = definitions::ChunkSize::default().0;
+            let dest = mount_guard.mount_point().join(&obj.target_path);
+            let mut rd1 = io::BufReader::with_capacity(chunk_size, original_data.as_slice());
+            let mut rd2 = io::BufReader::with_capacity(chunk_size, fs::File::open(&dest).await?);
 
-                loop {
-                    let buf1 = rd1.fill_buf().await?;
-                    let len1 = buf1.len();
-                    let buf2 = rd2.fill_buf().await?;
-                    let len2 = buf2.len();
-                    // Stop comparing when both the files reach EOF
-                    if len1 == 0 && len2 == 0 {
-                        break;
-                    }
-                    assert_eq!(buf1, buf2);
-                    rd1.consume(len1);
-                    rd2.consume(len2);
+            loop {
+                let buf1 = rd1.fill_buf().await?;
+                let len1 = buf1.len();
+                let buf2 = rd2.fill_buf().await?;
+                let len2 = buf2.len();
+                // Stop comparing when both the files reach EOF
+                if len1 == 0 && len2 == 0 {
+                    break;
                 }
+                assert_eq!(buf1, buf2);
+                rd1.consume(len1);
+                rd2.consume(len2);
+            }
 
-                let metadata = dest.metadata()?;
-                if let Some(mode) = obj.target_permissions.target_mode {
-                    assert_eq!(mode, metadata.mode() % 0o1000);
-                };
+            let metadata = dest.metadata()?;
+            if let Some(mode) = obj.target_permissions.target_mode {
+                assert_eq!(mode, metadata.mode() % 0o1000);
+            };
 
-                if let Some(uid) = obj.target_permissions.target_uid {
-                    let uid = uid.as_u32();
-                    assert_eq!(uid, metadata.uid());
-                };
+            if let Some(uid) = obj.target_permissions.target_uid {
+                let uid = uid.as_u32();
+                assert_eq!(uid, metadata.uid());
+            };
 
-                if let Some(gid) = obj.target_permissions.target_gid {
-                    let gid = gid.as_u32();
-                    assert_eq!(gid, metadata.gid());
-                };
-
-                std::io::Result::Ok(())
-            },
-        )
-        .await??;
+            if let Some(gid) = obj.target_permissions.target_gid {
+                let gid = gid.as_u32();
+                assert_eq!(gid, metadata.gid());
+            };
+        }
 
         loopdev.detach()?;
 
