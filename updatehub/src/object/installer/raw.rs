@@ -15,8 +15,9 @@ use slog_scope::info;
 use std::io::SeekFrom;
 use tokio::{
     fs,
-    io::{AsyncRead, AsyncReadExt, AsyncSeekExt},
+    io::{AsyncRead, AsyncReadExt, AsyncSeek, AsyncSeekExt},
 };
+use tokio_take_seek::AsyncTakeSeekExt;
 
 #[async_trait::async_trait(?Send)]
 impl Installer for objects::Raw {
@@ -50,9 +51,18 @@ impl Installer for objects::Raw {
 
         let should_skip_install =
             super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
+                trait AsyncReadSeek: AsyncRead + AsyncSeek + Unpin {}
+                impl<R: AsyncRead + AsyncSeek + Unpin> AsyncReadSeek for R {}
+
                 let h = fs::OpenOptions::new().read(true).open(device).await?;
                 let mut h = utils::io::timed_buf_reader(chunk_size, h);
                 h.seek(SeekFrom::Start(seek)).await?;
+                let h: Box<dyn AsyncReadSeek> = match &count {
+                    definitions::Count::All => Box::new(h),
+                    definitions::Count::Limited(n) => {
+                        Box::new(h.take_with_seek((*n as usize * chunk_size) as u64))
+                    }
+                };
                 Ok(h)
             })
             .await?;

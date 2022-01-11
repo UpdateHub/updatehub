@@ -2112,6 +2112,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-take-seek"
+version = "0.1.0"
+source = "git+http://github.com/OSSystems/tokio-take-seek#33a6299d1ffd16d17d34c97de2817a5600fd4632"
+dependencies = [
+ "pin-project-lite",
+ "tokio",
+]
+
+[[package]]
 name = "tokio-tungstenite"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2293,6 +2302,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-io-timeout",
+ "tokio-take-seek",
  "toml",
  "updatehub-cloud-sdk",
  "updatehub-package-schema",
