@@ -1,2 +1,2 @@
 tag-name = "{{version}}"
-disable-tag = false
+tag = true
