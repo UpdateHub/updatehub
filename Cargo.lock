@@ -2282,7 +2282,7 @@ dependencies = [
 
 [[package]]
 name = "updatehub-sdk"
-version = "2.0.6"
+version = "2.1.0"
 dependencies = [
  "chrono",
  "derive_more",
