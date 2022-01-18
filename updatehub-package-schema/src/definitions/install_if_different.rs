@@ -44,14 +44,13 @@ pub struct Pattern {
     pub buffer_size: u64,
 }
 
-fn deserialize_checksum<'de, D, E>(deserializer: D) -> Result<(), E>
+fn deserialize_checksum<'de, D>(deserializer: D) -> Result<(), D::Error>
 where
     D: serde::Deserializer<'de>,
-    E: serde::de::Error + From<D::Error>,
 {
     match String::deserialize(deserializer)?.to_lowercase().as_str() {
         "sha256sum" => Ok(()),
-        s => Err(E::custom(format!("Not a vliad CheckSum format: {}", s))),
+        s => Err(serde::de::Error::custom(format!("Not a vliad CheckSum format: {}", s))),
     }
 }
 

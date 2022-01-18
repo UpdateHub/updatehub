@@ -18,5 +18,5 @@ derive_more = { version = "0.99", default-features = false, features = ["display
 serde = { version = "1", default-features = false, features = ["derive", "std"] }
 
 [dev-dependencies]
-pretty_assertions = "0.7"
+pretty_assertions = "1"
 serde_json = { version = "1", default-features = false, features = ["std"] }

@@ -37,7 +37,7 @@ async-ctrlc = { version = "1", optional = true }
 async-channel = "1"
 async-lock = "2"
 async-trait = "0.1"
-bitar = { version = "0.8", git = "https://github.com/oll3/bita" }
+bitar = "0.9"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
 compress-tools = { version = "0.12", features = ["tokio_support"] }
@@ -49,7 +49,7 @@ lazy_static = "1"
 logging_content = { version = "0.1", git = "https://github.com/OSSystems/logging_content.git" }
 mockito = { version = "0.30", optional = true }
 ms-converter = "1"
-nix = "0.22"
+nix = "0.23"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
@@ -83,7 +83,7 @@ insta = { version = "1", features = ["backtrace"] }
 # Pin version as this is the last one not using bindgen
 loopdev = "=0.2.1"
 
-expectrl = { version = "0.1", git = "https://github.com/zhiburt/expectrl"}
-pretty_assertions = "0.7"
+expectrl = "0.2"
+pretty_assertions = "1"
 regex = "1"
 tempfile = "3"
