@@ -6,3 +6,4 @@
 .vagrant
 *.pending-snap
 *.yaml
+/.direnv/
