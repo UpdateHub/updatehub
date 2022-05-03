@@ -46,12 +46,13 @@ impl Installer for objects::Copy {
         {
             let mount_guard = utils::fs::mount(&device, filesystem, mount_options)?;
             let file_path = mount_guard.mount_point().join(&target_path);
-            let should_skip_install = super::should_skip_install(
-                &self.install_if_different,
-                &self.sha256sum,
-                async move { Ok(fs::File::open(file_path).await?) },
-            )
-            .await?;
+            let should_skip_install = file_path.exists()
+                && super::should_skip_install(
+                    &self.install_if_different,
+                    &self.sha256sum,
+                    async move { Ok(fs::File::open(file_path).await?) },
+                )
+                .await?;
             if should_skip_install {
                 return Ok(());
             }
