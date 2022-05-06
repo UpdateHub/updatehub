@@ -2,15 +2,58 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use testcontainers::{
-    clients::Cli,
-    images::generic::{GenericImage, WaitFor},
-    Container, Docker, Image,
-};
+use std::collections::BTreeMap;
+use testcontainers::{clients::Cli, core::WaitFor, Container, Image, ImageArgs};
 use updatehub_sdk as sdk;
 
 struct MockServer {
     docker: Cli,
+}
+
+#[derive(Debug)]
+struct ApiSprout {
+    volumes: BTreeMap<String, String>,
+}
+
+impl Default for ApiSprout {
+    fn default() -> Self {
+        let mut volumes = BTreeMap::new();
+        volumes.insert(
+            format!("{}/../doc/agent-http.yaml", env!("CARGO_MANIFEST_DIR")),
+            "/api.yaml".to_owned(),
+        );
+        ApiSprout { volumes }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+struct ApiSproutArgs;
+
+impl ImageArgs for ApiSproutArgs {
+    fn into_iterator(self) -> Box<dyn Iterator<Item = String>> {
+        let args = vec!["/api.yaml".to_string(), "--validate-request".to_string()];
+        Box::new(args.into_iter())
+    }
+}
+
+impl Image for ApiSprout {
+    type Args = ApiSproutArgs;
+
+    fn name(&self) -> String {
+        "danielgtaylor/apisprout".to_owned()
+    }
+
+    fn tag(&self) -> String {
+        "latest".to_owned()
+    }
+
+    fn ready_conditions(&self) -> Vec<WaitFor> {
+        vec![WaitFor::message_on_stdout("Sprouting UpdateHub Agent local HTTP API routes on port")]
+    }
+
+    fn volumes(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
+        Box::new(self.volumes.iter())
+    }
 }
 
 impl MockServer {
@@ -18,18 +61,10 @@ impl MockServer {
         MockServer { docker: Cli::default() }
     }
 
-    fn start(&self) -> (String, Container<Cli, GenericImage>) {
-        let apisprout = GenericImage::new("danielgtaylor/apisprout:latest")
-            .with_wait_for(WaitFor::message_on_stdout(
-                "Sprouting UpdateHub Agent local HTTP API routes on port",
-            ))
-            .with_args(vec!["/api.yaml".to_string(), "--validate-request".to_string()])
-            .with_volume(
-                &format!("{}/../doc/agent-http.yaml", env!("CARGO_MANIFEST_DIR")),
-                "/api.yaml",
-            );
+    fn start(&self) -> (String, Container<ApiSprout>) {
+        let apisprout = ApiSprout::default();
         let container = self.docker.run(apisprout);
-        let address = format!("localhost:{}", container.get_host_port(8000).unwrap());
+        let address = format!("localhost:{}", container.get_host_port(8000));
         (address, container)
     }
 }

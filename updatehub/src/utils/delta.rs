@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::Result;
-use bitar::{Archive, ChunkIndex, CloneOutput, ReaderRemote};
+use bitar::{
+    archive_reader::{HttpReader, IoReader},
+    Archive, ChunkIndex, CloneOutput,
+};
 use futures_util::{StreamExt, TryStreamExt};
 use slog_scope::trace;
 use std::path::Path;
@@ -18,11 +21,12 @@ pub(crate) async fn get_required_size(seed: &str, output: &Path) -> Result<u64> 
 
         if seed_as_path.exists() {
             trace!("Loading archive from file: {:?}", seed_as_path);
-            let archive = Archive::try_init(fs::File::open(seed_as_path).await?).await?;
+            let archive =
+                Archive::try_init(IoReader::new(fs::File::open(seed_as_path).await?)).await?;
             archive.total_source_size()
         } else {
             trace!("Loading archive from url: {}", seed);
-            let archive = Archive::try_init(ReaderRemote::from_url(url::Url::parse(seed)?)).await?;
+            let archive = Archive::try_init(HttpReader::from_url(url::Url::parse(seed)?)).await?;
             archive.total_source_size()
         }
     };
@@ -37,11 +41,12 @@ pub(crate) async fn clone(input: &str, output: &Path, output_seek: u64) -> Resul
 
     if input_as_path.exists() {
         trace!("Cloning from file: {:?}", input_as_path);
-        let archive = Archive::try_init(fs::File::open(input_as_path).await?).await?;
+        let archive =
+            Archive::try_init(IoReader::new(fs::File::open(input_as_path).await?)).await?;
         clone_to_file(archive, output, output_seek).await
     } else {
         trace!("Cloning from url: {}", input);
-        let archive = Archive::try_init(ReaderRemote::from_url(url::Url::parse(input)?)).await?;
+        let archive = Archive::try_init(HttpReader::from_url(url::Url::parse(input)?)).await?;
         clone_to_file(archive, output, output_seek).await
     }
 }
@@ -52,7 +57,7 @@ async fn clone_to_file<R, E1, E2>(
     output_seek: u64,
 ) -> std::result::Result<(), E2>
 where
-    R: bitar::Reader<Error = E1>,
+    R: bitar::archive_reader::ArchiveReader<Error = E1>,
     E2: From<E1>
         + From<std::io::Error>
         + From<bitar::HashSumMismatchError>
@@ -64,7 +69,7 @@ where
     output_file.seek(std::io::SeekFrom::Start(output_seek)).await?;
 
     // Scan the output file for chunks and build a chunk index
-    let mut output_index = ChunkIndex::new_empty();
+    let mut output_index = ChunkIndex::new_empty(archive.chunk_hash_length());
     {
         let chunker = archive.chunker_config().new_chunker(&mut output_file);
         let mut chunk_stream = chunker.map_ok(|(offset, chunk)| (offset, chunk.verify()));

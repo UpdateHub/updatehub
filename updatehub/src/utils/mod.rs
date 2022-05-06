@@ -56,9 +56,9 @@ pub enum Error {
     #[display(fmt = "bita operation failed due to io error: {}", _0)]
     BitaArchiveIO(bitar::ArchiveError<std::io::Error>),
     #[display(fmt = "bita operation failed due to remote read error: {}", _0)]
-    BitaArchiveRemote(bitar::ArchiveError<bitar::ReaderRemoteError>),
+    BitaArchiveRemote(bitar::ArchiveError<bitar::archive_reader::HttpReaderError>),
     #[display(fmt = "bita operation failed due to remote read error: {}", _0)]
-    BitaRemote(bitar::ReaderRemoteError),
+    BitaRemote(bitar::archive_reader::HttpReaderError),
     #[display(fmt = "bita operation failed due to compression error: {}", _0)]
     BitaCompression(bitar::CompressionError),
     #[display(fmt = "bita operation failed due to hash sum mismatch error: {}", _0)]

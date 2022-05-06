@@ -63,7 +63,7 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn init_server(self) -> (expectrl::Session, updatehub::tests::TestEnvironment) {
+    pub fn init_server(self) -> (expectrl::session::Session, updatehub::tests::TestEnvironment) {
         let mut setup = updatehub::tests::TestEnvironment::build()
             .listen_socket(self.listen_socket)
             .server_address(self.server_address)
@@ -163,7 +163,7 @@ impl Settings {
 }
 
 pub fn get_output_server(
-    handle: &mut expectrl::Session,
+    handle: &mut expectrl::session::Session,
     stop_message: StopMessage,
 ) -> (String, String) {
     let stdout = String::from_utf8_lossy(
@@ -197,7 +197,7 @@ pub fn run_client_probe(server: Server, daemon_address: &str) -> String {
     };
     let mut handle = expectrl::spawn(&cmd).expect("fail to spawn probe command");
     let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
-    String::from_utf8_lossy(m.first()).into_owned()
+    String::from_utf8_lossy(m.get(0).unwrap()).into_owned()
 }
 
 pub fn run_client_local_install(mock_addr: &str, daemon_address: &str) -> String {
@@ -209,7 +209,7 @@ pub fn run_client_local_install(mock_addr: &str, daemon_address: &str) -> String
     );
     let mut handle = expectrl::spawn(&cmd).expect("fail to spawn probe command");
     let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
-    String::from_utf8_lossy(m.first()).into_owned()
+    String::from_utf8_lossy(m.get(0).unwrap()).into_owned()
 }
 
 pub fn run_client_log(daemon_address: &str) -> String {
@@ -221,7 +221,7 @@ pub fn run_client_log(daemon_address: &str) -> String {
     let mut handle = expectrl::spawn(&cmd).expect("fail to spawn log command");
     handle.set_expect_timeout(Some(std::time::Duration::from_secs(60)));
     let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
-    rewrite_log_output(String::from_utf8_lossy(m.first()).into_owned()).0
+    rewrite_log_output(String::from_utf8_lossy(m.get(0).unwrap()).into_owned()).0
 }
 
 pub fn cargo_bin<S: AsRef<str>>(name: S) -> PathBuf {

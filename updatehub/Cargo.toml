@@ -37,8 +37,8 @@ async-ctrlc = { version = "1", optional = true }
 async-channel = "1"
 async-lock = "2"
 async-trait = "0.1"
-bitar = "0.9"
-chrono = { version = "0.4", default-features = false, features = ["serde"] }
+bitar = "0.10"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
 compress-tools = { version = "0.12", features = ["tokio_support"] }
 derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
@@ -47,9 +47,9 @@ find-binary-version = "0.4"
 futures-util = { version = "0.3", default-features = false }
 lazy_static = "1"
 logging_content = { version = "0.1", git = "https://github.com/OSSystems/logging_content.git" }
-mockito = { version = "0.30", optional = true }
+mockito = { version = "0.31", optional = true }
 ms-converter = "1"
-nix = "0.23"
+nix = "0.24"
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
@@ -62,8 +62,8 @@ serde_json = { version = "1", default-features = false }
 slog = { version = "2", default-features = false, features = ["max_level_trace", "release_max_level_trace"] }
 slog-async = { version = "2", default-features = false }
 slog-scope = "4"
-slog-term = "2"
-sys-mount = { version = "1", default-features = false }
+slog-term = { version = "2", default-features = false }
+sys-mount = { version = "1.5", default-features = false }
 tempfile = "3"
 tokio-io-timeout = "1"
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "fs", "macros"] }
@@ -77,13 +77,10 @@ warp = "0.3"
 git-version = "0.3"
 
 [dev-dependencies]
+expectrl = "0.3"
 flate2 = "1"
 insta = { version = "1", features = ["backtrace"] }
-
-# Pin version as this is the last one not using bindgen
-loopdev = "=0.2.1"
-
-expectrl = "0.2"
+loopdev = "0.4"
 pretty_assertions = "1"
 regex = "1"
 tempfile = "3"
