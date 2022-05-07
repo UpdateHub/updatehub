@@ -1,5 +1,5 @@
 [target.armv7-unknown-linux-gnueabihf]
-image = "jonathasossystems/cross-armv7-ossystems:latest"
+image = "ossystems/rust-cross:armv7-unknown-linux-gnueabihf-libarchive-0.2.1d"
 
 [target.aarch64-unknown-linux-gnu]
-image = "jonathasossystems/cross-aarch64-ossystems:latest"
+image = "ossystems/rust-cross:aarch64-unknown-linux-gnu-libarchive-0.2.1d"
