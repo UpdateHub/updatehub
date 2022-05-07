@@ -9,7 +9,7 @@ use crate::{
 };
 use pkg_schema::objects;
 use slog_scope::info;
-use std::path::PathBuf;
+use std::{fmt::Write as _, path::PathBuf};
 
 #[async_trait::async_trait(?Send)]
 impl Installer for objects::Imxkobs {
@@ -54,15 +54,15 @@ impl Installer for objects::Imxkobs {
             .log_error_msg("invalid path from download_dir for kobs-ng command")?;
 
         if self.search_exponent > 0 {
-            cmd += &format!(" --search_exponent={}", self.search_exponent)
+            write!(cmd, " --search_exponent={}", self.search_exponent).unwrap();
         }
 
         if let Some(chip_0) = &self.chip_0_device_path {
-            cmd += &format!(" --chip_0_device_path={}", chip_0.display());
+            write!(cmd, " --chip_0_device_path={}", chip_0.display()).unwrap();
         }
 
         if let Some(chip_1) = &self.chip_1_device_path {
-            cmd += &format!(" --chip_1_device_path={}", chip_1.display());
+            write!(cmd, " --chip_1_device_path={}", chip_1.display()).unwrap();
         }
 
         cmd += " -v";
