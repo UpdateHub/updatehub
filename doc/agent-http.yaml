@@ -312,15 +312,16 @@ components:
           additionalProperties:
             type: string
           example:
-            "id1": "value1"
-            "id2": "value2"
+            id1: "id1value1"
         device_attributes:
           type: object
           additionalProperties:
             type: string
           example:
-            "attr1": "value1"
-            "attr2": "value2"
+            attr1: "attr1value1"
+            attr2:
+              - "attr2value1"
+              - "attr2value2"
         hardware:
           type: string
           example: "board-name-revA"

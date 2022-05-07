@@ -82,6 +82,22 @@ impl<'de> Deserialize<'de> for MetadataValue {
     where
         D: Deserializer<'de>,
     {
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Value {
+            One(String),
+            Many(Vec<String>),
+        }
+
+        impl From<Value> for Vec<String> {
+            fn from(value: Value) -> Self {
+                match value {
+                    Value::One(s) => vec![s],
+                    Value::Many(v) => v,
+                }
+            }
+        }
+
         struct MetadataValueVisitor;
 
         impl<'de> Visitor<'de> for MetadataValueVisitor {
@@ -97,13 +113,8 @@ impl<'de> Deserialize<'de> for MetadataValue {
             {
                 let mut map = MetadataValue::default();
 
-                while let Some((k, v)) = access.next_entry().or_else(|_| {
-                    if let Some((k, v)) = access.next_entry::<String, String>()? {
-                        return Ok(Some((k, [v].to_vec())));
-                    }
-                    Ok(None)
-                })? {
-                    map.0.insert(k, v);
+                while let Some((k, v)) = access.next_entry::<_, Value>()? {
+                    map.0.insert(k, v.into());
                 }
 
                 Ok(map)
