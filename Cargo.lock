@@ -2435,7 +2435,7 @@ checksum = "957e51f3646910546462e67d5f7599b9e4fb8acdd304b087a6494730f9eebf04"
 
 [[package]]
 name = "updatehub"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "argh",
  "async-channel",
