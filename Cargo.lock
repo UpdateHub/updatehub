@@ -1139,7 +1139,8 @@ dependencies = [
 [[package]]
 name = "logging_content"
 version = "0.1.0"
-source = "git+https://github.com/OSSystems/logging_content.git#97c6c3e2a482839a2ee6f45b08afbc2a3c64c3bf"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f57c9a256bec810a9b1e8ba7b5af8ab649dfe0c6e1ee90dcba751eada4d94ebe"
 dependencies = [
  "log",
 ]
