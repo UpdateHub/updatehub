@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
+    install::Install,
     machine::{self, Context},
     Download, EntryPoint, Result, State, StateChangeImpl,
 };
@@ -17,6 +18,7 @@ use slog_scope::{debug, error, info};
 pub(super) struct Validation {
     pub(super) package: cloud::api::UpdatePackage,
     pub(super) sign: Option<cloud::api::Signature>,
+    pub(super) require_download: bool,
 }
 
 /// Implements the state change for State<Validation>.
@@ -49,7 +51,7 @@ impl StateChangeImpl for Validation {
 
         let object_context = object::installer::Context {
             download_dir: context.settings.update.download_dir.clone(),
-            offline_update: false,
+            offline_update: !self.require_download,
             base_url: format!(
                 "{server_url}/products/{product_uid}/packages/{package_uid}/objects",
                 server_url = &context.server_address(),
@@ -89,10 +91,13 @@ impl StateChangeImpl for Validation {
             info!("not downloading update package, the same package has already been installed");
             Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
         } else {
-            Ok((
-                State::Download(Download { update_package: self.package, object_context }),
-                machine::StepTransition::Immediate,
-            ))
+            let next_state = if self.require_download {
+                State::Download(Download { update_package: self.package, object_context })
+            } else {
+                State::Install(Install { update_package: self.package, object_context })
+            };
+
+            Ok((next_state, machine::StepTransition::Immediate))
         }
     }
 }
@@ -109,7 +114,7 @@ mod tests {
         let package = get_update_package();
         let sign = None;
 
-        let machine = State::Validation(Validation { package, sign })
+        let machine = State::Validation(Validation { package, sign, require_download: true })
             .move_to_next_state(&mut context)
             .await
             .unwrap()
@@ -124,8 +129,9 @@ mod tests {
         let package = get_update_package();
         let sign = None;
 
-        let machine =
-            State::Validation(Validation { package, sign }).move_to_next_state(&mut context).await;
+        let machine = State::Validation(Validation { package, sign, require_download: true })
+            .move_to_next_state(&mut context)
+            .await;
 
         match machine {
             Err(TransitionError::UpdatePackage(_)) => {}
@@ -141,7 +147,7 @@ mod tests {
         let sign = None;
         context.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
 
-        let machine = State::Validation(Validation { package, sign })
+        let machine = State::Validation(Validation { package, sign, require_download: true })
             .move_to_next_state(&mut context)
             .await
             .unwrap()
@@ -159,8 +165,9 @@ mod tests {
         let sign = None;
         context.runtime_settings.set_applied_package_uid(&package.package_uid()).unwrap();
 
-        let res =
-            State::Validation(Validation { package, sign }).move_to_next_state(&mut context).await;
+        let res = State::Validation(Validation { package, sign, require_download: true })
+            .move_to_next_state(&mut context)
+            .await;
         match res {
             Err(crate::states::TransitionError::SignatureNotFound) => {}
             Err(e) => panic!("Unexpected error returned: {}", e),

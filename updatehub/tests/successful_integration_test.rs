@@ -498,6 +498,7 @@ fn correct_config_remote_install() {
     <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
     <timestamp> INFO installing local package: "<file>"
     <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
@@ -527,6 +528,8 @@ fn correct_config_remote_install() {
     <timestamp> INFO installing local package: "<file>"
     <timestamp> DEBG successfuly uncompressed metadata file
     <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> TRCE starting to handle 'validation' state
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'install' state
     <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> INFO using installation set as target 1
@@ -557,6 +560,8 @@ fn correct_config_remote_install() {
     <timestamp> INFO installing local package: "<file>"
     <timestamp> DEBG successfuly uncompressed metadata file
     <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> TRCE starting to handle 'validation' state
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'install' state
     <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> INFO using installation set as target 1
