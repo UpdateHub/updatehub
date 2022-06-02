@@ -8,7 +8,7 @@ use crate::definitions::{
 use serde::Deserialize;
 use std::path::PathBuf;
 
-#[derive(Clone, Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Copy {
     pub filename: String,

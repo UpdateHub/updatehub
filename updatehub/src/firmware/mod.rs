@@ -47,13 +47,13 @@ pub enum Error {
     Process(easy_process::Error),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) enum Transition {
     Continue,
     Cancel,
 }
 
-#[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
+#[derive(Clone, Debug, Deref, DerefMut, PartialEq, Eq)]
 pub struct Metadata(pub api::Metadata);
 
 impl Metadata {

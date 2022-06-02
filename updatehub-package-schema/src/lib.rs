@@ -30,7 +30,7 @@ pub use update_package::{SupportedHardware, UpdatePackage};
 use serde::Deserialize;
 
 /// Represents the install mode for the object data
-#[derive(Clone, Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Debug)]
 #[serde(tag = "mode")]
 #[serde(rename_all = "lowercase")]
 pub enum Object {

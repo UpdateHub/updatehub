@@ -5,7 +5,7 @@
 use crate::definitions::{ChunkSize, Count, InstallIfDifferent, Skip, TargetType, Truncate};
 use serde::Deserialize;
 
-#[derive(Clone, Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Raw {
     pub filename: String,

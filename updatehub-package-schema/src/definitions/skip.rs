@@ -5,7 +5,7 @@
 use serde::Deserialize;
 
 /// How many chunk-size blocks must be skipped in the source file
-#[derive(Clone, PartialEq, Debug, Default, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Deserialize)]
 pub struct Skip(pub u64);
 
 #[cfg(test)]
@@ -14,7 +14,7 @@ mod test {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    #[derive(Debug, PartialEq, Deserialize)]
+    #[derive(Debug, PartialEq, Eq, Deserialize)]
     struct Payload {
         #[serde(default)]
         skip: Skip,

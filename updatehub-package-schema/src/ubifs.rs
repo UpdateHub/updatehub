@@ -5,7 +5,7 @@
 use crate::definitions::TargetType;
 use serde::Deserialize;
 
-#[derive(Clone, Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Ubifs {
     pub filename: String,

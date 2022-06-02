@@ -7,7 +7,7 @@ use serde::{de, Deserialize, Deserializer};
 /// How many `ChunkSize` blocks must be copied from the source file to
 /// the target. The default value of -1 means all possible bytes
 /// until the end of the file.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Count {
     All,
     Limited(isize),
@@ -55,7 +55,7 @@ mod test {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    #[derive(Debug, PartialEq, Deserialize)]
+    #[derive(Debug, PartialEq, Eq, Deserialize)]
     struct Payload {
         #[serde(default)]
         count: Count,

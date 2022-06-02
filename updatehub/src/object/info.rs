@@ -17,7 +17,7 @@ use std::{
     path::Path,
 };
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub(crate) enum Status {
     Missing,
     Incomplete,

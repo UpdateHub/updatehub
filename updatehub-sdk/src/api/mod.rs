@@ -102,7 +102,7 @@ pub mod log {
     use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
 
-    #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+    #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
     #[serde(rename_all = "lowercase")]
     pub enum Level {
         // We use alias here since some string conversions of slog::Level use
@@ -128,7 +128,7 @@ pub mod log {
         pub entries: Vec<Entry>,
     }
 
-    #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+    #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
     #[serde(deny_unknown_fields)]
     pub struct Entry {
         level: Level,

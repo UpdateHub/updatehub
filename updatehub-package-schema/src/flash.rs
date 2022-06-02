@@ -5,7 +5,7 @@
 use crate::definitions::{InstallIfDifferent, TargetType};
 use serde::Deserialize;
 
-#[derive(Clone, Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Flash {
     pub filename: String,
