@@ -46,7 +46,7 @@ easy_process = "0.2"
 find-binary-version = "0.4"
 futures-util = { version = "0.3", default-features = false }
 lazy_static = "1"
-logging_content = { version = "0.1", git = "https://github.com/OSSystems/logging_content.git" }
+logging_content = "0.1"
 mockito = { version = "0.31", optional = true }
 ms-converter = "1"
 nix = "0.24"
