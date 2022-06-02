@@ -23,6 +23,9 @@
             openssl
             pkg-config
             protobuf
+
+            # used by excluded tests
+            mtdutils
           ];
 
           shellHook = with pkgs; ''
