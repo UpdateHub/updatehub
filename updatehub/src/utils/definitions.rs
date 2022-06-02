@@ -37,7 +37,21 @@ impl TargetTypeExt for TargetType {
 
     fn get_target(&self) -> Result<PathBuf> {
         match self {
-            TargetType::Device(p) => Ok(p.clone()),
+            TargetType::Device(device) => {
+                // Specifically for UBIFS we ought to handle manually as we need to inquire the
+                // system for where the volume is store as we could be using the device:volume
+                // notation so we find out the underlying device before calling it.
+                let volume = device.to_string_lossy();
+                if volume.starts_with("ubi") {
+                    let volume = volume
+                        .split_once(':')
+                        .map(|(_, v)| v)
+                        .ok_or_else(|| Error::DeviceDoesNotExist(device.clone()))?;
+                    mtd::target_device_from_ubi_volume_name(volume)
+                } else {
+                    Ok(device.clone())
+                }
+            }
             TargetType::UBIVolume(s) => mtd::target_device_from_ubi_volume_name(s),
             TargetType::MTDName(s) => mtd::target_device_from_mtd_name(s),
         }

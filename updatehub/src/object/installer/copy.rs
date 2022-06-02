@@ -20,11 +20,14 @@ impl Installer for objects::Copy {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'copy' handle checking requirements");
 
-        if let definitions::TargetType::Device(dev) =
+        if let definitions::TargetType::Device(_) =
             self.target_type.valid().log_error_msg("device failed vaidation")?
         {
-            utils::fs::ensure_disk_space(dev, self.required_install_size())
-                .log_error_msg("not enough disk space")?;
+            utils::fs::ensure_disk_space(
+                &self.target_type.get_target()?,
+                self.required_install_size(),
+            )
+            .log_error_msg("not enough disk space")?;
             return Ok(());
         }
 
