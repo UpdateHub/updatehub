@@ -28,7 +28,7 @@ pub enum Error {
     V1Parsing(serde_json::Error, serde_ini::de::Error),
 }
 
-#[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
+#[derive(Clone, Debug, Deref, DerefMut, PartialEq, Eq)]
 pub struct RuntimeSettings {
     #[deref]
     #[deref_mut]

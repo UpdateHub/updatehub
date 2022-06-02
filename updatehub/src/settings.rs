@@ -26,7 +26,7 @@ pub enum Error {
     V1Parsing(toml::de::Error, serde_ini::de::Error),
 }
 
-#[derive(Clone, Debug, Deref, DerefMut, PartialEq)]
+#[derive(Clone, Debug, Deref, DerefMut, PartialEq, Eq)]
 pub struct Settings(pub api::Settings);
 
 impl Default for Settings {

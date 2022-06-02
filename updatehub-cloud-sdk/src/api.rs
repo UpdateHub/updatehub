@@ -12,13 +12,13 @@ pub enum ProbeResponse {
     ExtraPoll(i64),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UpdatePackage {
     pub inner: pkg_schema::UpdatePackage,
     pub raw: Vec<u8>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Signature(Vec<u8>);
 
 #[derive(Serialize)]

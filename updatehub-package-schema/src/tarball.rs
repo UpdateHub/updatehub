@@ -6,7 +6,7 @@ use crate::definitions::{Filesystem, TargetFormat, TargetType};
 use serde::Deserialize;
 use std::path::PathBuf;
 
-#[derive(Clone, Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Tarball {
     pub filename: String,

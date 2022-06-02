@@ -6,7 +6,7 @@ use serde::Deserialize;
 use std::fmt;
 
 /// Filesystem type that must be used to mount device.
-#[derive(Deserialize, PartialEq, Debug, Copy, Clone)]
+#[derive(Deserialize, PartialEq, Eq, Debug, Copy, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Filesystem {
     Btrfs,

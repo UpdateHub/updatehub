@@ -22,7 +22,7 @@ use std::{
 ///
 /// The Metadata is created loading its information from the running
 /// firmware. It uses the `load` method for that.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Metadata {
     /// Product UID which identifies the firmware on the management system
@@ -39,7 +39,7 @@ pub struct Metadata {
     pub device_attributes: MetadataValue,
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct MetadataValue(pub BTreeMap<String, Vec<String>>);
 
 impl MetadataValue {

@@ -10,7 +10,7 @@ const GET_SCRIPT: &str = "updatehub-active-get";
 const SET_SCRIPT: &str = "updatehub-active-set";
 const VALIDATE_SCRIPT: &str = "updatehub-active-validated";
 
-#[derive(PartialEq, Debug, Copy, Clone)]
+#[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct Set(pub InstallationSet);
 
 impl FromStr for Set {

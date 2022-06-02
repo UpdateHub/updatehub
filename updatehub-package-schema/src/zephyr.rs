@@ -4,7 +4,7 @@
 
 use serde::Deserialize;
 
-#[derive(Clone, Deserialize, PartialEq, Debug)]
+#[derive(Clone, Deserialize, PartialEq, Eq, Debug)]
 pub struct Zephyr {
     pub filename: String,
     pub size: u64,

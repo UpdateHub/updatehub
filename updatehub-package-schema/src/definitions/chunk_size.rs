@@ -6,7 +6,7 @@ use serde::{de, Deserialize, Deserializer};
 
 /// The size of the buffers (in bytes) used to read and write,
 /// default is the 128KiB.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ChunkSize(pub usize);
 
 impl Default for ChunkSize {
@@ -34,7 +34,7 @@ mod test {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    #[derive(Debug, PartialEq, Deserialize)]
+    #[derive(Debug, PartialEq, Eq, Deserialize)]
     struct Payload {
         #[serde(default)]
         chunk_size: ChunkSize,

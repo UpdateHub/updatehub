@@ -6,7 +6,7 @@ use serde::Deserialize;
 use std::path::PathBuf;
 
 /// The type the device that will receive the update.
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase", tag = "target-type", content = "target")]
 pub enum TargetType {
     Device(PathBuf),

@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 /// True if the file pointed to by the `target_path` should be open in
 /// truncate mode (erase content before writing).
-#[derive(Clone, PartialEq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 pub struct Truncate(pub bool);
 
 impl Default for Truncate {
@@ -21,7 +21,7 @@ mod test {
     use pretty_assertions::assert_eq;
     use serde_json::json;
 
-    #[derive(Debug, PartialEq, Deserialize)]
+    #[derive(Debug, PartialEq, Eq, Deserialize)]
     struct Payload {
         #[serde(default)]
         truncate: Truncate,

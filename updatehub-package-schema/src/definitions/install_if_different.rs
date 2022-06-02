@@ -6,7 +6,7 @@ use derive_more::Display;
 use serde::Deserialize;
 
 /// Handles when an object should be installed on target.
-#[derive(Clone, PartialEq, Debug, Deserialize, Display)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Display)]
 #[serde(untagged)]
 pub enum InstallIfDifferent {
     #[serde(deserialize_with = "deserialize_checksum")]
@@ -23,7 +23,7 @@ pub enum InstallIfDifferent {
 
 /// Known patterns to be used with
 /// [`InstallIfDifferent`](InstallIfDifferent::KnownPattern)
-#[derive(Clone, PartialEq, Debug, Deserialize, Display)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize, Display)]
 #[serde(rename_all = "kebab-case")]
 pub enum KnownPatternKind {
     /// Linux Kernel pattern.
@@ -36,7 +36,7 @@ pub enum KnownPatternKind {
 
 /// Custom pattern to use with
 /// [`InstallIfDifferent`](InstallIfDifferent::CustomPattern)
-#[derive(Clone, PartialEq, Debug, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Pattern {
     pub regexp: String,
