@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, Context},
-    CallbackReporter, Install, Result, State, StateChangeImpl,
+    CallbackReporter, Result, State, StateChangeImpl, Validation,
 };
 use crate::{
     firmware::installation_set,
@@ -45,7 +45,7 @@ impl StateChangeImpl for PrepareLocalInstall {
             UpdatePackage::parse(&metadata).log_error_msg("failed to parse extracted metadata")?;
         debug!("successfuly uncompressed metadata file");
 
-        if let Some(key) = context.firmware.pub_key.as_ref() {
+        let sign = {
             let mut sign = Vec::with_capacity(512);
             source
                 .seek(SeekFrom::Start(0))
@@ -57,9 +57,7 @@ impl StateChangeImpl for PrepareLocalInstall {
                             .log_error_msg("failed to parse utf8 from signature")?,
                     )
                     .log_error_msg("failed to parse base64 from signature")?;
-                    debug!("validating signature");
-                    sign.validate(key, &update_package)
-                        .log_error_msg("uhupkg has failed signature validation")?;
+                    Some(sign)
                 }
                 Err(compress_tools::Error::Io(e)) if e.kind() == io::ErrorKind::NotFound => {
                     error!("package does not contain a signature file");
@@ -67,7 +65,7 @@ impl StateChangeImpl for PrepareLocalInstall {
                 }
                 Err(e) => return Err(e.into()),
             }
-        }
+        };
 
         for object in update_package
             .objects(
@@ -87,12 +85,6 @@ impl StateChangeImpl for PrepareLocalInstall {
                 .log_error_msg("failed to uncompress object")?;
         }
 
-        info!(
-            "update package extracted: {} ({})",
-            update_package.version(),
-            update_package.package_uid()
-        );
-
         update_package
             .clear_unrelated_files(
                 &dest_path,
@@ -102,14 +94,16 @@ impl StateChangeImpl for PrepareLocalInstall {
             )
             .log_error_msg("unable to cleanup unrequired files from download dir")?;
 
+        info!(
+            "update package extracted: {} ({})",
+            update_package.version(),
+            update_package.package_uid()
+        );
         Ok((
-            State::Install(Install {
-                update_package,
-                object_context: crate::object::installer::Context {
-                    download_dir: context.settings.update.download_dir.clone(),
-                    offline_update: true,
-                    base_url: String::default(),
-                },
+            State::Validation(Validation {
+                package: update_package,
+                sign,
+                require_download: false,
             }),
             machine::StepTransition::Immediate,
         ))

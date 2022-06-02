@@ -144,7 +144,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
                 context.runtime_settings.set_last_polling(Utc::now())?;
                 Ok((
                     address::ProbeResponse::Available,
-                    Some(State::Validation(Validation { package, sign })),
+                    Some(State::Validation(Validation { package, sign, require_download: true })),
                 ))
             }
         }

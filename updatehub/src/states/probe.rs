@@ -79,7 +79,7 @@ impl StateChangeImpl for Probe {
 
                 info!("update received: {} ({})", package.version(), package.package_uid());
                 Ok((
-                    State::Validation(Validation { package, sign }),
+                    State::Validation(Validation { package, sign, require_download: true }),
                     machine::StepTransition::Immediate,
                 ))
             }
