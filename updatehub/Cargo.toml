@@ -4,7 +4,7 @@
 
 [package]
 name = "updatehub"
-version = "2.1.1"
+version = "2.1.2"
 authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 license = "Apache-2.0"
 edition = "2021"
