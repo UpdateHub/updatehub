@@ -64,7 +64,7 @@ impl MockServer {
     fn start(&self) -> (String, Container<ApiSprout>) {
         let apisprout = ApiSprout::default();
         let container = self.docker.run(apisprout);
-        let address = format!("localhost:{}", container.get_host_port(8000));
+        let address = format!("localhost:{}", container.get_host_port_ipv4(8000));
         (address, container)
     }
 }

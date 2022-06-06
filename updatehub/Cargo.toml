@@ -77,7 +77,7 @@ warp = "0.3"
 git-version = "0.3"
 
 [dev-dependencies]
-expectrl = "0.3"
+expectrl = "0.4"
 flate2 = "1"
 insta = { version = "1", features = ["backtrace"] }
 loopdev = "0.4"
