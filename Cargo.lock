@@ -2239,7 +2239,8 @@ dependencies = [
 [[package]]
 name = "tokio-take-seek"
 version = "0.1.0"
-source = "git+http://github.com/OSSystems/tokio-take-seek#33a6299d1ffd16d17d34c97de2817a5600fd4632"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35d4131c282d12b26b56fa54aa1d1730829daac3b5c21dc9fe095717884cb854"
 dependencies = [
  "pin-project-lite",
  "tokio",

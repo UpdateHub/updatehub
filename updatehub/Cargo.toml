@@ -67,7 +67,7 @@ sys-mount = { version = "1.5", default-features = false }
 tempfile = "3"
 tokio-io-timeout = "1"
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "fs", "macros"] }
-tokio-take-seek = { version = "0.1", git = "http://github.com/OSSystems/tokio-take-seek" }
+tokio-take-seek = "0.1"
 toml = "0.5"
 url = "2"
 walkdir = "2"
