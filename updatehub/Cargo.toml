@@ -6,7 +6,7 @@
 name = "updatehub"
 description = "A Firmware Over-The-Air agent for Embedded and Industrial Linux-based devices"
 homepage = "https://updatehub.io/"
-version = "2.1.2"
+version = "2.1.3"
 authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 license = "Apache-2.0"
 edition = "2021"
