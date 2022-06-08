@@ -54,7 +54,8 @@ impl ToString for MemDrain {
         let records = self.records.read().unwrap();
 
         let mut ret = String::new();
-        for record in records.iter() {
+        let records = records.iter();
+        for record in records {
             let mut msg = record.message.clone();
             for (k, v) in &record.data {
                 msg = msg.replace(k, v);
