@@ -84,6 +84,14 @@ trait StateChangeImpl {
 
 #[async_trait(?Send)]
 trait CallbackReporter: Sized + StateChangeImpl {
+    async fn handle_on_transition_cancel(&self, _context: &mut machine::Context) -> Result<()> {
+        Ok(())
+    }
+
+    async fn handle_on_error(&self, _context: &mut machine::Context) -> Result<()> {
+        Ok(())
+    }
+
     async fn handle_with_callback(
         self,
         context: &mut machine::Context,
@@ -92,13 +100,18 @@ trait CallbackReporter: Sized + StateChangeImpl {
             firmware::state_change_callback(&context.settings.firmware.metadata, self.name());
 
         match transition {
-            Ok(Transition::Continue) => Ok(self.handle(context).await?),
+            Ok(Transition::Continue) => return self.handle(context).await,
             Ok(Transition::Cancel) => {
                 info!(
                     "cancelling transition to '{}' due to state change callback request",
                     self.name()
                 );
-                Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
+
+                self.handle_on_transition_cancel(context).await
+                    .unwrap_or_else(|e| error!("failed calling specialized handler for cancelling \
+                                               transition to '{}' as state change callback has failed with: {}",
+                                               self.name(),
+                                               e));
             }
             Err(e) => {
                 error!(
@@ -106,9 +119,16 @@ trait CallbackReporter: Sized + StateChangeImpl {
                     self.name(),
                     e
                 );
-                Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
+
+                self.handle_on_error(context).await
+                    .unwrap_or_else(|e| error!("failed calling specialized handler for transition \
+                                                error to '{}' as state change callback has failed with: {}",
+                                               self.name(),
+                                               e));
             }
         }
+
+        Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
     }
 }
 
