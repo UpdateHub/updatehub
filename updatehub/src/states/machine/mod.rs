@@ -272,7 +272,7 @@ impl StateMachine {
                     trace!("delaying transition for: {} seconds", t.num_seconds());
                     let waker = self.context.waker.receiver.clone();
 
-                    let sleep_fut = tokio::time::sleep(t.to_std().unwrap());
+                    let sleep_fut = tokio::time::sleep(t.to_std().unwrap_or_default());
                     let waker_fut = async {
                         let _ = waker.recv().await;
                     };
