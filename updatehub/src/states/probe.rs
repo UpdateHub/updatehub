@@ -14,7 +14,23 @@ use slog_scope::{error, info};
 #[derive(Debug)]
 pub(super) struct Probe;
 
-impl CallbackReporter for Probe {}
+#[async_trait::async_trait(?Send)]
+impl CallbackReporter for Probe {
+    async fn handle_on_transition_cancel(&self, context: &mut machine::Context) -> Result<()> {
+        // Set the last polling time or we loop forever as polling interval will not be
+        // respected.
+        context
+            .runtime_settings
+            .set_last_polling(Utc::now())
+            .log_error_msg("unable to update last polling to runtime settings")?;
+
+        Ok(())
+    }
+
+    async fn handle_on_error(&self, context: &mut machine::Context) -> Result<()> {
+        self.handle_on_transition_cancel(context).await
+    }
+}
 
 /// Implements the state change for State<Probe>.
 #[async_trait::async_trait(?Send)]
