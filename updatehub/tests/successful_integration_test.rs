@@ -351,7 +351,7 @@ fn correct_config_statechange_callback() {
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> INFO running state change callback for 'download' state
     <timestamp> INFO download callback has exit with success
-    <timestamp> INFO cancelling transition to 'download' due to state change callback request
+    <timestamp> INFO canceling transition to 'download' due to state change callback request
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
@@ -373,7 +373,7 @@ fn correct_config_statechange_callback() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> INFO running state change callback for 'download' state
     <timestamp> INFO download callback has exit with success
-    <timestamp> INFO cancelling transition to 'download' due to state change callback request
+    <timestamp> INFO canceling transition to 'download' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle 'poll' state
@@ -387,7 +387,7 @@ fn correct_config_statechange_callback() {
     <timestamp> TRCE starting to handle 'download' state
     <timestamp> INFO running state change callback for 'download' state
     <timestamp> INFO download callback has exit with success
-    <timestamp> INFO cancelling transition to 'download' due to state change callback request
+    <timestamp> INFO canceling transition to 'download' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle 'poll' state
@@ -425,7 +425,7 @@ fn correct_config_error_state_callback() {
     <timestamp> ERRO update package: 1.2 (fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3) has failed to meet the install requirements
     <timestamp> INFO running state change callback for 'error' state
     <timestamp> INFO error callback has exit with success
-    <timestamp> INFO cancelling transition to 'error' due to state change callback request
+    <timestamp> INFO canceling transition to 'error' due to state change callback request
     "###);
 
     insta::assert_snapshot!(output_server_trce, @r###"
@@ -448,7 +448,7 @@ fn correct_config_error_state_callback() {
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> INFO running state change callback for 'error' state
     <timestamp> INFO error callback has exit with success
-    <timestamp> INFO cancelling transition to 'error' due to state change callback request
+    <timestamp> INFO canceling transition to 'error' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle 'poll' state
@@ -463,7 +463,7 @@ fn correct_config_error_state_callback() {
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> INFO running state change callback for 'error' state
     <timestamp> INFO error callback has exit with success
-    <timestamp> INFO cancelling transition to 'error' due to state change callback request
+    <timestamp> INFO canceling transition to 'error' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is enabled
     <timestamp> TRCE starting to handle 'poll' state
