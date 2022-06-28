@@ -103,18 +103,18 @@ trait CallbackReporter: Sized + StateChangeImpl {
             Ok(Transition::Continue) => return self.handle(context).await,
             Ok(Transition::Cancel) => {
                 info!(
-                    "cancelling transition to '{}' due to state change callback request",
+                    "canceling transition to '{}' due to state change callback request",
                     self.name()
                 );
 
                 self.handle_on_transition_cancel(context).await
-                    .unwrap_or_else(|e| error!("failed calling specialized handler for cancelling transition to '{}' as state change callback has failed with: {}",
+                    .unwrap_or_else(|e| error!("failed calling specialized handler for canceling transition to '{}' as state change callback has failed with: {}",
                                                self.name(),
                                                e));
             }
             Err(e) => {
                 error!(
-                    "cancelling transition to '{}' as state change callback has failed with: {}",
+                    "canceling transition to '{}' as state change callback has failed with: {}",
                     self.name(),
                     e
                 );
@@ -195,7 +195,7 @@ trait ProgressReporter: CallbackReporter {
             Transition::Continue => Ok(self.handle_and_report_progress(context).await?),
             Transition::Cancel => {
                 info!(
-                    "cancelling transition to '{}' due to state change callback request",
+                    "canceling transition to '{}' due to state change callback request",
                     self.name()
                 );
                 Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))

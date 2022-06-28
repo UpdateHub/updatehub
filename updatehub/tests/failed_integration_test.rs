@@ -401,7 +401,7 @@ exit 1
     <timestamp> ERRO download callback has failed with status: exit status: 1
     <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error callback has failed with status: exit status: 1
-    <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
+    <timestamp> ERRO canceling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> INFO parking state machine
     "###);
 
@@ -420,7 +420,7 @@ exit 1
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error callback has failed with status: exit status: 1
-    <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
+    <timestamp> ERRO canceling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle 'park' state
@@ -440,7 +440,7 @@ exit 1
     <timestamp> TRCE starting to handle 'error' state
     <timestamp> INFO running state change callback for 'error' state
     <timestamp> ERRO error callback has failed with status: exit status: 1
-    <timestamp> ERRO cancelling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
+    <timestamp> ERRO canceling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> TRCE starting to handle 'entry_point' state
     <timestamp> DEBG polling is disabled
     <timestamp> TRCE starting to handle 'park' state
