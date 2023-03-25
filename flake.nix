@@ -2,17 +2,25 @@
   description = "UpdateHub Development Environment";
 
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
-    flake-utils = {
-      url = "github:numtide/flake-utils";
+    nixpkgs.url = "nixpkgs/release-22.11";
+    flake-utils.url = "github:numtide/flake-utils";
+
+    rust = {
+      url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, rust }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+
+        rust-toolchain = with rust.packages.${system};
+          combine [
+            (stable.withComponents [ "rustc" "cargo" "rust-src" "clippy" ])
+            (latest.withComponents [ "rustfmt" "rust-analyzer" ])
+          ];
       in
       {
         devShell = pkgs.mkShell {
@@ -23,6 +31,13 @@
             openssl
             pkg-config
             protobuf
+
+            cargo-insta
+            cargo-limit
+            cargo-outdated
+            cargo-release
+            cargo-watch
+            rust-toolchain
 
             # used by excluded tests
             mtdutils
