@@ -24,8 +24,6 @@ pub enum SupportedHardware {
     HardwareList(Vec<String>),
 }
 
-
-
 fn any<'de, D: serde::de::Deserializer<'de>>(deserializer: D) -> Result<(), D::Error> {
     if String::deserialize(deserializer)? == "any" {
         Ok(())

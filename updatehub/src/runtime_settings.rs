@@ -43,7 +43,7 @@ impl Default for RuntimeSettings {
         RuntimeSettings {
             inner: api::RuntimeSettings {
                 polling: api::RuntimePolling {
-                    last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+                    last: DateTime::from_utc(NaiveDateTime::from_timestamp_opt(0, 0).unwrap(), Utc),
                     retries: 0,
                     now: false,
                     server_address: api::ServerAddress::Default,
@@ -298,7 +298,7 @@ mod tests {
         let expected = RuntimeSettings {
             inner: api::RuntimeSettings {
                 polling: api::RuntimePolling {
-                    last: DateTime::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+                    last: DateTime::from_utc(NaiveDateTime::from_timestamp_opt(0, 0).unwrap(), Utc),
                     retries: 0,
                     now: false,
                     server_address: api::ServerAddress::Default,

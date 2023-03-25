@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install libarchive-dev socat
+        run: sudo apt-get update; sudo apt-get install libarchive-dev protobuf-compiler socat
       - name: Checkout sources
         uses: actions/checkout@v2
       - name: Install ${{ matrix.version }}

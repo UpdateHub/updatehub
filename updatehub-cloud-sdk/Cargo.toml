@@ -25,6 +25,6 @@ tokio = { version = "1", default-features = false, features = ["fs", "io-util", 
 url = { version = "2", default-features = false }
 
 [dev-dependencies]
-mockito = "0.31"
+mockito = "1"
 tempfile = "3"
 

@@ -206,40 +206,36 @@ impl TestEnvironmentBuilder {
             write!(
                 file,
                 r#"[network]
-server_address={server_address}
-listen_socket={listen_socket}
+server_address="{server_address}"
+listen_socket="{listen_socket}"
 
 [storage]
 read_only=false
-runtime_settings={runtime_settings}
+runtime_settings="{runtime_settings}"
 
 [polling]
-enabled={polling_enabled}
+enabled={polling_enabled:?}
 interval="1d"
 
 [update]
-download_dir={download_dir}
-supported_install_modes={install_modes}
+download_dir="{download_dir}"
+supported_install_modes={install_modes:?}
 
 [firmware]
-metadata={metadata}"#,
-                server_address = toml::to_string(
-                    self.server_address.as_deref().unwrap_or("https://api.updatehub.io")
-                )
-                .unwrap(),
-                listen_socket =
-                    toml::to_string(self.listen_socket.as_deref().unwrap_or("localhost:8080"))
-                        .unwrap(),
-                runtime_settings = toml::to_string(&runtime_settings.stored_path).unwrap(),
-                polling_enabled = toml::to_string(&!self.disable_polling).unwrap(),
-                download_dir = toml::to_string(download_dir.path()).unwrap(),
-                install_modes = toml::to_string(&install_modes).unwrap(),
-                metadata = toml::to_string(&firmware.stored_path).unwrap()
+metadata="{metadata}""#,
+                server_address =
+                    self.server_address.as_deref().unwrap_or("https://api.updatehub.io"),
+                listen_socket = self.listen_socket.as_deref().unwrap_or("localhost:8080"),
+                runtime_settings = runtime_settings.stored_path.to_string_lossy(),
+                polling_enabled = !self.disable_polling,
+                download_dir = download_dir.path().to_string_lossy(),
+                install_modes = install_modes,
+                metadata = firmware.stored_path.to_string_lossy()
             )
             .unwrap();
 
             Data {
-                data: Settings::load(&file_path).unwrap(),
+                data: dbg!(Settings::load(&file_path)).unwrap(),
                 stored_path: file_path,
                 guard: vec![Box::new(file), Box::new(download_dir)],
             }

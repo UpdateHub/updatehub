@@ -71,14 +71,12 @@ pub(crate) fn mount(source: &Path, fs: Filesystem, options: &str) -> io::Result<
 
     trace!("mounting {:?} as {} at {:?}", source, fs, &dest);
 
-    let _mount = Mount::new(
-        source,
-        dest,
-        format!("{}", fs).as_str(),
-        sys_mount::MountFlags::empty(),
-        Some(options),
-    )?
-    .into_unmount_drop(sys_mount::UnmountFlags::FORCE);
+    let _mount = Mount::builder()
+        .fstype(format!("{}", fs).as_str())
+        .data(options)
+        .flags(sys_mount::MountFlags::empty())
+        .mount(source, dest)?
+        .into_unmount_drop(sys_mount::UnmountFlags::FORCE);
 
     Ok(MountGuard { _mount, directory })
 }
