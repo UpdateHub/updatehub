@@ -58,7 +58,7 @@ fn start_mock(product_uid: &str) -> Vec<mockito::Mock> {
                 .match_header("Content-Type", "application/json")
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
                 .with_status(200)
-                .with_body(&package_metadata.to_string())
+                .with_body(package_metadata.to_string())
                 .create(),
             mockito::mock(
                 "GET",

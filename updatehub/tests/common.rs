@@ -105,7 +105,7 @@ impl Settings {
             setup.settings.stored_path.to_string_lossy()
         );
 
-        let mut handle = expectrl::spawn(&cmd).expect("fail to spawn server command");
+        let mut handle = expectrl::spawn(cmd).expect("fail to spawn server command");
         handle.set_expect_timeout(self.timeout.map(std::time::Duration::from_secs));
 
         (handle, setup)
@@ -195,7 +195,7 @@ pub fn run_client_probe(server: Server, daemon_address: &str) -> String {
         Server::Custom(server_address) => format!("{} --server {}", cmd_string, server_address),
         Server::Standard => cmd_string,
     };
-    let mut handle = expectrl::spawn(&cmd).expect("fail to spawn probe command");
+    let mut handle = expectrl::spawn(cmd).expect("fail to spawn probe command");
     let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
     String::from_utf8_lossy(m.get(0).unwrap()).into_owned()
 }
@@ -207,7 +207,7 @@ pub fn run_client_local_install(mock_addr: &str, daemon_address: &str) -> String
         daemon_address,
         mock_addr
     );
-    let mut handle = expectrl::spawn(&cmd).expect("fail to spawn probe command");
+    let mut handle = expectrl::spawn(cmd).expect("fail to spawn probe command");
     let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
     String::from_utf8_lossy(m.get(0).unwrap()).into_owned()
 }
@@ -218,7 +218,7 @@ pub fn run_client_log(daemon_address: &str) -> String {
         cargo_bin("updatehub").to_string_lossy(),
         daemon_address
     );
-    let mut handle = expectrl::spawn(&cmd).expect("fail to spawn log command");
+    let mut handle = expectrl::spawn(cmd).expect("fail to spawn log command");
     handle.set_expect_timeout(Some(std::time::Duration::from_secs(60)));
     let m = handle.expect(expectrl::Eof).expect("fail to match the EOF for client");
     rewrite_log_output(String::from_utf8_lossy(m.get(0).unwrap()).into_owned()).0
@@ -327,7 +327,7 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                 .match_body(request_body)
                 .with_status(200)
                 .with_header("UH-Signature", &openssl::base64::encode_block(b"some_signature"))
-                .with_body(&json_update.to_string())
+                .with_body(json_update.to_string())
                 .create(),
             mock(
                 "GET",
@@ -347,7 +347,7 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
                 .match_body(request_body)
                 .with_status(200)
                 .with_header("UH-Signature", &openssl::base64::encode_block(b"some_signature"))
-                .with_body(&wrong_json_update.to_string())
+                .with_body(wrong_json_update.to_string())
                 .create(),
             mock(
                 "GET",

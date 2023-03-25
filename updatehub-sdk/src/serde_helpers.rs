@@ -20,6 +20,6 @@ pub(crate) mod duration {
         use ms_converter::ms;
 
         let s = String::deserialize(deserializer)?;
-        Ok(Duration::milliseconds(ms(&s).map_err(de::Error::custom)?))
+        Ok(Duration::milliseconds(ms(s).map_err(de::Error::custom)?))
     }
 }

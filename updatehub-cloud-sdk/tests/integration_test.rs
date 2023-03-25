@@ -77,7 +77,7 @@ fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
             .match_body(reply_body)
             .with_status(200)
             .with_header("UH-Signature", &openssl::base64::encode_block(b"some_signature"))
-            .with_body(&json_update.to_string())
+            .with_body(json_update.to_string())
             .create()],
         FakeServer::ExtraPoll => vec![mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")

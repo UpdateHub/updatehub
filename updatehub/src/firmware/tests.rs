@@ -91,9 +91,9 @@ pub(crate) fn create_fake_installation_set(tmpdir: &Path, active: usize) {
     const SET_SCRIPT: &str = "updatehub-active-set";
     const VALIDATE_SCRIPT: &str = "updatehub-active-validated";
 
-    create_dir_all(&tmpdir).unwrap();
+    create_dir_all(tmpdir).unwrap();
 
-    let mut file = File::create(&tmpdir.join(GET_SCRIPT)).unwrap();
+    let mut file = File::create(tmpdir.join(GET_SCRIPT)).unwrap();
     writeln!(file, "#!/bin/sh\necho {}", active).unwrap();
 
     let mut permissions = metadata(tmpdir).unwrap().permissions();
@@ -101,14 +101,14 @@ pub(crate) fn create_fake_installation_set(tmpdir: &Path, active: usize) {
     permissions.set_mode(0o755);
     file.set_permissions(permissions).unwrap();
 
-    let mut file = File::create(&tmpdir.join(SET_SCRIPT)).unwrap();
+    let mut file = File::create(tmpdir.join(SET_SCRIPT)).unwrap();
     writeln!(file, "#!/bin/sh\nexit 0").unwrap();
 
     let mut permissions = metadata(tmpdir).unwrap().permissions();
     permissions.set_mode(0o755);
     file.set_permissions(permissions).unwrap();
 
-    let mut file = File::create(&tmpdir.join(VALIDATE_SCRIPT)).unwrap();
+    let mut file = File::create(tmpdir.join(VALIDATE_SCRIPT)).unwrap();
     writeln!(file, "#!/bin/sh\nexit 0").unwrap();
 
     let mut permissions = metadata(tmpdir).unwrap().permissions();

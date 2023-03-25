@@ -325,7 +325,7 @@ mod tests {
 
         let tempfile = NamedTempFile::new().unwrap();
         let settings_file = tempfile.path();
-        fs::remove_file(&settings_file).unwrap();
+        fs::remove_file(settings_file).unwrap();
 
         let mut settings = RuntimeSettings::load(settings_file).unwrap();
         settings.reset_installation_settings().unwrap();
@@ -342,7 +342,7 @@ mod tests {
 
         let tempfile = NamedTempFile::new().unwrap();
         let settings_file = tempfile.path();
-        fs::write(&settings_file, "foo").unwrap();
+        fs::write(settings_file, "foo").unwrap();
 
         let load_result = RuntimeSettings::load(settings_file);
         assert!(load_result.is_ok(), "We should fail when reading a unformated formatted file");

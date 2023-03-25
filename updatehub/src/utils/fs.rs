@@ -28,7 +28,7 @@ pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
     let stat = nix::sys::statvfs::statvfs(target)?;
 
     // stat fields might be 32 or 64 bytes depending on host arch
-    let available = stat.block_size() as u64 * stat.blocks_free() as u64;
+    let available = stat.block_size() * stat.blocks_free();
 
     if required > available {
         return Err(Error::NotEnoughSpace { available, required });
@@ -47,7 +47,7 @@ pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
 pub(crate) fn format(target: &Path, fs: Filesystem, options: &Option<String>) -> Result<()> {
     trace!("formating {:?} as {}", target, fs);
     let target = target.display();
-    let options = options.clone().unwrap_or_else(|| "".to_string());
+    let options = options.clone().unwrap_or_default();
 
     let cmd = match fs {
         Filesystem::Jffs2 => format!("flash_erase -j {} {} 0 0", options, target),
@@ -73,7 +73,7 @@ pub(crate) fn mount(source: &Path, fs: Filesystem, options: &str) -> io::Result<
 
     let _mount = Mount::new(
         source,
-        &dest,
+        dest,
         format!("{}", fs).as_str(),
         sys_mount::MountFlags::empty(),
         Some(options),

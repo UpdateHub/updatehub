@@ -16,17 +16,15 @@ pub struct UpdatePackage {
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 #[serde(untagged)]
+#[derive(Default)]
 pub enum SupportedHardware {
     #[serde(deserialize_with = "any")]
+    #[default]
     Any,
     HardwareList(Vec<String>),
 }
 
-impl Default for SupportedHardware {
-    fn default() -> Self {
-        SupportedHardware::Any
-    }
-}
+
 
 fn any<'de, D: serde::de::Deserializer<'de>>(deserializer: D) -> Result<(), D::Error> {
     if String::deserialize(deserializer)? == "any" {

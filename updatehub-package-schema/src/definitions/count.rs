@@ -8,16 +8,14 @@ use serde::{de, Deserialize, Deserializer};
 /// the target. The default value of -1 means all possible bytes
 /// until the end of the file.
 #[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(Default)]
 pub enum Count {
+    #[default]
     All,
     Limited(isize),
 }
 
-impl Default for Count {
-    fn default() -> Self {
-        Count::All
-    }
-}
+
 
 impl<'de> Deserialize<'de> for Count {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

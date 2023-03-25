@@ -137,7 +137,7 @@ mod tests {
             };
             let dest = mount_guard
                 .mount_point()
-                .join(&obj.target_path.strip_prefix("/").map_err(utils::Error::from)?);
+                .join(obj.target_path.strip_prefix("/").map_err(utils::Error::from)?);
             assert_metadata(&dest.join("tree/branch1/leaf"))?;
             assert_metadata(&dest.join("tree/branch2/leaf"))?;
         }

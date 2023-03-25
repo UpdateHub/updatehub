@@ -62,9 +62,9 @@ pub(crate) fn create_fake_object(body: &[u8], shasum: &str, settings: &Settings)
     let dir = &settings.update.download_dir;
 
     // ensure path exists
-    create_dir_all(&dir).unwrap();
+    create_dir_all(dir).unwrap();
 
-    File::create(&dir.join(shasum)).unwrap().write_all(body).unwrap();
+    File::create(dir.join(shasum)).unwrap().write_all(body).unwrap();
 }
 
 #[test]

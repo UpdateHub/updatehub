@@ -48,7 +48,7 @@ impl Installer for objects::Copy {
 
         {
             let mount_guard = utils::fs::mount(&device, filesystem, mount_options)?;
-            let file_path = mount_guard.mount_point().join(&target_path);
+            let file_path = mount_guard.mount_point().join(target_path);
             let should_skip_install = file_path.exists()
                 && super::should_skip_install(
                     &self.install_if_different,
@@ -67,7 +67,7 @@ impl Installer for objects::Copy {
         }
 
         let mount_guard = utils::fs::mount(&device, filesystem, mount_options)?;
-        let dest = mount_guard.mount_point().join(&target_path);
+        let dest = mount_guard.mount_point().join(target_path);
         let mut input = utils::io::timed_buf_reader(
             chunk_size,
             fs::File::open(source).await.log_error_msg("failed to open source object")?,
@@ -178,7 +178,7 @@ mod tests {
         // When needed, create a file inside the mounted device
         if let Some(perm) = original_permissions {
             let mount_guard = utils::fs::mount(&device, definitions::Filesystem::Ext4, "")?;
-            let file = mount_guard.mount_point().join(&"original_file");
+            let file = mount_guard.mount_point().join("original_file");
 
             fs::File::create(&file)
                 .await?

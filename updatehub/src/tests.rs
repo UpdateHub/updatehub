@@ -206,8 +206,8 @@ impl TestEnvironmentBuilder {
             write!(
                 file,
                 r#"[network]
-server_address={}
-listen_socket={}
+server_address={server_address}
+listen_socket={listen_socket}
 
 [storage]
 read_only=false
