@@ -116,7 +116,7 @@ impl StateChange {
         let socket_path = env::var("UH_LISTENER_TEST").unwrap_or_else(|_| SOCKET_PATH.to_string());
         let socket_path = Path::new(&socket_path);
         if socket_path.exists() {
-            fs::remove_file(&socket_path)?;
+            fs::remove_file(socket_path)?;
         }
 
         let listener = UnixListener::bind(socket_path)?;

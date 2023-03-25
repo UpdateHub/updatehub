@@ -128,7 +128,7 @@ impl<'a> Client<'a> {
         validate_url(self.server)?;
 
         // FIXME: Discuss the need of packages inside the route
-        let mut request = self.client.get(&format!(
+        let mut request = self.client.get(format!(
             "{}/products/{}/packages/{}/objects/{}",
             &self.server, product_uid, package_uid, object
         ));

@@ -23,7 +23,7 @@ pub enum Error {
 
     #[cfg(feature = "v1-parsing")]
     #[display(fmt = "parsing error: toml: {}, ini: {}", _0, _1)]
-    V1Parsing(toml::de::Error, serde_ini::de::Error),
+    V1Parsing(Box<toml::de::Error>, serde_ini::de::Error),
 }
 
 #[derive(Clone, Debug, Deref, DerefMut, PartialEq, Eq)]
@@ -194,7 +194,7 @@ fn v1_parse(content: &str, toml_err: toml::de::Error) -> Result<api::Settings> {
     }
 
     let old_settings = serde_ini::de::from_str::<Settings>(content)
-        .map_err(|ini_err| Error::V1Parsing(toml_err, ini_err))?;
+        .map_err(|ini_err| Error::V1Parsing(Box::new(toml_err), ini_err))?;
 
     Ok(api::Settings {
         firmware: api::Firmware { metadata: old_settings.firmware.metadata_path },

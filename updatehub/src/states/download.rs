@@ -207,7 +207,7 @@ mod test {
         let download_dir = context.settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed
-        fs::File::create(&download_dir.join("leftover-file")).unwrap();
+        fs::File::create(download_dir.join("leftover-file")).unwrap();
 
         cloud_mock::set_download_data(obj);
 
@@ -227,7 +227,7 @@ mod test {
         );
 
         let mut object_content = String::new();
-        let _ = fs::File::open(&download_dir.join(&shasum))
+        let _ = fs::File::open(download_dir.join(&shasum))
             .expect("Fail to open the temporary directory")
             .read_to_string(&mut object_content);
 

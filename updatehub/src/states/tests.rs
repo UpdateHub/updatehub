@@ -103,7 +103,7 @@ ProbeASAP=false
 [Update]
 UpgradeToInstallation=0
 "#;
-    std::fs::write(&setup.runtime_settings.stored_path, &original_runtime_settings).unwrap();
+    std::fs::write(&setup.runtime_settings.stored_path, original_runtime_settings).unwrap();
     let mut loaded_runtime_settings =
         RuntimeSettings::load(&setup.runtime_settings.stored_path).unwrap();
 

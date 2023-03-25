@@ -75,7 +75,7 @@ impl Client {
     /// This method fails when cannot complete the request at the address or
     /// cannot parse the body json as a `probe::Response`.
     pub async fn probe(&self, custom: Option<String>) -> Result<api::probe::Response> {
-        let request = self.client.post(&format!("{}/probe", self.server_address));
+        let request = self.client.post(format!("{}/probe", self.server_address));
         let response = match custom {
             Some(custom_server) => request.json(&api::probe::Request { custom_server }),
             None => request,
