@@ -13,11 +13,19 @@ pub mod common;
 fn failing_invalid_download_dir() {
     // Use /dev/null as a download directory
     // so no user will have permission for it
+    let mut server = mockito::Server::new();
     let fake_dir = std::path::PathBuf::from("/dev/null");
-    let (mut session, setup) =
-        Settings::default().download_dir(fake_dir).polling().timeout(300).init_server();
+    let (mut session, setup) = Settings::default()
+        .download_dir(fake_dir)
+        .polling()
+        .timeout(300)
+        .server_address(server.url())
+        .init_server();
 
-    let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
+    let _mocks = create_mock_server(
+        &mut server,
+        FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()),
+    );
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
@@ -104,7 +112,12 @@ fn failing_invalid_file_config() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
-    invalid TOML value, did you mean to use a quoted string? at line 2 column 20
+    TOML parse error at line 2, column 20
+      |
+    2 |     server_address=https://api.updatehub.io, listen_socket=localhost:8080;
+      |                    ^
+    invalid string
+    expected `"`, `'`
     "###);
 }
 
@@ -133,14 +146,21 @@ fn failing_invalid_file_config() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
-    parsing error: toml: invalid TOML value, did you mean to use a quoted string? at line 2 column 20, ini: Custom("missing field `Network`")
+    parsing error: toml: TOML parse error at line 2, column 20
+      |
+    2 |     server_address=https://api.updatehub.io, listen_socket=localhost:8080;
+      |                    ^
+    invalid string
+    expected `"`, `'`
+    , ini: Custom("missing field `Network`")
     "###);
 }
 
 #[test]
 fn failing_invalid_server_address() {
     let (mut session, setup) = Settings::default().timeout(300).init_server();
-    let _mocks = create_mock_server(FakeServer::NoUpdate);
+    let mut server = mockito::Server::new();
+    let _mocks = create_mock_server(&mut server, FakeServer::NoUpdate);
 
     let (output_server_trce_1, output_server_info_1) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
@@ -190,10 +210,13 @@ fn failing_invalid_server_address() {
 
 #[test]
 fn failing_fail_check_requirements() {
-    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
-    let _mocks = create_mock_server(FakeServer::CheckRequirementsTest(
-        setup.firmware.data.product_uid.clone(),
-    ));
+    let mut server = mockito::Server::new();
+    let (mut session, setup) =
+        Settings::default().timeout(300).polling().server_address(server.url()).init_server();
+    let _mocks = create_mock_server(
+        &mut server,
+        FakeServer::CheckRequirementsTest(setup.firmware.data.product_uid.clone()),
+    );
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
@@ -251,12 +274,17 @@ fn failing_fail_check_requirements() {
 
 #[test]
 fn failing_supported_install_modes() {
+    let mut server = mockito::Server::new();
     let (mut session, setup) = Settings::default()
         .polling()
         .supported_install_modes(vec!["copy", "tarball"])
         .timeout(300)
+        .server_address(server.url())
         .init_server();
-    let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
+    let _mocks = create_mock_server(
+        &mut server,
+        FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()),
+    );
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
@@ -314,8 +342,11 @@ fn failing_supported_install_modes() {
 
 #[test]
 fn invalid_server_response() {
-    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
-    let _mocks = create_mock_server(FakeServer::HasUpdate("some_wrong_metadata".to_owned()));
+    let mut server = mockito::Server::new();
+    let (mut session, setup) =
+        Settings::default().timeout(300).polling().server_address(server.url()).init_server();
+    let _mocks =
+        create_mock_server(&mut server, FakeServer::HasUpdate("some_wrong_metadata".to_owned()));
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
@@ -383,9 +414,16 @@ fn invalid_statechange_callback() {
 exit 1
 "#;
 
-    let (mut session, setup) =
-        Settings::default().timeout(300).state_change_callback(state_change_script).init_server();
-    let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
+    let mut server = mockito::Server::new();
+    let (mut session, setup) = Settings::default()
+        .timeout(300)
+        .state_change_callback(state_change_script)
+        .server_address(server.url())
+        .init_server();
+    let _mocks = create_mock_server(
+        &mut server,
+        FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()),
+    );
 
     let _ = get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let _ = run_client_probe(Server::Standard, &setup.settings.data.network.listen_socket);

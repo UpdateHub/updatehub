@@ -4,7 +4,6 @@
 
 use updatehub_cloud_sdk as sdk;
 
-use mockito::{mock, Mock};
 use serde_json::json;
 use std::collections::BTreeMap;
 
@@ -18,8 +17,10 @@ enum FakeServer {
     DownloadInParts,
 }
 
-fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
+fn create_mock_server(mode: FakeServer) -> (mockito::ServerGuard, mockito::Mock) {
     use mockito::Matcher;
+
+    let mut server = mockito::Server::new();
 
     let json_update = json!({
         "product": "0123456789",
@@ -64,36 +65,36 @@ fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
         }
     }));
 
-    let mocks = match server {
-        FakeServer::NoUpdate => vec![mock("POST", "/upgrades")
+    let mocks = match mode {
+        FakeServer::NoUpdate => server.mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(reply_body)
             .with_status(404)
-            .create()],
-        FakeServer::HasUpdate => vec![mock("POST", "/upgrades")
+            .create(),
+        FakeServer::HasUpdate => server.mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(reply_body)
             .with_status(200)
             .with_header("UH-Signature", &openssl::base64::encode_block(b"some_signature"))
             .with_body(json_update.to_string())
-            .create()],
-        FakeServer::ExtraPoll => vec![mock("POST", "/upgrades")
+            .create(),
+        FakeServer::ExtraPoll => server.mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(reply_body)
             .with_status(200)
             .with_header("Add-Extra-Poll", "10")
-            .create()],
-        FakeServer::WithRetry => vec![mock("POST", "/upgrades")
+            .create(),
+        FakeServer::WithRetry => server.mock("POST", "/upgrades")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_header("Api-Retries", "1")
             .match_body(reply_body)
             .with_status(404)
-            .create()],
-        FakeServer::ReportSuccess => vec![mock("POST", "/report")
+            .create(),
+        FakeServer::ReportSuccess => server.mock("POST", "/report")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(Matcher::Json(json!(
@@ -114,8 +115,8 @@ fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
                 }
             )))
             .with_status(200)
-            .create()],
-        FakeServer::ReportError => vec![mock("POST", "/report")
+            .create(),
+        FakeServer::ReportError => server.mock("POST", "/report")
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .match_body(Matcher::Json(json!(
@@ -138,9 +139,9 @@ fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
                 }
             )))
             .with_status(200)
-            .create()],
-        FakeServer::DownloadInParts => vec![
-            mock(
+            .create(),
+        FakeServer::DownloadInParts => {
+            server.mock(
                 "GET",
                 format!(
                     "/products/{}/packages/{}/objects/{}",
@@ -152,8 +153,8 @@ fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
                 .with_status(200)
                 .with_body("1234")
-                .create(),
-            mock(
+                .create();
+            server.mock(
                 "GET",
                 format!(
                     "/products/{}/packages/{}/objects/{}",
@@ -167,10 +168,10 @@ fn create_mock_server(server: FakeServer) -> (String, Vec<Mock>) {
                 .with_status(200)
                 .with_body("567890")
                 .create()
-        ],
+        }
     };
 
-    (mockito::server_url(), mocks)
+    (server, mocks)
 }
 
 struct FakeMetadata {
@@ -211,9 +212,9 @@ async fn direct_get_invalid_url() {
 
 #[tokio::test]
 async fn probe_requirements() {
-    let (url, mocks) = create_mock_server(FakeServer::NoUpdate);
-    sdk::Client::new(&url).probe(0, FakeMetadata::new().get()).await.unwrap();
-    mocks.iter().for_each(Mock::assert);
+    let (server, mocks) = create_mock_server(FakeServer::NoUpdate);
+    sdk::Client::new(&server.url()).probe(0, FakeMetadata::new().get()).await.unwrap();
+    mocks.assert();
 }
 
 #[tokio::test]
@@ -224,16 +225,17 @@ async fn probe_invalid_url() {
 
 #[tokio::test]
 async fn probe_with_retry() {
-    let (url, mocks) = create_mock_server(FakeServer::WithRetry);
-    sdk::Client::new(&url).probe(1, FakeMetadata::new().get()).await.unwrap();
-    mocks.iter().for_each(Mock::assert);
+    let (server, mocks) = create_mock_server(FakeServer::WithRetry);
+    sdk::Client::new(&server.url()).probe(1, FakeMetadata::new().get()).await.unwrap();
+    mocks.assert();
 }
 
 #[tokio::test]
 async fn probe_response_with_signature() {
     use sdk::api::ProbeResponse;
-    let (url, mocks) = create_mock_server(FakeServer::HasUpdate);
-    let response = sdk::Client::new(&url).probe(0, FakeMetadata::new().get()).await.unwrap();
+    let (server, mocks) = create_mock_server(FakeServer::HasUpdate);
+    let response =
+        sdk::Client::new(&server.url()).probe(0, FakeMetadata::new().get()).await.unwrap();
     match response {
         ProbeResponse::Update(_, Some(signature)) => assert_eq!(
             signature,
@@ -243,35 +245,36 @@ async fn probe_response_with_signature() {
         ProbeResponse::Update(_, None) => panic!("No signature extracted from update response"),
         r => panic!("Unexpected probe response: {:?}", r),
     }
-    mocks.iter().for_each(Mock::assert);
+    mocks.assert();
 }
 
 #[tokio::test]
 async fn probe_response_with_extra_poll() {
     use sdk::api::ProbeResponse;
-    let (url, mocks) = create_mock_server(FakeServer::ExtraPoll);
-    let response = sdk::Client::new(&url).probe(0, FakeMetadata::new().get()).await.unwrap();
+    let (server, mocks) = create_mock_server(FakeServer::ExtraPoll);
+    let response =
+        sdk::Client::new(&server.url()).probe(0, FakeMetadata::new().get()).await.unwrap();
     match response {
         ProbeResponse::ExtraPoll(n) => assert_eq!(n, 10),
         r => panic!("Unexpected probe response: {:?}", r),
     }
-    mocks.iter().for_each(Mock::assert);
+    mocks.assert();
 }
 
 #[tokio::test]
 async fn report_success() {
-    let (url, mocks) = create_mock_server(FakeServer::ReportSuccess);
-    sdk::Client::new(&url)
+    let (server, mocks) = create_mock_server(FakeServer::ReportSuccess);
+    sdk::Client::new(&server.url())
         .report("state", FakeMetadata::new().get(), "package-uid", None, None, None)
         .await
         .unwrap();
-    mocks.iter().for_each(Mock::assert);
+    mocks.assert();
 }
 
 #[tokio::test]
 async fn report_error() {
-    let (url, mocks) = create_mock_server(FakeServer::ReportError);
-    sdk::Client::new(&url)
+    let (server, mocks) = create_mock_server(FakeServer::ReportError);
+    sdk::Client::new(&server.url())
         .report(
             "state",
             FakeMetadata::new().get(),
@@ -282,19 +285,19 @@ async fn report_error() {
         )
         .await
         .unwrap();
-    mocks.iter().for_each(Mock::assert);
+    mocks.assert();
 }
 
 #[tokio::test]
 async fn download_object() {
     use tokio::fs;
 
-    let (url, mocks) = create_mock_server(FakeServer::DownloadInParts);
+    let (server, mocks) = create_mock_server(FakeServer::DownloadInParts);
     let dir = tempfile::tempdir().unwrap();
     let file_path = dir.path().join("object");
 
     // Download the object.
-    sdk::Client::new(&url)
+    sdk::Client::new(&server.url())
         .download_object(FakeMetadata::PRODUCT_UID, "package_id", dir.path(), "object")
         .await
         .unwrap();
@@ -303,13 +306,13 @@ async fn download_object() {
     assert_eq!(fs::read_to_string(&file_path).await.unwrap(), "1234".to_string());
 
     // Download the remaining bytes of the object.
-    sdk::Client::new(&url)
+    sdk::Client::new(&server.url())
         .download_object(FakeMetadata::PRODUCT_UID, "package_id", dir.path(), "object")
         .await
         .unwrap();
 
     // Verify it has been fully downloaded.
     assert_eq!(fs::read_to_string(&file_path).await.unwrap(), "1234567890".to_string());
-    mocks.iter().for_each(Mock::assert);
+    mocks.assert();
     dir.close().unwrap();
 }

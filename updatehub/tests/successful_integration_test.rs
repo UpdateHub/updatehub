@@ -45,14 +45,16 @@ fn correct_config_no_update_no_polling() {
 
 #[test]
 fn correct_config_no_update_polling() {
-    let mocks = create_mock_server(FakeServer::NoUpdate);
-    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
+    let mut server = mockito::Server::new();
+    let mocks = create_mock_server(&mut server, FakeServer::NoUpdate);
+    let (mut session, setup) =
+        Settings::default().timeout(300).polling().server_address(server.url()).init_server();
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    mocks.iter().for_each(|mock| mock.assert());
+    mocks.assert();
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -99,8 +101,10 @@ fn correct_config_no_update_polling() {
 
 #[test]
 fn correct_config_no_update_polling_with_probe_api() {
-    let mocks = create_mock_server(FakeServer::NoUpdate);
-    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
+    let mut server = mockito::Server::new();
+    let mocks = create_mock_server(&mut server, FakeServer::NoUpdate);
+    let (mut session, setup) =
+        Settings::default().timeout(300).polling().server_address(server.url()).init_server();
 
     let (output_server_trce_1, output_server_info_1) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
@@ -110,7 +114,7 @@ fn correct_config_no_update_polling_with_probe_api() {
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    mocks.iter().for_each(|mock| mock.assert());
+    mocks.assert();
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -173,8 +177,10 @@ fn correct_config_no_update_polling_with_probe_api() {
 
 #[test]
 fn correct_config_no_update_no_polling_with_probe_api() {
-    let mocks = create_mock_server(FakeServer::NoUpdate);
-    let (mut session, setup) = Settings::default().timeout(300).init_server();
+    let mut server = mockito::Server::new();
+    let mocks = create_mock_server(&mut server, FakeServer::NoUpdate);
+    let (mut session, setup) =
+        Settings::default().timeout(300).server_address(server.url()).init_server();
 
     let (output_server_trce_1, output_server_info_1) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
@@ -184,7 +190,7 @@ fn correct_config_no_update_no_polling_with_probe_api() {
         get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    mocks.iter().for_each(|mock| mock.assert());
+    mocks.assert();
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -238,14 +244,19 @@ fn correct_config_no_update_no_polling_with_probe_api() {
 
 #[test]
 fn correct_config_update_polling() {
-    let (mut session, setup) = Settings::default().timeout(300).polling().init_server();
-    let mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
+    let mut server = mockito::Server::new();
+    let (mut session, setup) =
+        Settings::default().timeout(300).polling().server_address(server.url()).init_server();
+    let mocks = create_mock_server(
+        &mut server,
+        FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()),
+    );
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    mocks.iter().for_each(|mock| mock.assert());
+    mocks.assert();
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -331,12 +342,17 @@ fn correct_config_statechange_callback() {
 [ "$1" = "download" ] && echo "cancel" || echo
 "#;
 
+    let mut server = mockito::Server::new();
     let (mut session, setup) = Settings::default()
         .timeout(300)
         .polling()
         .state_change_callback(state_change_script)
+        .server_address(server.url())
         .init_server();
-    let _mocks = create_mock_server(FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()));
+    let _mocks = create_mock_server(
+        &mut server,
+        FakeServer::HasUpdate(setup.firmware.data.product_uid.clone()),
+    );
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
@@ -402,14 +418,17 @@ fn correct_config_error_state_callback() {
 [ "$1" = "error" ] && echo "cancel" || echo
 "#;
 
+    let mut server = mockito::Server::new();
     let (mut session, setup) = Settings::default()
         .timeout(300)
         .polling()
         .state_change_callback(state_change_script)
+        .server_address(server.url())
         .init_server();
-    let _mocks = create_mock_server(FakeServer::CheckRequirementsTest(
-        setup.firmware.data.product_uid.clone(),
-    ));
+    let _mocks = create_mock_server(
+        &mut server,
+        FakeServer::CheckRequirementsTest(setup.firmware.data.product_uid.clone()),
+    );
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Enable));
@@ -474,20 +493,20 @@ fn correct_config_error_state_callback() {
 
 #[test]
 fn correct_config_remote_install() {
-    let mocks = create_mock_server(FakeServer::RemoteInstall);
-    let (mut session, setup) = Settings::default().timeout(300).init_server();
+    let mut server = mockito::Server::new();
+    let mocks = create_mock_server(&mut server, FakeServer::RemoteInstall);
+    let (mut session, setup) =
+        Settings::default().timeout(300).server_address(server.url()).init_server();
 
     let (output_server_trce_1, output_server_info_1) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
-    let output_client = run_client_local_install(
-        &mockito::server_url(),
-        &setup.settings.data.network.listen_socket,
-    );
+    let output_client =
+        run_client_local_install(&server.url(), &setup.settings.data.network.listen_socket);
     let (output_server_trce_2, output_server_info_2) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    mocks.iter().for_each(|mock| mock.assert());
+    mocks.assert();
 
     insta::assert_snapshot!(output_server_info_1, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -495,7 +514,7 @@ fn correct_config_remote_install() {
     "###);
 
     insta::assert_snapshot!(output_server_info_2, @r###"
-    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
+    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:[port]/some-direct-package-url"
     <timestamp> INFO installing local package: "<file>"
     <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
     <timestamp> INFO no signature key available on device, ignoring signature validation
@@ -520,9 +539,9 @@ fn correct_config_remote_install() {
     insta::assert_snapshot!(output_server_trce_2, @r###"
     <timestamp> DEBG receiving remote_install request
     <timestamp> TRCE Remote install requested
-    <timestamp> TRCE received external request: RemoteInstall("http://127.0.0.1:1234/some-direct-package-url")
+    <timestamp> TRCE received external request: RemoteInstall("http://127.0.0.1:[port]/some-direct-package-url")
     <timestamp> TRCE starting to handle 'direct_download' state
-    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
+    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:[port]/some-direct-package-url"
     <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> TRCE starting to handle 'prepare_local_install' state
     <timestamp> INFO installing local package: "<file>"
@@ -554,7 +573,7 @@ fn correct_config_remote_install() {
 
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> TRCE starting to handle 'direct_download' state
-    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:1234/some-direct-package-url"
+    <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:[port]/some-direct-package-url"
     <timestamp> DEBG 100% of the file has been downloaded
     <timestamp> TRCE starting to handle 'prepare_local_install' state
     <timestamp> INFO installing local package: "<file>"
@@ -587,18 +606,20 @@ exit 0
 "#;
 
     // Even tho we don't update we start the mock for the probe performed on update
-    let mocks = create_mock_server(FakeServer::NoUpdate);
+    let mut server = mockito::Server::new();
+    let mocks = create_mock_server(&mut server, FakeServer::NoUpdate);
     let (mut session, setup) = Settings::default()
         .timeout(300)
         .validate_callback(validate_script)
         .booting_from_update()
+        .server_address(server.url())
         .init_server();
 
     let (output_server_trce, output_server_info) =
         get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    mocks.iter().for_each(|mock| mock.assert());
+    mocks.assert();
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
@@ -702,11 +723,13 @@ exit 0
 "#;
 
     // Even tho we don't update we start the mock for the probe performed on update
-    let mocks = create_mock_server(FakeServer::NoUpdate);
+    let mut server = mockito::Server::new();
+    let mocks = create_mock_server(&mut server, FakeServer::NoUpdate);
     let (mut session, setup) = Settings::default()
         .timeout(300)
         .validate_callback(validate_script)
         .booting_from_update()
+        .server_address(server.url())
         .init_server();
 
     // Overwrite runtimesettings with a v1 model
@@ -730,7 +753,7 @@ UpgradeToInstallation=1
         get_output_server(&mut session, StopMessage::Polling(Polling::Disable));
     let output_log = run_client_log(&setup.settings.data.network.listen_socket);
 
-    mocks.iter().for_each(|mock| mock.assert());
+    mocks.assert();
 
     insta::assert_snapshot!(output_server_info, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>

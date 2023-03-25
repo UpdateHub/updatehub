@@ -7,15 +7,12 @@ use serde::{de, Deserialize, Deserializer};
 /// How many `ChunkSize` blocks must be copied from the source file to
 /// the target. The default value of -1 means all possible bytes
 /// until the end of the file.
-#[derive(PartialEq, Eq, Debug, Clone)]
-#[derive(Default)]
+#[derive(PartialEq, Eq, Debug, Clone, Default)]
 pub enum Count {
     #[default]
     All,
     Limited(isize),
 }
-
-
 
 impl<'de> Deserialize<'de> for Count {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

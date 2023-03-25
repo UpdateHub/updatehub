@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use mockito::{mock, Mock};
 use regex::Regex;
 use serde_json::json;
 use std::{env, net::TcpListener, path::PathBuf};
@@ -50,7 +49,7 @@ impl Default for Settings {
                 "localhost:{}",
                 listen_available_port().expect("failed to bind a socket.")
             ),
-            server_address: mockito::server_url(),
+            server_address: "https://api.updatehub.io".to_string(),
             download_dir: None,
             config_file: None,
             timeout: None,
@@ -235,7 +234,7 @@ pub fn cargo_bin<S: AsRef<str>>(name: S) -> PathBuf {
     target_dir.join(format!("{}{}", name.as_ref(), env::consts::EXE_SUFFIX))
 }
 
-pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
+pub fn create_mock_server(server: &mut mockito::ServerGuard, mode: FakeServer) -> mockito::Mock {
     use mockito::Matcher;
 
     let json_update = json!({
@@ -310,26 +309,26 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
         }
     }));
 
-    match server {
-        FakeServer::NoUpdate => vec![
-            mock("POST", "/upgrades")
-                .match_header("Content-Type", "application/json")
-                .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
-                .match_body(request_body)
-                .expect_at_least(1)
-                .with_status(404)
-                .create(),
-        ],
-        FakeServer::HasUpdate(product_uid) => vec![
-            mock("POST", "/upgrades")
+    match mode {
+        FakeServer::NoUpdate => server
+            .mock("POST", "/upgrades")
+            .match_header("Content-Type", "application/json")
+            .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
+            .match_body(request_body)
+            .expect_at_least(1)
+            .with_status(404)
+            .create(),
+        FakeServer::HasUpdate(product_uid) => {
+            server
+                .mock("POST", "/upgrades")
                 .match_header("Content-Type", "application/json")
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
                 .match_body(request_body)
                 .with_status(200)
                 .with_header("UH-Signature", &openssl::base64::encode_block(b"some_signature"))
                 .with_body(json_update.to_string())
-                .create(),
-            mock(
+                .create();
+            server.mock(
                 "GET",
                 format!("/products/{}/packages/87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid)
                     .as_str(),
@@ -338,18 +337,19 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .with_status(200)
                 .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
-            .create(),
-        ],
-        FakeServer::CheckRequirementsTest(product_uid) => vec![
-            mock("POST", "/upgrades")
+            .create()
+        }
+        FakeServer::CheckRequirementsTest(product_uid) => {
+            server
+                .mock("POST", "/upgrades")
                 .match_header("Content-Type", "application/json")
                 .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
                 .match_body(request_body)
                 .with_status(200)
                 .with_header("UH-Signature", &openssl::base64::encode_block(b"some_signature"))
                 .with_body(wrong_json_update.to_string())
-                .create(),
-            mock(
+                .create();
+            server.mock(
                 "GET",
                 format!("/products/{}/packages/fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid)
                     .as_str(),
@@ -358,20 +358,21 @@ pub fn create_mock_server(server: FakeServer) -> Vec<Mock> {
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .with_status(200)
                 .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
-            .create(),
-        ],
+            .create()
+        }
         FakeServer::RemoteInstall => {
             let test_uhupkg = format!("{}/fixtures/test.uhupkg", env!("CARGO_MANIFEST_DIR"));
-            vec![
-            mock("get", "/some-direct-package-url")
+            server
+                .mock("get", "/some-direct-package-url")
                 .with_status(200)
-                    .with_body_from_file(test_uhupkg)
-                .create(),
-        ]},
+                .with_body_from_file(test_uhupkg)
+                .create()
+        }
     }
 }
 
 pub fn rewrite_log_output(s: String) -> (String, String) {
+    let server_address_re = Regex::new(r"http://127.0.0.1:[0-9]+").unwrap();
     let version_re = Regex::new(r"Agent .*").unwrap();
     let tmpfile_re = Regex::new(r#""/.*/.tmp.*""#).unwrap();
     let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3})").unwrap();
@@ -380,6 +381,7 @@ pub fn rewrite_log_output(s: String) -> (String, String) {
     let debg_re = Regex::new(r"<timestamp> DEBG.*").unwrap();
     let download_re = Regex::new(r"DEBG (\d{2})%").unwrap();
 
+    let s = server_address_re.replace_all(&s, "http://127.0.0.1:[port]");
     let s = version_re.replace_all(&s, "Agent <version>");
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
     let s = date_re.replace_all(&s, "<timestamp>");
