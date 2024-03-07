@@ -4,7 +4,7 @@
 
 use super::{
     machine::{self, CommunicationState, Context},
-    CallbackReporter, Install, ProgressReporter, Result, State, StateChangeImpl, TransitionError,
+    CallbackReporter, ProgressReporter, Result, State, StateChangeImpl, Validation,
 };
 use crate::{
     firmware::installation_set,
@@ -18,7 +18,7 @@ use slog_scope::{debug, error, trace};
 #[derive(Debug)]
 pub(super) struct Download {
     pub(super) update_package: UpdatePackage,
-    pub(super) object_context: object::installer::Context,
+    pub(super) sign: Option<cloud::api::Signature>,
 }
 
 impl Download {
@@ -138,7 +138,7 @@ impl StateChangeImpl for Download {
         // Clone update package and object_context so self can be freely held by
         // message_handle_future
         let update_package = self.update_package.clone();
-        let object_context = self.object_context.clone();
+        let sign = self.sign.clone();
 
         // download_future dones't need to be pinned as it doesn't borrow context
         futures_util::pin_mut!(download_future);
@@ -153,23 +153,14 @@ impl StateChangeImpl for Download {
             return Ok((new_state, machine::StepTransition::Immediate));
         }
 
-        let context = context.lock().await;
-        let download_dir = &context.settings.update.download_dir;
-        if update_package
-            .objects(
-                installation_set::inactive().log_error_msg("unable to get inactive install set")?,
-            )
-            .iter()
-            .filter(|o| !o.allow_remote_install())
-            .all(|o| o.status(download_dir).ok() == Some(object::info::Status::Ready))
-        {
-            Ok((
-                State::Install(Install { update_package, object_context }),
-                machine::StepTransition::Immediate,
-            ))
-        } else {
-            Err(TransitionError::SomeObjectsAreNotReady)
-        }
+        Ok((
+            State::Validation(Validation {
+                package: update_package,
+                sign,
+                require_download: false,
+            }),
+            machine::StepTransition::Immediate,
+        ))
     }
 }
 
@@ -192,18 +183,9 @@ mod test {
         let mut context = setup.gen_context();
         let (obj, shasum) = fake_download_object(size);
         let update_package = get_update_package_with_shasum(&shasum);
-        let object_context = object::installer::Context {
-            download_dir: context.settings.update.download_dir.clone(),
-            offline_update: false,
-            base_url: format!(
-                "{server_url}/products/{product_uid}/packages/{package_uid}/objects",
-                server_url = &context.server_address(),
-                product_uid = &context.firmware.product_uid,
-                package_uid = &update_package.package_uid(),
-            ),
-        };
+        let sign = None;
 
-        let download_state = Download { update_package, object_context };
+        let download_state = Download { update_package, sign };
         let download_dir = context.settings.update.download_dir.clone();
 
         // leftover file to ensure it is removed

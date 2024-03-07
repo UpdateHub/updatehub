@@ -18,7 +18,7 @@ pub struct UpdatePackage {
     pub raw: Vec<u8>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Signature(Vec<u8>);
 
 #[derive(Serialize)]

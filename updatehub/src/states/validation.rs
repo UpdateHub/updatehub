@@ -5,10 +5,10 @@
 use super::{
     install::Install,
     machine::{self, Context},
-    Download, EntryPoint, Result, State, StateChangeImpl,
+    Download, EntryPoint, Result, State, StateChangeImpl, TransitionError,
 };
 use crate::{
-    object::{self, Installer},
+    object::{self, Info, Installer},
     update_package::UpdatePackageExt,
     utils::log::LogContent,
 };
@@ -82,19 +82,49 @@ impl StateChangeImpl for Validation {
             }
         }
 
+        let update_package = self.package.clone();
+        let sign = self.sign.clone();
+
         if context
             .runtime_settings
             .applied_package_uid()
-            .map(|u| *u == self.package.package_uid())
+            .map(|u| *u == update_package.package_uid())
             .unwrap_or_default()
         {
             info!("not downloading update package, the same package has already been installed");
             Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
         } else {
             let next_state = if self.require_download {
-                State::Download(Download { update_package: self.package, object_context })
+                State::Download(Download { update_package, sign })
             } else {
-                State::Install(Install { update_package: self.package, object_context })
+                // Ensure all objects are Ready for use
+                let download_dir = &context.settings.update.download_dir;
+                let not_ready: Vec<_> = update_package
+                    .objects(inactive_installation_set)
+                    .iter()
+                    .filter(|o| !o.allow_remote_install())
+                    .filter_map(|o| match (o.filename(), o.status(download_dir)) {
+                        (_, Ok(object::info::Status::Ready)) => None,
+                        (filename, status) => Some((filename, status)),
+                    })
+                    .collect();
+
+                if not_ready.is_empty() {
+                    State::Install(Install { update_package, object_context })
+                } else {
+                    error!("some objects are not ready for use:");
+                    for object in not_ready {
+                        match object {
+                            (filename, Ok(status)) => {
+                                error!(" file '{}' is {:?}", filename, status)
+                            }
+                            (filename, Err(err)) => {
+                                error!(" file '{}' has failed with error: {:?}", filename, err)
+                            }
+                        }
+                    }
+                    return Err(TransitionError::SomeObjectsAreNotReady);
+                }
             };
 
             Ok((next_state, machine::StepTransition::Immediate))

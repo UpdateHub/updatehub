@@ -263,6 +263,7 @@ fn correct_config_update_polling() {
     <timestamp> INFO probing server as we are in time
     <timestamp> INFO update received: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO no signature key available on device, ignoring signature validation
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
@@ -290,6 +291,8 @@ fn correct_config_update_polling() {
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> TRCE starting to handle 'validation' state
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'install' state
     <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO using installation set as target 1
@@ -317,6 +320,8 @@ fn correct_config_update_polling() {
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> TRCE starting to handle 'validation' state
+    <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'install' state
     <timestamp> INFO installing update: 1.2 (87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d)
     <timestamp> INFO using installation set as target 1
@@ -516,9 +521,9 @@ fn correct_config_remote_install() {
     insta::assert_snapshot!(output_server_info_2, @r###"
     <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:[port]/some-direct-package-url"
     <timestamp> INFO installing local package: "<file>"
-    <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO update package extracted: fake-test-package-01 (9fbf06c2ad11c611f1d5601d5daa13ea6b6f7bfd2ec32c935991684a80d6e1d0)
     <timestamp> INFO no signature key available on device, ignoring signature validation
-    <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO installing update: fake-test-package-01 (9fbf06c2ad11c611f1d5601d5daa13ea6b6f7bfd2ec32c935991684a80d6e1d0)
     <timestamp> INFO using installation set as target 1
     <timestamp> INFO swapping active installation set
     <timestamp> INFO update installed successfully
@@ -542,17 +547,17 @@ fn correct_config_remote_install() {
     <timestamp> TRCE received external request: RemoteInstall("http://127.0.0.1:[port]/some-direct-package-url")
     <timestamp> TRCE starting to handle 'direct_download' state
     <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:[port]/some-direct-package-url"
-    <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> TRCE starting to handle 'prepare_local_install' state
     <timestamp> INFO installing local package: "<file>"
     <timestamp> DEBG successfuly uncompressed metadata file
-    <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO update package extracted: fake-test-package-01 (9fbf06c2ad11c611f1d5601d5daa13ea6b6f7bfd2ec32c935991684a80d6e1d0)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'install' state
-    <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO installing update: fake-test-package-01 (9fbf06c2ad11c611f1d5601d5daa13ea6b6f7bfd2ec32c935991684a80d6e1d0)
     <timestamp> INFO using installation set as target 1
-    <timestamp> DEBG marking package ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62 as installed
+    <timestamp> DEBG marking package 9fbf06c2ad11c611f1d5601d5daa13ea6b6f7bfd2ec32c935991684a80d6e1d0 as installed
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> DEBG setting upgrading to 1
     <timestamp> DEBG saved runtime settings to "<file>"
@@ -574,17 +579,17 @@ fn correct_config_remote_install() {
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> TRCE starting to handle 'direct_download' state
     <timestamp> INFO fetching update package directly from url: "http://127.0.0.1:[port]/some-direct-package-url"
-    <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> TRCE starting to handle 'prepare_local_install' state
     <timestamp> INFO installing local package: "<file>"
     <timestamp> DEBG successfuly uncompressed metadata file
-    <timestamp> INFO update package extracted: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO update package extracted: fake-test-package-01 (9fbf06c2ad11c611f1d5601d5daa13ea6b6f7bfd2ec32c935991684a80d6e1d0)
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'install' state
-    <timestamp> INFO installing update: fake-test-package-01 (ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62)
+    <timestamp> INFO installing update: fake-test-package-01 (9fbf06c2ad11c611f1d5601d5daa13ea6b6f7bfd2ec32c935991684a80d6e1d0)
     <timestamp> INFO using installation set as target 1
-    <timestamp> DEBG marking package ab99ebb6afd75cf9e51c409cbf63daa7297446721ea75c6dffcbb84c2692dd62 as installed
+    <timestamp> DEBG marking package 9fbf06c2ad11c611f1d5601d5daa13ea6b6f7bfd2ec32c935991684a80d6e1d0 as installed
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> DEBG setting upgrading to 1
     <timestamp> DEBG saved runtime settings to "<file>"
