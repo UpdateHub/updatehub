@@ -17,8 +17,14 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         rust-toolchain = with rust.packages.${system};
+          let
+            msrv = toolchainOf {
+              channel = "1.65.0";
+              sha256 = "sha256-DzNEaW724O8/B8844tt5AVHmSjSQ3cmzlU4BP90oRlY=";
+            };
+          in
           combine [
-            (stable.withComponents [ "rustc" "cargo" "rust-src" "clippy" ])
+            (msrv.withComponents [ "rustc" "cargo" "rust-src" "clippy" ])
             (latest.withComponents [ "rustfmt" "rust-analyzer" ])
           ];
       in
