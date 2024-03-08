@@ -27,54 +27,67 @@ impl Download {
         context: &Mutex<&mut Context>,
     ) -> Result<()> {
         let installation_set =
-            installation_set::inactive().log_error_msg("unable to get current isntall set")?;
+            installation_set::inactive().log_error_msg("unable to get current installation set")?;
         let download_dir = context.lock().await.settings.update.download_dir.to_owned();
 
         update_package
             .clear_unrelated_files(&download_dir, installation_set, &context.lock().await.settings)
             .log_error_msg("failed to cleanup files unrelated to current update")?;
 
-        // Get shasums of missing or incomplete objects
-        let shasum_list: Vec<_> = update_package
-            .objects(installation_set)
-            .iter()
-            .filter_map(|o| {
-                let name = o.filename();
-                if o.allow_remote_install() {
-                    trace!("Skiping download for {} as it can be installed without download", name);
-                    return None;
-                }
-                let shasum = o.sha256sum();
-                let obj_status = o
-                    .status(&download_dir)
-                    .map_err(|e| {
-                        error!("fail accessing the object: {} ({}) (err: {})", name, shasum, e)
-                    })
-                    .unwrap_or(object::info::Status::Missing);
-                if obj_status == object::info::Status::Missing
-                    || obj_status == object::info::Status::Incomplete
-                {
-                    Some((name.to_owned(), shasum.to_owned()))
-                } else {
-                    debug!("skiping object: {} ({})", name, shasum);
-                    None
-                }
-            })
-            .collect();
+        // Get missing or incomplete objects for download
+        let pending_download = {
+            let mut objects: Vec<_> = update_package
+                .objects(installation_set)
+                .iter()
+                .filter_map(|o| {
+                    if o.allow_remote_install() {
+                        trace!(
+                            "skip download for {} as it can be installed without download",
+                            o.filename()
+                        );
+                        return None;
+                    }
 
-        trace!("the following objects are missing: {:?}", shasum_list);
+                    match (o.filename(), o.sha256sum(), o.status(&download_dir)) {
+                        (filename, sha256sum, Err(err)) => {
+                            error!(
+                                "fail accessing the object: {} ({}) (err: {})",
+                                filename, sha256sum, err
+                            );
+
+                            Some((filename, sha256sum))
+                        }
+
+                        (filename, sha256sum, Ok(object::info::Status::Missing))
+                        | (filename, sha256sum, Ok(object::info::Status::Incomplete))
+                        | (filename, sha256sum, Ok(object::info::Status::Corrupted)) => {
+                            Some((filename, sha256sum))
+                        }
+
+                        (_, _, Ok(object::info::Status::Ready)) => None,
+                    }
+                })
+                .collect();
+
+            // Remove duplicated objects to avoid duplicated downloads
+            objects.dedup();
+
+            objects
+        };
+
+        trace!("the following objects are missing: {:?}", pending_download);
 
         // Download the missing or incomplete objects
         let url = context.lock().await.server_address().to_owned();
         let product_uid = context.lock().await.firmware.product_uid.clone();
         let api = crate::CloudClient::new(&url);
-        for (name, shasum) in shasum_list.into_iter() {
-            debug!("starting download of: {} ({})", name, shasum);
+        for (name, sha256sum) in pending_download {
+            debug!("starting download of: {} ({})", name, sha256sum);
             api.download_object(
                 &product_uid,
                 &update_package.package_uid(),
                 &download_dir,
-                &shasum,
+                sha256sum,
             )
             .await
             .log_error_msg("failed to download object from update package")?;
