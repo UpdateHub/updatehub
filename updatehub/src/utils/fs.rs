@@ -28,7 +28,8 @@ pub(crate) fn ensure_disk_space(target: &Path, required: u64) -> Result<()> {
     let stat = nix::sys::statvfs::statvfs(target)?;
 
     // stat fields might be 32 or 64 bytes depending on host arch
-    let available = stat.block_size() * stat.blocks_free();
+    #[allow(clippy::useless_conversion)]
+    let available = u64::from(stat.block_size() * stat.blocks_free());
 
     if required > available {
         return Err(Error::NotEnoughSpace { available, required });
