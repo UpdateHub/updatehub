@@ -234,7 +234,6 @@ fn handle_startup_callbacks(
                     firmware::installation_set::swap_active()?;
                     warn!("swapped active installation set and running rollback");
                     firmware::rollback_callback(&settings.firmware.metadata)?;
-                    runtime_settings.reset_installation_settings()?;
 
                     // In case we are booting from an UpdateHub v1 update and
                     // the validation has failed, we need to restore the
@@ -244,10 +243,17 @@ fn handle_startup_callbacks(
                     runtime_settings.restore_v1_content()?;
 
                     easy_process::run("reboot")?;
+
+                    // Ensure we detect the rollback in next boot.
+                    return Ok(());
                 }
                 Transition::Continue => firmware::installation_set::validate()?,
             }
+        } else {
+            warn!("confirming active installation as update has been rollback");
+            firmware::installation_set::validate()?;
         }
+
         runtime_settings.reset_installation_settings()?;
     }
     Ok(())
