@@ -764,6 +764,7 @@ UpgradeToInstallation=1
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> WARN loaded v1 runtime settings successfully
     <timestamp> INFO booting from a recent installation
+    <timestamp> WARN confirming active installation as update has been rollback
     <timestamp> INFO triggering Probe to finish update
     <timestamp> INFO no update is current available for this device
     <timestamp> INFO parking state machine
@@ -775,6 +776,7 @@ UpgradeToInstallation=1
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> WARN loaded v1 runtime settings successfully
     <timestamp> INFO booting from a recent installation
+    <timestamp> WARN confirming active installation as update has been rollback
     <timestamp> DEBG reseting installation settings
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'entry_point' state
@@ -796,6 +798,7 @@ UpgradeToInstallation=1
     <timestamp> DEBG loading runtime settings from "<file>"
     <timestamp> WARN loaded v1 runtime settings successfully
     <timestamp> INFO booting from a recent installation
+    <timestamp> WARN confirming active installation as update has been rollback
     <timestamp> DEBG reseting installation settings
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'entry_point' state
