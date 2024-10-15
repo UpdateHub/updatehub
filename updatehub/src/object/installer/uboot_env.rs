@@ -19,7 +19,7 @@ impl Installer for objects::UbootEnv {
             .log_error_msg("fw_setenv not found in PATH")?;
         if !easy_process::run("fw_setenv --help")
             .log_error_msg("fw_setenv --help failed to run")?
-            .stderr
+            .stdout
             .contains("--script")
         {
             return Err(Error::FwSetEnvNoScriptOption);
@@ -88,7 +88,7 @@ mod tests {
                 r#"#! /bin/sh
 case $1 in
   "--help")
-    echo "--script" >&2
+    echo "--script"
     ;;
   *)
     echo fw_setenv $@ >> {}
