@@ -49,6 +49,11 @@ pub fn inactive() -> super::Result<Set> {
     }
 }
 
+pub fn set_active(active: Set) -> super::Result<()> {
+    let _ = run_script(&format!("{} {}", SET_SCRIPT, active))?;
+    Ok(())
+}
+
 pub fn swap_active() -> super::Result<()> {
     let _ = run_script(&format!("{} {}", SET_SCRIPT, inactive()?))?;
     Ok(())
