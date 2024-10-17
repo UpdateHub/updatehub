@@ -78,9 +78,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn install() {
+    async fn check_requirements_is_ok() {
         let setup = crate::tests::TestEnvironment::build().add_echo_binary("fw_setenv").finish();
-        let output_file = &setup.binaries.data;
 
         std::fs::write(
             setup.binaries.stored_path.join("fw_setenv"),
@@ -95,10 +94,18 @@ case $1 in
     ;;
 esac
 "#,
-                output_file.to_string_lossy()
+                &setup.binaries.data.to_string_lossy()
             ),
         )
         .unwrap();
+
+        let uboot_env_obj = fake_uboot_env_obj();
+        assert!(uboot_env_obj.check_requirements(&Context::default()).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn install() {
+        let setup = crate::tests::TestEnvironment::build().add_echo_binary("fw_setenv").finish();
 
         let uboot_env_obj = fake_uboot_env_obj();
         let download_dir = setup.settings.data.update.download_dir.clone();
@@ -106,7 +113,6 @@ esac
         let source = download_dir.join(&uboot_env_obj.sha256sum);
         let context = Context { download_dir, ..Context::default() };
 
-        uboot_env_obj.check_requirements(&context).await.unwrap();
         uboot_env_obj.install(&context).await.unwrap();
 
         let output_file = &setup.binaries.data;
