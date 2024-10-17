@@ -2580,7 +2580,7 @@ checksum = "c0edd1e5b14653f783770bce4a4dabb4a5108a5370a5f5d8cfe8710c361f6c8b"
 
 [[package]]
 name = "updatehub"
-version = "2.1.4"
+version = "2.1.5"
 dependencies = [
  "argh",
  "async-channel",
@@ -2632,7 +2632,7 @@ dependencies = [
 
 [[package]]
 name = "updatehub-cloud-sdk"
-version = "2.1.4"
+version = "2.1.5"
 dependencies = [
  "derive_more",
  "mockito",
@@ -2649,7 +2649,7 @@ dependencies = [
 
 [[package]]
 name = "updatehub-package-schema"
-version = "2.1.4"
+version = "2.1.5"
 dependencies = [
  "derive_more",
  "pretty_assertions",
@@ -2659,7 +2659,7 @@ dependencies = [
 
 [[package]]
 name = "updatehub-sdk"
-version = "2.1.4"
+version = "2.1.5"
 dependencies = [
  "chrono",
  "derive_more",

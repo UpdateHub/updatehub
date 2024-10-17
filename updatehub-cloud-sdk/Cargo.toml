@@ -4,7 +4,7 @@
 
 [package]
 name = "updatehub-cloud-sdk"
-version = "2.1.4"
+version = "2.1.5"
 authors = ["Jonathas-Conceicao <jonathas.conceicao@ossystems.com.br>"]
 license = "Apache-2.0"
 edition = "2021"
