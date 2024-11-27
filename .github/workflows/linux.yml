@@ -119,7 +119,7 @@ jobs:
           args: --locked --all --all-features --no-fail-fast -- --nocapture
         env:
           CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Zprofile -Zpanic_abort_tests -Ccodegen-units=1 -Cllvm-args=--inline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=abort'
+          RUSTFLAGS: '-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort'
       - id: coverage
         if: matrix.name == 'nightly'
         uses: actions-rs/grcov@master
