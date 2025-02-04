@@ -15,7 +15,7 @@ documentation = "https://docs.rs/updatehub-sdk"
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
-derive_more = { version = "0.99", default-features = false, features = ["display", "error", "from"] }
+derive_more = { version = "2.0", default-features = false, features = ["display", "error", "from"] }
 log = "0.4"
 ms-converter = "1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
