@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, CommunicationState, Context},
     PrepareLocalInstall, Result, State, StateChangeImpl,
+    machine::{self, CommunicationState, Context},
 };
 use crate::utils::log::LogContent;
 use async_lock::Mutex;

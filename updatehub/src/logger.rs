@@ -4,7 +4,7 @@
 
 use crate::mem_drain::MemDrain;
 use lazy_static::lazy_static;
-use slog::{o, Drain, Logger};
+use slog::{Drain, Logger, o};
 use std::sync::{Arc, Mutex};
 
 lazy_static! {

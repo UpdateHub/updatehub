@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, Context},
     Park, Poll, Probe, Result, State, StateChangeImpl,
+    machine::{self, Context},
 };
 use crate::utils::log::LogContent;
 use slog_scope::{debug, info};

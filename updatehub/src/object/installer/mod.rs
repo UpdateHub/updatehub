@@ -17,7 +17,7 @@ mod zephyr;
 use super::{Error, Result};
 use crate::utils;
 use find_binary_version::{self as fbv, BinaryKind};
-use pkg_schema::{definitions, Object};
+use pkg_schema::{Object, definitions};
 use slog_scope::{debug, error, info, trace};
 use std::{io, path::PathBuf};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncSeek, AsyncSeekExt, BufReader};

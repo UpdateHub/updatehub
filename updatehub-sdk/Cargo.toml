@@ -15,17 +15,31 @@ documentation = "https://docs.rs/updatehub-sdk"
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
-derive_more = { version = "0.99", default-features = false, features = ["display", "error", "from"] }
+derive_more = { version = "0.99", default-features = false, features = [
+  "display",
+  "error",
+  "from",
+] }
 log = "0.4"
 ms-converter = "1"
-reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
+reqwest = { version = "0.12", default-features = false, features = [
+  "json",
+  "native-tls",
+] }
 serde = { version = "1", default-features = false, features = ["derive"] }
-tokio = { version = "1", default-features = false, features = ["io-util", "macros", "net"] }
+tokio = { version = "1", default-features = false, features = [
+  "io-util",
+  "macros",
+  "net",
+] }
 
 [dev-dependencies]
 tempfile = "3"
 testcontainers = "0.15"
-tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1", default-features = false, features = [
+  "rt-multi-thread",
+  "macros",
+] }
 
 [[example]]
 name = "listener"

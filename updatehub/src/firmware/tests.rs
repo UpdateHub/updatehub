@@ -10,7 +10,7 @@ use {pretty_assertions::assert_eq, tempfile::tempdir};
 
 pub(crate) fn create_hook(path: PathBuf, contents: &str) {
     use std::{
-        fs::{create_dir_all, metadata, File},
+        fs::{File, create_dir_all, metadata},
         io::Write,
         os::unix::fs::PermissionsExt,
         thread, time,
@@ -82,7 +82,7 @@ pub(crate) fn create_fake_metadata() -> (PathBuf, tempfile::TempDir) {
 
 pub(crate) fn create_fake_installation_set(tmpdir: &Path, active: usize) {
     use std::{
-        fs::{create_dir_all, metadata, File},
+        fs::{File, create_dir_all, metadata},
         io::Write,
         os::unix::fs::PermissionsExt,
     };
