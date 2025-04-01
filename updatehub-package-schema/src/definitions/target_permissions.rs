@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, de};
 
 /// Options to set permissions after installing on target.
 #[derive(Clone, PartialEq, Eq, Debug, Deserialize, Default)]

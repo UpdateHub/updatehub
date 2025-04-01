@@ -5,7 +5,7 @@
 pub mod api;
 mod client;
 
-pub use client::{get, Client};
+pub use client::{Client, get};
 
 use derive_more::{Display, Error, From};
 

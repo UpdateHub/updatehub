@@ -114,13 +114,13 @@ impl Installer for objects::Raw {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use flate2::{write::GzEncoder, Compression};
+    use flate2::{Compression, write::GzEncoder};
     use pretty_assertions::assert_eq;
     use std::{
         io::{Seek, Write},
         iter,
     };
-    use tempfile::{tempdir, NamedTempFile, TempDir};
+    use tempfile::{NamedTempFile, TempDir, tempdir};
     use tokio::io::{self, AsyncBufReadExt};
 
     const DEFAULT_BYTE: u8 = 0xF;

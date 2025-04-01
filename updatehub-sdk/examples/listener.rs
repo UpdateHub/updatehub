@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use updatehub_sdk::{listener, Result};
+use updatehub_sdk::{Result, listener};
 
 async fn download_callback(mut handler: listener::Handler) -> Result<()> {
     println!("function called when starting the Download state; it will cancel the transition");

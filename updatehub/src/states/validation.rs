@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
+    Download, EntryPoint, Result, State, StateChangeImpl, TransitionError,
     install::Install,
     machine::{self, Context},
-    Download, EntryPoint, Result, State, StateChangeImpl, TransitionError,
 };
 use crate::{
     object::{self, Info, Installer},

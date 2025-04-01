@@ -4,7 +4,7 @@
 
 pub(crate) mod duration {
     use chrono::Duration;
-    use serde::{de, Deserialize, Deserializer, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer, de};
 
     pub(crate) fn serialize<S>(v: &Duration, serializer: S) -> Result<S::Ok, S::Error>
     where

@@ -5,8 +5,8 @@
 use super::{Error, Result};
 use crate::utils::definitions::IdExt;
 use pkg_schema::definitions::{
-    target_permissions::{Gid, Uid},
     Filesystem,
+    target_permissions::{Gid, Uid},
 };
 use slog_scope::trace;
 use std::{io, path::Path};

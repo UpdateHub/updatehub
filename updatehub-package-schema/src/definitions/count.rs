@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, de};
 
 /// How many `ChunkSize` blocks must be copied from the source file to
 /// the target. The default value of -1 means all possible bytes

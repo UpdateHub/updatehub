@@ -5,8 +5,8 @@
 use super::{Error, Result};
 use crate::utils::mtd;
 use pkg_schema::definitions::{
-    target_permissions::{Gid, Uid},
     TargetType,
+    target_permissions::{Gid, Uid},
 };
 use std::path::PathBuf;
 

@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, Context},
     CallbackReporter, EntryPoint, Result, State, StateChangeImpl, Validation,
+    machine::{self, Context},
 };
 use crate::utils::log::LogContent;
 use chrono::{Duration, Utc};

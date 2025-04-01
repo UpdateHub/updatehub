@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use std::collections::BTreeMap;
-use testcontainers::{clients::Cli, core::WaitFor, Container, Image, ImageArgs};
+use testcontainers::{Container, Image, ImageArgs, clients::Cli, core::WaitFor};
 use updatehub_sdk as sdk;
 
 struct MockServer {

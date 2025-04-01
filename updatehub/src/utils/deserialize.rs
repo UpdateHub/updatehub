@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use chrono::Duration;
-use serde::{de, Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, de};
 
 pub(crate) fn duration<'de, D>(deserializer: D) -> Result<Duration, D::Error>
 where

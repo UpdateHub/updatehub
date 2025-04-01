@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{api, Error, Result};
-use reqwest::{header, StatusCode};
+use crate::{Error, Result, api};
+use reqwest::{StatusCode, header};
 use slog_scope::{debug, error};
 use std::{
     convert::{TryFrom, TryInto},

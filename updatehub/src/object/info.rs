@@ -6,10 +6,10 @@ use super::Result;
 use crate::utils;
 use openssl::sha::Sha256;
 use pkg_schema::{
+    Object,
     objects::{
         Copy, Flash, Imxkobs, Mender, Raw, RawDelta, Tarball, Test, Ubifs, UbootEnv, Zephyr,
     },
-    Object,
 };
 use std::{
     fs::File,

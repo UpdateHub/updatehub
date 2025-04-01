@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use common::{
-    create_mock_server, get_output_server, remove_carriage_newline_characters, rewrite_log_output,
-    run_client_log, run_client_probe, FakeServer, Polling, Server, Settings, StopMessage,
+    FakeServer, Polling, Server, Settings, StopMessage, create_mock_server, get_output_server,
+    remove_carriage_newline_characters, rewrite_log_output, run_client_log, run_client_probe,
 };
 
 pub mod common;
