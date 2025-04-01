@@ -55,7 +55,7 @@ pub(crate) fn get_update_package_with_shasum(shasum: &str) -> UpdatePackage {
 
 pub(crate) fn create_fake_object(body: &[u8], shasum: &str, settings: &Settings) {
     use std::{
-        fs::{create_dir_all, File},
+        fs::{File, create_dir_all},
         io::Write,
     };
 

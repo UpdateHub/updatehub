@@ -121,7 +121,7 @@ impl Installer for objects::Copy {
 mod tests {
     use super::*;
     use crate::{object::installer::tests::SERIALIZE, utils::definitions::IdExt};
-    use flate2::{write::GzEncoder, Compression};
+    use flate2::{Compression, write::GzEncoder};
     use pretty_assertions::assert_eq;
     use std::{
         io::{Seek, SeekFrom, Write},

@@ -14,8 +14,13 @@ homepage = "https://github.com/UpdateHub/updatehub"
 documentation = "https://docs.rs/updatehub-package-schema"
 
 [dependencies]
-derive_more = { version = "0.99", default-features = false, features = ["display"] }
-serde = { version = "1", default-features = false, features = ["derive", "std"] }
+derive_more = { version = "0.99", default-features = false, features = [
+  "display",
+] }
+serde = { version = "1", default-features = false, features = [
+  "derive",
+  "std",
+] }
 
 [dev-dependencies]
 pretty_assertions = "1"

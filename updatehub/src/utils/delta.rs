@@ -4,8 +4,8 @@
 
 use super::Result;
 use bitar::{
-    archive_reader::{HttpReader, IoReader},
     Archive, ChunkIndex, CloneOutput,
+    archive_reader::{HttpReader, IoReader},
 };
 use futures_util::{StreamExt, TryStreamExt};
 use slog_scope::trace;

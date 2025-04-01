@@ -14,17 +14,30 @@ homepage = "https://github.com/UpdateHub/updatehub"
 documentation = "https://docs.rs/updatehub-cloud-sdk"
 
 [dependencies]
-derive_more = { version = "0.99", default-features = false, features = ["display", "error", "from"] }
+derive_more = { version = "0.99", default-features = false, features = [
+  "display",
+  "error",
+  "from",
+] }
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema", version = "2" }
-reqwest = { version = "0.11", default-features = false, features = ["json", "native-tls"] }
-serde = { version = "1", default-features = false, features = ["derive", "std"] }
+reqwest = { version = "0.11", default-features = false, features = [
+  "json",
+  "native-tls",
+] }
+serde = { version = "1", default-features = false, features = [
+  "derive",
+  "std",
+] }
 serde_json = "1"
 slog-scope = "4"
-tokio = { version = "1", default-features = false, features = ["fs", "io-util", "macros"] }
+tokio = { version = "1", default-features = false, features = [
+  "fs",
+  "io-util",
+  "macros",
+] }
 url = { version = "2", default-features = false }
 
 [dev-dependencies]
 mockito = "1"
 tempfile = "3"
-

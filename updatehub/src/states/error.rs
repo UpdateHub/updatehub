@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, Context},
     CallbackReporter, EntryPoint, Result, State, StateChangeImpl, TransitionError,
+    machine::{self, Context},
 };
 
 use slog_scope::{error, info};

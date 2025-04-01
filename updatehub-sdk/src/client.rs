@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{api, Error, Result};
+use crate::{Error, Result, api};
 use reqwest::StatusCode;
 use std::path::Path;
 

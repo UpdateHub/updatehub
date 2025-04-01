@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{
-    machine::{self, CommunicationState, Context},
     CallbackReporter, ProgressReporter, Result, State, StateChangeImpl, Validation,
+    machine::{self, CommunicationState, Context},
 };
 use crate::{
     firmware::installation_set,

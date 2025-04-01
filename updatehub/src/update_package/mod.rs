@@ -6,7 +6,7 @@ mod supported_hardware;
 
 use self::supported_hardware::SupportedHardwareExt;
 use crate::{
-    firmware::{installation_set::Set, Metadata},
+    firmware::{Metadata, installation_set::Set},
     object::{self, Info},
     settings::Settings,
 };

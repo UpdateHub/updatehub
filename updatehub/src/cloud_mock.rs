@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use cloud::{api, Error, Result};
+use cloud::{Error, Result, api};
 use std::{cell::RefCell, marker::PhantomData, path::Path};
 
 std::thread_local! {

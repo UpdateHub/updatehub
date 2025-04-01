@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde::Serialize;
-use slog::{Drain, Key, OwnedKVList, Record, KV};
+use slog::{Drain, KV, Key, OwnedKVList, Record};
 use std::{
     collections::HashMap,
     fmt::{self, Write},
@@ -105,7 +105,7 @@ impl slog::ser::Serializer for KVSerializer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use slog::{o, slog_debug, slog_error, slog_info, Logger};
+    use slog::{Logger, o, slog_debug, slog_error, slog_info};
     use std::sync::{Arc, Mutex};
 
     fn eq_without_time(s1: &str, s2: &str) -> bool {
