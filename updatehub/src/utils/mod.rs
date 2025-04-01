@@ -7,6 +7,7 @@ pub(crate) mod delta;
 pub(crate) mod fs;
 pub(crate) mod io;
 pub(crate) mod log;
+pub(crate) mod losetup;
 pub(crate) mod mtd;
 
 #[cfg(feature = "v1-parsing")]

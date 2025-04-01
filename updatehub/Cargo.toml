@@ -41,10 +41,19 @@ async-channel = "1"
 async-lock = "2"
 async-trait = "0.1"
 bitar = "0.11"
-chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
+chrono = { version = "0.4", default-features = false, features = [
+  "clock",
+  "serde",
+] }
 cloud = { path = "../updatehub-cloud-sdk", package = "updatehub-cloud-sdk" }
 compress-tools = { version = "0.14", features = ["tokio_support"] }
-derive_more = { version = "0.99", default-features = false, features = ["deref", "deref_mut", "display", "error", "from"] }
+derive_more = { version = "0.99", default-features = false, features = [
+  "deref",
+  "deref_mut",
+  "display",
+  "error",
+  "from",
+] }
 easy_process = "0.2"
 find-binary-version = "0.5"
 futures-util = { version = "0.3", default-features = false }
@@ -57,24 +66,35 @@ openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
 regex = { version = "1", default-features = false }
-reqwest = { version = "0.11", default-features = false, features = ["json", "native-tls"] }
+reqwest = { version = "0.11", default-features = false, features = [
+  "json",
+  "native-tls",
+] }
 sdk = { path = "../updatehub-sdk", package = "updatehub-sdk" }
 serde = { version = "1", default-features = false, features = ["rc", "derive"] }
 serde_ini = { version = "0.2", default-features = false, optional = true }
 serde_json = { version = "1", default-features = false }
-slog = { version = "2", default-features = false, features = ["max_level_trace", "release_max_level_trace"] }
+slog = { version = "2", default-features = false, features = [
+  "max_level_trace",
+  "release_max_level_trace",
+] }
 slog-async = { version = "2", default-features = false }
 slog-scope = "4"
 slog-term = { version = "2", default-features = false }
 sys-mount = { version = "2", default-features = false }
 tempfile = "3"
 tokio-io-timeout = "1"
-tokio = { version = "1", default-features = false, features = ["rt-multi-thread", "fs", "macros"] }
+tokio = { version = "1", default-features = false, features = [
+  "rt-multi-thread",
+  "fs",
+  "macros",
+] }
 tokio-take-seek = "0.1"
 toml = "0.7"
 url = "2"
 walkdir = "2"
 warp = "0.3"
+libc = "0.2.171"
 
 [build-dependencies]
 git-version = "0.3"
@@ -83,7 +103,6 @@ git-version = "0.3"
 expectrl = "0.4"
 flate2 = "1"
 insta = "1"
-loopdev = "0.4"
 pretty_assertions = "1"
 regex = "1"
 tempfile = "3"

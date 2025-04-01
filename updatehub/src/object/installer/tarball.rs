@@ -71,6 +71,7 @@ mod tests {
         os::unix::fs::MetadataExt,
         path::{Path, PathBuf},
     };
+    use utils::losetup::Losetup;
 
     const CONTENT_SIZE: usize = 10240;
 
@@ -83,16 +84,19 @@ mod tests {
         image.seek(SeekFrom::Start(1024 * 1024 + CONTENT_SIZE as u64))?;
         image.write_all(&[0])?;
 
-        // Setup faked device
-        let (loopdev, device) = {
+        let (losetup, device_path) = {
             // Loop device next_free is not thread safe
             let mutex = SERIALIZE.clone();
             let _mutex = mutex.lock().unwrap();
-            let loopdev = loopdev::LoopControl::open()?.next_free()?;
-            let device = loopdev.path().unwrap();
-            loopdev.attach_file(image.path())?;
-            (loopdev, device)
+
+            let losetup = Losetup::open()?;
+            let device = losetup.next_free()?;
+            losetup.attach(&device, image.path().to_str().unwrap())?;
+
+            (losetup, device)
         };
+
+        let device = Path::new(&device_path);
 
         // Format the faked device
         utils::fs::format(&device, definitions::Filesystem::Ext4, &None)?;
@@ -103,7 +107,7 @@ mod tests {
             filesystem: definitions::Filesystem::Ext4,
             size: CONTENT_SIZE as u64,
             sha256sum: "tree.tar".to_string(),
-            target: definitions::TargetType::Device(device.clone()),
+            target: definitions::TargetType::Device(device.to_path_buf()),
             target_path: PathBuf::from("/"),
 
             compressed: false,
@@ -142,7 +146,7 @@ mod tests {
             assert_metadata(&dest.join("tree/branch2/leaf"))?;
         }
 
-        loopdev.detach()?;
+        losetup.detach(&device_path)?;
 
         Ok(())
     }

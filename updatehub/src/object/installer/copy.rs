@@ -121,15 +121,16 @@ impl Installer for objects::Copy {
 mod tests {
     use super::*;
     use crate::{object::installer::tests::SERIALIZE, utils::definitions::IdExt};
-    use flate2::{write::GzEncoder, Compression};
+    use flate2::{Compression, write::GzEncoder};
     use pretty_assertions::assert_eq;
     use std::{
         io::{Seek, SeekFrom, Write},
         iter,
         os::unix::fs::MetadataExt,
-        path::PathBuf,
+        path::{Path, PathBuf},
     };
     use tokio::io::AsyncBufReadExt;
+    use utils::losetup::Losetup;
 
     const DEFAULT_BYTE: u8 = 0xF;
     const ORIGINAL_BYTE: u8 = 0xA;
@@ -149,15 +150,19 @@ mod tests {
         image.write_all(&[0])?;
 
         // Setup faked device
-        let (loopdev, device) = {
+        let (losetup, device_path) = {
             // Loop device next_free is not thread safe
             let mutex = SERIALIZE.clone();
             let _mutex = mutex.lock().unwrap();
-            let loopdev = loopdev::LoopControl::open()?.next_free()?;
-            let device = loopdev.path().unwrap();
-            loopdev.attach_file(image.path())?;
-            (loopdev, device)
+
+            let losetup = Losetup::open()?;
+            let device = losetup.next_free()?;
+            losetup.attach(&device, image.path().to_str().unwrap())?;
+
+            (losetup, device)
         };
+
+        let device = Path::new(&device_path);
 
         // Format the faked device
         utils::fs::format(&device, definitions::Filesystem::Ext4, &None)?;
@@ -198,7 +203,7 @@ mod tests {
             filesystem: definitions::Filesystem::Ext4,
             size: FILE_SIZE as u64,
             sha256sum: source.path().to_string_lossy().to_string(),
-            target_type: definitions::TargetType::Device(device.clone()),
+            target_type: definitions::TargetType::Device(device.to_path_buf()),
             target_path: PathBuf::from("original_file"),
             install_if_different: None,
             target_permissions: definitions::TargetPermissions::default(),
@@ -254,7 +259,7 @@ mod tests {
             };
         }
 
-        loopdev.detach()?;
+        losetup.detach(&device_path)?;
 
         Ok(())
     }
