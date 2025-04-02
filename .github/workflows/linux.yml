@@ -57,7 +57,7 @@ jobs:
           use-tool-cache: true
 
       - name: Cache build contents
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
