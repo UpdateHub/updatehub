@@ -191,7 +191,7 @@ pub fn run_client_probe(server: Server, daemon_address: &str) -> String {
         daemon_address
     );
     let cmd = match server {
-        Server::Custom(server_address) => format!("{} --server {}", cmd_string, server_address),
+        Server::Custom(server_address) => format!("{cmd_string} --server {server_address}"),
         Server::Standard => cmd_string,
     };
     let mut handle = expectrl::spawn(cmd).expect("fail to spawn probe command");
@@ -330,13 +330,13 @@ pub fn create_mock_server(server: &mut mockito::ServerGuard, mode: FakeServer) -
                 .create();
             server.mock(
                 "GET",
-                format!("/products/{}/packages/87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid)
+                format!("/products/{product_uid}/packages/87effe73b80453f397cee4db3c3589a8630b220876dff8fb23447315037ff96d/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")
                     .as_str(),
             )
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .with_status(200)
-                .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
+                .with_body(std::iter::repeat_n(0xF, 40960).collect::<Vec<_>>())
             .create()
         }
         FakeServer::CheckRequirementsTest(product_uid) => {
@@ -351,13 +351,13 @@ pub fn create_mock_server(server: &mut mockito::ServerGuard, mode: FakeServer) -
                 .create();
             server.mock(
                 "GET",
-                format!("/products/{}/packages/fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid)
+                format!("/products/{product_uid}/packages/fb21b217cb83e8af368c773eb13bad0a94e1b0088c6bf561072decf3c1ae9df3/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4")
                     .as_str(),
             )
             .match_header("Content-Type", "application/json")
             .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
             .with_status(200)
-                .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
+                .with_body(std::iter::repeat_n(0xF, 40960).collect::<Vec<_>>())
             .create()
         }
         FakeServer::RemoteInstall => {

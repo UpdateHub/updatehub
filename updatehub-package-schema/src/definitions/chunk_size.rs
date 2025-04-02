@@ -24,7 +24,7 @@ impl<'de> Deserialize<'de> for ChunkSize {
         if n > 1 {
             return Ok(ChunkSize(n));
         }
-        Err(de::Error::custom(format!("Invalid chunk size: {}", n)))
+        Err(de::Error::custom(format!("Invalid chunk size: {n}")))
     }
 }
 

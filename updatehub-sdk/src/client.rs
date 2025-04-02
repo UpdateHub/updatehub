@@ -25,7 +25,7 @@ impl Default for Client {
 impl Client {
     /// Constructs a new `Client`.
     pub fn new(server_address: &str) -> Self {
-        Client { server_address: format!("http://{}", server_address), ..Self::default() }
+        Client { server_address: format!("http://{server_address}"), ..Self::default() }
     }
 
     /// Get the current state of the agent.
@@ -43,7 +43,7 @@ impl Client {
     /// This method fails when cannot complete the request at the address or
     /// cannot parse the body json as a `info::Response`.
     pub async fn info(&self) -> Result<api::info::Response> {
-        let response = self.client.get(&format!("{}/info", self.server_address)).send().await?;
+        let response = self.client.get(format!("{}/info", self.server_address)).send().await?;
 
         match response.status() {
             StatusCode::OK => Ok(response.json().await?),
@@ -110,7 +110,7 @@ impl Client {
     pub async fn local_install(&self, file: &Path) -> Result<api::state::Response> {
         let response = self
             .client
-            .post(&format!("{}/local_install", self.server_address))
+            .post(format!("{}/local_install", self.server_address))
             .json(&api::local_install::Request { file: file.to_owned() })
             .send()
             .await?;
@@ -139,7 +139,7 @@ impl Client {
     pub async fn remote_install(&self, url: &str) -> Result<api::state::Response> {
         let response = self
             .client
-            .post(&format!("{}/remote_install", self.server_address))
+            .post(format!("{}/remote_install", self.server_address))
             .json(&api::remote_install::Request { url: url.to_owned() })
             .send()
             .await?;
@@ -167,7 +167,7 @@ impl Client {
     pub async fn abort_download(&self) -> Result<api::state::Response> {
         let response = self
             .client
-            .post(&format!("{}/update/download/abort", self.server_address))
+            .post(format!("{}/update/download/abort", self.server_address))
             .send()
             .await?;
 
@@ -193,7 +193,7 @@ impl Client {
     /// This method fails when cannot complete the request at the address or
     /// cannot parse the body json as a `log::Log`.
     pub async fn log(&self) -> Result<api::log::Log> {
-        let response = self.client.get(&format!("{}/log", self.server_address)).send().await?;
+        let response = self.client.get(format!("{}/log", self.server_address)).send().await?;
 
         match response.status() {
             StatusCode::OK => Ok(response.json().await?),

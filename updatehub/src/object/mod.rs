@@ -25,7 +25,7 @@ pub enum Error {
     Utils(crate::utils::Error),
     Firmware(crate::firmware::Error),
 
-    #[display(fmt = "invalid target type {:?}", _0)]
+    #[display(fmt = "invalid target type {_0:?}")]
     InvalidTargetType(#[error(not(source))] pkg_schema::definitions::TargetType),
     Io(std::io::Error),
     Process(easy_process::Error),

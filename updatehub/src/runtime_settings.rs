@@ -24,7 +24,7 @@ pub enum Error {
     InvalidDestination,
 
     #[cfg(feature = "v1-parsing")]
-    #[display(fmt = "parsing error: json: {}, ini: {}", _0, _1)]
+    #[display(fmt = "parsing error: json: {_0}, ini: {_1}")]
     V1Parsing(serde_json::Error, serde_ini::de::Error),
 }
 
@@ -103,7 +103,7 @@ impl RuntimeSettings {
                 .map(|s| RuntimeSettings { inner: s, v1_content: Some(content.to_string()) })
         });
 
-        runtime_settings.map_err(Error::from)
+        runtime_settings
     }
 
     fn save(&self) -> Result<()> {

@@ -45,7 +45,7 @@ pub(crate) fn get_update_json(sha256sum: &str) -> serde_json::Value {
 
 pub(crate) fn get_update_package() -> UpdatePackage {
     UpdatePackage::parse(&get_update_json(SHA256SUM).to_string().into_bytes())
-        .map_err(|e| println!("{:?}", e))
+        .map_err(|e| println!("{e:?}"))
         .unwrap()
 }
 

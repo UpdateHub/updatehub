@@ -88,7 +88,7 @@ mod tests {
         assert_state!(machine, Probe);
         match trans {
             machine::StepTransition::Immediate => {}
-            _ => panic!("Unexpected StepTransition: {:?}", trans),
+            _ => panic!("Unexpected StepTransition: {trans:?}"),
         }
     }
 }

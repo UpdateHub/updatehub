@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde::Serialize;
-use std::{collections::BTreeMap, fs, path::Path};
+use std::{collections::BTreeMap, fmt::Write, fs, path::Path};
 
 #[derive(Debug)]
 pub enum ProbeResponse {
@@ -33,7 +33,7 @@ pub struct FirmwareMetadata<'a> {
 
 pub struct MetadataValue<'a>(pub &'a BTreeMap<String, Vec<String>>);
 
-impl<'a> serde::ser::Serialize for MetadataValue<'a> {
+impl serde::ser::Serialize for MetadataValue<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::ser::Serializer,
@@ -59,7 +59,11 @@ impl UpdatePackage {
     }
 
     pub fn package_uid(&self) -> String {
-        openssl::sha::sha256(&self.raw).iter().map(|c| format!("{:02x}", c)).collect()
+        openssl::sha::sha256(&self.raw).iter().fold(String::new(), |mut output, c| {
+            let _ = write!(output, "{c:02x}");
+
+            output
+        })
     }
 
     pub fn version(&self) -> &str {

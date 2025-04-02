@@ -51,14 +51,14 @@ pub(crate) fn format(target: &Path, fs: Filesystem, options: &Option<String>) ->
     let options = options.clone().unwrap_or_default();
 
     let cmd = match fs {
-        Filesystem::Jffs2 => format!("flash_erase -j {} {} 0 0", options, target),
+        Filesystem::Jffs2 => format!("flash_erase -j {options} {target} 0 0"),
         Filesystem::Ext2 | Filesystem::Ext3 | Filesystem::Ext4 => {
-            format!("mkfs.{} -F {} {}", fs, options, target)
+            format!("mkfs.{fs} -F {options} {target}")
         }
-        Filesystem::Ubifs => format!("mkfs.{} -y {} {}", fs, options, target),
-        Filesystem::Xfs => format!("mkfs.{} -f {} {}", fs, options, target),
+        Filesystem::Ubifs => format!("mkfs.{fs} -y {options} {target}"),
+        Filesystem::Xfs => format!("mkfs.{fs} -f {options} {target}"),
         Filesystem::Btrfs | Filesystem::Vfat | Filesystem::F2fs => {
-            format!("mkfs.{} {} {}", fs, options, target)
+            format!("mkfs.{fs} {options} {target}")
         }
     };
 
@@ -73,7 +73,7 @@ pub(crate) fn mount(source: &Path, fs: Filesystem, options: &str) -> io::Result<
     trace!("mounting {:?} as {} at {:?}", source, fs, &dest);
 
     let _mount = Mount::builder()
-        .fstype(format!("{}", fs).as_str())
+        .fstype(format!("{fs}").as_str())
         .data(options)
         .flags(sys_mount::MountFlags::empty())
         .mount(source, dest)?

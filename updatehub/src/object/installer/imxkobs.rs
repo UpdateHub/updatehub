@@ -25,11 +25,8 @@ impl Installer for objects::Imxkobs {
 
         let should_skip_install =
             super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
-                let path = self
-                    .chip_0_device_path
-                    .as_ref()
-                    .map(PathBuf::clone)
-                    .unwrap_or_else(|| PathBuf::from("/dev/mtd0"));
+                let path =
+                    self.chip_0_device_path.clone().unwrap_or_else(|| PathBuf::from("/dev/mtd0"));
                 let f = path.file_name().ok_or(Error::InvalidPath)?;
                 let mut file_name = f.to_os_string();
                 file_name.push("ro");

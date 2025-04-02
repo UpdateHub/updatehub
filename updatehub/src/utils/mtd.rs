@@ -47,12 +47,12 @@ pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf> {
 
     BufReader::new(proc)
         .lines()
-        .filter_map(std::result::Result::ok)
+        .map_while(std::result::Result::ok)
         .find_map(|line| {
             re.captures(&line).and_then(|re_match| {
                 let re_dev = re_match.name("dev").unwrap().as_str();
                 let re_name = re_match.name("name").unwrap().as_str();
-                if re_name == name { Some(PathBuf::from(format!("/dev/{}", re_dev))) } else { None }
+                if re_name == name { Some(PathBuf::from(format!("/dev/{re_dev}"))) } else { None }
             })
         })
         .ok_or_else(|| Error::NoMtdDevice(name.to_owned()))
@@ -115,7 +115,7 @@ pub(crate) mod tests {
             let ubi = FakeUbi { mtd_guard };
 
             for name in names {
-                easy_process::run(&format!("ubimkvol /dev/ubi0 -N {} -s 1MiB", name))?;
+                easy_process::run(&format!("ubimkvol /dev/ubi0 -N {name} -s 1MiB"))?;
             }
 
             Ok(ubi)
@@ -125,7 +125,7 @@ pub(crate) mod tests {
     impl Drop for FakeUbi {
         fn drop(&mut self) {
             if let Err(e) = easy_process::run("rmmod ubi") {
-                eprintln!("Failed to cleanup FakeUbi, Error: {}", e);
+                eprintln!("Failed to cleanup FakeUbi, Error: {e}");
             }
         }
     }
@@ -169,8 +169,8 @@ pub(crate) mod tests {
             // Sleep time for nandsim to sync and avoid errors
             std::thread::sleep(std::time::Duration::from_millis(500));
 
-            if let Err(e) = easy_process::run(&format!("rmmod {}", module)) {
-                eprintln!("Failed to cleanup FakeMtd, Error: {}", e);
+            if let Err(e) = easy_process::run(&format!("rmmod {module}")) {
+                eprintln!("Failed to cleanup FakeMtd, Error: {e}");
             }
         }
     }

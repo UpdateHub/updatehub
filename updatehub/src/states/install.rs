@@ -112,7 +112,7 @@ mod test {
                 context.runtime_settings.applied_package_uid(),
                 Some(get_update_package().package_uid())
             ),
-            s => panic!("Invalid success: {:?}", s),
+            s => panic!("Invalid success: {s:?}"),
         }
     }
 }

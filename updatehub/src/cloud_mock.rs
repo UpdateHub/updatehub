@@ -6,11 +6,11 @@ use cloud::{Error, Result, api};
 use std::{cell::RefCell, marker::PhantomData, path::Path};
 
 std::thread_local! {
-    static RESPONSE_CONFIG: RefCell<FakeResponse> = RefCell::new(FakeResponse::NoUpdate);
+    static RESPONSE_CONFIG: RefCell<FakeResponse> = const { RefCell::new(FakeResponse::NoUpdate) };
 }
 
 std::thread_local! {
-    static OBJECT_DATA: RefCell<Option<Vec<u8>>> = RefCell::new(Option::None);
+    static OBJECT_DATA: RefCell<Option<Vec<u8>>> = const { RefCell::new(Option::None) };
 }
 
 pub(crate) enum FakeResponse {

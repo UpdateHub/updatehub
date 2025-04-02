@@ -65,11 +65,11 @@ fn start_mock(mut server: mockito::ServerGuard, product_uid: &str) -> mockito::M
 
     server.mock(
         "GET",
-        format!("/products/{}/packages/96ac17e535dba0cc5e4aed4ccc4f7deaabd8e714955cbc93a79fe618b6b66ca8/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4", product_uid).as_str()
+        format!("/products/{product_uid}/packages/96ac17e535dba0cc5e4aed4ccc4f7deaabd8e714955cbc93a79fe618b6b66ca8/objects/23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4").as_str()
         )
         .match_header("Content-Type", "application/json")
         .match_header("Api-Content-Type", "application/vnd.updatehub-v1+json")
         .with_status(200)
-        .with_body(std::iter::repeat(0xF).take(40960).collect::<Vec<_>>())
+        .with_body(std::iter::repeat_n(0xF, 40960).collect::<Vec<_>>())
             .create()
 }

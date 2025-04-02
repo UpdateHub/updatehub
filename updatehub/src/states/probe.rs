@@ -118,8 +118,8 @@ mod tests {
 
         match res {
             Err(crate::states::TransitionError::Client(_)) => {}
-            Err(e) => panic!("Unexpected error returned: {:?}", e),
-            Ok(s) => panic!("Unexpected ok state reached: {:?}", s),
+            Err(e) => panic!("Unexpected error returned: {e:?}"),
+            Ok(s) => panic!("Unexpected ok state reached: {s:?}"),
         }
     }
 

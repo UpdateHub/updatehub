@@ -60,12 +60,17 @@ where
     R: bitar::archive_reader::ArchiveReader<Error = E1>,
     E2: From<E1>
         + From<std::io::Error>
-        + From<bitar::HashSumMismatchError>
+        + From<Box<bitar::HashSumMismatchError>>
         + From<bitar::CompressionError>,
 {
     // Open output file
-    let mut output_file =
-        fs::OpenOptions::new().create(true).write(true).read(true).open(output).await?;
+    let mut output_file = fs::OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .read(true)
+        .open(output)
+        .await?;
     output_file.seek(std::io::SeekFrom::Start(output_seek)).await?;
 
     // Scan the output file for chunks and build a chunk index
@@ -93,7 +98,7 @@ where
         let compressed = result?;
         // read_archive_bytes += compressed.len();
         let unverified = compressed.decompress()?;
-        let verified = unverified.verify()?;
+        let verified = unverified.verify().map_err(|e| E2::from(Box::new(e)))?;
         output.feed(&verified).await?;
     }
 

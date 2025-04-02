@@ -186,7 +186,7 @@ mod test {
     use walkdir::WalkDir;
 
     fn fake_download_object(size: usize) -> (Vec<u8>, String) {
-        let vec = std::iter::repeat(0xF).take(size).collect::<Vec<_>>();
+        let vec = std::iter::repeat_n(0xF, size).collect::<Vec<_>>();
         let shasum = utils::sha256sum(&vec);
         (vec, shasum)
     }

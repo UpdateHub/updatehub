@@ -8,6 +8,6 @@ logging_content::impl_Result_no_ok!();
 
 impl<E: std::error::Error> LogDisplay for E {
     fn as_log_display(&self, _: logging_content::Level) -> String {
-        format!("{} ({:?})", self, self)
+        format!("{self} ({self:?})")
     }
 }

@@ -165,7 +165,7 @@ mod tests {
 
         match machine {
             Err(TransitionError::UpdatePackage(_)) => {}
-            res => panic!("Unexpected result from transition: {:?}", res),
+            res => panic!("Unexpected result from transition: {res:?}"),
         }
     }
 
@@ -200,7 +200,7 @@ mod tests {
             .await;
         match res {
             Err(crate::states::TransitionError::SignatureNotFound) => {}
-            Err(e) => panic!("Unexpected error returned: {}", e),
+            Err(e) => panic!("Unexpected error returned: {e}"),
             Ok(_) => panic!("Unexpected ok result returned"),
         }
     }

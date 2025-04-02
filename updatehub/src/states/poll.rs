@@ -58,7 +58,7 @@ mod tests {
         assert_state!(machine, Probe);
         match trans {
             machine::StepTransition::Delayed(d) if d <= context.settings.polling.interval => {}
-            _ => panic!("Unexpected StepTransition: {:?}", trans),
+            _ => panic!("Unexpected StepTransition: {trans:?}"),
         }
     }
 
@@ -72,7 +72,7 @@ mod tests {
         assert_state!(machine, Probe);
         match trans {
             machine::StepTransition::Immediate => {}
-            _ => panic!("Unexpected StepTransition: {:?}", trans),
+            _ => panic!("Unexpected StepTransition: {trans:?}"),
         }
     }
 
@@ -87,7 +87,7 @@ mod tests {
         assert_state!(machine, Probe);
         match trans {
             machine::StepTransition::Immediate => {}
-            _ => panic!("Unexpected StepTransition: {:?}", trans),
+            _ => panic!("Unexpected StepTransition: {trans:?}"),
         }
     }
 }
