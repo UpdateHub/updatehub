@@ -49,6 +49,7 @@ impl Serialize for MemDrain {
     }
 }
 
+#[allow(clippy::to_string_trait_impl)]
 impl ToString for MemDrain {
     fn to_string(&self) -> String {
         let records = self.records.read().unwrap();
@@ -96,7 +97,7 @@ struct KVSerializer(HashMap<String, String>);
 
 impl slog::ser::Serializer for KVSerializer {
     fn emit_arguments(&mut self, key: Key, val: &fmt::Arguments) -> slog::Result {
-        let val = &format!("{:?}", val);
+        let val = &format!("{val:?}");
         self.0.insert(key.to_string(), val.to_string());
         Ok(())
     }
@@ -116,7 +117,7 @@ mod tests {
                 continue;
             }
             if x != y {
-                println!("Difference on string's line: {}\n{} != {}", i, x, y);
+                println!("Difference on string's line: {i}\n{x} != {y}");
                 return false;
             }
         }
@@ -134,7 +135,7 @@ mod tests {
         slog_info!(log, "{}", s1);
         slog_info!(log, "{}", s2);
         let result = r_vec.lock().unwrap().to_string();
-        println!("{}", result);
+        println!("{result}");
         assert!(result.contains(s1));
         assert!(result.contains(s2));
     }
@@ -150,7 +151,7 @@ mod tests {
         slog_info!(log, "{}", s1);
         slog_debug!(log, "{}", s2);
         let result = r_vec.lock().unwrap().to_string();
-        println!("{}", result);
+        println!("{result}");
         assert!(result.contains("info"));
         assert!(result.contains("debug"));
     }
@@ -166,7 +167,7 @@ mod tests {
         let log = Logger::root(drain.fuse(), o!("LOGGER" => logger_value));
         slog_info!(log, "{}", txt; "RECORD" => macro_value);
         let result = r_vec.lock().unwrap().to_string();
-        println!("{}", result);
+        println!("{result}");
         assert!(result.contains(logger_value));
         assert!(result.contains(macro_value));
     }
@@ -206,11 +207,6 @@ mod tests {
         slog_info!(log, "{}", "info 2"; "field1" => "value1");
         slog_error!(log, "{}", "error n");
         let result = serde_json::to_string_pretty(&r_vec).unwrap();
-        assert!(
-            eq_without_time(expected, &result),
-            "Expected:\n{}\n\nResult:\n{}",
-            expected,
-            result
-        );
+        assert!(eq_without_time(expected, &result), "Expected:\n{expected}\n\nResult:\n{result}");
     }
 }

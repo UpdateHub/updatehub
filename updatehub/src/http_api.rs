@@ -9,7 +9,7 @@ use warp::Filter;
 
 type Result<T> = std::result::Result<T, warp::Rejection>;
 
-pub(crate) struct Api(machine::Addr);
+pub(crate) struct Api();
 
 impl Api {
     pub(crate) fn server(

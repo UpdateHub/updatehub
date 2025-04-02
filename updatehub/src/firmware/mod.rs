@@ -109,7 +109,7 @@ pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transiti
     info!("running state change callback for '{}' state", state);
 
     let output = run_command_for_state(
-        &format!("{} callback", state),
+        &format!("{state} callback"),
         &format!("{} {}", &callback.to_string_lossy(), &state),
     )?;
 

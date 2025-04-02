@@ -14,7 +14,7 @@ pub enum InstallIfDifferent {
     #[display(fmt = "checksum")]
     CheckSum,
     /// Use a predefined (known) pattern to check.
-    #[display(fmt = "pattern({} equal to '{}')", pattern, version)]
+    #[display(fmt = "pattern({pattern} equal to '{version}')")]
     KnownPattern { version: String, pattern: KnownPatternKind },
     /// Use a custom pattern to check.
     #[display(fmt = "custom pattern({} uqual to '{}')", "pattern.regexp", version)]
@@ -50,7 +50,7 @@ where
 {
     match String::deserialize(deserializer)?.to_lowercase().as_str() {
         "sha256sum" => Ok(()),
-        s => Err(serde::de::Error::custom(format!("Not a vliad CheckSum format: {}", s))),
+        s => Err(serde::de::Error::custom(format!("Not a vliad CheckSum format: {s}"))),
     }
 }
 

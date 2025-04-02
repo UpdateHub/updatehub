@@ -199,8 +199,7 @@ fn failing_invalid_server_address() {
     <timestamp> DEBG receiving probe request
     "###);
 
-    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @"Unexpected response: 500
-");
+    insta::assert_snapshot!(remove_carriage_newline_characters(output_client), @"Unexpected response: 500 Internal Server Error");
 
     insta::assert_snapshot!(output_log, @r###"
     <timestamp> INFO Probing the server as requested by the user

@@ -49,7 +49,7 @@ fn metadata_value_from_str(s: &str) -> io::Result<MetadataValue> {
         if v.len() != 2 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
-                format!("invalid format for value '{:?}', the <key>=<value> output is expected", v),
+                format!("invalid format for value '{v:?}', the <key>=<value> output is expected"),
             ));
         }
 

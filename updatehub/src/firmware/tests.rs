@@ -94,7 +94,7 @@ pub(crate) fn create_fake_installation_set(tmpdir: &Path, active: usize) {
     create_dir_all(tmpdir).unwrap();
 
     let mut file = File::create(tmpdir.join(GET_SCRIPT)).unwrap();
-    writeln!(file, "#!/bin/sh\necho {}", active).unwrap();
+    writeln!(file, "#!/bin/sh\necho {active}").unwrap();
 
     let mut permissions = metadata(tmpdir).unwrap().permissions();
 
@@ -124,7 +124,8 @@ pub(crate) fn create_fake_starup_callbacks(metadata_dir: &Path, output_file: &Pa
         let mut file = fs::OpenOptions::new()
             .write(true)
             .create(true)
-            .open(&metadata_dir.join(script))
+            .truncate(false)
+            .open(metadata_dir.join(script))
             .unwrap();
         writeln!(file, "#!/bin/sh\necho $0 >> {}", output_file.to_string_lossy()).unwrap();
         let mut permissions = fs::metadata(metadata_dir).unwrap().permissions();

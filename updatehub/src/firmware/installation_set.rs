@@ -50,7 +50,7 @@ pub fn inactive() -> super::Result<Set> {
 }
 
 pub fn set_active(active: Set) -> super::Result<()> {
-    let _ = run_script(&format!("{} {}", SET_SCRIPT, active))?;
+    let _ = run_script(&format!("{SET_SCRIPT} {active}"))?;
     Ok(())
 }
 

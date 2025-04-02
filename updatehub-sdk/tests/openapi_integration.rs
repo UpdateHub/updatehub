@@ -87,7 +87,7 @@ async fn probe_default() {
     match dbg!(response) {
         Ok(_) => {}
         Err(sdk::Error::AgentIsBusy(_)) => {}
-        Err(e) => panic!("Unexpected Error response: {}", e),
+        Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
 
@@ -100,7 +100,7 @@ async fn probe_custom() {
     match dbg!(response) {
         Ok(_) => {}
         Err(sdk::Error::AgentIsBusy(_)) => {}
-        Err(e) => panic!("Unexpected Error response: {}", e),
+        Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
 
@@ -115,7 +115,7 @@ async fn local_install() {
     match dbg!(response) {
         Ok(_) => {}
         Err(sdk::Error::AgentIsBusy(_)) => {}
-        Err(e) => panic!("Unexpected Error response: {}", e),
+        Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
 
@@ -128,7 +128,7 @@ async fn remote_install() {
     match dbg!(response) {
         Ok(_) => {}
         Err(sdk::Error::AgentIsBusy(_)) => {}
-        Err(e) => panic!("Unexpected Error response: {}", e),
+        Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
 
@@ -141,7 +141,7 @@ async fn abort_download() {
     match dbg!(response) {
         Ok(_) => {}
         Err(sdk::Error::AbortDownloadRefused(_)) => {}
-        Err(e) => panic!("Unexpected Error response: {}", e),
+        Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
 

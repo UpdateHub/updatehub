@@ -22,7 +22,7 @@ pub enum Error {
     ServerAddressWithoutProtocol,
 
     #[cfg(feature = "v1-parsing")]
-    #[display(fmt = "parsing error: toml: {}, ini: {}", _0, _1)]
+    #[display(fmt = "parsing error: toml: {_0}, ini: {_1}")]
     V1Parsing(Box<toml::de::Error>, serde_ini::de::Error),
 }
 

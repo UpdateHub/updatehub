@@ -10,11 +10,7 @@ use pkg_schema::objects;
 impl Installer for objects::Test {
     async fn check_requirements(&self, _: &Context) -> super::Result<()> {
         if self.force_check_requirements_fail {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                "fail to check the requirements",
-            )
-            .into());
+            return Err(std::io::Error::other("fail to check the requirements").into());
         }
         Ok(())
     }

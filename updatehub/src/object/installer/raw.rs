@@ -116,10 +116,7 @@ mod tests {
     use super::*;
     use flate2::{Compression, write::GzEncoder};
     use pretty_assertions::assert_eq;
-    use std::{
-        io::{Seek, Write},
-        iter,
-    };
+    use std::io::{Seek, Write};
     use tempfile::{NamedTempFile, TempDir, tempdir};
     use tokio::io::{self, AsyncBufReadExt};
 
@@ -138,7 +135,7 @@ mod tests {
         let download_dir = tempdir()?;
 
         let mut source = NamedTempFile::new_in(download_dir.path())?;
-        let original_data = iter::repeat(ORIGINAL_BYTE).take(size as usize).collect::<Vec<_>>();
+        let original_data = std::iter::repeat_n(ORIGINAL_BYTE, size as usize).collect::<Vec<_>>();
         let data = if compressed {
             let mut e = GzEncoder::new(Vec::new(), Compression::default());
             e.write_all(&original_data).unwrap();
@@ -150,7 +147,7 @@ mod tests {
         source.seek(SeekFrom::Start(0))?;
 
         let mut dest = NamedTempFile::new_in(download_dir.path())?;
-        dest.write_all(&iter::repeat(DEFAULT_BYTE).take(size as usize).collect::<Vec<_>>())?;
+        dest.write_all(&std::iter::repeat_n(DEFAULT_BYTE, size as usize).collect::<Vec<_>>())?;
         dest.seek(SeekFrom::Start(0))?;
 
         Ok((

@@ -140,7 +140,7 @@ pub mod log {
     impl core::fmt::Display for Log {
         fn fmt(&self, f: &mut core::fmt::Formatter) -> Result<(), core::fmt::Error> {
             for entry in &self.entries {
-                writeln!(f, "{}", entry)?;
+                writeln!(f, "{entry}")?;
             }
             Ok(())
         }

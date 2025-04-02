@@ -85,7 +85,7 @@ impl<'a> Client<'a> {
 
         let response = self
             .client
-            .post(&format!("{}/upgrades", &self.server))
+            .post(format!("{}/upgrades", &self.server))
             .header("api-retries", num_retries.to_string())
             .json(&firmware)
             .send()
@@ -181,7 +181,7 @@ impl<'a> Client<'a> {
         let payload =
             Payload { state, firmware, package_uid, previous_state, error_message, current_log };
 
-        self.client.post(&format!("{}/report", &self.server)).json(&payload).send().await?;
+        self.client.post(format!("{}/report", &self.server)).json(&payload).send().await?;
         Ok(())
     }
 }

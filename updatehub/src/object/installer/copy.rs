@@ -125,7 +125,6 @@ mod tests {
     use pretty_assertions::assert_eq;
     use std::{
         io::{Seek, SeekFrom, Write},
-        iter,
         os::unix::fs::MetadataExt,
         path::PathBuf,
     };
@@ -165,7 +164,7 @@ mod tests {
         // Generate the source file
         let download_dir = tempfile::tempdir()?;
         let mut source = tempfile::NamedTempFile::new_in(download_dir.path())?;
-        let original_data = iter::repeat(DEFAULT_BYTE).take(FILE_SIZE).collect::<Vec<_>>();
+        let original_data = std::iter::repeat_n(DEFAULT_BYTE, FILE_SIZE).collect::<Vec<_>>();
         let data = if compressed {
             let mut e = GzEncoder::new(Vec::new(), Compression::default());
             e.write_all(&original_data).unwrap();
@@ -182,7 +181,7 @@ mod tests {
 
             fs::File::create(&file)
                 .await?
-                .write_all(&iter::repeat(ORIGINAL_BYTE).take(FILE_SIZE).collect::<Vec<_>>())
+                .write_all(&std::iter::repeat_n(ORIGINAL_BYTE, FILE_SIZE).collect::<Vec<_>>())
                 .await?;
 
             if let Some(mode) = perm.target_mode {

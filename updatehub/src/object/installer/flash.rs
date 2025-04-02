@@ -48,12 +48,12 @@ impl Installer for objects::Flash {
 
         let is_nand = utils::mtd::is_nand(&target)?;
 
-        easy_process::run(&format!("flash_erase {:?} 0 0", target))?;
+        easy_process::run(&format!("flash_erase {target:?} 0 0"))?;
 
         if is_nand {
-            easy_process::run(&format!("nandwrite -p {:?} {:?}", target, source))?;
+            easy_process::run(&format!("nandwrite -p {target:?} {source:?}"))?;
         } else {
-            easy_process::run(&format!("flashcp {:?} {:?}", source, target))?;
+            easy_process::run(&format!("flashcp {source:?} {target:?}"))?;
         }
 
         Ok(())

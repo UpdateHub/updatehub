@@ -97,7 +97,7 @@ struct DaemonOptions {
 
 fn verbosity_level(value: &str) -> Result<slog::Level, String> {
     use std::str::FromStr;
-    slog::Level::from_str(value).map_err(|_| format!("failed to parse verbosity level: {}", value))
+    slog::Level::from_str(value).map_err(|_| format!("failed to parse verbosity level: {value}"))
 }
 
 async fn daemon_main(cmd: DaemonOptions) -> updatehub::Result<()> {
@@ -119,7 +119,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
             if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
-                println!("{:#?}", response);
+                println!("{response:#?}");
             }
         }
         ClientCommands::Log(log_opts) => {
@@ -132,7 +132,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
                 let mut last = response;
                 loop {
                     for entry in last.entries.iter().skip(current) {
-                        println!("{}", entry);
+                        println!("{entry}");
                     }
                     current = last.entries.len();
 
@@ -145,7 +145,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
                     last = new;
                 }
             } else {
-                println!("{}", response);
+                println!("{response}");
             }
         }
         ClientCommands::Probe(Probe { server }) => {
@@ -162,7 +162,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
                         println!("There are no updates available.")
                     }
                     sdk::api::probe::Response::TryAgain(t) => {
-                        println!("Server replied asking us to try again in {} seconds", t);
+                        println!("Server replied asking us to try again in {t} seconds");
                     }
                 }
             }
@@ -173,7 +173,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
             if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
-                println!("{:#?}", response);
+                println!("{response:#?}");
             }
         }
         ClientCommands::InstallPackage(InstallPackage { arg }) => {
@@ -195,7 +195,7 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
             if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else {
-                println!("Local install request accepted from {:?} state", response);
+                println!("Local install request accepted from {response:?} state");
                 println!("Run 'updatehub client log --watch' to follow the log's progress");
             }
         }
@@ -217,7 +217,7 @@ async fn main() {
             };
 
             if let Err(e) = res {
-                eprintln!("{}", e);
+                eprintln!("{e}");
                 std::process::exit(1);
             }
         })

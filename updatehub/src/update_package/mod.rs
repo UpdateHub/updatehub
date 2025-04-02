@@ -32,7 +32,7 @@ pub enum Error {
     #[from(ignore)]
     IncompatibleHardware(#[error(not(source))] String),
     #[from(ignore)]
-    #[display(fmt = "Install mode not accepted: {}", _0)]
+    #[display(fmt = "Install mode not accepted: {_0}")]
     IncompatibleInstallMode(#[error(not(source))] String),
 }
 

@@ -15,8 +15,8 @@ fn startup_without_upgrade() {
 
     match fs::read_to_string(&setup.binaries.data) {
         Err(e) if e.kind() == io::ErrorKind::NotFound => (),
-        Err(e) => panic!("Unexpected Error: {}", e),
-        Ok(content) => panic!("Output file should be empty, instead we have: {}", content),
+        Err(e) => panic!("Unexpected Error: {e}"),
+        Ok(content) => panic!("Output file should be empty, instead we have: {content}"),
     }
 }
 
@@ -75,8 +75,8 @@ fn startup_on_wrong_install_set() {
 
     match fs::read_to_string(&setup.binaries.data) {
         Err(e) if e.kind() == io::ErrorKind::NotFound => (),
-        Err(e) => panic!("Unexpected Error: {}", e),
-        Ok(content) => panic!("Output file should be empty, instead we have: {}", content),
+        Err(e) => panic!("Unexpected Error: {e}"),
+        Ok(content) => panic!("Output file should be empty, instead we have: {content}"),
     }
 }
 

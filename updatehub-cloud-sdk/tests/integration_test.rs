@@ -243,7 +243,7 @@ async fn probe_response_with_signature() {
                 .unwrap()
         ),
         ProbeResponse::Update(_, None) => panic!("No signature extracted from update response"),
-        r => panic!("Unexpected probe response: {:?}", r),
+        r => panic!("Unexpected probe response: {r:?}"),
     }
     mocks.assert();
 }
@@ -256,7 +256,7 @@ async fn probe_response_with_extra_poll() {
         sdk::Client::new(&server.url()).probe(0, FakeMetadata::new().get()).await.unwrap();
     match response {
         ProbeResponse::ExtraPoll(n) => assert_eq!(n, 10),
-        r => panic!("Unexpected probe response: {:?}", r),
+        r => panic!("Unexpected probe response: {r:?}"),
     }
     mocks.assert();
 }

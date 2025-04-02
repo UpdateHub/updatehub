@@ -125,7 +125,7 @@ impl<'de> Deserialize<'de> for MetadataValue {
     }
 }
 
-impl<'a> Index<&'a str> for MetadataValue {
+impl Index<&str> for MetadataValue {
     type Output = Vec<String>;
 
     #[inline]
