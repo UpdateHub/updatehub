@@ -15,7 +15,7 @@ jobs:
         name: [MSRV, stable, nightly]
         include:
           - name: MSRV
-            version: 1.65.0
+            version: 1.82.0
           - name: stable
             version: stable
           - name: nightly
