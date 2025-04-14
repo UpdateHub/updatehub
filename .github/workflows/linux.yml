@@ -26,28 +26,17 @@ jobs:
 
     steps:
       - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install libarchive-dev protobuf-compiler socat
+        run: sudo apt-get update -y; sudo apt-get install -y libarchive-dev libclang-dev protobuf-compiler socat
+
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+
       - name: Install ${{ matrix.version }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.version }}-x86_64-unknown-linux-gnu
           profile: minimal
           override: true
-      - name: Install grcov tool
-        if: matrix.name == 'nightly'
-        uses: actions-rs/install@v0.1
-        with:
-          crate: grcov
-          use-tool-cache: true
-
-      - name: Install cargo bloat tool
-        if: matrix.name == 'MSRV' && 0
-        uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-bloat
-          use-tool-cache: true
 
       - name: Install cargo tree tool
         if: matrix.name == 'MSRV'
@@ -104,37 +93,22 @@ jobs:
             exit 4
           fi
 
-      - name: Run cargo bloat
-        if: matrix.name == 'MSRV' && 0
-        uses: orf/cargo-bloat-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          bloat_args: --release --package updatehub
+      - name: Install cargo-llvm-cov
+        if: matrix.name == 'nightly'
+        uses: taiki-e/install-action@cargo-llvm-cov
 
-      - name: Run cargo test with coverage
+      - name: Generate code coverage
         if: matrix.name == 'nightly'
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked --all --all-features --no-fail-fast -- --nocapture
-        env:
-          CARGO_INCREMENTAL: '0'
-          RUSTFLAGS: '-Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort'
-      - id: coverage
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+
+      - name: Upload coverage to Coveralls
         if: matrix.name == 'nightly'
-        uses: actions-rs/grcov@master
-      - name: Coveralls upload
-        if: matrix.name == 'nightly'
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ${{ steps.coverage.outputs.report }}
-      - name: Clear the coverage files from cache
-        if: matrix.name == 'nightly'
-        run: |
-          find target/ -name "*.gcda" -exec rm {} +
+          path-to-lcov: lcov.info
 
       - name: Clear the cargo caches
         run: |
-          cargo +stable install cargo-cache --no-default-features --features ci-autoclean
+          cargo install cargo-cache --no-default-features --features ci-autoclean
           cargo-cache
