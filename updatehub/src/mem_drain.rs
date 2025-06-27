@@ -6,7 +6,7 @@ use serde::Serialize;
 use slog::{Drain, KV, Key, OwnedKVList, Record};
 use std::{
     collections::HashMap,
-    fmt::{self, Write},
+    fmt::{self, Display, Write},
     io,
     sync::RwLock,
 };
@@ -49,9 +49,8 @@ impl Serialize for MemDrain {
     }
 }
 
-#[allow(clippy::to_string_trait_impl)]
-impl ToString for MemDrain {
-    fn to_string(&self) -> String {
+impl Display for MemDrain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let records = self.records.read().unwrap();
 
         let mut ret = String::new();
@@ -64,7 +63,8 @@ impl ToString for MemDrain {
 
             writeln!(&mut ret, "{} {} {}", record.time, record.level, msg).unwrap();
         }
-        ret
+
+        write!(f, "{}", &ret)
     }
 }
 
