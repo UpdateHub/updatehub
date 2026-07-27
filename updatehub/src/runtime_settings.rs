@@ -103,7 +103,7 @@ impl RuntimeSettings {
                 .map(|s| RuntimeSettings { inner: s, v1_content: Some(content.to_string()) })
         });
 
-        runtime_settings
+        Ok(runtime_settings?)
     }
 
     fn save(&self) -> Result<()> {
@@ -357,6 +357,22 @@ mod tests {
             "Old file should still be accessible as a .old file in the same directory"
         );
         fs::remove_file(old_file).unwrap();
+    }
+
+    #[test]
+    fn parsing() {
+        // Kept out of the `v1-parsing` feature on purpose: parsing the current
+        // format is what every build does, so it must be covered by the default
+        // feature set too.
+        let expected = RuntimeSettings::default();
+        let sample = expected.serialize().unwrap();
+
+        assert_eq!(RuntimeSettings::parse(&sample).unwrap(), expected);
+    }
+
+    #[test]
+    fn parsing_reports_invalid_content() {
+        assert!(RuntimeSettings::parse("foo").is_err());
     }
 
     #[cfg(feature = "v1-parsing")]
