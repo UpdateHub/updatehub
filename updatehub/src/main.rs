@@ -128,21 +128,22 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
             if client_options.json_output {
                 println!("{}", serde_json::to_string(&response)?);
             } else if log_opts.watch {
-                let mut current = 0;
-                let mut last = response;
+                // Absolute index of the next entry to print. Comparing it to
+                // `first_index` covers both entries dropped from the agent's
+                // buffer and a new operation restarting the log, without having
+                // to guess from the entries themselves.
+                let mut next = 0;
+                let mut log = response;
                 loop {
-                    for entry in last.entries.iter().skip(current) {
-                        println!("{}", entry);
+                    next = next.max(log.first_index);
+                    for entry in log.entries.iter().skip(next - log.first_index) {
+                        println!("{entry}");
                     }
-                    current = last.entries.len();
+                    next = log.first_index + log.entries.len();
 
                     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-                    let new = client.log().await?;
-                    if new.entries.first() != last.entries.first() {
-                        current = 0;
-                    }
-                    last = new;
+                    log = client.log().await?;
                 }
             } else {
                 println!("{}", response);
