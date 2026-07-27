@@ -80,10 +80,6 @@ fn failing_invalid_download_dir() {
     <timestamp> ERRO error state reached: Not a directory (os error 20)
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -264,10 +260,6 @@ fn failing_fail_check_requirements() {
     <timestamp> ERRO error state reached: fail to check the requirements
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -332,10 +324,6 @@ fn failing_supported_install_modes() {
     <timestamp> ERRO error state reached: Install mode not accepted: test
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -400,10 +388,6 @@ fn invalid_server_response() {
     <timestamp> ERRO error state reached: Invalid status response: 501 Not Implemented
     <timestamp> INFO returning to machine's entry point
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -479,8 +463,5 @@ exit 1
     <timestamp> ERRO error callback has failed with status: exit status: 1
     <timestamp> ERRO canceling transition to 'error' as state change callback has failed with: status: Some(1) stdout: "" stderr: ""
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle 'park' state
-    <timestamp> INFO parking state machine
     "###);
 }

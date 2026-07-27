@@ -5,7 +5,7 @@
 use crate::mem_drain::MemDrain;
 use lazy_static::lazy_static;
 use slog::{Drain, Logger, o};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 lazy_static! {
     static ref BUFFER: Arc<Mutex<MemDrain>> = Arc::new(Mutex::new(MemDrain::default()));
@@ -30,14 +30,37 @@ pub fn buffer() -> Arc<Mutex<MemDrain>> {
     BUFFER.clone()
 }
 
+/// The buffered drain, recovering the lock if a thread panicked while holding
+/// it: being unable to log must not bring the agent down.
+fn buffer_lock() -> MutexGuard<'static, MemDrain> {
+    BUFFER.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
 pub fn start_memory_logging() {
-    BUFFER.lock().unwrap().start_logging()
+    buffer_lock().start_logging()
 }
 
 pub fn stop_memory_logging() {
-    BUFFER.lock().unwrap().stop_logging()
+    buffer_lock().stop_logging()
+}
+
+/// Record what `f` logs even while memory logging is stopped.
+///
+/// Memory logging is scoped to update activity, but a device failing to reach
+/// the server has no update to report and its failure is the only evidence it
+/// can offer, so that one is kept regardless of scope. The current scope is
+/// preserved: this never discards what was already recorded.
+pub fn record_out_of_scope<R>(f: impl FnOnce() -> R) -> R {
+    let was_logging = buffer_lock().is_logging();
+
+    // The lock must not be held across `f`, as recording takes it again.
+    buffer_lock().set_logging(true);
+    let result = f();
+    buffer_lock().set_logging(was_logging);
+
+    result
 }
 
 pub fn get_memory_log() -> String {
-    BUFFER.lock().unwrap().to_string()
+    buffer_lock().to_string()
 }

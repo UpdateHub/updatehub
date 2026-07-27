@@ -147,6 +147,14 @@ impl MemDrain {
         self.logging = false;
     }
 
+    /// Set whether records are kept, without discarding the current operation.
+    pub fn set_logging(&mut self, logging: bool) {
+        self.logging = logging;
+    }
+
+    pub fn is_logging(&self) -> bool {
+        self.logging
+    }
 }
 
 impl Serialize for MemDrain {

@@ -73,7 +73,13 @@ impl StateChangeImpl for Probe {
                 return Err(err.into());
             }
             Err(e) => {
-                error!("Probe failed: {}", e);
+                // Probing is the one thing an idle device does, so its outcome
+                // is recorded even though memory logging is otherwise scoped to
+                // update activity. Repeated outcomes are counted rather than
+                // stored again, so this stays constant in memory however long
+                // the device goes without an update to install.
+                crate::logger::record_out_of_scope(|| error!("Probe failed: {}", e));
+
                 context.runtime_settings.inc_retries();
                 return Ok((
                     State::Probe(self),
@@ -89,7 +95,9 @@ impl StateChangeImpl for Probe {
 
         match probe {
             ProbeResponse::NoUpdate => {
-                info!("no update is current available for this device");
+                crate::logger::record_out_of_scope(|| {
+                    info!("no update is current available for this device")
+                });
 
                 // Store timestamp of last polling
                 context
@@ -100,7 +108,9 @@ impl StateChangeImpl for Probe {
             }
 
             ProbeResponse::ExtraPoll(s) => {
-                info!("delaying the probing for {} seconds as requested by the server", s);
+                crate::logger::record_out_of_scope(|| {
+                    info!("delaying the probing for {} seconds as requested by the server", s)
+                });
                 Ok((State::Probe(self), machine::StepTransition::Delayed(Duration::seconds(s))))
             }
 

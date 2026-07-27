@@ -37,6 +37,11 @@ impl StateChangeImpl for EntryPoint {
             return Ok((State::Probe(Probe {}), machine::StepTransition::Immediate));
         }
 
+        // Memory logging is scoped to update activity, and reaching the entry
+        // point means none is in progress. What was recorded is kept, so the
+        // last operation remains readable through `updatehub client log`.
+        crate::logger::stop_memory_logging();
+
         // Cleanup temporary settings from last installation
         context.runtime_settings.reset_transient_settings();
 
