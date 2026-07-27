@@ -123,9 +123,14 @@ pub mod log {
     }
 
     #[derive(Clone, Debug, Deserialize, Serialize)]
-    #[serde(deny_unknown_fields)]
     pub struct Log {
         pub entries: Vec<Entry>,
+        /// Absolute index of `entries[0]` among all entries ever recorded by
+        /// the agent. It grows monotonically as entries are evicted and
+        /// as a new operation starts recording, so a reader can resume
+        /// from where it stopped without comparing entries.
+        #[serde(default)]
+        pub first_index: usize,
     }
 
     #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
