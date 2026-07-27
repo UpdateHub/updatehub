@@ -14,6 +14,25 @@ use slog_scope::{error, info};
 #[derive(Debug)]
 pub(super) struct Probe;
 
+/// How long to wait before retrying a probe that failed.
+///
+/// The delay doubles on every failure so that a device unable to reach the
+/// server -- an offline one, most notably -- backs off instead of retrying
+/// every second for as long as it stays offline. It never grows past the
+/// polling interval, as probing slower than configured would defeat it, nor
+/// past an hour, so a device regaining connectivity notices reasonably soon
+/// even when configured with a long interval.
+fn retry_delay(retries: usize, polling_interval: Duration) -> Duration {
+    const MAX_RETRY_DELAY: i64 = 60 * 60;
+
+    let cap = polling_interval.num_seconds().clamp(1, MAX_RETRY_DELAY);
+    // `retries` has just been incremented for the failure being handled, so the
+    // first retry waits a single second.
+    let exponential = 1i64 << retries.saturating_sub(1).min(12);
+
+    Duration::seconds(exponential.min(cap))
+}
+
 #[async_trait::async_trait(?Send)]
 impl CallbackReporter for Probe {
     async fn handle_on_transition_cancel(&self, context: &mut machine::Context) -> Result<()> {
@@ -58,7 +77,10 @@ impl StateChangeImpl for Probe {
                 context.runtime_settings.inc_retries();
                 return Ok((
                     State::Probe(self),
-                    machine::StepTransition::Delayed(Duration::seconds(1)),
+                    machine::StepTransition::Delayed(retry_delay(
+                        context.runtime_settings.retries(),
+                        context.settings.polling.interval,
+                    )),
                 ));
             }
             Ok(probe) => probe,
@@ -143,6 +165,23 @@ mod tests {
         let machine = State::Probe(Probe {}).move_to_next_state(&mut context).await.unwrap().0;
 
         assert_state!(machine, Validation);
+    }
+
+    #[test]
+    fn retry_delay_backs_off_within_bounds() {
+        let interval = Duration::days(1);
+
+        // Doubling, starting from the historical single second.
+        assert_eq!(retry_delay(1, interval), Duration::seconds(1));
+        assert_eq!(retry_delay(2, interval), Duration::seconds(2));
+        assert_eq!(retry_delay(3, interval), Duration::seconds(4));
+
+        // It saturates instead of growing for as long as the device is offline.
+        assert_eq!(retry_delay(usize::MAX, interval), Duration::seconds(60 * 60));
+
+        // And never ends up probing slower than configured.
+        let interval = Duration::seconds(60);
+        assert_eq!(retry_delay(usize::MAX, interval), interval);
     }
 
     #[tokio::test]
