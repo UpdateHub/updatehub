@@ -1,9 +1,6 @@
 // Copyright (C) 2019 O.S. Systems Sofware LTDA
 //
 // SPDX-License-Identifier: Apache-2.0
-// Copyright (C) 2019 O.S. Systems Sofware LTDA
-//
-// SPDX-License-Identifier: Apache-2.0
 
 use super::{Context, Error, Result};
 use crate::{
