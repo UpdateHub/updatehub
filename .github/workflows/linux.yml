@@ -65,6 +65,15 @@ jobs:
             target
           key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-build-trimmed-${{ hashFiles('**/Cargo.lock') }}
 
+      # Every other step below enables all the features, which leaves the
+      # default feature set never being built. Check it on its own so a change
+      # guarded by a feature flag cannot break the plain `cargo build`.
+      - name: Check build with the default features
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --locked --release --all --bins --examples --tests
+
       - name: Check build
         uses: actions-rs/cargo@v1
         with:
