@@ -37,9 +37,6 @@ fn correct_config_no_update_no_polling() {
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle 'park' state
-    <timestamp> INFO parking state machine
     "###);
 }
 
@@ -84,18 +81,7 @@ fn correct_config_no_update_polling() {
     <timestamp> DEBG loading system settings from "<file>"
     <timestamp> DEBG runtime settings file "<file>" does not exists, using default settings
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> INFO probing server as we are in time
-    <timestamp> TRCE starting to handle 'probe' state
     <timestamp> INFO no update is current available for this device
-    <timestamp> DEBG updating last polling time
-    <timestamp> DEBG saved runtime settings to "<file>"
-    <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -168,10 +154,6 @@ fn correct_config_no_update_polling_with_probe_api() {
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -236,9 +218,6 @@ fn correct_config_no_update_no_polling_with_probe_api() {
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle 'park' state
-    <timestamp> INFO parking state machine
     "###);
 }
 
@@ -334,10 +313,6 @@ fn correct_config_update_polling() {
     <timestamp> TRCE starting to handle 'reboot' state
     <timestamp> INFO triggering reboot
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -410,10 +385,6 @@ fn correct_config_statechange_callback() {
     <timestamp> INFO download callback has exit with success
     <timestamp> INFO canceling transition to 'download' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -489,10 +460,6 @@ fn correct_config_error_state_callback() {
     <timestamp> INFO error callback has exit with success
     <timestamp> INFO canceling transition to 'error' due to state change callback request
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is enabled
-    <timestamp> TRCE starting to handle 'poll' state
-    <timestamp> DEBG delaying <time> till next probe
-    <timestamp> TRCE delaying transition for: <time>
     "###);
 }
 
@@ -598,9 +565,6 @@ fn correct_config_remote_install() {
     <timestamp> TRCE starting to handle 'reboot' state
     <timestamp> INFO triggering reboot
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle 'park' state
-    <timestamp> INFO parking state machine
     "###);
 }
 
@@ -676,9 +640,6 @@ exit 0
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle 'park' state
-    <timestamp> INFO parking state machine
     "###);
 }
 
@@ -810,9 +771,6 @@ UpgradeToInstallation=1
     <timestamp> DEBG updating last polling time
     <timestamp> DEBG saved runtime settings to "<file>"
     <timestamp> TRCE starting to handle 'entry_point' state
-    <timestamp> DEBG polling is disabled
-    <timestamp> TRCE starting to handle 'park' state
-    <timestamp> INFO parking state machine
     "###);
 }
 
