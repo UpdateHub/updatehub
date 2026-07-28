@@ -7,3 +7,4 @@
 *.pending-snap
 *.yaml
 /.direnv/
+/lcov.info
