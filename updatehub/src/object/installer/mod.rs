@@ -129,7 +129,7 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use lazy_static::lazy_static;
     use std::{
