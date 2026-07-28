@@ -232,6 +232,15 @@ mod tests {
     use slog::{Logger, debug, error, info, o};
     use std::sync::{Arc, Mutex};
 
+    /// A drain already recording, along with a logger writing into it.
+    fn logging_drain() -> (Arc<Mutex<MemDrain>>, Logger) {
+        let drain = Arc::new(Mutex::new(MemDrain::default()));
+        let handle = drain.clone();
+        drain.lock().unwrap().start_logging();
+
+        (handle, Logger::root(drain.fuse(), o!()))
+    }
+
     fn eq_without_time(s1: &str, s2: &str) -> bool {
         let s1 = s1.split('\n');
         let s2 = s2.split('\n');
@@ -395,5 +404,183 @@ mod tests {
         let records = drain.records.read().unwrap();
         assert_eq!(records.entries.len(), 1);
         assert_eq!(records.first_index(), 1);
+    }
+
+    #[test]
+    fn drain_holds_memory_constant_while_offline() {
+        let (handle, log) = logging_drain();
+
+        // What an offline device produces: the same failure, once per probe
+        // retry, for as long as it stays unable to reach the server.
+        let probe_failure = "Probe failed: Invalid status response: 502 Bad Gateway";
+
+        for _ in 0..1_000 {
+            error!(log, "{}", probe_failure);
+        }
+        let (entries_early, bytes_early) = {
+            let drain = handle.lock().unwrap();
+            let records = drain.records.read().unwrap();
+            (records.entries.len(), records.bytes)
+        };
+        assert_eq!(entries_early, 1);
+
+        // Days of retrying later, the drain must hold no more than it did
+        // after the first few.
+        for _ in 0..100_000 {
+            error!(log, "{}", probe_failure);
+        }
+
+        let drain = handle.lock().unwrap();
+        let records = drain.records.read().unwrap();
+        assert_eq!(records.entries.len(), 1, "retries were stored instead of counted");
+        assert_eq!(
+            records.bytes, bytes_early,
+            "memory grew from {bytes_early} to {} bytes over 100_000 retries",
+            records.bytes
+        );
+        assert_eq!(records.entries[0].count, 101_000);
+    }
+
+    #[test]
+    fn drain_counts_only_consecutive_repeats() {
+        let (handle, log) = logging_drain();
+
+        // Only the run at the tail is counted: an entry coming back after a
+        // different one is a new event, not a repeat of the older one.
+        error!(log, "{}", "Probe failed: dns error");
+        error!(log, "{}", "Probe failed: dns error");
+        info!(log, "{}", "probing server as we are in time");
+        error!(log, "{}", "Probe failed: dns error");
+
+        let drain = handle.lock().unwrap();
+        let records = drain.records.read().unwrap();
+        assert_eq!(records.entries.len(), 3);
+        assert_eq!(records.entries[0].count, 2);
+        assert_eq!(records.entries[2].count, 1);
+    }
+
+    #[test]
+    fn drain_tells_records_apart_by_level_and_data() {
+        let (handle, log) = logging_drain();
+
+        // The same text, but none of these is a repeat of another.
+        info!(log, "{}", "state changed");
+        error!(log, "{}", "state changed");
+        error!(log, "{}", "state changed"; "state" => "probe");
+        error!(log, "{}", "state changed"; "state" => "download");
+
+        let drain = handle.lock().unwrap();
+        let records = drain.records.read().unwrap();
+        assert_eq!(records.entries.len(), 4);
+        assert!(records.entries.iter().all(|entry| entry.count == 1));
+    }
+
+    #[test]
+    fn drain_does_not_advance_first_index_on_counted_repeats() {
+        let (handle, log) = logging_drain();
+
+        for _ in 0..500 {
+            error!(log, "{}", "Probe failed: dns error");
+        }
+
+        // A counted repeat is not a new entry, so a reader following the log
+        // by index must not be told there is something new to read.
+        let drain = handle.lock().unwrap();
+        let records = drain.records.read().unwrap();
+        assert_eq!(records.inserted, 1);
+        assert_eq!(records.first_index(), 0);
+    }
+
+    #[test]
+    fn drain_first_index_grows_across_eviction_and_a_new_operation() {
+        let (handle, log) = logging_drain();
+
+        // Distinct messages, so the bound is enforced by evicting rather than
+        // by counting them.
+        let logged = 20_000;
+        for i in 0..logged {
+            error!(log, "Probe failed: could not reach the server, attempt {}", i);
+        }
+
+        let after_eviction = {
+            let drain = handle.lock().unwrap();
+            let records = drain.records.read().unwrap();
+            assert!(records.entries.len() < logged, "nothing was evicted");
+            records.first_index()
+        };
+        assert!(after_eviction > 0, "eviction left the first index behind");
+
+        handle.lock().unwrap().start_logging();
+        info!(log, "{}", "new operation");
+
+        // Eviction and a new operation both move the index forward, so a
+        // reader can neither mistake one for the other nor take what follows
+        // for what it already read.
+        let drain = handle.lock().unwrap();
+        let records = drain.records.read().unwrap();
+        assert_eq!(records.first_index(), logged);
+        assert!(records.first_index() > after_eviction);
+    }
+
+    #[test]
+    fn drain_keeps_the_newest_entry_past_the_bound() {
+        let (handle, log) = logging_drain();
+
+        // An entry larger than the bound is still kept: evicting it would
+        // leave the reader with nothing at all.
+        error!(log, "{}", "z".repeat(MAX_RECORDED_BYTES * 2));
+        {
+            let drain = handle.lock().unwrap();
+            let records = drain.records.read().unwrap();
+            assert_eq!(records.entries.len(), 1);
+            assert!(records.bytes > MAX_RECORDED_BYTES);
+        }
+
+        // And it gives way as soon as there is a newer one to keep instead.
+        info!(log, "{}", "back to normal");
+
+        let drain = handle.lock().unwrap();
+        let records = drain.records.read().unwrap();
+        assert_eq!(records.entries.len(), 1);
+        assert_eq!(records.entries[0].message, "back to normal");
+        assert!(records.bytes <= MAX_RECORDED_BYTES);
+    }
+
+    #[test]
+    fn drain_serializes_the_repeat_count() {
+        let (handle, log) = logging_drain();
+
+        error!(log, "{}", "Probe failed: dns error");
+        error!(log, "{}", "Probe failed: dns error");
+        error!(log, "{}", "Probe failed: dns error");
+
+        let result = serde_json::to_string(&handle).unwrap();
+        assert!(
+            result.contains(r#""message":"Probe failed: dns error (repeated 3 times)""#),
+            "unexpected log:\n{result}"
+        );
+    }
+
+    #[test]
+    fn drain_records_nothing_while_logging_is_off() {
+        let (handle, log) = logging_drain();
+
+        info!(log, "{}", "during the operation");
+        handle.lock().unwrap().stop_logging();
+        info!(log, "{}", "after it ended");
+
+        // Stopping keeps what was recorded, so the operation that just ended
+        // stays readable.
+        assert_eq!(handle.lock().unwrap().records.read().unwrap().entries.len(), 1);
+
+        // Recording out of scope resumes without discarding it, which is what
+        // reporting a probe failure from an idle device relies on.
+        handle.lock().unwrap().set_logging(true);
+        error!(log, "{}", "Probe failed: dns error");
+
+        let drain = handle.lock().unwrap();
+        let records = drain.records.read().unwrap();
+        assert_eq!(records.entries.len(), 2);
+        assert_eq!(records.first_index(), 0);
     }
 }
