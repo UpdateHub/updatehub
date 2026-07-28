@@ -8,6 +8,7 @@ version = "2.1.5"
 authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 license = "Apache-2.0"
 edition = "2021"
+rust-version = "1.88"
 description = "UpdateHub Packages metadata schemas"
 repository = "https://github.com/UpdateHub/updatehub"
 homepage = "https://github.com/UpdateHub/updatehub"

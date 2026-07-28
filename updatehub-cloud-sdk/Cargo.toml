@@ -8,6 +8,7 @@ version = "2.1.5"
 authors = ["Jonathas-Conceicao <jonathas.conceicao@ossystems.com.br>"]
 license = "Apache-2.0"
 edition = "2021"
+rust-version = "1.88"
 description = "API for interacting with the UpdateHub Cloud"
 repository = "https://github.com/UpdateHub/updatehub"
 homepage = "https://github.com/UpdateHub/updatehub"

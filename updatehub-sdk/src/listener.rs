@@ -110,7 +110,7 @@ impl StateChange {
     pub async fn listen(&self) -> Result<()> {
         let sdk_trigger = Path::new(SDK_TRIGGER_FILENAME);
         if !sdk_trigger.exists() {
-            warn!("WARNING: updatehub-sdk-statechange-trigger not found on {:?}", sdk_trigger);
+            warn!("WARNING: updatehub-sdk-statechange-trigger not found on {sdk_trigger:?}");
         }
 
         let socket_path = env::var("UH_LISTENER_TEST").unwrap_or_else(|_| SOCKET_PATH.to_string());

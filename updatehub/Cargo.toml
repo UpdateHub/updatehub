@@ -10,6 +10,7 @@ version = "2.1.5"
 authors = ["Otavio Salvador <otavio@ossystems.com.br>"]
 license = "Apache-2.0"
 edition = "2021"
+rust-version = "1.88"
 default-run = "updatehub"
 publish = false
 repository = "https://github.com/UpdateHub/updatehub.git"

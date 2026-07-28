@@ -97,13 +97,17 @@ impl RuntimeSettings {
             v1_content: None,
         });
 
+        // Falling back to the v1 format already reports this module's error,
+        // so it is only without that fallback that one is left to convert.
         #[cfg(feature = "v1-parsing")]
         let runtime_settings = runtime_settings.or_else(|e| {
             v1_parse(content, e)
                 .map(|s| RuntimeSettings { inner: s, v1_content: Some(content.to_string()) })
         });
+        #[cfg(not(feature = "v1-parsing"))]
+        let runtime_settings = runtime_settings.map_err(Error::from);
 
-        runtime_settings.map_err(Into::into)
+        runtime_settings
     }
 
     fn save(&self) -> Result<()> {
