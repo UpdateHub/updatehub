@@ -10,23 +10,21 @@ on:
 jobs:
   code_style:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install libarchive-dev protobuf-compiler
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      # rustfmt.toml uses nightly-only options, so the dev shell pairs a nightly
+      # rustfmt with the MSRV toolchain the rest of the shell provides. Clippy
+      # therefore runs at the MSRV, which is what the code has to build with.
+      - uses: ossystems/nix-actions@v1
         with:
-          toolchain: nightly
-          override: true
-          components: rustfmt, clippy
+          install-nix: true
+          export-devshell: true
+
+      - name: Cache build contents
+        uses: Swatinem/rust-cache@v2
 
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --all --tests -- -D clippy::all
+      - name: Run cargo clippy
+        run: cargo clippy --locked --all-features --all --tests -- -D clippy::all
