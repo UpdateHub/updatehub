@@ -5,7 +5,10 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt},
+    utils::{
+        self,
+        definitions::{Access, TargetTypeExt},
+    },
 };
 
 use pkg_schema::{definitions, objects};
@@ -21,7 +24,7 @@ impl Installer for objects::Flash {
 
         match self.target {
             definitions::TargetType::Device(_) | definitions::TargetType::MTDName(_) => {
-                self.target.valid()?;
+                self.target.valid(Access::Exclusive)?;
                 utils::fs::ensure_disk_space(
                     &self.target.get_target()?,
                     self.required_install_size(),

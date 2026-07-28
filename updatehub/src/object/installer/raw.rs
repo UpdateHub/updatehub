@@ -5,7 +5,11 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt, log::LogContent},
+    utils::{
+        self,
+        definitions::{Access, TargetTypeExt},
+        log::LogContent,
+    },
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
@@ -22,7 +26,7 @@ impl Installer for objects::Raw {
         info!("'raw' handle checking requirements");
 
         if let definitions::TargetType::Device(dev) =
-            self.target_type.valid().log_error_msg("device failed vaidation")?
+            self.target_type.valid(Access::Exclusive).log_error_msg("device failed vaidation")?
         {
             utils::fs::ensure_disk_space(dev, self.required_install_size())
                 .log_error_msg("not enough disk space")?;

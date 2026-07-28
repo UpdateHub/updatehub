@@ -5,7 +5,11 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt, log::LogContent},
+    utils::{
+        self,
+        definitions::{Access, TargetTypeExt},
+        log::LogContent,
+    },
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
@@ -20,7 +24,7 @@ impl Installer for objects::Ubifs {
         utils::fs::is_executable_in_path("ubinfo").log_error_msg("ubinfo not on PATH")?;
 
         if let definitions::TargetType::UBIVolume(_) =
-            self.target.valid().log_error_msg("device failed validation")?
+            self.target.valid(Access::Exclusive).log_error_msg("device failed validation")?
         {
             utils::fs::ensure_disk_space(&self.target.get_target()?, self.required_install_size())
                 .log_error_msg("not enough disk space")?;

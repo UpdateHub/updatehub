@@ -34,6 +34,15 @@ pub enum Error {
     MissingWritePermission(#[error(not(source))] std::path::PathBuf),
 
     #[display(
+        "target device {device:?} is in use, it holds the filesystem mounted at {mount_point:?}"
+    )]
+    #[from(ignore)]
+    DeviceInUse {
+        device: std::path::PathBuf,
+        mount_point: std::path::PathBuf,
+    },
+
+    #[display(
         "{available} is not enough storage space for installation, at least {required} is required"
     )]
     #[from(ignore)]
