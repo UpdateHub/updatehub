@@ -8,73 +8,47 @@ on:
   pull_request:
 
 jobs:
-  build_and_test:
-    strategy:
-      fail-fast: false
-      matrix:
-        name: [MSRV, stable, nightly]
-        include:
-          - name: MSRV
-            version: 1.82.0
-          - name: stable
-            version: stable
-          - name: nightly
-            version: nightly
-
-    name: Test ${{ matrix.name }} - x86_64-unknown-linux-gnu
+  # Evaluates the flake and builds the dev shell, so a broken flake is reported
+  # on its own instead of as a confusing failure inside the test job. It also
+  # warms the Nix store cache the test job restores.
+  nix:
+    name: Flake check
     runs-on: ubuntu-latest
 
     steps:
-      - name: Install Dependencies
-        run: sudo apt-get update -y; sudo apt-get install -y libarchive-dev libclang-dev protobuf-compiler socat
-
-      - name: Checkout sources
-        uses: actions/checkout@v4
-
-      - name: Install ${{ matrix.version }}
-        uses: actions-rs/toolchain@v1
+      - uses: ossystems/nix-actions@v1
         with:
-          toolchain: ${{ matrix.version }}-x86_64-unknown-linux-gnu
-          profile: minimal
-          override: true
+          install-nix: true
 
-      - name: Install cargo tree tool
-        if: matrix.name == 'MSRV'
-        uses: actions-rs/install@v0.1
+  build_and_test:
+    name: Test - x86_64-unknown-linux-gnu
+    runs-on: ubuntu-latest
+
+    steps:
+      # Loads the flake's dev shell into the job, so every step below runs with
+      # the toolchain and the native dependencies (libarchive, protobuf, socat,
+      # ...) the flake pins. The dev shell is pinned to the MSRV, so the whole
+      # job doubles as the MSRV check.
+      - uses: ossystems/nix-actions@v1
         with:
-          crate: cargo-tree
-          use-tool-cache: true
+          install-nix: true
+          export-devshell: true
 
       - name: Cache build contents
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-build-trimmed-${{ hashFiles('**/Cargo.lock') }}
+        uses: Swatinem/rust-cache@v2
 
       # Every other step below enables all the features, which leaves the
       # default feature set never being built. Check it on its own so a change
       # guarded by a feature flag cannot break the plain `cargo build`.
       - name: Check build with the default features
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --release --all --bins --examples --tests
+        run: cargo check --locked --release --all --bins --examples --tests
 
       - name: Check build
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --release --all --bins --examples --tests --all-features
+        run: cargo check --locked --release --all --bins --examples --tests --all-features
 
       - name: Tests
-        uses: actions-rs/cargo@v1
         timeout-minutes: 10
-        with:
-          command: test
-          args: --locked --release --all --all-features --no-fail-fast -- --nocapture
+        run: cargo test --locked --release --all --all-features --no-fail-fast -- --nocapture
 
       - name: Run listener test
         run: |
@@ -102,22 +76,11 @@ jobs:
             exit 4
           fi
 
-      - name: Install cargo-llvm-cov
-        if: matrix.name == 'nightly'
-        uses: taiki-e/install-action@cargo-llvm-cov
-
       - name: Generate code coverage
-        if: matrix.name == 'nightly'
         run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
 
       - name: Upload coverage to Coveralls
-        if: matrix.name == 'nightly'
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: lcov.info
-
-      - name: Clear the cargo caches
-        run: |
-          cargo install cargo-cache --no-default-features --features ci-autoclean
-          cargo-cache
