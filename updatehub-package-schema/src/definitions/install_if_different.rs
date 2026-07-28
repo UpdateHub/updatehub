@@ -11,13 +11,13 @@ use serde::Deserialize;
 pub enum InstallIfDifferent {
     #[serde(deserialize_with = "deserialize_checksum")]
     /// Use checksum to check.
-    #[display(fmt = "checksum")]
+    #[display("checksum")]
     CheckSum,
     /// Use a predefined (known) pattern to check.
-    #[display(fmt = "pattern({pattern} equal to '{version}')")]
+    #[display("pattern({pattern} equal to '{version}')")]
     KnownPattern { version: String, pattern: KnownPatternKind },
     /// Use a custom pattern to check.
-    #[display(fmt = "custom pattern({} uqual to '{}')", "pattern.regexp", version)]
+    #[display("custom pattern({} uqual to '{version}')", pattern.regexp)]
     CustomPattern { version: String, pattern: Pattern },
 }
 
@@ -27,10 +27,10 @@ pub enum InstallIfDifferent {
 #[serde(rename_all = "kebab-case")]
 pub enum KnownPatternKind {
     /// Linux Kernel pattern.
-    #[display(fmt = "Linux Kernel")]
+    #[display("Linux Kernel")]
     LinuxKernel,
     /// U-Boot pattern
-    #[display(fmt = "U-Boot")]
+    #[display("U-Boot")]
     UBoot,
 }
 

@@ -4,7 +4,7 @@
 
 #[tokio::main]
 async fn main() {
-    let server = mockito::Server::new();
+    let server = mockito::Server::new_async().await;
 
     let setup = updatehub::tests::TestEnvironment::build()
         .server_address(server.url())

@@ -98,7 +98,7 @@ where
         let compressed = result?;
         // read_archive_bytes += compressed.len();
         let unverified = compressed.decompress()?;
-        let verified = unverified.verify().map_err(|e| E2::from(Box::new(e)))?;
+        let verified = unverified.verify().map_err(E2::from)?;
         output.feed(&verified).await?;
     }
 

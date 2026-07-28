@@ -6,7 +6,7 @@ use crate::firmware::{
     self,
     installation_set::{self, Set},
 };
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{DateTime, Utc};
 use derive_more::{Deref, DerefMut, Display, Error, From};
 use sdk::api::info::runtime_settings as api;
 use slog_scope::{debug, warn};
@@ -20,11 +20,11 @@ pub enum Error {
     SerdeJson(serde_json::Error),
     Firmware(firmware::Error),
 
-    #[display(fmt = "invalid runtime settings destination")]
+    #[display("invalid runtime settings destination")]
     InvalidDestination,
 
     #[cfg(feature = "v1-parsing")]
-    #[display(fmt = "parsing error: json: {_0}, ini: {_1}")]
+    #[display("parsing error: json: {_0}, ini: {_1}")]
     V1Parsing(serde_json::Error, serde_ini::de::Error),
 }
 
@@ -43,7 +43,7 @@ impl Default for RuntimeSettings {
         RuntimeSettings {
             inner: api::RuntimeSettings {
                 polling: api::RuntimePolling {
-                    last: DateTime::from_utc(NaiveDateTime::from_timestamp_opt(0, 0).unwrap(), Utc),
+                    last: DateTime::from_timestamp(0, 0).unwrap(),
                     retries: 0,
                     now: false,
                     server_address: api::ServerAddress::Default,
@@ -302,7 +302,7 @@ mod tests {
         let expected = RuntimeSettings {
             inner: api::RuntimeSettings {
                 polling: api::RuntimePolling {
-                    last: DateTime::from_utc(NaiveDateTime::from_timestamp_opt(0, 0).unwrap(), Utc),
+                    last: DateTime::from_timestamp(0, 0).unwrap(),
                     retries: 0,
                     now: false,
                     server_address: api::ServerAddress::Default,
@@ -397,12 +397,9 @@ UpgradeToInstallation=1
         let expected = RuntimeSettings {
             inner: api::RuntimeSettings {
                 polling: api::RuntimePolling {
-                    last: DateTime::from_utc(
-                        DateTime::parse_from_rfc3339("2021-06-01T14:38:57-03:00")
-                            .unwrap()
-                            .naive_utc(),
-                        Utc,
-                    ),
+                    last: DateTime::parse_from_rfc3339("2021-06-01T14:38:57-03:00")
+                        .unwrap()
+                        .with_timezone(&Utc),
                     retries: 0,
                     now: false,
                     server_address: api::ServerAddress::Default,

@@ -40,11 +40,11 @@ pub type Result<T> = std::result::Result<T, TransitionError>;
 
 #[derive(Debug, Display, Error, From)]
 pub enum TransitionError {
-    #[display(fmt = "some objects are not ready for use")]
+    #[display("some objects are not ready for use")]
     SomeObjectsAreNotReady,
-    #[display(fmt = "signature not found")]
+    #[display("signature not found")]
     SignatureNotFound,
-    #[display(fmt = "channel communication as failed")]
+    #[display("channel communication as failed")]
     CommunicationFailed,
 
     Firmware(crate::firmware::Error),
@@ -372,9 +372,11 @@ pub async fn run(settings: &Path) -> crate::Result<()> {
     tokio::task::spawn_local(machine.start());
 
     // FIXME: handle failiure to parse the listen socket
-    http_api::Api::server(addr)
-        .run(listen_socket.replace("localhost", "127.0.0.1").parse::<std::net::SocketAddr>()?)
-        .await;
+    http_api::Api::serve(
+        addr,
+        listen_socket.replace("localhost", "127.0.0.1").parse::<std::net::SocketAddr>()?,
+    )
+    .await;
 
     info!("Server has gracefully stopped");
     Ok(())

@@ -17,10 +17,10 @@ enum FakeServer {
     DownloadInParts,
 }
 
-fn create_mock_server(mode: FakeServer) -> (mockito::ServerGuard, mockito::Mock) {
+async fn create_mock_server(mode: FakeServer) -> (mockito::ServerGuard, mockito::Mock) {
     use mockito::Matcher;
 
-    let mut server = mockito::Server::new();
+    let mut server = mockito::Server::new_async().await;
 
     let json_update = json!({
         "product": "0123456789",
@@ -212,7 +212,7 @@ async fn direct_get_invalid_url() {
 
 #[tokio::test]
 async fn probe_requirements() {
-    let (server, mocks) = create_mock_server(FakeServer::NoUpdate);
+    let (server, mocks) = create_mock_server(FakeServer::NoUpdate).await;
     sdk::Client::new(&server.url()).probe(0, FakeMetadata::new().get()).await.unwrap();
     mocks.assert();
 }
@@ -225,7 +225,7 @@ async fn probe_invalid_url() {
 
 #[tokio::test]
 async fn probe_with_retry() {
-    let (server, mocks) = create_mock_server(FakeServer::WithRetry);
+    let (server, mocks) = create_mock_server(FakeServer::WithRetry).await;
     sdk::Client::new(&server.url()).probe(1, FakeMetadata::new().get()).await.unwrap();
     mocks.assert();
 }
@@ -233,7 +233,7 @@ async fn probe_with_retry() {
 #[tokio::test]
 async fn probe_response_with_signature() {
     use sdk::api::ProbeResponse;
-    let (server, mocks) = create_mock_server(FakeServer::HasUpdate);
+    let (server, mocks) = create_mock_server(FakeServer::HasUpdate).await;
     let response =
         sdk::Client::new(&server.url()).probe(0, FakeMetadata::new().get()).await.unwrap();
     match response {
@@ -251,7 +251,7 @@ async fn probe_response_with_signature() {
 #[tokio::test]
 async fn probe_response_with_extra_poll() {
     use sdk::api::ProbeResponse;
-    let (server, mocks) = create_mock_server(FakeServer::ExtraPoll);
+    let (server, mocks) = create_mock_server(FakeServer::ExtraPoll).await;
     let response =
         sdk::Client::new(&server.url()).probe(0, FakeMetadata::new().get()).await.unwrap();
     match response {
@@ -263,7 +263,7 @@ async fn probe_response_with_extra_poll() {
 
 #[tokio::test]
 async fn report_success() {
-    let (server, mocks) = create_mock_server(FakeServer::ReportSuccess);
+    let (server, mocks) = create_mock_server(FakeServer::ReportSuccess).await;
     sdk::Client::new(&server.url())
         .report("state", FakeMetadata::new().get(), "package-uid", None, None, None)
         .await
@@ -273,7 +273,7 @@ async fn report_success() {
 
 #[tokio::test]
 async fn report_error() {
-    let (server, mocks) = create_mock_server(FakeServer::ReportError);
+    let (server, mocks) = create_mock_server(FakeServer::ReportError).await;
     sdk::Client::new(&server.url())
         .report(
             "state",
@@ -292,7 +292,7 @@ async fn report_error() {
 async fn download_object() {
     use tokio::fs;
 
-    let (server, mocks) = create_mock_server(FakeServer::DownloadInParts);
+    let (server, mocks) = create_mock_server(FakeServer::DownloadInParts).await;
     let dir = tempfile::tempdir().unwrap();
     let file_path = dir.path().join("object");
 

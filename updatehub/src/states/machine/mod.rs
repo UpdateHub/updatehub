@@ -297,8 +297,7 @@ impl StateMachine {
                         std::result::Result::<_, async_channel::RecvError>::Ok(())
                     };
 
-                    // recv_fut doesn't need to be pinned as it doesn't capture any context
-                    futures_util::pin_mut!(comm_fut);
+                    futures_util::pin_mut!(recv_fut, comm_fut);
                     let _ = futures_util::future::select(recv_fut, comm_fut).await;
                 }
             }

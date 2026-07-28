@@ -28,16 +28,16 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
-    #[display(fmt = "invalid product UID")]
+    #[display("invalid product UID")]
     InvalidProductUid,
 
-    #[display(fmt = "product UID is missing")]
+    #[display("product UID is missing")]
     MissingProductUid,
 
-    #[display(fmt = "device identity is missing")]
+    #[display("device identity is missing")]
     MissingDeviceIdentity,
 
-    #[display(fmt = "invalid installation set, the only know ones are 0 or 1")]
+    #[display("invalid installation set, the only know ones are 0 or 1")]
     InvalidInstallSet,
 
     Walkdir(walkdir::Error),

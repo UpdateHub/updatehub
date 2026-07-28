@@ -229,7 +229,7 @@ impl slog::ser::Serializer for KVSerializer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use slog::{Logger, o, slog_debug, slog_error, slog_info};
+    use slog::{Logger, debug, error, info, o};
     use std::sync::{Arc, Mutex};
 
     fn eq_without_time(s1: &str, s2: &str) -> bool {
@@ -255,8 +255,8 @@ mod tests {
         let r_vec = drain.clone();
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!());
-        slog_info!(log, "{}", s1);
-        slog_info!(log, "{}", s2);
+        info!(log, "{}", s1);
+        info!(log, "{}", s2);
         let result = r_vec.lock().unwrap().to_string();
         println!("{result}");
         assert!(result.contains(s1));
@@ -271,8 +271,8 @@ mod tests {
         let r_vec = drain.clone();
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!());
-        slog_info!(log, "{}", s1);
-        slog_debug!(log, "{}", s2);
+        info!(log, "{}", s1);
+        debug!(log, "{}", s2);
         let result = r_vec.lock().unwrap().to_string();
         println!("{result}");
         assert!(result.contains("info"));
@@ -288,7 +288,7 @@ mod tests {
         let r_vec = drain.clone();
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!("LOGGER" => logger_value));
-        slog_info!(log, "{}", txt; "RECORD" => macro_value);
+        info!(log, "{}", txt; "RECORD" => macro_value);
         let result = r_vec.lock().unwrap().to_string();
         println!("{result}");
         assert!(result.contains(logger_value));
@@ -327,9 +327,9 @@ mod tests {
         let r_vec = drain.clone();
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!());
-        slog_info!(log, "{}", "info 1");
-        slog_info!(log, "{}", "info 2"; "field1" => "value1");
-        slog_error!(log, "{}", "error n");
+        info!(log, "{}", "info 1");
+        info!(log, "{}", "info 2"; "field1" => "value1");
+        error!(log, "{}", "error n");
         let result = serde_json::to_string_pretty(&r_vec).unwrap();
         assert!(eq_without_time(expected, &result), "Expected:\n{expected}\n\nResult:\n{result}");
     }
@@ -344,7 +344,7 @@ mod tests {
         // Distinct messages, so none of them can be counted as a repeat.
         let logged = 20_000;
         for i in 0..logged {
-            slog_error!(log, "Probe failed: could not reach the server, attempt {}", i);
+            error!(log, "Probe failed: could not reach the server, attempt {}", i);
         }
 
         let drain = handle.lock().unwrap();
@@ -368,7 +368,7 @@ mod tests {
 
         // What an offline device produces, once per probe retry.
         for _ in 0..3_600 {
-            slog_error!(log, "Probe failed: {}", "dns error");
+            error!(log, "Probe failed: {}", "dns error");
         }
 
         let result = handle.lock().unwrap().to_string();
@@ -383,13 +383,13 @@ mod tests {
         drain.lock().unwrap().start_logging();
         let log = Logger::root(drain.fuse(), o!());
 
-        slog_info!(log, "{}", "first operation");
+        info!(log, "{}", "first operation");
         assert_eq!(handle.lock().unwrap().records.read().unwrap().first_index(), 0);
 
         // Recording a new operation drops the previous entries, but a reader
         // must not take the ones that follow for the ones it already read.
         handle.lock().unwrap().start_logging();
-        slog_info!(log, "{}", "second operation");
+        info!(log, "{}", "second operation");
 
         let drain = handle.lock().unwrap();
         let records = drain.records.read().unwrap();

@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use expectrl::Expect;
+
 use common::{
     FakeServer, Polling, Server, Settings, StopMessage, create_mock_server, get_output_server,
     remove_carriage_newline_characters, rewrite_log_output, run_client_log, run_client_probe,
@@ -108,12 +110,11 @@ fn failing_invalid_file_config() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
-    TOML parse error at line 2, column 20
+    TOML parse error at line 2, column 44
       |
     2 |     server_address=https://api.updatehub.io, listen_socket=localhost:8080;
-      |                    ^
-    invalid string
-    expected `"`, `'`
+      |                                            ^
+    unexpected key or value, expected newline, `#`
     "###);
 }
 
@@ -142,12 +143,11 @@ fn failing_invalid_file_config() {
     insta::assert_snapshot!(output_server_trce, @r###"
     <timestamp> INFO starting UpdateHub Agent <version>
     <timestamp> DEBG loading system settings from "<file>"
-    parsing error: toml: TOML parse error at line 2, column 20
+    parsing error: toml: TOML parse error at line 2, column 44
       |
     2 |     server_address=https://api.updatehub.io, listen_socket=localhost:8080;
-      |                    ^
-    invalid string
-    expected `"`, `'`
+      |                                            ^
+    unexpected key or value, expected newline, `#`
     , ini: Custom("missing field `Network`")
     "###);
 }

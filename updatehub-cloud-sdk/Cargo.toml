@@ -15,14 +15,14 @@ homepage = "https://github.com/UpdateHub/updatehub"
 documentation = "https://docs.rs/updatehub-cloud-sdk"
 
 [dependencies]
-derive_more = { version = "0.99", default-features = false, features = [
+derive_more = { version = "2", default-features = false, features = [
   "display",
   "error",
   "from",
 ] }
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema", version = "2" }
-reqwest = { version = "0.11", default-features = false, features = [
+reqwest = { version = "0.13", default-features = false, features = [
   "json",
   "native-tls",
 ] }

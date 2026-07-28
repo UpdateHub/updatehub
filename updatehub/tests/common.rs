@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+use expectrl::Expect;
 use regex::Regex;
 use serde_json::json;
 use std::{env, net::TcpListener, path::PathBuf};
@@ -62,7 +63,7 @@ impl Default for Settings {
 }
 
 impl Settings {
-    pub fn init_server(self) -> (expectrl::session::Session, updatehub::tests::TestEnvironment) {
+    pub fn init_server(self) -> (expectrl::session::OsSession, updatehub::tests::TestEnvironment) {
         let mut setup = updatehub::tests::TestEnvironment::build()
             .listen_socket(self.listen_socket)
             .server_address(self.server_address)
@@ -162,7 +163,7 @@ impl Settings {
 }
 
 pub fn get_output_server(
-    handle: &mut expectrl::session::Session,
+    handle: &mut expectrl::session::OsSession,
     stop_message: StopMessage,
 ) -> (String, String) {
     // The trailing CRLF is matched explicitly rather than anchoring with `$`:

@@ -85,7 +85,7 @@ pub(crate) fn mount(source: &Path, fs: Filesystem, options: &str) -> io::Result<
 pub(crate) fn chmod(path: &Path, mode: u32) -> Result<()> {
     trace!("applying 0o{:o} permissions to {:?}", mode, path);
     nix::sys::stat::fchmodat(
-        None,
+        nix::fcntl::AT_FDCWD,
         path,
         nix::sys::stat::Mode::from_bits(mode).unwrap(),
         nix::sys::stat::FchmodatFlags::FollowSymlink,

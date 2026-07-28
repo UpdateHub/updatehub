@@ -12,9 +12,11 @@ type Result<T> = std::result::Result<T, warp::Rejection>;
 pub(crate) struct Api();
 
 impl Api {
-    pub(crate) fn server(
-        addr: machine::Addr,
-    ) -> warp::Server<warp::filters::BoxedFilter<(impl warp::Reply,)>> {
+    pub(crate) async fn serve(addr: machine::Addr, socket: std::net::SocketAddr) {
+        warp::serve(Api::filter(addr)).run(socket).await
+    }
+
+    fn filter(addr: machine::Addr) -> warp::filters::BoxedFilter<(impl warp::Reply,)> {
         let state = warp::any().map(move || addr.clone());
 
         let info = warp::get().and(warp::path("info")).and(state.clone()).and_then(Api::info);
@@ -43,10 +45,9 @@ impl Api {
             .and(state)
             .and_then(Api::download_abort);
 
-        let main_filter = warp::any()
+        warp::any()
             .and(info.or(log).or(probe).or(local_install).or(remote_install).or(download_abort))
-            .boxed();
-        warp::serve(main_filter)
+            .boxed()
     }
 
     async fn info(addr: machine::Addr) -> Result<warp::reply::Json> {
