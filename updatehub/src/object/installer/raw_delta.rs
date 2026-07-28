@@ -5,7 +5,12 @@
 use super::{Context, Error, Result};
 use crate::{
     object::Installer,
-    utils::{self, definitions::TargetTypeExt, delta, log::LogContent},
+    utils::{
+        self,
+        definitions::{Access, TargetTypeExt},
+        delta,
+        log::LogContent,
+    },
 };
 
 use pkg_schema::{definitions, objects};
@@ -17,7 +22,7 @@ impl Installer for objects::RawDelta {
         info!("'raw-delta' handle checking requirements");
 
         if let definitions::TargetType::Device(dev) =
-            self.target.valid().log_error_msg("device failed validation")?
+            self.target.valid(Access::Exclusive).log_error_msg("device failed validation")?
         {
             let seed = get_seed_path(self, context);
             let required_size = delta::get_required_size(&seed, dev)

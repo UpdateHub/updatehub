@@ -3,25 +3,44 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{Error, Result};
-use crate::utils::mtd;
+use crate::utils::{fs, mtd};
 use pkg_schema::definitions::{
     TargetType,
     target_permissions::{Gid, Uid},
 };
 use std::path::PathBuf;
 
+/// How a handler reaches its target, which decides whether a filesystem the
+/// system already has mounted on it is acceptable.
+pub(crate) enum Access {
+    /// The handler writes the device itself, so nothing else may be using it.
+    Exclusive,
+    /// The handler writes through a filesystem it mounts, which is safe to do
+    /// even on a device already mounted elsewhere.
+    ThroughFilesystem,
+}
+
+impl Access {
+    /// Formatting rewrites the whole filesystem, so it takes the device for
+    /// itself even on a handler otherwise going through a mount.
+    pub(crate) fn for_format(should_format: bool) -> Access {
+        if should_format { Access::Exclusive } else { Access::ThroughFilesystem }
+    }
+}
+
 /// Utility functions for [TargetType](pkg_schema::definitions::TargetType)
 pub(crate) trait TargetTypeExt {
     /// Checks whether the device is valid to start installation, i.e.,
-    /// device exists, use have write permission.
-    fn valid(&self) -> Result<&Self>;
+    /// device exists, use have write permission, and is free of mounted
+    /// filesystems when the handler asks for [Access::Exclusive].
+    fn valid(&self, access: Access) -> Result<&Self>;
 
     /// Gets device's path for mounting.
     fn get_target(&self) -> Result<PathBuf>;
 }
 
 impl TargetTypeExt for TargetType {
-    fn valid(&self) -> Result<&Self> {
+    fn valid(&self, access: Access) -> Result<&Self> {
         let device = self.get_target()?;
 
         if !device.exists() {
@@ -30,6 +49,10 @@ impl TargetTypeExt for TargetType {
 
         if device.metadata()?.permissions().readonly() {
             return Err(Error::MissingWritePermission(device));
+        }
+
+        if let Access::Exclusive = access {
+            fs::ensure_not_mounted(&device)?;
         }
 
         Ok(self)

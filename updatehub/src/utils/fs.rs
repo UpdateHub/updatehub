@@ -3,13 +3,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{Error, Result};
-use crate::utils::definitions::IdExt;
+use crate::utils::{definitions::IdExt, mtd};
 use pkg_schema::definitions::{
     Filesystem,
     target_permissions::{Gid, Uid},
 };
 use slog_scope::trace;
-use std::{io, io::Seek, os::unix::fs::FileTypeExt, path::Path};
+use std::{
+    collections::HashSet,
+    io::{self, Seek},
+    os::unix::fs::FileTypeExt,
+    path::{Path, PathBuf},
+};
 use sys_mount::{Mount, Unmount, UnmountDrop};
 
 pub(crate) struct MountGuard {
@@ -57,6 +62,145 @@ fn available_space(target: &Path) -> Result<u64> {
     Ok(u64::from(stat.fragment_size()) * u64::from(stat.blocks_free()))
 }
 
+/// Block device number, as `(major, minor)`.
+type DeviceId = (u64, u64);
+
+/// Ensures no mounted filesystem lives on `target`, so an installation writing
+/// to it cannot corrupt data the running system still believes it owns.
+///
+/// Besides `target` itself this covers the partitions it contains, the disk it
+/// is a partition of and whatever is stacked on top of it, as damaging any of
+/// those damages the others.
+pub(crate) fn ensure_not_mounted(target: &Path) -> Result<()> {
+    trace!("checking whether {:?} is in use", target);
+
+    let metadata = match std::fs::metadata(target) {
+        Ok(metadata) => metadata,
+        // Nothing can be mounted on a device which is not there. Complaining
+        // about it is left to the existence check.
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(()),
+        Err(e) => return Err(e.into()),
+    };
+
+    // MTD and UBI offer no block device to compare against, they are named in
+    // `/proc/self/mountinfo` instead.
+    let sources = mtd::mount_sources_for(target).into_iter().collect::<HashSet<_>>();
+
+    let mut devices = HashSet::new();
+    devices.extend(block_device_id(&metadata).into_iter().flat_map(related_block_devices));
+    for source in sources.iter().filter(|source| source.starts_with('/')) {
+        if let Ok(metadata) = std::fs::metadata(source) {
+            devices.extend(block_device_id(&metadata).into_iter().flat_map(related_block_devices));
+        }
+    }
+
+    let mountinfo = std::fs::read_to_string("/proc/self/mountinfo")?;
+    if let Some(entry) = mountinfo
+        .lines()
+        .filter_map(parse_mount_entry)
+        .find(|entry| devices.contains(&entry.device) || sources.contains(&entry.source))
+    {
+        return Err(Error::DeviceInUse {
+            device: target.to_owned(),
+            mount_point: entry.mount_point,
+        });
+    }
+
+    Ok(())
+}
+
+fn block_device_id(metadata: &std::fs::Metadata) -> Option<DeviceId> {
+    use std::os::unix::fs::MetadataExt;
+
+    metadata
+        .file_type()
+        .is_block_device()
+        .then(|| (nix::sys::stat::major(metadata.rdev()), nix::sys::stat::minor(metadata.rdev())))
+}
+
+/// An entry of `/proc/self/mountinfo`.
+struct MountEntry {
+    device: DeviceId,
+    source: String,
+    mount_point: PathBuf,
+}
+
+/// Parses a line of `/proc/self/mountinfo`:
+///
+/// ```text
+/// 26 25 8:2 / /boot rw,relatime shared:5 - ext4 /dev/sda2 rw
+/// ```
+///
+/// The optional fields before the `-` separator vary in count, so the mount
+/// source is located relative to it rather than by a fixed index.
+fn parse_mount_entry(line: &str) -> Option<MountEntry> {
+    let fields = line.split_whitespace().collect::<Vec<_>>();
+    let separator = fields.iter().position(|field| *field == "-")?;
+    let (major, minor) = fields.get(2)?.split_once(':')?;
+
+    Some(MountEntry {
+        device: (major.parse().ok()?, minor.parse().ok()?),
+        source: fields.get(separator + 2)?.to_string(),
+        mount_point: PathBuf::from(fields.get(4)?),
+    })
+}
+
+/// Collects `device` along with every block device sharing its storage: the
+/// partitions it contains, the disk it is a partition of and whatever is
+/// stacked on top of it, such as LVM, MD and loop devices.
+///
+/// Sibling partitions are deliberately left out, writing to one partition does
+/// not reach the others.
+fn related_block_devices(device: DeviceId) -> HashSet<DeviceId> {
+    let mut found = HashSet::new();
+    let mut pending = vec![device];
+
+    while let Some(device) = pending.pop() {
+        if !found.insert(device) {
+            continue;
+        }
+
+        let sysfs = PathBuf::from(format!("/sys/dev/block/{}:{}", device.0, device.1));
+        let Ok(sysfs) = sysfs.canonicalize() else {
+            continue;
+        };
+
+        // A partition's directory lives inside the one of its disk. The disk is
+        // recorded but not walked, otherwise its other partitions would be
+        // dragged in as well.
+        if sysfs.join("partition").exists() {
+            found.extend(sysfs.parent().and_then(|disk| read_device_id(&disk.join("dev"))));
+        } else {
+            pending.extend(device_ids_in(&sysfs, |path| path.join("partition").exists()));
+        }
+
+        pending.extend(device_ids_in(&sysfs.join("holders"), |_| true));
+    }
+
+    found
+}
+
+/// Device numbers of the sysfs entries under `dir` which satisfy `wanted`.
+fn device_ids_in(dir: &Path, wanted: impl Fn(&Path) -> bool) -> Vec<DeviceId> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::default();
+    };
+
+    entries
+        .filter_map(std::result::Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| wanted(path))
+        .filter_map(|path| read_device_id(&path.join("dev")))
+        .collect()
+}
+
+fn read_device_id(path: &Path) -> Option<DeviceId> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let (major, minor) = content.trim().split_once(':')?;
+
+    Some((major.parse().ok()?, minor.parse().ok()?))
+}
+
 pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
     trace!("checking if {} is executable", cmd);
     match quale::which(cmd) {
@@ -66,6 +210,10 @@ pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
 }
 
 pub(crate) fn format(target: &Path, fs: Filesystem, options: &Option<String>) -> Result<()> {
+    // The commands below are forced so they run unattended, which also means
+    // they will not refuse to wipe a mounted filesystem on their own.
+    ensure_not_mounted(target)?;
+
     trace!("formating {:?} as {}", target, fs);
     let target = target.display();
     let options = options.clone().unwrap_or_default();
@@ -203,5 +351,69 @@ mod tests {
             ensure_disk_space(&loop_device.device, LOOP_DEVICE_SIZE + 1),
             Err(Error::NotEnoughSpace { .. })
         ));
+    }
+
+    #[test]
+    fn mount_entry_without_optional_fields() {
+        let entry = parse_mount_entry("26 25 8:2 / /boot rw,relatime - ext4 /dev/sda2 rw").unwrap();
+
+        assert_eq!(entry.device, (8, 2));
+        assert_eq!(entry.source, "/dev/sda2");
+        assert_eq!(entry.mount_point, PathBuf::from("/boot"));
+    }
+
+    #[test]
+    fn mount_entry_with_optional_fields() {
+        let entry = parse_mount_entry(
+            "26 25 0:23 / / rw,relatime shared:5 master:1 - ubifs ubi0:rootfs rw",
+        )
+        .unwrap();
+
+        assert_eq!(entry.device, (0, 23));
+        assert_eq!(entry.source, "ubi0:rootfs");
+        assert_eq!(entry.mount_point, PathBuf::from("/"));
+    }
+
+    #[test]
+    fn malformed_mount_entries_are_dropped() {
+        assert!(parse_mount_entry("").is_none());
+        assert!(parse_mount_entry("26 25 8:2 / /boot rw,relatime ext4 /dev/sda2 rw").is_none());
+        assert!(parse_mount_entry("26 25 bogus / /boot rw - ext4 /dev/sda2 rw").is_none());
+    }
+
+    #[test]
+    fn regular_file_is_not_in_use() {
+        let file = tempfile::NamedTempFile::new().unwrap();
+
+        assert!(ensure_not_mounted(file.path()).is_ok());
+    }
+
+    #[test]
+    fn missing_device_is_not_in_use() {
+        assert!(ensure_not_mounted(Path::new("/dev/updatehub-inexistent-device")).is_ok());
+    }
+
+    // Requires root, as creating a loop device does.
+    #[test]
+    #[ignore]
+    fn mounted_device_is_in_use() {
+        let loop_device = FakeLoopDevice::new(LOOP_DEVICE_SIZE).unwrap();
+
+        assert!(
+            ensure_not_mounted(&loop_device.device).is_ok(),
+            "an unmounted loop device should be free to install onto"
+        );
+
+        format(&loop_device.device, Filesystem::Ext4, &None).unwrap();
+        let guard = mount(&loop_device.device, Filesystem::Ext4, "").unwrap();
+
+        let in_use = ensure_not_mounted(&loop_device.device);
+        // Unmount before asserting so the device is always released.
+        drop(guard);
+
+        assert!(
+            matches!(in_use, Err(Error::DeviceInUse { .. })),
+            "a mounted device must be rejected, got {in_use:?}"
+        );
     }
 }

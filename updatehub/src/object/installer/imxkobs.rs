@@ -11,11 +11,25 @@ use pkg_schema::objects;
 use slog_scope::info;
 use std::{fmt::Write as _, path::PathBuf};
 
+/// Device `kobs-ng` writes to when the object does not name one.
+const DEFAULT_CHIP_0_DEVICE_PATH: &str = "/dev/mtd0";
+
+/// Device `kobs-ng` writes the bootstream to, which it falls back to on its own
+/// when the object names none.
+fn chip_0_path(obj: &objects::Imxkobs) -> PathBuf {
+    obj.chip_0_device_path.clone().unwrap_or_else(|| PathBuf::from(DEFAULT_CHIP_0_DEVICE_PATH))
+}
+
 #[async_trait::async_trait(?Send)]
 impl Installer for objects::Imxkobs {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'imxkobs' handle checking requirements");
         utils::fs::is_executable_in_path("kobs-ng").log_error_msg("kobs-ng not in PATH")?;
+
+        for chip in [Some(chip_0_path(self)), self.chip_1_device_path.clone()].into_iter().flatten()
+        {
+            utils::fs::ensure_not_mounted(&chip).log_error_msg("target device is in use")?;
+        }
 
         Ok(())
     }
@@ -25,8 +39,7 @@ impl Installer for objects::Imxkobs {
 
         let should_skip_install =
             super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
-                let path =
-                    self.chip_0_device_path.clone().unwrap_or_else(|| PathBuf::from("/dev/mtd0"));
+                let path = chip_0_path(self);
                 let f = path.file_name().ok_or(Error::InvalidPath)?;
                 let mut file_name = f.to_os_string();
                 file_name.push("ro");
@@ -85,8 +98,10 @@ mod tests {
             install_if_different: None,
             padding_1k: true,
             search_exponent: 2,
-            chip_0_device_path: Some(PathBuf::from("/dev/sda1")),
-            chip_1_device_path: Some(PathBuf::from("/dev/sda2")),
+            // Inexistent on purpose, a real device could be in use on the host
+            // running the tests and the requirements check would reject it.
+            chip_0_device_path: Some(PathBuf::from("/dev/updatehub-chip-0")),
+            chip_1_device_path: Some(PathBuf::from("/dev/updatehub-chip-1")),
         }
     }
 

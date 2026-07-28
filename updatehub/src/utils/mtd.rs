@@ -7,7 +7,7 @@ use super::{Error, Result};
 use std::{
     fs,
     io::{BufRead, BufReader},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf> {
@@ -56,6 +56,82 @@ pub(crate) fn target_device_from_mtd_name(name: &str) -> Result<PathBuf> {
             })
         })
         .ok_or_else(|| Error::NoMtdDevice(name.to_owned()))
+}
+
+/// Mount sources which would be taken down by writing to `device`, an MTD
+/// character device or a UBI volume.
+///
+/// Neither UBIFS nor JFFS2 mount a block device, so `/proc/self/mountinfo`
+/// carries a name such as `ubi0:rootfs` or `mtd:rootfs` and the relationship
+/// can only be reconstructed from it.
+pub(crate) fn mount_sources_for(device: &Path) -> Vec<String> {
+    let Some(name) = device.file_name().and_then(|name| name.to_str()) else {
+        return Vec::default();
+    };
+
+    if name.starts_with("ubi") && name.contains('_') {
+        return ubi_volume_sources(name);
+    }
+
+    match name.strip_prefix("mtd").map(str::parse) {
+        Some(Ok(number)) => mtd_sources(number),
+        _ => Vec::default(),
+    }
+}
+
+/// Sources for a UBI volume, as in `ubi0_1`.
+fn ubi_volume_sources(volume: &str) -> Vec<String> {
+    let mut sources = vec![format!("/dev/{volume}"), volume.to_owned()];
+
+    // UBIFS is usually mounted through the volume name, as in `ubi0:rootfs`.
+    if let Some((device, _)) = volume.split_once('_') {
+        if let Ok(name) = fs::read_to_string(format!("/sys/class/ubi/{volume}/name")) {
+            sources.push(format!("{device}:{}", name.trim()));
+        }
+    }
+
+    sources
+}
+
+fn mtd_sources(number: u32) -> Vec<String> {
+    // mountinfo records the source as it was passed to mount(2), so the bare
+    // names are kept alongside the absolute ones to cover a relative mount.
+    let mut sources = vec![
+        format!("/dev/mtd{number}"),
+        format!("mtd{number}"),
+        format!("/dev/mtdblock{number}"),
+        format!("mtdblock{number}"),
+    ];
+
+    if let Ok(name) = fs::read_to_string(format!("/sys/class/mtd/mtd{number}/name")) {
+        sources.push(format!("mtd:{}", name.trim()));
+    }
+
+    // A UBI device attached to this MTD keeps its volumes on it, so erasing the
+    // MTD takes every mounted volume down as well.
+    sources.extend(ubi_volumes_on_mtd(number).iter().flat_map(|volume| ubi_volume_sources(volume)));
+
+    sources
+}
+
+/// Names of the UBI volumes, as in `ubi0_1`, stored on the given MTD device.
+fn ubi_volumes_on_mtd(number: u32) -> Vec<String> {
+    let Ok(entries) = fs::read_dir("/sys/class/ubi") else {
+        return Vec::default();
+    };
+
+    // `/sys/class/ubi` lists both the UBI devices, `ubi0`, and their volumes,
+    // `ubi0_1`, so the device a volume sits on is read off its own name.
+    entries
+        .filter_map(std::result::Result::ok)
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .filter(|volume| {
+            volume.split_once('_').is_some_and(|(device, _)| {
+                fs::read_to_string(format!("/sys/class/ubi/{device}/mtd_num"))
+                    .is_ok_and(|mtd| mtd.trim().parse() == Ok(number))
+            })
+        })
+        .collect()
 }
 
 mod ffi {

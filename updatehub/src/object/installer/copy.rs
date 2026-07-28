@@ -5,7 +5,11 @@
 use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt, log::LogContent},
+    utils::{
+        self,
+        definitions::{Access, TargetTypeExt},
+        log::LogContent,
+    },
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
@@ -20,8 +24,10 @@ impl Installer for objects::Copy {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'copy' handle checking requirements");
 
-        if let definitions::TargetType::Device(_) =
-            self.target_type.valid().log_error_msg("device failed vaidation")?
+        if let definitions::TargetType::Device(_) = self
+            .target_type
+            .valid(Access::for_format(self.target_format.should_format))
+            .log_error_msg("device failed vaidation")?
         {
             utils::fs::ensure_disk_space(
                 &self.target_type.get_target()?,

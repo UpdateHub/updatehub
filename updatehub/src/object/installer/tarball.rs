@@ -5,7 +5,11 @@
 use super::{Context, Result};
 use crate::{
     object::{Info, Installer},
-    utils::{self, definitions::TargetTypeExt, log::LogContent},
+    utils::{
+        self,
+        definitions::{Access, TargetTypeExt},
+        log::LogContent,
+    },
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
@@ -24,7 +28,9 @@ impl Installer for objects::Tarball {
                     self.required_install_size(),
                 )
                 .log_error_msg("not enough disk space")?;
-                self.target.valid().log_error_msg("device failed validation")?;
+                self.target
+                    .valid(Access::for_format(self.target_format.should_format))
+                    .log_error_msg("device failed validation")?;
                 Ok(())
             }
         }
