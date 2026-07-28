@@ -165,15 +165,18 @@ pub fn get_output_server(
     handle: &mut expectrl::session::Session,
     stop_message: StopMessage,
 ) -> (String, String) {
+    // The trailing CRLF is matched explicitly rather than anchoring with `$`:
+    // the needle is checked against the buffer as it fills, so an anchored match
+    // only lands when a read happens to end exactly on the last character.
     let stdout = String::from_utf8_lossy(
         handle
             .expect(expectrl::Regex(match stop_message {
                 StopMessage::Custom(ref s) => s,
                 StopMessage::Polling(Polling::Enable) => {
-                    "\r\n.* TRCE delaying transition for: .* seconds$"
+                    "\r\n.* TRCE delaying transition for: .* seconds\r\n"
                 }
                 StopMessage::Polling(Polling::Disable) => {
-                    "\r\n.* TRCE stopping transition until awoken$"
+                    "\r\n.* TRCE stopping transition until awoken\r\n"
                 }
             }))
             .expect("fail to match the required string")
