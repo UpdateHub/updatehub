@@ -103,7 +103,7 @@ impl RuntimeSettings {
                 .map(|s| RuntimeSettings { inner: s, v1_content: Some(content.to_string()) })
         });
 
-        Ok(runtime_settings?)
+        runtime_settings.map_err(Into::into)
     }
 
     fn save(&self) -> Result<()> {
