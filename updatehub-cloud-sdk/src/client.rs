@@ -53,6 +53,7 @@ where
             }
         }
     }
+    handle.flush().await?;
 
     Ok(())
 }
