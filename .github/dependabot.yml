@@ -1,32 +1,11 @@
 version: 2
-updates:
-  - package-ecosystem: "cargo"
-    directory: "/updatehub"
-    schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "agent"
 
+# The crates form a single cargo workspace sharing one lockfile at the root, so
+# they are updated as a unit. Scoping an entry to a member directory would let
+# dependabot bump that crate's manifest without the lockfile it does not hold,
+# which every CI step then rejects for running cargo with --locked.
 updates:
   - package-ecosystem: "cargo"
-    directory: "/updatehub-cloud-sdk"
+    directory: "/"
     schedule:
       interval: "daily"
-    commit-message:
-      prefix: "cloud-sdk"
-
-updates:
-  - package-ecosystem: "cargo"
-    directory: "/updatehub-package-schema"
-    schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "package-schema"
-
-updates:
-  - package-ecosystem: "cargo"
-    directory: "/updatehub-sdk"
-    schedule:
-      interval: "daily"
-    commit-message:
-      prefix: "sdk"
