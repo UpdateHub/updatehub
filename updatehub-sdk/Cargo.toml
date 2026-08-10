@@ -36,7 +36,7 @@ tokio = { version = "1", default-features = false, features = [
 
 [dev-dependencies]
 tempfile = "3"
-testcontainers = "0.27"
+testcontainers = "0.28"
 tokio = { version = "1", default-features = false, features = [
   "rt-multi-thread",
   "macros",
