@@ -208,7 +208,7 @@ mod test {
 
         let machine =
             State::Download(download_state).move_to_next_state(&mut context).await.unwrap().0;
-        assert_state!(machine, Install);
+        assert_state!(machine, Validation);
 
         assert_eq!(
             WalkDir::new(&download_dir)
