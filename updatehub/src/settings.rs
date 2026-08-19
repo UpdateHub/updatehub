@@ -59,6 +59,11 @@ impl Settings {
     /// Loads the settings from the filesystem. If
     /// `/etc/updatehub.conf` does not exists, it uses the default
     /// settings.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the file cannot be read, when it does not parse,
+    /// or when a value it holds fails validation.
     pub fn load(path: &Path) -> Result<Self> {
         if path.exists() {
             debug!("loading system settings from {:?}", path);

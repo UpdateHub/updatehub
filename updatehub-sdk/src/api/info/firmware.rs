@@ -51,10 +51,12 @@ impl MetadataValue {
         self.0.keys()
     }
 
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.len() == 0
     }
 
+    #[must_use]
     pub fn len(&self) -> usize {
         self.0.len()
     }

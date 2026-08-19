@@ -57,6 +57,12 @@ pub(crate) enum Transition {
 pub struct Metadata(pub api::Metadata);
 
 impl Metadata {
+    /// Collects the firmware metadata by running the hooks stored under `path`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when a hook is missing, when a hook fails, or when the
+    /// output of a hook does not have the expected form.
     pub fn from_path(path: &Path) -> Result<Self> {
         let product_uid_hook = path.join(PRODUCT_UID_HOOK);
         let version_hook = path.join(VERSION_HOOK);

@@ -348,6 +348,12 @@ impl State {
 /// # Ok(())
 /// # }
 /// ```
+///
+/// # Errors
+///
+/// Returns an error when the settings or the runtime settings fail to load,
+/// when the firmware metadata cannot be collected, or when the agent cannot
+/// listen on its socket.
 pub async fn run(settings: &Path) -> crate::Result<()> {
     crate::logger::start_memory_logging();
     let settings = Settings::load(settings)?;

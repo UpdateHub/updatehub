@@ -16,6 +16,13 @@ pub struct Client<'a> {
     server: &'a str,
 }
 
+/// Downloads the content of `url` into `handle`.
+///
+/// # Errors
+///
+/// Returns an error when `url` does not parse, when the request fails, when the
+/// server answers with a status other than success, or when the write to
+/// `handle` fails.
 pub async fn get<W>(url: &str, handle: &mut W) -> Result<()>
 where
     W: io::AsyncWrite + Unpin,
@@ -60,6 +67,13 @@ where
 }
 
 impl<'a> Client<'a> {
+    /// Constructs a client that talks to the server at `server`.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the platform gives no TLS backend to build the HTTP client
+    /// with.
+    #[must_use]
     pub fn new(server: &'a str) -> Self {
         let mut headers = header::HeaderMap::new();
         headers.insert(header::USER_AGENT, header::HeaderValue::from_static("updatehub/2.0 Linux"));
@@ -78,6 +92,13 @@ impl<'a> Client<'a> {
         Self { client, server }
     }
 
+    /// Asks the server whether an update is available for this device.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the server address does not parse, when the
+    /// request fails, when the server answers with an unexpected status, or
+    /// when the update metadata does not parse.
     pub async fn probe(
         &self,
         num_retries: usize,
@@ -120,6 +141,16 @@ impl<'a> Client<'a> {
         }
     }
 
+    /// Downloads one object of an update package into `download_dir`.
+    ///
+    /// Downloads that stopped part way continue from the number of bytes
+    /// already on disk.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the server address does not parse, when the
+    /// request fails, when the server answers with a status other than
+    /// success, or when the write to disk fails.
     pub async fn download_object(
         &self,
         product_uid: &str,
@@ -153,6 +184,12 @@ impl<'a> Client<'a> {
         save_body_to(request.send().await?, &mut file).await
     }
 
+    /// Reports the current state of the device to the server.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the server address does not parse or when the
+    /// request fails.
     pub async fn report(
         &self,
         state: &str,

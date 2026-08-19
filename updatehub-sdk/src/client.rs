@@ -24,6 +24,7 @@ impl Default for Client {
 
 impl Client {
     /// Constructs a new `Client`.
+    #[must_use]
     pub fn new(server_address: &str) -> Self {
         Client { server_address: format!("http://{server_address}"), ..Self::default() }
     }

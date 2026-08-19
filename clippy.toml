@@ -1,0 +1,3 @@
+# Names of products and specifications, which read as prose and take no
+# backticks in a doc comment.
+doc-valid-idents = ["UpdateHub", "OpenAPI", ".."]

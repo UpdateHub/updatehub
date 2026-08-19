@@ -14,6 +14,7 @@
 ///
 /// println!("Running version: {}", updatehub::version());
 /// ```
+#[must_use]
 pub fn version() -> &'static str {
     env!("VERSION")
 }

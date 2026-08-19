@@ -65,11 +65,21 @@ pub struct Handler {
 
 impl Handler {
     /// Cancels the current action on the agent.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the write to the agent socket fails.
     pub async fn cancel(&mut self) -> Result<()> {
         self.stream.lock().await.write_all(b"cancel").await.map_err(Error::Io)
     }
 
     /// Tell the agent to proceed with the transition.
+    ///
+    /// # Errors
+    ///
+    /// Never returns an error. The agent proceeds when it receives no message
+    /// at all, so this function only keeps the shape of the other handler
+    /// commands.
     pub async fn proceed(&self) -> Result<()> {
         // No message need to be sent to the connection in order to the
         // agent to proceed handling the current state.
@@ -80,6 +90,7 @@ impl Handler {
 impl StateChange {
     /// Creates a new `StateChange` struct.
     #[inline]
+    #[must_use]
     pub fn new() -> Self {
         StateChange::default()
     }
@@ -107,6 +118,11 @@ impl StateChange {
     }
 
     /// Start the agent to listen for messages on the socket.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the socket cannot be created or read, or when a
+    /// registered callback returns an error.
     pub async fn listen(&self) -> Result<()> {
         let sdk_trigger = Path::new(SDK_TRIGGER_FILENAME);
         if !sdk_trigger.exists() {

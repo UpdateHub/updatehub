@@ -28,11 +28,11 @@ impl Access {
     }
 }
 
-/// Utility functions for [TargetType](pkg_schema::definitions::TargetType)
+/// Utility functions for [`TargetType`](pkg_schema::definitions::TargetType)
 pub(crate) trait TargetTypeExt {
     /// Checks whether the device is valid to start installation, i.e.,
     /// device exists, use have write permission, and is free of mounted
-    /// filesystems when the handler asks for [Access::Exclusive].
+    /// filesystems when the handler asks for [`Access::Exclusive`].
     fn valid(&self, access: Access) -> Result<&Self>;
 
     /// Gets device's path for mounting.
