@@ -125,7 +125,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to load the MTD simulator modules"]
     async fn install_nor() {
         let _mtd_lock = SERIALIZE.lock();
         let mtd = FakeMtd::new(&["system0"], MtdKind::Nor).unwrap();

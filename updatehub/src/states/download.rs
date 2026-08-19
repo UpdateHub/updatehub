@@ -231,13 +231,11 @@ mod test {
     }
 
     #[tokio::test]
-    #[ignore]
     async fn download_small_object() {
         test_object_download(16).await;
     }
 
     #[tokio::test]
-    #[ignore]
     async fn download_large_object() {
         test_object_download(100_000_000).await;
     }

@@ -153,13 +153,13 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     async fn install_over_formated_partion() {
         exec_test_with_tarball(|obj| obj.target_format.should_format = true).await.unwrap();
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     async fn install_over_unformated_partion() {
         exec_test_with_tarball(|obj| obj.target_path = PathBuf::from("/existing_dir"))
             .await
