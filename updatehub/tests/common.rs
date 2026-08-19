@@ -383,7 +383,7 @@ pub fn rewrite_log_output(s: String) -> (String, String) {
     let time_re = Regex::new(r#"(\d{5}) seconds"#).unwrap();
     let trce_re = Regex::new(r"<timestamp> TRCE.*").unwrap();
     let debg_re = Regex::new(r"<timestamp> DEBG.*").unwrap();
-    let download_re = Regex::new(r"DEBG (\d{2})%").unwrap();
+    let download_re = Regex::new(r"DEBG (\d{1,3})%").unwrap();
 
     let s = server_address_re.replace_all(&s, "http://127.0.0.1:[port]");
     let s = version_re.replace_all(&s, "Agent <version>");
