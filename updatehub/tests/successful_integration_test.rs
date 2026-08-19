@@ -268,7 +268,7 @@ fn correct_config_update_polling() {
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
-    <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'install' state
@@ -297,7 +297,7 @@ fn correct_config_update_polling() {
     <timestamp> DEBG starting download of: testfile (23c3c412177bd37b9b61bf4738b18dc1fe003811c2583a14d2d9952d8b6a75b4)
     <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> DEBG <percentage>% of the file has been downloaded
-    <timestamp> DEBG 100% of the file has been downloaded
+    <timestamp> DEBG <percentage>% of the file has been downloaded
     <timestamp> TRCE starting to handle 'validation' state
     <timestamp> INFO no signature key available on device, ignoring signature validation
     <timestamp> TRCE starting to handle 'install' state

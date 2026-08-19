@@ -35,21 +35,22 @@ where
         return Err(Error::InvalidStatusResponse(resp.status()));
     }
 
-    let mut written: f32 = 0.;
+    let mut written: u64 = 0;
     let mut threshold = 10;
     let length = match resp.headers().get(header::CONTENT_LENGTH) {
-        Some(v) => usize::from_str(v.to_str()?)?,
+        Some(v) => u64::from_str(v.to_str()?)?,
         None => 0,
     };
 
     while let Some(chunk) = resp.chunk().await? {
-        let read = chunk.len();
+        let read = chunk.len() as u64;
         handle.write_all(&chunk).await?;
         if length > 0 {
-            written += read as f32 / (length as f32 / 100.);
-            if written as usize >= threshold {
+            written += read;
+            let percent = written * 100 / length;
+            if percent >= threshold {
                 threshold += 20;
-                debug!("{}% of the file has been downloaded", std::cmp::min(written as usize, 100));
+                debug!("{}% of the file has been downloaded", std::cmp::min(percent, 100));
             }
         }
     }
