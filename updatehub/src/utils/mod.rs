@@ -9,6 +9,9 @@ pub(crate) mod io;
 pub(crate) mod log;
 pub(crate) mod mtd;
 
+#[cfg(any(test, feature = "test-env"))]
+pub(crate) mod test_env;
+
 #[cfg(feature = "v1-parsing")]
 pub(crate) mod deserialize;
 

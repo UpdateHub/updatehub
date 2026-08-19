@@ -85,9 +85,12 @@ impl Installer for objects::Imxkobs {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::object::installer::tests::create_echo_bins;
+    use crate::{
+        object::installer::tests::create_echo_bins,
+        utils::{fs::search_path::SearchPathGuard, test_env::PathEnvGuard},
+    };
     use pretty_assertions::assert_eq;
-    use std::{env, path::PathBuf};
+    use std::path::PathBuf;
 
     fn fake_imxkobs_obj() -> objects::Imxkobs {
         objects::Imxkobs {
@@ -109,8 +112,7 @@ mod tests {
     async fn check_requirements_with_missing_binaries() {
         let imxkobs_obj = fake_imxkobs_obj();
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
+        let _search_path = SearchPathGuard::empty();
         assert!(imxkobs_obj.check_requirements(&Context::default()).await.is_err());
     }
 
@@ -126,7 +128,8 @@ mod tests {
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
-        let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let (mocks, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
 
         imxkobs_obj.check_requirements(&context).await.unwrap();
         imxkobs_obj.install(&context).await.unwrap();
@@ -146,7 +149,8 @@ mod tests {
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
-        let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let (mocks, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
 
         imxkobs_obj.check_requirements(&context).await.unwrap();
         imxkobs_obj.install(&context).await.unwrap();
@@ -166,7 +170,8 @@ mod tests {
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
-        let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let (mocks, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
 
         imxkobs_obj.check_requirements(&context).await.unwrap();
         imxkobs_obj.install(&context).await.unwrap();
@@ -190,7 +195,8 @@ mod tests {
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
-        let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let (mocks, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
 
         imxkobs_obj.check_requirements(&context).await.unwrap();
         imxkobs_obj.install(&context).await.unwrap();
@@ -214,7 +220,8 @@ mod tests {
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
-        let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let (mocks, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
 
         imxkobs_obj.check_requirements(&context).await.unwrap();
         imxkobs_obj.install(&context).await.unwrap();
@@ -235,7 +242,8 @@ mod tests {
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
-        let (_handle, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let (mocks, calls) = create_echo_bins(&["kobs-ng"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
 
         imxkobs_obj.check_requirements(&context).await.unwrap();
         imxkobs_obj.install(&context).await.unwrap();

@@ -74,7 +74,7 @@ impl Installer for objects::UbootEnv {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::firmware::installation_set::Set;
+    use crate::{firmware::installation_set::Set, utils::fs::search_path::SearchPathGuard};
     use pretty_assertions::assert_eq;
     use sdk::api::info::runtime_settings::InstallationSet;
 
@@ -90,8 +90,7 @@ mod tests {
     async fn check_requirements_with_missing_binary() {
         let uboot_env_obj = fake_uboot_env_obj();
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { std::env::set_var("PATH", "") };
+        let _search_path = SearchPathGuard::empty();
         assert!(uboot_env_obj.check_requirements(&Context::default()).await.is_err());
     }
 

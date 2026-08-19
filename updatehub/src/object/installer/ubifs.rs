@@ -66,10 +66,13 @@ mod tests {
     use super::*;
     use crate::{
         object::installer::tests::create_echo_bins,
-        utils::mtd::tests::{FakeUbi, MtdKind, SERIALIZE},
+        utils::{
+            fs::search_path::SearchPathGuard,
+            mtd::tests::{FakeUbi, MtdKind, SERIALIZE},
+            test_env::PathEnvGuard,
+        },
     };
     use pretty_assertions::assert_eq;
-    use std::env;
 
     fn fake_ubifs_obj(name: &str) -> objects::Ubifs {
         objects::Ubifs {
@@ -87,19 +90,19 @@ mod tests {
     async fn check_requirements_with_missing_binaries() {
         let ubifs_obj = fake_ubifs_obj("home");
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
+        let search_path = SearchPathGuard::empty();
         assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
+        drop(search_path);
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
-        let (_handle, _) = create_echo_bins(&["ubinfo"]).unwrap();
+        let (mocks, _) = create_echo_bins(&["ubinfo"]).unwrap();
+        let search_path = SearchPathGuard::set([mocks.path()]);
         assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
+        drop(search_path);
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
-        let (_handle, _) = create_echo_bins(&["ubiupdatevol"]).unwrap();
+        let (mocks, _) = create_echo_bins(&["ubiupdatevol"]).unwrap();
+        let search_path = SearchPathGuard::set([mocks.path()]);
         assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
+        drop(search_path);
     }
 
     #[tokio::test]
@@ -114,7 +117,8 @@ mod tests {
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
-        let (_handle, calls) = create_echo_bins(&["ubiupdatevol"]).unwrap();
+        let (mocks, calls) = create_echo_bins(&["ubiupdatevol"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
 
         ubifs_obj.check_requirements(&context).await.unwrap();
         ubifs_obj.install(&context).await.unwrap();
