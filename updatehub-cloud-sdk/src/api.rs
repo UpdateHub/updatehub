@@ -73,7 +73,7 @@ impl UpdatePackage {
 
 impl Signature {
     pub fn from_base64_str(bytes: &str) -> crate::Result<Self> {
-        Ok(Signature(openssl::base64::decode_block(bytes)?.to_vec()))
+        Ok(Signature(openssl::base64::decode_block(bytes)?))
     }
 
     pub fn validate(&self, key: &Path, package: &UpdatePackage) -> crate::Result<()> {

@@ -28,7 +28,7 @@ impl Download {
     ) -> Result<()> {
         let installation_set =
             installation_set::inactive().log_error_msg("unable to get current installation set")?;
-        let download_dir = context.lock().await.settings.update.download_dir.to_owned();
+        let download_dir = context.lock().await.settings.update.download_dir.clone();
 
         update_package
             .clear_unrelated_files(&download_dir, installation_set, &context.lock().await.settings)

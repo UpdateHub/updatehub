@@ -60,7 +60,8 @@ impl Installer for objects::Raw {
                 let h: Box<dyn AsyncReadSeek> = match &count {
                     definitions::Count::All => Box::new(h),
                     definitions::Count::Limited(n) => {
-                        Box::new(h.take_with_seek((*n as usize * chunk_size) as u64))
+                        let count = u64::try_from(*n).unwrap_or(0);
+                        Box::new(h.take_with_seek(count * chunk_size as u64))
                     }
                 };
                 Ok(h)
@@ -79,7 +80,8 @@ impl Installer for objects::Raw {
             match count {
                 definitions::Count::All => Box::new(input),
                 definitions::Count::Limited(n) => {
-                    Box::new(input.take((n as usize * chunk_size) as u64))
+                    let count = u64::try_from(n).unwrap_or(0);
+                    Box::new(input.take(count * chunk_size as u64))
                 }
             }
         };
@@ -135,7 +137,8 @@ mod tests {
         let download_dir = tempdir()?;
 
         let mut source = NamedTempFile::new_in(download_dir.path())?;
-        let original_data = std::iter::repeat_n(ORIGINAL_BYTE, size as usize).collect::<Vec<_>>();
+        let data_len = usize::try_from(size).unwrap();
+        let original_data = std::iter::repeat_n(ORIGINAL_BYTE, data_len).collect::<Vec<_>>();
         let data = if compressed {
             let mut e = GzEncoder::new(Vec::new(), Compression::default());
             e.write_all(&original_data).unwrap();
@@ -147,7 +150,7 @@ mod tests {
         source.seek(SeekFrom::Start(0))?;
 
         let mut dest = NamedTempFile::new_in(download_dir.path())?;
-        dest.write_all(&std::iter::repeat_n(DEFAULT_BYTE, size as usize).collect::<Vec<_>>())?;
+        dest.write_all(&std::iter::repeat_n(DEFAULT_BYTE, data_len).collect::<Vec<_>>())?;
         dest.seek(SeekFrom::Start(0))?;
 
         Ok((
@@ -200,7 +203,7 @@ mod tests {
         seek: u64,
         count: definitions::Count,
     ) -> io::Result<()> {
-        let skip = skip as usize * chunk_size;
+        let skip = usize::try_from(skip).unwrap() * chunk_size;
         let file = fs::File::open(file).await?;
         let mut f1 = io::BufReader::with_capacity(chunk_size, &data[skip..]);
         let mut f2 = io::BufReader::with_capacity(chunk_size, file);
