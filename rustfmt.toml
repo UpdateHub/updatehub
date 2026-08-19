@@ -1,5 +1,5 @@
-version = "Two"
-edition = "2021"
+style_edition = "2024"
+edition = "2024"
 
 use_small_heuristics = "Max"
 reorder_imports = true

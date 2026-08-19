@@ -90,7 +90,8 @@ mod tests {
     async fn check_requirements_with_missing_binary() {
         let uboot_env_obj = fake_uboot_env_obj();
 
-        std::env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { std::env::set_var("PATH", "") };
         assert!(uboot_env_obj.check_requirements(&Context::default()).await.is_err());
     }
 

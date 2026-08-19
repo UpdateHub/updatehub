@@ -89,27 +89,33 @@ mod tests {
         let flash_obj = fake_flash_obj("system0");
         let context = Context::default();
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         let (_handle, _) = create_echo_bins(&["flash_erase"]).unwrap();
         assert!(flash_obj.check_requirements(&context).await.is_err());
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         let (_handle, _) = create_echo_bins(&["flashcp"]).unwrap();
         assert!(flash_obj.check_requirements(&context).await.is_err());
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         let (_handle, _) = create_echo_bins(&["nandwrite"]).unwrap();
         assert!(flash_obj.check_requirements(&context).await.is_err());
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         let (_handle, _) = create_echo_bins(&["flash_erase", "nandwrite"]).unwrap();
         assert!(flash_obj.check_requirements(&context).await.is_err());
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         let (_handle, _) = create_echo_bins(&["flash_erase", "flashcp"]).unwrap();
         assert!(flash_obj.check_requirements(&context).await.is_err());
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         let (_handle, _) = create_echo_bins(&["nandwrite", "nandwrite"]).unwrap();
         assert!(flash_obj.check_requirements(&context).await.is_err());
     }

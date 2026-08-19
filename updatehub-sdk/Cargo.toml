@@ -6,7 +6,7 @@
 name = "updatehub-sdk"
 version = "2.1.5"
 authors = ["asakiz <asakizin@gmail.com>"]
-edition = "2021"
+edition = "2024"
 rust-version = "1.88"
 license = "Apache-2.0"
 description = "UpdateHub SDK used to interact with a running instance of the UpdateHub Agent"

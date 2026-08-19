@@ -81,7 +81,8 @@ fn works() {
     // create the fake backend
     let tmpdir = tempdir().unwrap();
     let tmpdir = tmpdir.path();
-    env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy()));
+    // TODO: Audit that the environment access only happens in single-threaded code.
+    unsafe { env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy())) };
 
     // Create a fake backend using 0 as active. It must test the
     // following:
