@@ -17,7 +17,7 @@ mod utils;
 #[cfg(test)]
 mod cloud_mock;
 
-#[cfg(feature = "test-env")]
+#[cfg(any(test, feature = "test-env"))]
 pub mod tests;
 
 #[cfg(test)]

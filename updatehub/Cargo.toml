@@ -16,7 +16,7 @@ publish = false
 repository = "https://github.com/UpdateHub/updatehub.git"
 
 [features]
-default = ["test-env"]
+default = []
 
 # Feature to allow deserialization from v1 Settings
 v1-parsing = ["serde_ini"]
@@ -33,6 +33,20 @@ bench = false
 name = "updatehub-setup-mock-env"
 path = "src/setup_mock_env.rs"
 test = true
+required-features = ["test-env"]
+
+# The integration tests drive the agent against a mock server, so they need the
+# `updatehub::tests` helpers and `mockito`, both of which live behind `test-env`.
+[[test]]
+name = "common"
+required-features = ["test-env"]
+
+[[test]]
+name = "successful_integration_test"
+required-features = ["test-env"]
+
+[[test]]
+name = "failed_integration_test"
 required-features = ["test-env"]
 
 [dependencies]
