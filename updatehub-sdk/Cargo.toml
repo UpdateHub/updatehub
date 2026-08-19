@@ -4,7 +4,7 @@
 
 [package]
 name = "updatehub-sdk"
-version = "2.1.5"
+version = "2.2.0"
 authors = ["asakiz <asakizin@gmail.com>"]
 edition = "2024"
 rust-version = "1.88"
