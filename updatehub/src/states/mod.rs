@@ -31,7 +31,6 @@ use crate::{
     runtime_settings::RuntimeSettings,
     settings::Settings,
 };
-use async_trait::async_trait;
 use derive_more::{Display, Error, From};
 use slog_scope::{error, info, trace, warn};
 use std::path::Path;
@@ -59,12 +58,13 @@ pub enum TransitionError {
     Process(easy_process::Error),
 }
 
-#[async_trait(?Send)]
 trait StateChangeImpl {
     async fn handle(
         self,
         context: &mut machine::Context,
-    ) -> Result<(State, machine::StepTransition)>;
+    ) -> Result<(State, machine::StepTransition)>
+    where
+        Self: Sized;
 
     fn name(&self) -> &'static str;
 
@@ -82,7 +82,6 @@ trait StateChangeImpl {
     }
 }
 
-#[async_trait(?Send)]
 trait CallbackReporter: Sized + StateChangeImpl {
     async fn handle_on_transition_cancel(&self, _context: &mut machine::Context) -> Result<()> {
         Ok(())
@@ -132,7 +131,6 @@ trait CallbackReporter: Sized + StateChangeImpl {
     }
 }
 
-#[async_trait(?Send)]
 trait ProgressReporter: CallbackReporter {
     fn package_uid(&self) -> String;
     fn report_enter_state_name(&self) -> &'static str;
@@ -259,7 +257,6 @@ fn handle_startup_callbacks(
     Ok(())
 }
 
-#[async_trait(?Send)]
 impl StateChangeImpl for State {
     async fn handle(self, st: &mut machine::Context) -> Result<(State, machine::StepTransition)> {
         trace!("starting to handle '{}' state", self.name());

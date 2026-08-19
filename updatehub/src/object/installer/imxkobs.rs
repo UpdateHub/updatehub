@@ -20,7 +20,6 @@ fn chip_0_path(obj: &objects::Imxkobs) -> PathBuf {
     obj.chip_0_device_path.clone().unwrap_or_else(|| PathBuf::from(DEFAULT_CHIP_0_DEVICE_PATH))
 }
 
-#[async_trait::async_trait(?Send)]
 impl Installer for objects::Imxkobs {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'imxkobs' handle checking requirements");

@@ -20,7 +20,6 @@ use tokio::{
 };
 use tokio_take_seek::AsyncTakeSeekExt;
 
-#[async_trait::async_trait(?Send)]
 impl Installer for objects::Raw {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'raw' handle checking requirements");

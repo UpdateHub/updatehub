@@ -115,7 +115,6 @@ impl ProgressReporter for Download {
 
 impl CommunicationState for Download {}
 
-#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for Download {
     fn name(&self) -> &'static str {
         "download"
@@ -125,7 +124,7 @@ impl StateChangeImpl for Download {
         true
     }
 
-    async fn handle(mut self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
+    async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         use std::ops::DerefMut;
         let communication_receiver = &context.communication.receiver.clone();
         let context = Mutex::new(context);
