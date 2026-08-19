@@ -165,7 +165,7 @@ trait ProgressReporter: CallbackReporter {
             Ok((state, trans)) => {
                 if let Err(e) = report(leave_state, None, None, None).await {
                     warn!("report failed: {}", e);
-                };
+                }
                 Ok((state, trans))
             }
             Err(e) => {

@@ -45,7 +45,7 @@ impl Installer for objects::Copy {
         let device = self.target_type.get_target().log_error_msg("failed to get target device")?;
         let filesystem = self.filesystem;
         let mount_options = &self.mount_options;
-        let format_options = &self.target_format.format_options;
+        let format_options = self.target_format.format_options.as_deref();
         let chunk_size = definitions::ChunkSize::default().0;
         let sha256sum = self.sha256sum();
         let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
@@ -56,7 +56,7 @@ impl Installer for objects::Copy {
             let file_path = mount_guard.mount_point().join(target_path);
             let should_skip_install = file_path.exists()
                 && super::should_skip_install(
-                    &self.install_if_different,
+                    self.install_if_different.as_ref(),
                     &self.sha256sum,
                     async move { Ok(fs::File::open(file_path).await?) },
                 )
@@ -113,8 +113,8 @@ impl Installer for objects::Copy {
 
         utils::fs::chown(
             &dest,
-            &self.target_permissions.target_uid,
-            &self.target_permissions.target_gid,
+            self.target_permissions.target_uid.as_ref(),
+            self.target_permissions.target_gid.as_ref(),
         )
         .log_error_msg("failed to update ownership")?;
 
@@ -164,7 +164,7 @@ mod tests {
         };
 
         // Format the faked device
-        utils::fs::format(&device, definitions::Filesystem::Ext4, &None)?;
+        utils::fs::format(&device, definitions::Filesystem::Ext4, None)?;
 
         // Generate the source file
         let download_dir = tempfile::tempdir()?;
@@ -193,12 +193,12 @@ mod tests {
                 utils::fs::chmod(&file, mode)?;
             }
 
-            utils::fs::chown(&file, &perm.target_uid, &perm.target_gid)?;
+            utils::fs::chown(&file, perm.target_uid.as_ref(), perm.target_gid.as_ref())?;
         }
 
         // Generate base copy object
         let mut obj = objects::Copy {
-            filename: "".to_string(),
+            filename: String::new(),
             filesystem: definitions::Filesystem::Ext4,
             size: FILE_SIZE as u64,
             sha256sum: source.path().to_string_lossy().to_string(),
@@ -245,17 +245,17 @@ mod tests {
             let metadata = dest.metadata()?;
             if let Some(mode) = obj.target_permissions.target_mode {
                 assert_eq!(mode, metadata.mode() % 0o1000);
-            };
+            }
 
             if let Some(uid) = obj.target_permissions.target_uid {
                 let uid = uid.as_u32();
                 assert_eq!(uid, metadata.uid());
-            };
+            }
 
             if let Some(gid) = obj.target_permissions.target_gid {
                 let gid = gid.as_u32();
                 assert_eq!(gid, metadata.gid());
-            };
+            }
         }
 
         loopdev.detach()?;
@@ -299,7 +299,7 @@ mod tests {
         exec_test_with_copy(
             |obj| {
                 obj.target_permissions.target_uid =
-                    Some(definitions::target_permissions::Uid::Number(0))
+                    Some(definitions::target_permissions::Uid::Number(0));
             },
             None,
             false,
@@ -314,7 +314,7 @@ mod tests {
         exec_test_with_copy(
             |obj| {
                 obj.target_permissions.target_gid =
-                    Some(definitions::target_permissions::Gid::Number(0))
+                    Some(definitions::target_permissions::Gid::Number(0));
             },
             Some(definitions::TargetPermissions {
                 target_mode: Some(0o666),

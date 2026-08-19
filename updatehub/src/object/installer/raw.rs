@@ -38,9 +38,8 @@ impl Installer for objects::Raw {
     async fn install(&self, context: &Context) -> Result<()> {
         info!("'raw' handler Install {} ({})", self.filename, self.sha256sum);
 
-        let device = match self.target_type {
-            definitions::TargetType::Device(ref p) => p,
-            _ => unreachable!("device should be secured by check_requirements"),
+        let definitions::TargetType::Device(ref device) = self.target_type else {
+            unreachable!("device should be secured by check_requirements")
         };
         let source = context.download_dir.join(self.sha256sum());
         let chunk_size = self.chunk_size.0;
@@ -49,8 +48,10 @@ impl Installer for objects::Raw {
         let truncate = self.truncate.0;
         let count = self.count.clone();
 
-        let should_skip_install =
-            super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
+        let should_skip_install = super::should_skip_install(
+            self.install_if_different.as_ref(),
+            &self.sha256sum,
+            async {
                 trait AsyncReadSeek: AsyncRead + AsyncSeek + Unpin {}
                 impl<R: AsyncRead + AsyncSeek + Unpin> AsyncReadSeek for R {}
 
@@ -65,8 +66,9 @@ impl Installer for objects::Raw {
                     }
                 };
                 Ok(h)
-            })
-            .await?;
+            },
+        )
+        .await?;
         if should_skip_install {
             return Ok(());
         }
@@ -155,7 +157,7 @@ mod tests {
 
         Ok((
             objects::Raw {
-                filename: "".to_string(),
+                filename: String::new(),
                 size,
                 sha256sum: source.path().to_string_lossy().to_string(),
                 target_type: definitions::TargetType::Device(dest.path().into()),

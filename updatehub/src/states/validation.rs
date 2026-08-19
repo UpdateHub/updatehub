@@ -33,16 +33,13 @@ impl StateChangeImpl for Validation {
 
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         if let Some(key) = context.firmware.pub_key.as_ref() {
-            match self.sign.as_ref() {
-                Some(sign) => {
-                    debug!("validating signature");
-                    sign.validate(key, &self.package)
-                        .log_error_msg("uhupkg failed signature validation")?;
-                }
-                None => {
-                    error!("missing signature key");
-                    return Err(super::TransitionError::SignatureNotFound);
-                }
+            if let Some(sign) = self.sign.as_ref() {
+                debug!("validating signature");
+                sign.validate(key, &self.package)
+                    .log_error_msg("uhupkg failed signature validation")?;
+            } else {
+                error!("missing signature key");
+                return Err(super::TransitionError::SignatureNotFound);
             }
         } else {
             info!("no signature key available on device, ignoring signature validation");
@@ -70,7 +67,7 @@ impl StateChangeImpl for Validation {
         self.package
             .validate_install_modes(&context.settings, inactive_installation_set)
             .log_error_msg("install mode failed validation")?;
-        for obj in self.package.objects(inactive_installation_set).iter() {
+        for obj in self.package.objects(inactive_installation_set) {
             if let Err(e) = obj.check_requirements(&object_context).await {
                 error!(
                     "update package: {} ({}) has failed to meet the install requirements",
@@ -87,8 +84,7 @@ impl StateChangeImpl for Validation {
         if context
             .runtime_settings
             .applied_package_uid()
-            .map(|u| *u == update_package.package_uid())
-            .unwrap_or_default()
+            .is_some_and(|u| *u == update_package.package_uid())
         {
             info!("not downloading update package, the same package has already been installed");
             Ok((State::EntryPoint(EntryPoint {}), machine::StepTransition::Immediate))
@@ -115,10 +111,10 @@ impl StateChangeImpl for Validation {
                     for object in not_ready {
                         match object {
                             (filename, Ok(status)) => {
-                                error!(" file '{}' is {:?}", filename, status)
+                                error!(" file '{}' is {:?}", filename, status);
                             }
                             (filename, Err(err)) => {
-                                error!(" file '{}' has failed with error: {:?}", filename, err)
+                                error!(" file '{}' has failed with error: {:?}", filename, err);
                             }
                         }
                     }

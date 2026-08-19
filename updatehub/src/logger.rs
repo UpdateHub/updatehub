@@ -31,15 +31,15 @@ pub fn buffer() -> Arc<Mutex<MemDrain>> {
 /// The buffered drain, recovering the lock if a thread panicked while holding
 /// it: being unable to log must not bring the agent down.
 fn buffer_lock() -> MutexGuard<'static, MemDrain> {
-    BUFFER.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    BUFFER.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 pub fn start_memory_logging() {
-    buffer_lock().start_logging()
+    buffer_lock().start_logging();
 }
 
 pub fn stop_memory_logging() {
-    buffer_lock().stop_logging()
+    buffer_lock().stop_logging();
 }
 
 /// Record what `f` logs even while memory logging is stopped.

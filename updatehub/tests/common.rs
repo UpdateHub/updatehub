@@ -79,10 +79,10 @@ impl Settings {
             setup = setup.validate_callback(s.to_owned());
         }
         if let Some(l) = self.install_modes {
-            setup = setup.supported_install_modes(l)
+            setup = setup.supported_install_modes(l);
         }
         if !self.polling {
-            setup = setup.disable_polling()
+            setup = setup.disable_polling();
         }
         let mut setup = setup.finish();
 
@@ -380,7 +380,7 @@ pub fn rewrite_log_output(s: String) -> (String, String) {
     let version_re = Regex::new(r"Agent .*").unwrap();
     let tmpfile_re = Regex::new(r#""/.*/.tmp.*""#).unwrap();
     let date_re = Regex::new(r"\b(?:Jan|...|Dec) (\d{2}) (\d{2}):(\d{2}):(\d{2}).(\d{3})").unwrap();
-    let time_re = Regex::new(r#"(\d{5}) seconds"#).unwrap();
+    let time_re = Regex::new(r"(\d{5}) seconds").unwrap();
     let trce_re = Regex::new(r"<timestamp> TRCE.*").unwrap();
     let debg_re = Regex::new(r"<timestamp> DEBG.*").unwrap();
     let download_re = Regex::new(r"DEBG (\d{1,3})%").unwrap();
@@ -390,17 +390,13 @@ pub fn rewrite_log_output(s: String) -> (String, String) {
     let s = tmpfile_re.replace_all(&s, r#""<file>""#);
     let s = date_re.replace_all(&s, "<timestamp>");
     let s = download_re.replace_all(&s, "DEBG <percentage>%");
-    let s = time_re.replace_all(&s, r#"<time>"#);
+    let s = time_re.replace_all(&s, r"<time>");
     let s_trce = s.replace("\r\n", "\n").trim().to_owned();
 
     let s_info = trce_re.replace_all(&s_trce, "");
     let s_info = debg_re.replace_all(&s_info, "");
-    let s_info = s_info
-        .split('\n')
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .collect::<Vec<_>>()
-        .join("\n");
+    let s_info =
+        s_info.split('\n').map(str::trim).filter(|s| !s.is_empty()).collect::<Vec<_>>().join("\n");
 
     (s_trce, s_info)
 }

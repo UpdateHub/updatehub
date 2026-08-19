@@ -28,7 +28,7 @@ impl StateChangeImpl for DirectDownload {
 
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         info!("fetching update package directly from url: {:?}", self.url);
-        use std::ops::DerefMut;
+
         let communication_receiver = &context.communication.receiver.clone();
         let context = Mutex::new(context);
 
@@ -48,9 +48,8 @@ impl StateChangeImpl for DirectDownload {
 
         let message_handle_future = async {
             while let Ok((msg, responder)) = communication_receiver.recv().await {
-                if let Some(new_state) = self
-                    .handle_communication(msg, responder, context.lock().await.deref_mut())
-                    .await
+                if let Some(new_state) =
+                    self.handle_communication(msg, responder, *context.lock().await).await
                 {
                     return Ok(new_state);
                 }

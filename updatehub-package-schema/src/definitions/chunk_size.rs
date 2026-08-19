@@ -46,7 +46,7 @@ mod test {
             serde_json::from_value::<Payload>(json!({ "chunk_size": 313 })).ok(),
             Some(Payload { chunk_size: ChunkSize(313) })
         );
-        assert!(serde_json::from_value::<Payload>(json!({ "chunk_size": 0 })).is_err())
+        assert!(serde_json::from_value::<Payload>(json!({ "chunk_size": 0 })).is_err());
     }
 
     #[test]

@@ -92,7 +92,7 @@ fn validate_v1_restored_runtime_settings() {
     )
     .unwrap();
     // Overwrite runtimesettings with a v1 model
-    let original_runtime_settings = r#"
+    let original_runtime_settings = r"
 [Polling]
 LastPoll=2021-06-01T14:38:57-03:00
 FirstPoll=2021-05-01T13:33:33-03:00
@@ -102,7 +102,7 @@ ProbeASAP=false
 
 [Update]
 UpgradeToInstallation=0
-"#;
+";
     std::fs::write(&setup.runtime_settings.stored_path, original_runtime_settings).unwrap();
     let mut loaded_runtime_settings =
         RuntimeSettings::load(&setup.runtime_settings.stored_path).unwrap();

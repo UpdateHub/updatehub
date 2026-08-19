@@ -16,10 +16,7 @@ pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf
         .min_depth(1)
         .into_iter()
         .filter_entry(|p| {
-            p.file_name()
-                .to_str()
-                .map(|n| n.starts_with("ubi") && !n.contains('_'))
-                .unwrap_or(false)
+            p.file_name().to_str().is_some_and(|n| n.starts_with("ubi") && !n.contains('_'))
         })
         .filter_map(std::result::Result::ok)
         .find_map(|entry| {

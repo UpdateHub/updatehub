@@ -91,7 +91,7 @@ async fn check_if_different<R: AsyncRead + AsyncSeek + Unpin>(
 }
 
 async fn should_skip_install<F, R>(
-    rule: &Option<definitions::InstallIfDifferent>,
+    rule: Option<&definitions::InstallIfDifferent>,
     sha256sum: &str,
     handler: F,
 ) -> Result<bool>

@@ -103,7 +103,7 @@ impl StateChange {
         F: Fn(Handler) -> Fut + 'static,
         Fut: Future<Output = Result<()>> + 'static,
     {
-        self.callbacks.entry(state).or_default().push(Box::new(move |d| Box::pin(f(d))))
+        self.callbacks.entry(state).or_default().push(Box::new(move |d| Box::pin(f(d))));
     }
 
     /// Start the agent to listen for messages on the socket.

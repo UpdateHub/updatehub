@@ -140,7 +140,7 @@ fn parse_mount_entry(line: &str) -> Option<MountEntry> {
 
     Some(MountEntry {
         device: (major.parse().ok()?, minor.parse().ok()?),
-        source: fields.get(separator + 2)?.to_string(),
+        source: (*fields.get(separator + 2)?).to_string(),
         mount_point: PathBuf::from(fields.get(4)?),
     })
 }
@@ -206,9 +206,10 @@ pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
 
     #[cfg(test)]
     if let Some(dirs) = search_path::current() {
-        return match dirs.iter().any(|dir| is_executable_file(&dir.join(cmd))) {
-            true => Ok(()),
-            false => Err(Error::ExecutableNotInPath(cmd.to_owned())),
+        return if dirs.iter().any(|dir| is_executable_file(&dir.join(cmd))) {
+            Ok(())
+        } else {
+            Err(Error::ExecutableNotInPath(cmd.to_owned()))
         };
     }
 
@@ -273,18 +274,18 @@ pub(crate) mod search_path {
     }
 
     pub(super) fn current() -> Option<Vec<PathBuf>> {
-        OVERRIDE.with_borrow(|o| o.clone())
+        OVERRIDE.with_borrow(std::clone::Clone::clone)
     }
 }
 
-pub(crate) fn format(target: &Path, fs: Filesystem, options: &Option<String>) -> Result<()> {
+pub(crate) fn format(target: &Path, fs: Filesystem, options: Option<&str>) -> Result<()> {
     // The commands below are forced so they run unattended, which also means
     // they will not refuse to wipe a mounted filesystem on their own.
     ensure_not_mounted(target)?;
 
     trace!("formating {:?} as {}", target, fs);
     let target = target.display();
-    let options = options.clone().unwrap_or_default();
+    let options = options.unwrap_or_default();
 
     let cmd = match fs {
         Filesystem::Jffs2 => format!("flash_erase -j {options} {target} 0 0"),
@@ -330,12 +331,12 @@ pub(crate) fn chmod(path: &Path, mode: u32) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn chown(path: &Path, uid: &Option<Uid>, gid: &Option<Gid>) -> Result<()> {
+pub(crate) fn chown(path: &Path, uid: Option<&Uid>, gid: Option<&Gid>) -> Result<()> {
     trace!("applying ownership of uid:{:?} and gid:{:?} to {:?}", uid, gid, path);
     Ok(nix::unistd::chown(
         path,
-        uid.as_ref().map(|id| nix::unistd::Uid::from_raw(id.as_u32())),
-        gid.as_ref().map(|id| nix::unistd::Gid::from_raw(id.as_u32())),
+        uid.map(|id| nix::unistd::Uid::from_raw(id.as_u32())),
+        gid.map(|id| nix::unistd::Gid::from_raw(id.as_u32())),
     )?)
 }
 
@@ -537,7 +538,7 @@ mod tests {
             "an unmounted loop device should be free to install onto"
         );
 
-        format(&loop_device.device, Filesystem::Ext4, &None).unwrap();
+        format(&loop_device.device, Filesystem::Ext4, None).unwrap();
         let guard = mount(&loop_device.device, Filesystem::Ext4, "").unwrap();
 
         let in_use = ensure_not_mounted(&loop_device.device);

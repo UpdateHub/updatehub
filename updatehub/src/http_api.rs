@@ -13,7 +13,7 @@ pub(crate) struct Api();
 
 impl Api {
     pub(crate) async fn serve(addr: machine::Addr, socket: std::net::SocketAddr) {
-        warp::serve(Api::filter(addr)).run(socket).await
+        warp::serve(Api::filter(addr)).run(socket).await;
     }
 
     fn filter(addr: machine::Addr) -> warp::filters::BoxedFilter<(impl warp::Reply,)> {

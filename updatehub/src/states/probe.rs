@@ -94,7 +94,7 @@ impl StateChangeImpl for Probe {
         match probe {
             ProbeResponse::NoUpdate => {
                 crate::logger::record_out_of_scope(|| {
-                    info!("no update is current available for this device")
+                    info!("no update is current available for this device");
                 });
 
                 // Store timestamp of last polling
@@ -107,7 +107,7 @@ impl StateChangeImpl for Probe {
 
             ProbeResponse::ExtraPoll(s) => {
                 crate::logger::record_out_of_scope(|| {
-                    info!("delaying the probing for {} seconds as requested by the server", s)
+                    info!("delaying the probing for {} seconds as requested by the server", s);
                 });
                 Ok((State::Probe(self), machine::StepTransition::Delayed(Duration::seconds(s))))
             }

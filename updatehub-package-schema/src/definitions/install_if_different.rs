@@ -91,6 +91,6 @@ mod test {
                 "pattern": "linux-kernel"
             }))
             .unwrap()
-        )
+        );
     }
 }

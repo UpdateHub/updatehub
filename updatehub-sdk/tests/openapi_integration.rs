@@ -43,8 +43,7 @@ async fn probe_default() {
     let client = sdk::Client::new(&addr);
     let response = client.probe(None).await;
     match dbg!(response) {
-        Ok(_) => {}
-        Err(sdk::Error::AgentIsBusy(_)) => {}
+        Ok(_) | Err(sdk::Error::AgentIsBusy(_)) => {}
         Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
@@ -55,8 +54,7 @@ async fn probe_custom() {
     let client = sdk::Client::new(&addr);
     let response = client.probe(Some(String::from("http://foo.bar"))).await;
     match dbg!(response) {
-        Ok(_) => {}
-        Err(sdk::Error::AgentIsBusy(_)) => {}
+        Ok(_) | Err(sdk::Error::AgentIsBusy(_)) => {}
         Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
@@ -69,8 +67,7 @@ async fn local_install() {
     let response = client.local_install(file.path()).await;
 
     match dbg!(response) {
-        Ok(_) => {}
-        Err(sdk::Error::AgentIsBusy(_)) => {}
+        Ok(_) | Err(sdk::Error::AgentIsBusy(_)) => {}
         Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
@@ -81,8 +78,7 @@ async fn remote_install() {
     let client = sdk::Client::new(&addr);
     let response = client.remote_install("http://foo.bar").await;
     match dbg!(response) {
-        Ok(_) => {}
-        Err(sdk::Error::AgentIsBusy(_)) => {}
+        Ok(_) | Err(sdk::Error::AgentIsBusy(_)) => {}
         Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
@@ -93,8 +89,7 @@ async fn abort_download() {
     let client = sdk::Client::new(&addr);
     let response = client.abort_download().await;
     match dbg!(response) {
-        Ok(_) => {}
-        Err(sdk::Error::AbortDownloadRefused(_)) => {}
+        Ok(_) | Err(sdk::Error::AbortDownloadRefused(_)) => {}
         Err(e) => panic!("Unexpected Error response: {e}"),
     }
 }
