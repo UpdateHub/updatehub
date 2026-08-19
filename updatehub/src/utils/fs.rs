@@ -457,9 +457,13 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let available = available_space(dir.path()).unwrap();
 
-        ensure_disk_space(dir.path(), available).unwrap();
+        // `ensure_disk_space` reads the free space itself, and anything else
+        // writing to the same filesystem moves it between the two readings. Stay
+        // away from the boundary on both sides: ask for half of what is there,
+        // then for more than any filesystem can hold.
+        ensure_disk_space(dir.path(), available / 2).unwrap();
         assert!(matches!(
-            ensure_disk_space(dir.path(), available + 1),
+            ensure_disk_space(dir.path(), u64::MAX),
             Err(Error::NotEnoughSpace { .. })
         ));
     }
