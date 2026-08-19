@@ -130,20 +130,17 @@ where
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use lazy_static::lazy_static;
     use std::{
         fs,
         io::Write,
         os::unix::fs::PermissionsExt,
         path::{Path, PathBuf},
-        sync::{Arc, Mutex},
+        sync::{Arc, LazyLock, Mutex},
     };
     use tempfile::TempDir;
 
     // Used to serialize access to Loop devices across tests
-    lazy_static! {
-        pub static ref SERIALIZE: Arc<Mutex<()>> = Arc::new(Mutex::default());
-    }
+    pub static SERIALIZE: LazyLock<Arc<Mutex<()>>> = LazyLock::new(|| Arc::new(Mutex::default()));
 
     fn create_echo_bin(bin: &Path, output: &Path) -> std::io::Result<()> {
         let mut file = std::fs::File::create(bin)?;

@@ -3,13 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::mem_drain::MemDrain;
-use lazy_static::lazy_static;
 use slog::{Drain, Logger, o};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 
-lazy_static! {
-    static ref BUFFER: Arc<Mutex<MemDrain>> = Arc::new(Mutex::new(MemDrain::default()));
-}
+static BUFFER: LazyLock<Arc<Mutex<MemDrain>>> =
+    LazyLock::new(|| Arc::new(Mutex::new(MemDrain::default())));
 
 pub fn init(level: slog::Level) -> slog_scope::GlobalLoggerGuard {
     let buffer_drain = buffer().filter_level(level).fuse();

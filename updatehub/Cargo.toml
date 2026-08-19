@@ -71,7 +71,6 @@ derive_more = { version = "2", default-features = false, features = [
 easy_process = "0.2"
 find-binary-version = "0.5"
 futures-util = { version = "0.3", default-features = false }
-lazy_static = "1"
 logging_content = "0.1"
 mockito = { version = "1", optional = true }
 ms-converter = "1"

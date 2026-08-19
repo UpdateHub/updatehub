@@ -3392,7 +3392,6 @@ dependencies = [
  "futures-util",
  "git-version",
  "insta",
- "lazy_static",
  "logging_content",
  "loopdev-3",
  "mockito",
