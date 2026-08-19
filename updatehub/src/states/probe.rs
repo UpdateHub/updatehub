@@ -33,7 +33,6 @@ fn retry_delay(retries: usize, polling_interval: Duration) -> Duration {
     Duration::seconds(exponential.min(cap))
 }
 
-#[async_trait::async_trait(?Send)]
 impl CallbackReporter for Probe {
     async fn handle_on_transition_cancel(&self, context: &mut machine::Context) -> Result<()> {
         // Set the last polling time or we loop forever as polling interval will not be
@@ -52,7 +51,6 @@ impl CallbackReporter for Probe {
 }
 
 /// Implements the state change for State<Probe>.
-#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for Probe {
     fn name(&self) -> &'static str {
         "probe"

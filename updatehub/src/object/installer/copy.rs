@@ -19,7 +19,6 @@ use tokio::{
     io::{self, AsyncWriteExt},
 };
 
-#[async_trait::async_trait(?Send)]
 impl Installer for objects::Copy {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'copy' handle checking requirements");

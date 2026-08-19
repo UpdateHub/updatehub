@@ -42,7 +42,6 @@ impl<T> Channel<T> {
 
 impl CommunicationState for State {}
 
-#[async_trait::async_trait]
 pub(super) trait CommunicationState: StateChangeImpl {
     async fn handle_communication(
         &self,

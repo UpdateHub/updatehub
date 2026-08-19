@@ -3381,7 +3381,6 @@ dependencies = [
  "async-channel",
  "async-ctrlc",
  "async-lock",
- "async-trait",
  "bitar",
  "chrono",
  "compress-tools 0.16.1",

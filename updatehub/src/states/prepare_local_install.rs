@@ -26,7 +26,6 @@ pub(super) struct PrepareLocalInstall {
 
 impl CallbackReporter for PrepareLocalInstall {}
 
-#[async_trait::async_trait(?Send)]
 impl StateChangeImpl for PrepareLocalInstall {
     fn name(&self) -> &'static str {
         "prepare_local_install"
