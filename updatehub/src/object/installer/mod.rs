@@ -133,7 +133,7 @@ pub(crate) mod tests {
     use super::*;
     use lazy_static::lazy_static;
     use std::{
-        env, fs,
+        fs,
         io::Write,
         os::unix::fs::PermissionsExt,
         path::{Path, PathBuf},
@@ -161,6 +161,15 @@ pub(crate) mod tests {
         Ok(())
     }
 
+    /// Creates a directory that holds one echo script per name in `bins`.
+    ///
+    /// The directory reaches no lookup on its own. The caller decides how the
+    /// code under test sees it:
+    ///
+    /// * `SearchPathGuard::set` for a test of `check_requirements`, which only
+    ///   calls `is_executable_in_path`.
+    /// * `PathEnvGuard::prepend` for a test that runs the scripts, because a
+    ///   subprocess reads `PATH` from the process environment.
     pub fn create_echo_bins(bins: &[&str]) -> std::io::Result<(TempDir, PathBuf)> {
         let mocks = tempfile::tempdir()?;
         let mocks_dir = mocks.path();
@@ -169,18 +178,6 @@ pub(crate) mod tests {
         for bin in bins {
             create_echo_bin(&mocks_dir.join(bin), &calls)?;
         }
-
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe {
-            env::set_var(
-                "PATH",
-                format!(
-                    "{}{}",
-                    mocks_dir.display(),
-                    &env::var("PATH").map(|s| format!(":{s}")).unwrap_or_default()
-                ),
-            )
-        };
 
         Ok((mocks, calls))
     }

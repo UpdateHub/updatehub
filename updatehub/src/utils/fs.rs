@@ -203,9 +203,77 @@ fn read_device_id(path: &Path) -> Option<DeviceId> {
 
 pub(crate) fn is_executable_in_path(cmd: &str) -> Result<()> {
     trace!("checking if {} is executable", cmd);
+
+    #[cfg(test)]
+    if let Some(dirs) = search_path::current() {
+        return match dirs.iter().any(|dir| is_executable_file(&dir.join(cmd))) {
+            true => Ok(()),
+            false => Err(Error::ExecutableNotInPath(cmd.to_owned())),
+        };
+    }
+
     match quale::which(cmd) {
         Some(_) => Ok(()),
         None => Err(Error::ExecutableNotInPath(cmd.to_owned())),
+    }
+}
+
+#[cfg(test)]
+fn is_executable_file(path: &Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    // `metadata` follows symlinks, as an execution attempt does.
+    std::fs::metadata(path)
+        .map(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+        .unwrap_or(false)
+}
+
+/// A per-thread override for the directories `is_executable_in_path` reads,
+/// so a test needs no change to `PATH`. It works because libtest gives each
+/// test its own thread and every test here uses the current-thread runtime.
+///
+/// Use `super::test_env::PathEnvGuard` instead when the test runs a real
+/// subprocess, because `execvp` reads `PATH` from the process environment.
+#[cfg(test)]
+pub(crate) mod search_path {
+    use std::{cell::RefCell, path::PathBuf};
+
+    thread_local! {
+        static OVERRIDE: RefCell<Option<Vec<PathBuf>>> = const { RefCell::new(None) };
+    }
+
+    /// Restores the previous override on drop. Guards nest: an inner one
+    /// hides the outer one until it drops.
+    #[must_use = "the override ends as soon as the guard drops"]
+    pub(crate) struct SearchPathGuard {
+        previous: Option<Vec<PathBuf>>,
+    }
+
+    impl SearchPathGuard {
+        pub(crate) fn set<I, P>(dirs: I) -> Self
+        where
+            I: IntoIterator<Item = P>,
+            P: Into<PathBuf>,
+        {
+            let dirs = dirs.into_iter().map(Into::into).collect();
+            let previous = OVERRIDE.with_borrow_mut(|o| o.replace(dirs));
+
+            SearchPathGuard { previous }
+        }
+
+        pub(crate) fn empty() -> Self {
+            Self::set(Vec::<PathBuf>::new())
+        }
+    }
+
+    impl Drop for SearchPathGuard {
+        fn drop(&mut self) {
+            OVERRIDE.with_borrow_mut(|o| *o = self.previous.take());
+        }
+    }
+
+    pub(super) fn current() -> Option<Vec<PathBuf>> {
+        OVERRIDE.with_borrow(|o| o.clone())
     }
 }
 
@@ -273,10 +341,71 @@ pub(crate) fn chown(path: &Path, uid: &Option<Uid>, gid: &Option<Gid>) -> Result
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{search_path::SearchPathGuard, *};
     use crate::object::installer::tests::SERIALIZE;
     use pretty_assertions::assert_eq;
     use std::path::PathBuf;
+
+    fn create_executable(name: &str) -> tempfile::TempDir {
+        use std::os::unix::fs::PermissionsExt;
+
+        let dir = tempfile::tempdir().unwrap();
+        let file = std::fs::File::create(dir.path().join(name)).unwrap();
+        file.set_permissions(std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        dir
+    }
+
+    #[test]
+    fn search_path_override_replaces_the_process_path() {
+        // `sh` is on the real PATH of every host that runs this suite.
+        assert!(is_executable_in_path("sh").is_ok());
+
+        let dir = create_executable("updatehub-fake-tool");
+
+        let guard = SearchPathGuard::set([dir.path()]);
+        assert!(
+            is_executable_in_path("updatehub-fake-tool").is_ok(),
+            "the override has to make the tool visible"
+        );
+        assert!(is_executable_in_path("sh").is_err(), "the override has to hide the real PATH");
+        drop(guard);
+
+        assert!(is_executable_in_path("sh").is_ok(), "the drop has to restore the real PATH");
+        assert!(is_executable_in_path("updatehub-fake-tool").is_err());
+    }
+
+    #[test]
+    fn search_path_override_finds_nothing_when_empty() {
+        let _guard = SearchPathGuard::empty();
+        assert!(is_executable_in_path("sh").is_err());
+    }
+
+    #[test]
+    fn search_path_override_nests() {
+        let outer_dir = create_executable("updatehub-outer-tool");
+        let inner_dir = create_executable("updatehub-inner-tool");
+
+        let _outer = SearchPathGuard::set([outer_dir.path()]);
+        assert!(is_executable_in_path("updatehub-outer-tool").is_ok());
+
+        let inner = SearchPathGuard::set([inner_dir.path()]);
+        assert!(is_executable_in_path("updatehub-inner-tool").is_ok());
+        assert!(is_executable_in_path("updatehub-outer-tool").is_err());
+        drop(inner);
+
+        assert!(is_executable_in_path("updatehub-outer-tool").is_ok());
+        assert!(is_executable_in_path("updatehub-inner-tool").is_err());
+    }
+
+    #[test]
+    fn search_path_override_skips_a_file_without_the_executable_bit() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("updatehub-plain-file"), b"").unwrap();
+
+        let _guard = SearchPathGuard::set([dir.path()]);
+        assert!(is_executable_in_path("updatehub-plain-file").is_err());
+    }
 
     // Big enough to tell a loop device apart from the devtmpfs on /dev, small
     // enough to stay sparse on any builder.

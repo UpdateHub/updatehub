@@ -68,10 +68,13 @@ mod tests {
     use super::*;
     use crate::{
         object::installer::tests::create_echo_bins,
-        utils::mtd::tests::{FakeMtd, MtdKind, SERIALIZE},
+        utils::{
+            fs::search_path::SearchPathGuard,
+            mtd::tests::{FakeMtd, MtdKind, SERIALIZE},
+            test_env::PathEnvGuard,
+        },
     };
     use pretty_assertions::assert_eq;
-    use std::env;
 
     fn fake_flash_obj(target: &str) -> objects::Flash {
         objects::Flash {
@@ -89,35 +92,35 @@ mod tests {
         let flash_obj = fake_flash_obj("system0");
         let context = Context::default();
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
-        let (_handle, _) = create_echo_bins(&["flash_erase"]).unwrap();
+        let (mocks, _) = create_echo_bins(&["flash_erase"]).unwrap();
+        let search_path = SearchPathGuard::set([mocks.path()]);
         assert!(flash_obj.check_requirements(&context).await.is_err());
+        drop(search_path);
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
-        let (_handle, _) = create_echo_bins(&["flashcp"]).unwrap();
+        let (mocks, _) = create_echo_bins(&["flashcp"]).unwrap();
+        let search_path = SearchPathGuard::set([mocks.path()]);
         assert!(flash_obj.check_requirements(&context).await.is_err());
+        drop(search_path);
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
-        let (_handle, _) = create_echo_bins(&["nandwrite"]).unwrap();
+        let (mocks, _) = create_echo_bins(&["nandwrite"]).unwrap();
+        let search_path = SearchPathGuard::set([mocks.path()]);
         assert!(flash_obj.check_requirements(&context).await.is_err());
+        drop(search_path);
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
-        let (_handle, _) = create_echo_bins(&["flash_erase", "nandwrite"]).unwrap();
+        let (mocks, _) = create_echo_bins(&["flash_erase", "nandwrite"]).unwrap();
+        let search_path = SearchPathGuard::set([mocks.path()]);
         assert!(flash_obj.check_requirements(&context).await.is_err());
+        drop(search_path);
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
-        let (_handle, _) = create_echo_bins(&["flash_erase", "flashcp"]).unwrap();
+        let (mocks, _) = create_echo_bins(&["flash_erase", "flashcp"]).unwrap();
+        let search_path = SearchPathGuard::set([mocks.path()]);
         assert!(flash_obj.check_requirements(&context).await.is_err());
+        drop(search_path);
 
-        // TODO: Audit that the environment access only happens in single-threaded code.
-        unsafe { env::set_var("PATH", "") };
-        let (_handle, _) = create_echo_bins(&["nandwrite", "nandwrite"]).unwrap();
+        let (mocks, _) = create_echo_bins(&["nandwrite", "nandwrite"]).unwrap();
+        let search_path = SearchPathGuard::set([mocks.path()]);
         assert!(flash_obj.check_requirements(&context).await.is_err());
+        drop(search_path);
     }
 
     #[tokio::test]
@@ -132,7 +135,8 @@ mod tests {
         let context =
             Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
 
-        let (_handle, calls) = create_echo_bins(&["flash_erase", "flashcp", "nandwrite"]).unwrap();
+        let (mocks, calls) = create_echo_bins(&["flash_erase", "flashcp", "nandwrite"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
 
         flash_obj.check_requirements(&context).await.unwrap();
         flash_obj.install(&context).await.unwrap();

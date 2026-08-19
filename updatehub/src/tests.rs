@@ -2,16 +2,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::firmware::{
-    installation_set::Set,
-    tests::{
-        create_fake_installation_set, create_fake_starup_callbacks, create_hook,
-        device_attributes_dir, device_identity_dir, hardware_hook, product_uid_hook,
-        state_change_hook, validate_hook, version_hook,
+use crate::{
+    firmware::{
+        installation_set::Set,
+        tests::{
+            create_fake_installation_set, create_fake_starup_callbacks, create_hook,
+            device_attributes_dir, device_identity_dir, hardware_hook, product_uid_hook,
+            state_change_hook, validate_hook, version_hook,
+        },
     },
+    utils::test_env::PathEnvGuard,
 };
 use sdk::api::info::runtime_settings::InstallationSet;
-use std::{any::Any, env, fs, io::Write, os::unix::fs::PermissionsExt, path::PathBuf};
+use std::{any::Any, fs, io::Write, os::unix::fs::PermissionsExt, path::PathBuf};
 
 pub use crate::{
     firmware::Metadata, runtime_settings::RuntimeSettings, settings::Settings,
@@ -171,16 +174,15 @@ impl TestEnvironmentBuilder {
                 permissions.set_mode(0o755);
                 file.set_permissions(permissions).unwrap();
             }
-            let curr_path = env::var("PATH").map(|s| ":".to_string() + &s).unwrap_or_default();
-            // TODO: Audit that the environment access only happens in single-threaded code.
-            unsafe {
-                env::set_var("PATH", format!("{}{}", bin_dir_path.to_string_lossy(), curr_path,))
-            };
+            // The mocks run as subprocesses, so they need the real `PATH`.
+            let path = PathEnvGuard::prepend(bin_dir_path);
 
             Data {
                 data: output_file,
                 stored_path: bin_dir_path.to_owned(),
-                guard: vec![Box::new(bin_dir)],
+                // `path` first, so `PATH` is restored before the directory
+                // it names disappears.
+                guard: vec![Box::new(path), Box::new(bin_dir)],
             }
         };
 

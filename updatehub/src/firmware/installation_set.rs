@@ -73,16 +73,15 @@ fn as_str() {
 
 #[test]
 fn works() {
-    use crate::firmware::tests::create_fake_installation_set;
+    use crate::{firmware::tests::create_fake_installation_set, utils::test_env::PathEnvGuard};
     use pretty_assertions::assert_eq;
-    use std::env;
     use tempfile::tempdir;
 
     // create the fake backend
     let tmpdir = tempdir().unwrap();
     let tmpdir = tmpdir.path();
-    // TODO: Audit that the environment access only happens in single-threaded code.
-    unsafe { env::set_var("PATH", format!("{}", &tmpdir.to_string_lossy())) };
+    // The backend scripts run as subprocesses, so they need the real `PATH`.
+    let _path = PathEnvGuard::set(tmpdir);
 
     // Create a fake backend using 0 as active. It must test the
     // following:
