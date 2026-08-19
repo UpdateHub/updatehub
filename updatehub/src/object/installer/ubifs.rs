@@ -105,7 +105,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to load the MTD simulator modules"]
     async fn install() {
         let _mtd_lock = SERIALIZE.lock();
         let _ubi = FakeUbi::new(&["home"], MtdKind::Nor).unwrap();

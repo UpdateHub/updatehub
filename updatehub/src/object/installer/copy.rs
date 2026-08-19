@@ -264,13 +264,13 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     async fn copy_compressed_file() {
         exec_test_with_copy(|obj| obj.compressed = true, None, true).await.unwrap();
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     async fn copy_over_formated_partion() {
         exec_test_with_copy(|obj| obj.target_format.should_format = true, None, false)
             .await
@@ -278,7 +278,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     async fn copy_over_existing_file() {
         exec_test_with_copy(
             |_| (),
@@ -294,7 +294,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     async fn copy_change_uid() {
         exec_test_with_copy(
             |obj| {
@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     async fn copy_change_gid() {
         exec_test_with_copy(
             |obj| {
@@ -328,7 +328,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     async fn copy_change_mode() {
         exec_test_with_copy(
             |obj| obj.target_permissions.target_mode = Some(0o444),

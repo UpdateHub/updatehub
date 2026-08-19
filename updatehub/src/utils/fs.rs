@@ -469,9 +469,8 @@ mod tests {
         ));
     }
 
-    // Requires root, as creating a loop device does.
     #[test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     fn device_nodes_are_measured_by_their_own_capacity() {
         let loop_device = FakeLoopDevice::new(LOOP_DEVICE_SIZE).unwrap();
 
@@ -527,9 +526,8 @@ mod tests {
         assert!(ensure_not_mounted(Path::new("/dev/updatehub-inexistent-device")).is_ok());
     }
 
-    // Requires root, as creating a loop device does.
     #[test]
-    #[ignore]
+    #[ignore = "needs root to attach a loop device"]
     fn mounted_device_is_in_use() {
         let loop_device = FakeLoopDevice::new(LOOP_DEVICE_SIZE).unwrap();
 

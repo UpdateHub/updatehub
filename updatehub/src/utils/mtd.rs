@@ -264,7 +264,7 @@ pub(crate) mod tests {
     pub static SERIALIZE: LazyLock<Arc<Mutex<()>>> = LazyLock::new(|| Arc::new(Mutex::default()));
 
     #[test]
-    #[ignore]
+    #[ignore = "needs root to load the MTD simulator modules"]
     fn device_from_mtd_name() {
         let _lock = SERIALIZE.lock();
         let dev_names = vec!["system0", "system1"];
@@ -283,7 +283,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "needs root to load the MTD simulator modules"]
     fn test_is_nand() {
         let _lock = SERIALIZE.lock();
 
@@ -298,7 +298,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "needs root to load the MTD simulator modules"]
     fn device_from_ubi_volume_name() {
         let _lock = SERIALIZE.lock();
         let volume_names = vec!["some_ui_volume", "another_ubi_volume"];
@@ -315,7 +315,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    #[ignore]
+    #[ignore = "needs root to load the MTD simulator modules"]
     fn device_from_ubi_volume_name_multiple_volumes() {
         let _lock = SERIALIZE.lock();
         let volume_names = vec![
