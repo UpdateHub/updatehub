@@ -172,7 +172,7 @@ fn v1_parse(content: &str, toml_err: toml::de::Error) -> Result<api::Settings> {
                     "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
                 ]
                 .iter()
-                .map(|i| i.to_string())
+                .map(|i| (*i).to_string())
                 .collect(),
             }
         }
@@ -340,7 +340,7 @@ metadata="/usr/share/updatehub"
                     "dry-run", "copy", "flash", "imxkobs", "raw", "tarball", "ubifs",
                 ]
                 .iter()
-                .map(|i| i.to_string())
+                .map(|i| (*i).to_string())
                 .collect(),
             },
             network: api::Network {
@@ -381,7 +381,10 @@ ListenSocket=localhost:8313
             },
             update: api::Update {
                 download_dir: "/tmp/download".into(),
-                supported_install_modes: ["mode1", "mode2"].iter().map(|i| i.to_string()).collect(),
+                supported_install_modes: ["mode1", "mode2"]
+                    .iter()
+                    .map(|i| (*i).to_string())
+                    .collect(),
             },
             network: api::Network {
                 server_address: "http://localhost".to_string(),

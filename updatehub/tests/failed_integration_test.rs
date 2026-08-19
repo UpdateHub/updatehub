@@ -129,8 +129,8 @@ fn failing_invalid_file_config() {
 
     write!(
         file,
-        r#"[network]
-    server_address=https://api.updatehub.io, listen_socket=localhost:8080;"#
+        r"[network]
+    server_address=https://api.updatehub.io, listen_socket=localhost:8080;"
     )
     .unwrap();
 
@@ -393,9 +393,9 @@ fn invalid_server_response() {
 
 #[test]
 fn invalid_statechange_callback() {
-    let state_change_script = r#"#! /bin/sh
+    let state_change_script = r"#! /bin/sh
 exit 1
-"#;
+";
 
     let mut server = mockito::Server::new();
     let (mut session, setup) = Settings::default()

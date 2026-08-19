@@ -128,11 +128,11 @@ impl MemDrain {
     /// The recorded entries, recovering the lock if a thread panicked while
     /// holding it: being unable to log must not bring the agent down.
     fn records(&self) -> RwLockReadGuard<'_, Records> {
-        self.records.read().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.records.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     fn records_mut(&self) -> RwLockWriteGuard<'_, Records> {
-        self.records.write().unwrap_or_else(|poisoned| poisoned.into_inner())
+        self.records.write().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Start recording a new operation, discarding what the previous one left.

@@ -10,7 +10,7 @@ use walkdir::WalkDir;
 
 pub(crate) fn run_hook(path: &Path) -> Result<String> {
     if !path.exists() {
-        return Ok("".into());
+        return Ok(String::new());
     }
 
     run_script(path.to_str().expect("invalid path for hook"))
@@ -35,7 +35,7 @@ pub(crate) fn run_script(cmd: &str) -> Result<String> {
         Err(easy_process::Error::Failure(status, output)) => {
             error!("Script {} failed to run: {}", cmd, status);
             if !output.stderr.is_empty() {
-                output.stderr.lines().for_each(|err| error!("{} (stderr): {}", cmd, err))
+                output.stderr.lines().for_each(|err| error!("{} (stderr): {}", cmd, err));
             }
             Err(easy_process::Error::Failure(status, output).into())
         }

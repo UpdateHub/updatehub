@@ -70,7 +70,7 @@ impl UpdatePackageExt for UpdatePackage {
         if let Some(mode) = self
             .objects(installation_set)
             .iter()
-            .map(|o| o.mode())
+            .map(super::object::info::Info::mode)
             .find(|mode| !install_modes.contains(mode))
         {
             return Err(Error::IncompatibleInstallMode(mode));
@@ -104,7 +104,7 @@ impl UpdatePackageExt for UpdatePackage {
             .filter(|o| {
                 o.status(&settings.update.download_dir)
                     .map_err(|e| {
-                        error!("fail accessing the object: {} (err: {})", o.sha256sum(), e)
+                        error!("fail accessing the object: {} (err: {})", o.sha256sum(), e);
                     })
                     .unwrap_or(object::info::Status::Missing)
                     .eq(&filter)

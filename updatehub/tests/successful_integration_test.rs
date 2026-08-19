@@ -569,9 +569,9 @@ fn correct_config_remote_install() {
 
 #[test]
 fn validation_callback() {
-    let validate_script = r#"#! /bin/sh
+    let validate_script = r"#! /bin/sh
 exit 0
-"#;
+";
 
     // Even tho we don't update we start the mock for the probe performed on update
     let mut server = mockito::Server::new();
@@ -644,9 +644,9 @@ exit 0
 
 #[test]
 fn failed_validation_callback() {
-    let validate_script = r#"#! /bin/sh
+    let validate_script = r"#! /bin/sh
 exit 1
-"#;
+";
 
     let (mut session, _setup) = Settings::default()
         .timeout(300)
@@ -657,7 +657,7 @@ exit 1
     let (output_server_trce, output_server_info) = get_output_server(
         &mut session,
         StopMessage::Custom(
-            r#"\r\n.* WARN swapped active installation set and running rollback"#.to_string(),
+            r"\r\n.* WARN swapped active installation set and running rollback".to_string(),
         ),
     );
 
@@ -683,9 +683,9 @@ exit 1
 #[test]
 #[cfg(feature = "v1-parsing")]
 fn v1_validation_callback() {
-    let validate_script = r#"#! /bin/sh
+    let validate_script = r"#! /bin/sh
 exit 0
-"#;
+";
 
     // Even tho we don't update we start the mock for the probe performed on update
     let mut server = mockito::Server::new();
@@ -700,7 +700,7 @@ exit 0
     // Overwrite runtimesettings with a v1 model
     std::fs::write(
         &setup.runtime_settings.stored_path,
-        r#"
+        r"
 [Polling]
 LastPoll=2021-06-01T14:38:57-03:00
 FirstPoll=2021-05-01T13:33:33-03:00
@@ -710,7 +710,7 @@ ProbeASAP=false
 
 [Update]
 UpgradeToInstallation=1
-"#,
+",
     )
     .unwrap();
 
@@ -776,9 +776,9 @@ UpgradeToInstallation=1
 #[test]
 #[cfg(feature = "v1-parsing")]
 fn v1_failed_from_v1_validation_callback() {
-    let validate_script = r#"#! /bin/sh
+    let validate_script = r"#! /bin/sh
 exit 1
-"#;
+";
 
     let (mut session, setup) = Settings::default()
         .timeout(300)
@@ -789,7 +789,7 @@ exit 1
     // Overwrite runtimesettings with a v1 model
     std::fs::write(
         &setup.runtime_settings.stored_path,
-        r#"
+        r"
 [Polling]
 LastPoll=2021-06-01T14:38:57-03:00
 FirstPoll=2021-05-01T13:33:33-03:00
@@ -799,14 +799,14 @@ ProbeASAP=false
 
 [Update]
 UpgradeToInstallation=0
-"#,
+",
     )
     .unwrap();
 
     let (output_server_trce, output_server_info) = get_output_server(
         &mut session,
         StopMessage::Custom(
-            r#"\r\n.* WARN swapped active installation set and running rollback"#.to_string(),
+            r"\r\n.* WARN swapped active installation set and running rollback".to_string(),
         ),
     );
 
@@ -834,9 +834,9 @@ UpgradeToInstallation=0
 #[test]
 #[cfg(feature = "v1-parsing")]
 fn v1_failed_from_v2_validation_callback() {
-    let validate_script = r#"#! /bin/sh
+    let validate_script = r"#! /bin/sh
 exit 1
-"#;
+";
 
     let (mut session, _setup) = Settings::default()
         .timeout(300)
@@ -847,7 +847,7 @@ exit 1
     let (output_server_trce, output_server_info) = get_output_server(
         &mut session,
         StopMessage::Custom(
-            r#"\r\n.* WARN swapped active installation set and running rollback"#.to_string(),
+            r"\r\n.* WARN swapped active installation set and running rollback".to_string(),
         ),
     );
 

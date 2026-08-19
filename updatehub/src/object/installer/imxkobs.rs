@@ -36,15 +36,18 @@ impl Installer for objects::Imxkobs {
     async fn install(&self, context: &Context) -> Result<()> {
         info!("'imxkobs' handler Install {} ({})", self.filename, self.sha256sum);
 
-        let should_skip_install =
-            super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
+        let should_skip_install = super::should_skip_install(
+            self.install_if_different.as_ref(),
+            &self.sha256sum,
+            async {
                 let path = chip_0_path(self);
                 let f = path.file_name().ok_or(Error::InvalidPath)?;
                 let mut file_name = f.to_os_string();
                 file_name.push("ro");
                 tokio::fs::File::open(path.with_file_name(file_name)).await.map_err(Error::from)
-            })
-            .await?;
+            },
+        )
+        .await?;
         if should_skip_install {
             return Ok(());
         }
@@ -52,8 +55,8 @@ impl Installer for objects::Imxkobs {
         let mut cmd = String::from("kobs-ng init ");
 
         if self.padding_1k {
-            cmd += "-x "
-        };
+            cmd += "-x ";
+        }
 
         cmd += context
             .download_dir

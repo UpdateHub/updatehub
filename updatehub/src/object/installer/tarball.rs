@@ -41,7 +41,7 @@ impl Installer for objects::Tarball {
         let device = self.target.get_target().log_error_msg("failed to get target device")?;
         let filesystem = self.filesystem;
         let mount_options = &self.mount_options;
-        let format_options = &self.target_format.format_options;
+        let format_options = self.target_format.format_options.as_deref();
         let sha256sum = self.sha256sum();
         let target_path = self.target_path.strip_prefix("/").unwrap_or(&self.target_path);
         let source = context.download_dir.join(sha256sum);
@@ -100,11 +100,11 @@ mod tests {
         };
 
         // Format the faked device
-        utils::fs::format(&device, definitions::Filesystem::Ext4, &None)?;
+        utils::fs::format(&device, definitions::Filesystem::Ext4, None)?;
 
         // Generate base copy object
         let mut obj = objects::Tarball {
-            filename: "".to_string(),
+            filename: String::new(),
             filesystem: definitions::Filesystem::Ext4,
             size: CONTENT_SIZE as u64,
             sha256sum: "tree.tar".to_string(),

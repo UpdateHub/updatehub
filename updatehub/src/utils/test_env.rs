@@ -56,7 +56,7 @@ impl PathEnvGuard {
     fn acquire() -> (MutexGuard<'static, ()>, Option<OsString>) {
         // A panicking test poisons the lock, but `Drop` still restored `PATH`
         // during the unwind, so the poison carries no information.
-        let lock = ENV_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let lock = ENV_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let previous = env::var_os("PATH");
 
         (lock, previous)

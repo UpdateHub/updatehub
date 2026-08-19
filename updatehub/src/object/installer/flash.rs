@@ -30,7 +30,9 @@ impl Installer for objects::Flash {
                 )?;
                 Ok(())
             }
-            _ => Err(Error::InvalidTargetType(self.target.clone())),
+            definitions::TargetType::UBIVolume(_) => {
+                Err(Error::InvalidTargetType(self.target.clone()))
+            }
         }
     }
 
@@ -40,7 +42,7 @@ impl Installer for objects::Flash {
         let target = self.target.get_target()?;
         let source = context.download_dir.join(self.sha256sum());
 
-        if super::should_skip_install(&self.install_if_different, &self.sha256sum, async {
+        if super::should_skip_install(self.install_if_different.as_ref(), &self.sha256sum, async {
             tokio::fs::File::open(&target).await.map_err(Error::from)
         })
         .await?

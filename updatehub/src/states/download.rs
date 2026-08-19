@@ -58,11 +58,15 @@ impl Download {
                             Some((filename, sha256sum))
                         }
 
-                        (filename, sha256sum, Ok(object::info::Status::Missing))
-                        | (filename, sha256sum, Ok(object::info::Status::Incomplete))
-                        | (filename, sha256sum, Ok(object::info::Status::Corrupted)) => {
-                            Some((filename, sha256sum))
-                        }
+                        (
+                            filename,
+                            sha256sum,
+                            Ok(
+                                object::info::Status::Missing
+                                | object::info::Status::Incomplete
+                                | object::info::Status::Corrupted,
+                            ),
+                        ) => Some((filename, sha256sum)),
 
                         (_, _, Ok(object::info::Status::Ready)) => None,
                     }
@@ -125,7 +129,6 @@ impl StateChangeImpl for Download {
     }
 
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
-        use std::ops::DerefMut;
         let communication_receiver = &context.communication.receiver.clone();
         let context = Mutex::new(context);
 
@@ -137,9 +140,8 @@ impl StateChangeImpl for Download {
 
         let message_handle_future = async {
             while let Ok((msg, responder)) = communication_receiver.recv().await {
-                if let Some(new_state) = self
-                    .handle_communication(msg, responder, context.lock().await.deref_mut())
-                    .await
+                if let Some(new_state) =
+                    self.handle_communication(msg, responder, *context.lock().await).await
                 {
                     return Ok(Some(new_state));
                 }
@@ -231,12 +233,12 @@ mod test {
     #[tokio::test]
     #[ignore]
     async fn download_small_object() {
-        test_object_download(16).await
+        test_object_download(16).await;
     }
 
     #[tokio::test]
     #[ignore]
     async fn download_large_object() {
-        test_object_download(100_000_000).await
+        test_object_download(100_000_000).await;
     }
 }

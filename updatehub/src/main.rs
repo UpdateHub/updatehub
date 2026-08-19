@@ -97,7 +97,7 @@ struct DaemonOptions {
 
 fn verbosity_level(value: &str) -> Result<slog::Level, String> {
     use std::str::FromStr;
-    slog::Level::from_str(value).map_err(|_| format!("failed to parse verbosity level: {value}"))
+    slog::Level::from_str(value).map_err(|()| format!("failed to parse verbosity level: {value}"))
 }
 
 async fn daemon_main(cmd: DaemonOptions) -> updatehub::Result<()> {
@@ -157,10 +157,10 @@ async fn client_main(client_options: ClientOptions) -> updatehub::Result<()> {
             } else {
                 match response {
                     sdk::api::probe::Response::Updating => {
-                        println!("Update available. The update is running in background.")
+                        println!("Update available. The update is running in background.");
                     }
                     sdk::api::probe::Response::NoUpdate => {
-                        println!("There are no updates available.")
+                        println!("There are no updates available.");
                     }
                     sdk::api::probe::Response::TryAgain(t) => {
                         println!("Server replied asking us to try again in {t} seconds");

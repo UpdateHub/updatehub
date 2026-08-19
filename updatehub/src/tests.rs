@@ -126,10 +126,7 @@ impl TestEnvironmentBuilder {
                 hardware_hook(dir_path),
                 &format!(
                     "#!/bin/sh\necho {}",
-                    match self.invalid_hardware {
-                        false => "board",
-                        true => "invalid",
-                    }
+                    if self.invalid_hardware { "invalid" } else { "board" }
                 ),
             );
             create_hook(
@@ -166,7 +163,7 @@ impl TestEnvironmentBuilder {
                 create_hook(validate_hook(&firmware.stored_path), &script);
             }
 
-            for bin in self.extra_binaries.into_iter() {
+            for bin in self.extra_binaries {
                 let mut file = fs::File::create(bin_dir_path.join(&bin)).unwrap();
                 writeln!(file, "#!/bin/sh\necho {} $@ >> {}", bin, output_file.to_string_lossy())
                     .unwrap();

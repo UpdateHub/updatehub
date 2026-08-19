@@ -75,7 +75,7 @@ impl<'a> Client<'a> {
             .build()
             .unwrap();
 
-        Self { server, client }
+        Self { client, server }
     }
 
     pub async fn probe(
@@ -96,24 +96,24 @@ impl<'a> Client<'a> {
         match response.status() {
             StatusCode::NOT_FOUND => Ok(api::ProbeResponse::NoUpdate),
             StatusCode::OK => {
-                match response
+                let extra_poll = response
                     .headers()
                     .get("add-extra-poll")
                     .and_then(|extra_poll| extra_poll.to_str().ok())
-                    .and_then(|extra_poll| extra_poll.parse().ok())
-                {
-                    Some(extra_poll) => Ok(api::ProbeResponse::ExtraPoll(extra_poll)),
-                    None => {
-                        let signature = response
-                            .headers()
-                            .get("UH-Signature")
-                            .map(TryInto::try_into)
-                            .transpose()?;
-                        Ok(api::ProbeResponse::Update(
-                            api::UpdatePackage::parse(&response.bytes().await?)?,
-                            signature,
-                        ))
-                    }
+                    .and_then(|extra_poll| extra_poll.parse().ok());
+
+                if let Some(extra_poll) = extra_poll {
+                    Ok(api::ProbeResponse::ExtraPoll(extra_poll))
+                } else {
+                    let signature = response
+                        .headers()
+                        .get("UH-Signature")
+                        .map(TryInto::try_into)
+                        .transpose()?;
+                    Ok(api::ProbeResponse::Update(
+                        api::UpdatePackage::parse(&response.bytes().await?)?,
+                        signature,
+                    ))
                 }
             }
             s => Err(Error::InvalidStatusResponse(s)),
@@ -162,8 +162,6 @@ impl<'a> Client<'a> {
         error_message: Option<String>,
         current_log: Option<String>,
     ) -> Result<()> {
-        validate_url(self.server)?;
-
         #[derive(serde::Serialize)]
         #[serde(rename_all = "kebab-case")]
         struct Payload<'a> {
@@ -179,6 +177,8 @@ impl<'a> Client<'a> {
             #[serde(skip_serializing_if = "Option::is_none")]
             current_log: Option<String>,
         }
+
+        validate_url(self.server)?;
 
         let payload =
             Payload { state, firmware, package_uid, previous_state, error_message, current_log };
