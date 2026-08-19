@@ -5,7 +5,7 @@
 mod hook;
 pub mod installation_set;
 
-#[cfg(feature = "test-env")]
+#[cfg(any(test, feature = "test-env"))]
 pub mod tests;
 
 use self::hook::{run_hook, run_hooks_from_dir};
