@@ -226,8 +226,21 @@ pub(crate) mod tests {
             // FakeMtd created here so if any subsequent command fails the drop will still
             // be called to cleanup mtd devices
             let mut mtd = FakeMtd { devices: vec![], kind };
+
+            // mtdpart wants the offset and the size aligned on the erase block,
+            // and a partition below the object size fails `ensure_disk_space`.
+            let erase_size = fs::read_to_string("/sys/class/mtd/mtd0/erasesize")?
+                .trim()
+                .parse::<usize>()
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))?;
+
             for (i, name) in names.iter().enumerate() {
-                easy_process::run(&format!("mtdpart add /dev/mtd0 {} {} {}", name, i * 100, 100))?;
+                easy_process::run(&format!(
+                    "mtdpart add /dev/mtd0 {} {} {}",
+                    name,
+                    i * erase_size,
+                    erase_size
+                ))?;
                 mtd.devices.push(PathBuf::from(format!("/dev/mtd{}", i + 1)));
             }
 
