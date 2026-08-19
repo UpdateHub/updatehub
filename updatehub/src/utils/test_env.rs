@@ -6,17 +6,14 @@
 //! only needs `is_executable_in_path` to see other directories. It changes no
 //! process state at all.
 
-use lazy_static::lazy_static;
 use std::{
     env,
     ffi::OsString,
     path::Path,
-    sync::{Mutex, MutexGuard},
+    sync::{LazyLock, Mutex, MutexGuard},
 };
 
-lazy_static! {
-    static ref ENV_LOCK: Mutex<()> = Mutex::default();
-}
+static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(Mutex::default);
 
 /// Holds `PATH` at a test-defined value, and restores it on drop.
 ///

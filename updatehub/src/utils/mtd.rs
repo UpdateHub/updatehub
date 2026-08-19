@@ -173,9 +173,8 @@ mod ffi {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use lazy_static::lazy_static;
     use pretty_assertions::assert_eq;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{Arc, LazyLock, Mutex};
 
     pub(crate) struct FakeUbi {
         #[allow(dead_code)]
@@ -265,9 +264,7 @@ pub(crate) mod tests {
     }
 
     // Used to serialize access to MTD devices
-    lazy_static! {
-        pub static ref SERIALIZE: Arc<Mutex<()>> = Arc::new(Mutex::default());
-    }
+    pub static SERIALIZE: LazyLock<Arc<Mutex<()>>> = LazyLock::new(|| Arc::new(Mutex::default()));
 
     #[test]
     #[ignore]
