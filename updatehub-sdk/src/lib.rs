@@ -7,12 +7,12 @@
 //! When running an agent instance, the API provides some methods
 //! for communicating with UpdateHub:
 //!
-//! - [abort_download](Client::abort_download)
+//! - [`abort_download`](Client::abort_download)
 //! - [info](Client::info)
-//! - [local_install](Client::local_install)
+//! - [`local_install`](Client::local_install)
 //! - [log](Client::log)
 //! - [probe](Client::probe)
-//! - [remote_install](Client::remote_install)
+//! - [`remote_install`](Client::remote_install)
 
 pub mod api;
 mod client;

@@ -53,11 +53,20 @@ impl serde::ser::Serialize for MetadataValue<'_> {
 }
 
 impl UpdatePackage {
+    /// Parses the raw metadata of an update package.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `content` is not the JSON document the agent
+    /// expects.
     pub fn parse(content: &[u8]) -> crate::Result<Self> {
         let update_package = serde_json::from_slice(content)?;
         Ok(UpdatePackage { inner: update_package, raw: content.to_vec() })
     }
 
+    /// Returns the SHA-256 sum of the raw metadata, which identifies the
+    /// package.
+    #[must_use]
     pub fn package_uid(&self) -> String {
         openssl::sha::sha256(&self.raw).iter().fold(String::new(), |mut output, c| {
             let _ = write!(output, "{c:02x}");
@@ -66,16 +75,30 @@ impl UpdatePackage {
         })
     }
 
+    /// Returns the version the package declares.
+    #[must_use]
     pub fn version(&self) -> &str {
         &self.inner.version
     }
 }
 
 impl Signature {
+    /// Decodes a signature from its base64 form.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when `bytes` is not valid base64.
     pub fn from_base64_str(bytes: &str) -> crate::Result<Self> {
         Ok(Signature(openssl::base64::decode_block(bytes)?))
     }
 
+    /// Checks the signature of `package` against the public key stored at
+    /// `key`.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the key does not load, when the check itself
+    /// fails, or when the signature does not match the package.
     pub fn validate(&self, key: &Path, package: &UpdatePackage) -> crate::Result<()> {
         use openssl::{hash::MessageDigest, pkey::PKey, rsa::Rsa, sign::Verifier};
         let key = PKey::from_rsa(Rsa::public_key_from_pem(&fs::read(key)?)?)?;

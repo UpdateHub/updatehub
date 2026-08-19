@@ -59,6 +59,9 @@ pub fn record_out_of_scope<R>(f: impl FnOnce() -> R) -> R {
     result
 }
 
+/// Returns everything the memory drain holds for the current scope of
+/// operation.
+#[must_use]
 pub fn get_memory_log() -> String {
     buffer_lock().to_string()
 }

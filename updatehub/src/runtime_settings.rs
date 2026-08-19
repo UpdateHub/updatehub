@@ -63,6 +63,19 @@ impl Default for RuntimeSettings {
 }
 
 impl RuntimeSettings {
+    /// Loads the runtime settings stored at `path`, or the default ones when
+    /// the file is absent.
+    ///
+    /// A file that fails to parse is renamed with a `.old` suffix, and the
+    /// default settings take its place.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the file exists but cannot be read.
+    ///
+    /// # Panics
+    ///
+    /// Panics when `path` names no file, or when that name is not valid UTF-8.
     pub fn load(path: &Path) -> Result<Self> {
         let mut this = if path.exists() {
             debug!("loading runtime settings from {:?}", path);
