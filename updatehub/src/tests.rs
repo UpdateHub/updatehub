@@ -172,7 +172,10 @@ impl TestEnvironmentBuilder {
                 file.set_permissions(permissions).unwrap();
             }
             let curr_path = env::var("PATH").map(|s| ":".to_string() + &s).unwrap_or_default();
-            env::set_var("PATH", format!("{}{}", bin_dir_path.to_string_lossy(), curr_path,));
+            // TODO: Audit that the environment access only happens in single-threaded code.
+            unsafe {
+                env::set_var("PATH", format!("{}{}", bin_dir_path.to_string_lossy(), curr_path,))
+            };
 
             Data {
                 data: output_file,

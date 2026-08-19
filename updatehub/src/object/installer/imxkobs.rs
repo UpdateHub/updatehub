@@ -109,7 +109,8 @@ mod tests {
     async fn check_requirements_with_missing_binaries() {
         let imxkobs_obj = fake_imxkobs_obj();
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         assert!(imxkobs_obj.check_requirements(&Context::default()).await.is_err());
     }
 

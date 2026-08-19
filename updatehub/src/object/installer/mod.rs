@@ -105,7 +105,7 @@ where
             trace!("no install if different rule set, proceeding");
             Ok(false)
         }
-        Some(ref rule) => {
+        Some(rule) => {
             let mut h = handler.await?;
             match check_if_different(&mut h, rule, sha256sum).await {
                 Ok(true) => {
@@ -170,14 +170,17 @@ pub(crate) mod tests {
             create_echo_bin(&mocks_dir.join(bin), &calls)?;
         }
 
-        env::set_var(
-            "PATH",
-            format!(
-                "{}{}",
-                mocks_dir.display(),
-                &env::var("PATH").map(|s| format!(":{s}")).unwrap_or_default()
-            ),
-        );
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe {
+            env::set_var(
+                "PATH",
+                format!(
+                    "{}{}",
+                    mocks_dir.display(),
+                    &env::var("PATH").map(|s| format!(":{s}")).unwrap_or_default()
+                ),
+            )
+        };
 
         Ok((mocks, calls))
     }

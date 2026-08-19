@@ -87,14 +87,17 @@ mod tests {
     async fn check_requirements_with_missing_binaries() {
         let ubifs_obj = fake_ubifs_obj("home");
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         let (_handle, _) = create_echo_bins(&["ubinfo"]).unwrap();
         assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
 
-        env::set_var("PATH", "");
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var("PATH", "") };
         let (_handle, _) = create_echo_bins(&["ubiupdatevol"]).unwrap();
         assert!(ubifs_obj.check_requirements(&Context::default()).await.is_err());
     }

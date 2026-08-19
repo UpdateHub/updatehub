@@ -33,7 +33,7 @@ impl std::iter::Iterator for Count {
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Count::All => Some(0),
-            Count::Limited(ref mut n) => match n {
+            Count::Limited(n) => match n {
                 0 => None,
                 n => {
                     *n -= 1;
