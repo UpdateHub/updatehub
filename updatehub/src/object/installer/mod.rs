@@ -76,7 +76,8 @@ async fn check_if_different<R: AsyncRead + AsyncSeek + Unpin>(
         }
         definitions::InstallIfDifferent::CustomPattern { version, pattern } => {
             handle.seek(io::SeekFrom::Start(pattern.seek)).await?;
-            let mut src = BufReader::with_capacity(pattern.buffer_size as usize, handle);
+            let buffer_size = usize::try_from(pattern.buffer_size).unwrap_or(usize::MAX);
+            let mut src = BufReader::with_capacity(buffer_size, handle);
             if let Some(ref cur_version) =
                 fbv::version_with_pattern(&mut src, &pattern.regexp).await
             {

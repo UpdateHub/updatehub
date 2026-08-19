@@ -192,7 +192,7 @@ impl TestEnvironmentBuilder {
             fs::remove_file(&file_path).unwrap();
 
             let mut runtime_settings = RuntimeSettings::default();
-            runtime_settings.path = file_path.clone();
+            runtime_settings.path.clone_from(&file_path);
             if self.booting_from_update {
                 runtime_settings.enable_persistency();
                 runtime_settings.set_upgrading_to(Set(InstallationSet::A)).unwrap();
