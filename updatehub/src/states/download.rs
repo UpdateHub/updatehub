@@ -23,7 +23,7 @@ pub(super) struct Download {
 
 impl Download {
     async fn start_download(
-        update_package: UpdatePackage,
+        update_package: &UpdatePackage,
         context: &Mutex<&mut Context>,
     ) -> Result<()> {
         let installation_set =
@@ -129,52 +129,20 @@ impl StateChangeImpl for Download {
     }
 
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
-        let communication_receiver = &context.communication.receiver.clone();
         let context = Mutex::new(context);
 
-        let update_package = self.update_package.clone();
-        let download_future = async {
-            Download::start_download(update_package.clone(), &context).await?;
-            Result::Ok(None)
-        };
-
-        let message_handle_future = async {
-            while let Ok((msg, responder)) = communication_receiver.recv().await {
-                if let Some(new_state) =
-                    self.handle_communication(msg, responder, *context.lock().await).await
-                {
-                    return Ok(Some(new_state));
-                }
-            }
-            Ok(None)
-        };
-
-        // Clone update package and object_context so self can be freely held by
-        // message_handle_future
-        let update_package = self.update_package.clone();
-        let sign = self.sign.clone();
-
-        // download_future dones't need to be pinned as it doesn't borrow context
-        futures_util::pin_mut!(download_future);
-        futures_util::pin_mut!(message_handle_future);
-
-        if let Some(new_state) =
-            futures_util::future::select(download_future, message_handle_future)
-                .await
-                .factor_first()
-                .0?
-        {
-            return Ok((new_state, machine::StepTransition::Immediate));
-        }
-
-        Ok((
-            State::Validation(Validation {
-                package: update_package,
-                sign,
+        let download = async {
+            Download::start_download(&self.update_package, &context).await?;
+            Ok(State::Validation(Validation {
+                package: self.update_package.clone(),
+                sign: self.sign.clone(),
                 require_download: false,
-            }),
-            machine::StepTransition::Immediate,
-        ))
+            }))
+        };
+
+        let state = self.handle_communication_while(&context, download).await?;
+
+        Ok((state, machine::StepTransition::Immediate))
     }
 }
 

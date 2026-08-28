@@ -11,8 +11,10 @@ use super::{
     DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, Result, RuntimeSettings, Settings,
     State, StateChangeImpl, Validation,
 };
+use async_lock::Mutex;
+use futures_util::future::{Either, select};
 use slog_scope::{error, info, trace};
-use std::path::PathBuf;
+use std::{future::Future, path::PathBuf};
 
 pub(crate) use address::{
     AbortDownloadResponse, Addr, Message, ProbeResponse, Response, StateResponse,
@@ -102,6 +104,54 @@ pub(super) trait CommunicationState: StateChangeImpl {
         }
 
         state
+    }
+
+    /// Runs `work` while answering requests, returning whichever settles first:
+    /// the state `work` produced, or the state a request moved the machine to.
+    ///
+    /// A request already being handled is never dropped, whichever way the
+    /// races below go: dropping one leaves its caller waiting on a reply
+    /// channel nobody holds any more, and the caller answers that with an
+    /// error the request never recovers from.
+    ///
+    /// `work` must not hold the context lock across an await. Answering a
+    /// request takes that lock, and `work` is not polled while the lock is
+    /// being acquired, so a guard held over a suspension point deadlocks both.
+    async fn handle_communication_while(
+        &self,
+        context: &Mutex<&mut Context>,
+        work: impl Future<Output = Result<State>>,
+    ) -> Result<State> {
+        let communication = context.lock().await.communication.receiver.clone();
+        futures_util::pin_mut!(work);
+
+        loop {
+            let received = communication.recv();
+            futures_util::pin_mut!(received);
+
+            let (msg, responder) = match select(work.as_mut(), received).await {
+                Either::Left((done, _)) => return done,
+                Either::Right((Ok(request), _)) => request,
+                // Nobody can ask us anything any more, so just finish the work.
+                Either::Right((Err(_), _)) => return work.as_mut().await,
+            };
+
+            let mut locked = context.lock().await;
+            let handling = self.handle_communication(msg, responder, *locked);
+            futures_util::pin_mut!(handling);
+
+            // `work` keeps being polled while the request is answered, but the
+            // answering itself is never what gets dropped: when `work` wins
+            // this race it hands back the unfinished `handling`, which is then
+            // driven to completion rather than discarded.
+            match select(work.as_mut(), handling).await {
+                // The request still gets its answer, and a request that
+                // redirects the machine outranks work we no longer want.
+                Either::Left((done, handling)) => return handling.await.map_or(done, Ok),
+                Either::Right((Some(new_state), _)) => return Ok(new_state),
+                Either::Right((None, _)) => {}
+            }
+        }
     }
 
     async fn handle_probe(
