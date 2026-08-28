@@ -4,6 +4,9 @@
 
 mod address;
 
+#[cfg(test)]
+mod tests;
+
 use super::{
     DirectDownload, EntryPoint, Metadata, PrepareLocalInstall, Result, RuntimeSettings, Settings,
     State, StateChangeImpl, Validation,
@@ -83,17 +86,22 @@ pub(super) trait CommunicationState: StateChangeImpl {
                 .map(|(res, st)| (address::Response::RemoteInstall(res), st)),
         };
 
-        match res {
-            Ok((response, state)) => {
-                responder.send(Ok(response)).await.ok()?;
-                state
-            }
+        let (reply, state) = match res {
+            Ok((response, state)) => (Ok(response), state),
             Err(e) => {
                 error!("Request failed with: {}", e);
-                responder.send(Err(e)).await.ok()?;
-                None
+                (Err(e), None)
             }
+        };
+
+        // A client that hung up before we answered is tolerated, but the work
+        // already done on its behalf is not thrown away: an accepted request
+        // still moves the machine to the state it asked for.
+        if responder.send(reply).await.is_err() {
+            trace!("client gave up before the response was delivered");
         }
+
+        state
     }
 
     async fn handle_probe(
@@ -261,10 +269,13 @@ impl StateMachine {
     }
 
     pub(super) async fn start(mut self) {
+        let waker = self.context.waker.receiver.clone();
+        let communication = self.context.communication.receiver.clone();
+
         loop {
             // Since the loop is already currently running, we can
             // discharges any wake message received.
-            let _ = self.context.waker.receiver.try_recv();
+            let _ = waker.try_recv();
 
             self.consume_pending_communication().await;
 
@@ -275,39 +286,48 @@ impl StateMachine {
                 .unwrap_or_else(|e| (State::from(e), StepTransition::Immediate));
             self.state = state;
 
-            match transition {
-                StepTransition::Immediate => {}
+            let delay = match transition {
+                StepTransition::Immediate => continue,
                 StepTransition::Delayed(t) => {
                     trace!("delaying transition for: {} seconds", t.num_seconds());
-                    let waker = self.context.waker.receiver.clone();
-
-                    let sleep_fut = tokio::time::sleep(t.to_std().unwrap_or_default());
-                    let waker_fut = async {
-                        let _ = waker.recv().await;
-                    };
-                    let comm_fut = self.await_communication();
-
-                    futures_util::pin_mut!(sleep_fut);
-                    futures_util::pin_mut!(waker_fut);
-                    futures_util::pin_mut!(comm_fut);
-
-                    let _ = futures_util::future::select(
-                        futures_util::future::select(sleep_fut, waker_fut),
-                        comm_fut,
-                    )
-                    .await;
+                    Some(t.to_std().unwrap_or_default())
                 }
                 StepTransition::Never => {
                     trace!("stopping transition until awoken");
-                    let waker_recv = self.context.waker.receiver.clone();
-                    let recv_fut = waker_recv.recv();
-                    let comm_fut = async {
-                        self.await_communication().await;
-                        std::result::Result::<_, async_channel::RecvError>::Ok(())
-                    };
+                    None
+                }
+            };
 
-                    futures_util::pin_mut!(recv_fut, comm_fut);
-                    let _ = futures_util::future::select(recv_fut, comm_fut).await;
+            // Built once and polled across every request answered below, so
+            // answering one does not restart the wait the current state asked
+            // for. `Never` is the same wait with a deadline that never fires.
+            let mut elapsed = std::pin::pin!(async {
+                match delay {
+                    Some(t) => tokio::time::sleep(t).await,
+                    None => std::future::pending::<()>().await,
+                }
+            });
+
+            loop {
+                let (msg, responder) = tokio::select! {
+                    // Polled in the order the previous `select` chain used.
+                    biased;
+                    () = elapsed.as_mut() => break,
+                    _ = waker.recv() => break,
+                    received = communication.recv() => match received {
+                        Ok(request) => request,
+                        Err(_) => break,
+                    },
+                };
+
+                // Handled out here on purpose. Only the receive takes part in
+                // the race above: dropping a pending receive loses nothing,
+                // whereas dropping a request already being handled would leave
+                // its caller waiting on a reply channel nobody holds any more.
+                if self.handle_request(msg, responder).await {
+                    // The request moved the machine, so the wait it was made
+                    // against no longer describes what to do next.
+                    break;
                 }
             }
         }
@@ -315,21 +335,22 @@ impl StateMachine {
 
     async fn consume_pending_communication(&mut self) {
         while let Ok((msg, responder)) = self.context.communication.receiver.try_recv() {
-            if let Some(new_state) =
-                self.state.handle_communication(msg, responder, &mut self.context).await
-            {
-                self.state = new_state;
-            }
+            let _ = self.handle_request(msg, responder).await;
         }
     }
 
-    async fn await_communication(&mut self) {
-        while let Ok((msg, responder)) = self.context.communication.receiver.recv().await {
-            if let Some(new_state) =
-                self.state.handle_communication(msg, responder, &mut self.context).await
-            {
+    /// Answers one request, reporting whether it moved the machine.
+    async fn handle_request(
+        &mut self,
+        msg: Message,
+        responder: async_channel::Sender<Result<Response>>,
+    ) -> bool {
+        match self.state.handle_communication(msg, responder, &mut self.context).await {
+            Some(new_state) => {
                 self.state = new_state;
+                true
             }
+            None => false,
         }
     }
 }

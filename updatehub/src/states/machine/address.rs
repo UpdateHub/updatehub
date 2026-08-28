@@ -49,9 +49,18 @@ pub(crate) enum StateResponse {
     InvalidState(String),
 }
 
+// Either half of a request's channel going away means the state machine is no
+// longer running. Report that rather than taking the caller's task down with a
+// panic.
 impl<T> From<async_channel::SendError<T>> for crate::states::TransitionError {
-    fn from(err: async_channel::SendError<T>) -> Self {
-        unreachable!("Unexpected sending error for {:?}", err)
+    fn from(_: async_channel::SendError<T>) -> Self {
+        crate::states::TransitionError::CommunicationFailed
+    }
+}
+
+impl From<async_channel::RecvError> for crate::states::TransitionError {
+    fn from(_: async_channel::RecvError) -> Self {
+        crate::states::TransitionError::CommunicationFailed
     }
 }
 
@@ -62,7 +71,10 @@ impl Addr {
         match recv.recv().await {
             Ok(Ok(Response::Info(resp))) => Ok(*resp),
             Ok(Err(e)) => Err(e),
-            res => unreachable!("Unexpected response: {:?}", res),
+            Err(async_channel::RecvError) => {
+                Err(crate::states::TransitionError::CommunicationFailed)
+            }
+            Ok(Ok(res)) => unreachable!("Unexpected response: {res:?}"),
         }
     }
 
@@ -75,7 +87,10 @@ impl Addr {
         match recv.recv().await {
             Ok(Ok(Response::Probe(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
-            res => unreachable!("Unexpected response: {:?}", res),
+            Err(async_channel::RecvError) => {
+                Err(crate::states::TransitionError::CommunicationFailed)
+            }
+            Ok(Ok(res)) => unreachable!("Unexpected response: {res:?}"),
         }
     }
 
@@ -85,7 +100,10 @@ impl Addr {
         match recv.recv().await {
             Ok(Ok(Response::AbortDownload(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
-            res => unreachable!("Unexpected response: {:?}", res),
+            Err(async_channel::RecvError) => {
+                Err(crate::states::TransitionError::CommunicationFailed)
+            }
+            Ok(Ok(res)) => unreachable!("Unexpected response: {res:?}"),
         }
     }
 
@@ -99,7 +117,10 @@ impl Addr {
         match recv.recv().await {
             Ok(Ok(Response::LocalInstall(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
-            res => unreachable!("Unexpected response: {:?}", res),
+            Err(async_channel::RecvError) => {
+                Err(crate::states::TransitionError::CommunicationFailed)
+            }
+            Ok(Ok(res)) => unreachable!("Unexpected response: {res:?}"),
         }
     }
 
@@ -110,7 +131,10 @@ impl Addr {
         match recv.recv().await {
             Ok(Ok(Response::RemoteInstall(resp))) => Ok(resp),
             Ok(Err(e)) => Err(e),
-            res => unreachable!("Unexpected response: {:?}", res),
+            Err(async_channel::RecvError) => {
+                Err(crate::states::TransitionError::CommunicationFailed)
+            }
+            Ok(Ok(res)) => unreachable!("Unexpected response: {res:?}"),
         }
     }
 }
