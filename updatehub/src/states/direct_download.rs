@@ -29,10 +29,9 @@ impl StateChangeImpl for DirectDownload {
     async fn handle(self, context: &mut Context) -> Result<(State, machine::StepTransition)> {
         info!("fetching update package directly from url: {:?}", self.url);
 
-        let communication_receiver = &context.communication.receiver.clone();
         let context = Mutex::new(context);
 
-        let download_future = async {
+        let download = async {
             let download_dir = context.lock().await.settings.update.download_dir.clone();
             tokio::fs::create_dir_all(&download_dir)
                 .await
@@ -46,27 +45,8 @@ impl StateChangeImpl for DirectDownload {
             Ok(State::PrepareLocalInstall(PrepareLocalInstall { update_file }))
         };
 
-        let message_handle_future = async {
-            while let Ok((msg, responder)) = communication_receiver.recv().await {
-                if let Some(new_state) =
-                    self.handle_communication(msg, responder, *context.lock().await).await
-                {
-                    return Ok(new_state);
-                }
-            }
+        let state = self.handle_communication_while(&context, download).await?;
 
-            Err(super::TransitionError::CommunicationFailed)
-        };
-
-        futures_util::pin_mut!(download_future);
-        futures_util::pin_mut!(message_handle_future);
-
-        Ok((
-            futures_util::future::select(download_future, message_handle_future)
-                .await
-                .factor_first()
-                .0?,
-            machine::StepTransition::Immediate,
-        ))
+        Ok((state, machine::StepTransition::Immediate))
     }
 }

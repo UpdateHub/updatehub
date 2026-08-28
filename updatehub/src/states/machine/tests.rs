@@ -107,3 +107,37 @@ async fn state_transition_survives_an_abandoned_request() {
     let machine = new_state.expect("the accepted local install was dropped");
     assert_state!(machine, PrepareLocalInstall);
 }
+
+/// The download states race a request against work that can finish first.
+#[tokio::test]
+async fn a_half_answered_request_survives_the_work_finishing() {
+    let setup = crate::tests::TestEnvironment::build().finish();
+    let mut context = setup.gen_context();
+
+    let (responder, reply) = async_channel::bounded(1);
+    context.communication.sender.send((Message::Probe(None), responder)).await.unwrap();
+
+    let (release, arrived) = crate::cloud_mock::gate_probes();
+    let (finish_work, work_finished) = async_channel::bounded::<()>(1);
+    let context = async_lock::Mutex::new(&mut context);
+    let work = async {
+        work_finished.recv().await.unwrap();
+        Ok(State::Park(Park {}))
+    };
+
+    let (state, ()) = futures_util::future::join(
+        State::Park(Park {}).handle_communication_while(&context, work),
+        async {
+            // The request is waiting on the server, so finish the work while it
+            // is still only half answered.
+            arrived.recv().await.unwrap();
+            finish_work.send(()).await.unwrap();
+            release.send(()).await.unwrap();
+        },
+    )
+    .await;
+
+    assert!(reply.try_recv().is_ok(), "the request was dropped half-answered");
+    let machine = state.unwrap();
+    assert_state!(machine, EntryPoint);
+}
