@@ -128,7 +128,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
 
             ProbeResponse::NoUpdate => {
                 info!("no update is current available for this device");
-                context.waker.sender.send(()).await?;
+                context.wake();
 
                 // Store timestamp of last polling
                 context.runtime_settings.set_last_polling(Utc::now())?;
@@ -137,7 +137,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
 
             ProbeResponse::Update(package, sign) => {
                 info!("update received: {} ({})", package.version(), package.package_uid());
-                context.waker.sender.send(()).await?;
+                context.wake();
 
                 // Store timestamp of last polling
                 context.runtime_settings.set_last_polling(Utc::now())?;
@@ -173,7 +173,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
             // Starting logging a new scope of operation since we are
             // starting to handle a user request
             crate::logger::start_memory_logging();
-            context.waker.sender.send(()).await?;
+            context.wake();
 
             Ok((
                 address::StateResponse::RequestAccepted(name),
@@ -195,7 +195,7 @@ pub(super) trait CommunicationState: StateChangeImpl {
             // Starting logging a new scope of operation since we are
             // starting to handle a user request
             crate::logger::start_memory_logging();
-            context.waker.sender.send(()).await?;
+            context.wake();
 
             Ok((
                 address::StateResponse::RequestAccepted(name),
@@ -220,6 +220,16 @@ impl Context {
             runtime_settings,
             firmware,
         }
+    }
+
+    /// Asks the main loop to stop waiting on the current transition.
+    ///
+    /// The waker holds a single pending wake up, so an occupied slot already
+    /// carries the message. Signalling must never block: a handler runs to
+    /// completion before the loop that drains the waker gets to run again, so
+    /// waiting for room here would deadlock the agent.
+    pub(super) fn wake(&self) {
+        let _ = self.waker.sender.try_send(());
     }
 
     pub(super) fn server_address(&self) -> &str {
