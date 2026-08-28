@@ -13,6 +13,12 @@ std::thread_local! {
     static OBJECT_DATA: RefCell<Option<Vec<u8>>> = const { RefCell::new(Option::None) };
 }
 
+type ProbeGate = (async_channel::Receiver<()>, async_channel::Sender<()>);
+
+std::thread_local! {
+    static PROBE_GATE: RefCell<Option<ProbeGate>> = const { RefCell::new(None) };
+}
+
 pub(crate) enum FakeResponse {
     NoUpdate,
     HasUpdate,
@@ -26,6 +32,18 @@ pub(crate) struct Client<'a> {
 
 pub(crate) fn setup_fake_response(res: FakeResponse) {
     RESPONSE_CONFIG.with(|conf| conf.replace_with(move |&mut _| res));
+}
+
+/// Holds every probe until it is released, standing in for a server that has
+/// not answered yet.
+///
+/// Returns the release side and a receiver that reports each probe reaching the
+/// server, so a test can act while a request is provably half-answered.
+pub(crate) fn gate_probes() -> (async_channel::Sender<()>, async_channel::Receiver<()>) {
+    let (release, gate) = async_channel::unbounded();
+    let (reached, arrived) = async_channel::unbounded();
+    PROBE_GATE.with(|conf| conf.borrow_mut().replace((gate, reached)));
+    (release, arrived)
 }
 
 pub(crate) fn set_download_data(data: Vec<u8>) {
@@ -42,6 +60,14 @@ impl<'a> Client<'a> {
         _num_retries: usize,
         _firmware: api::FirmwareMetadata<'_>,
     ) -> Result<api::ProbeResponse> {
+        // Cloned out before awaiting, so the `RefCell` is never borrowed across
+        // a suspension point.
+        let gate = PROBE_GATE.with(|conf| conf.borrow().clone());
+        if let Some((gate, reached)) = gate {
+            let _ = reached.send(()).await;
+            let _ = gate.recv().await;
+        }
+
         RESPONSE_CONFIG.with(|conf| match std::ops::Deref::deref(&conf.borrow()) {
             FakeResponse::NoUpdate => Ok(api::ProbeResponse::NoUpdate),
             FakeResponse::ExtraPoll => Ok(api::ProbeResponse::ExtraPoll(10)),
