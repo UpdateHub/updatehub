@@ -54,7 +54,7 @@ argh = "0.1.3"
 async-ctrlc = { version = "1", optional = true }
 async-channel = "2"
 async-lock = "3"
-bitar = "0.14"
+bitar = "0.15"
 chrono = { version = "0.4", default-features = false, features = [
   "clock",
   "serde",
