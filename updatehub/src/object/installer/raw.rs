@@ -16,7 +16,7 @@ use slog_scope::info;
 use std::io::SeekFrom;
 use tokio::{
     fs,
-    io::{AsyncRead, AsyncReadExt, AsyncSeek, AsyncSeekExt},
+    io::{AsyncRead, AsyncReadExt, AsyncSeekExt},
 };
 use tokio_take_seek::AsyncTakeSeekExt;
 
@@ -46,26 +46,30 @@ impl Installer for objects::Raw {
         let seek = self.seek * chunk_size as u64;
         let skip = self.skip.0 * chunk_size as u64;
         let truncate = self.truncate.0;
-        let count = self.count.clone();
+        let count = match self.count {
+            definitions::Count::All => None,
+            definitions::Count::Limited(n) => {
+                Some(u64::try_from(n).unwrap_or(0) * chunk_size as u64)
+            }
+        };
+
+        // How much of the target this object writes. The check must stop there,
+        // otherwise a neighbouring object sharing the device answers for it.
+        let region_len = if self.compressed {
+            self.required_uncompressed_size
+        } else {
+            let written = self.size.saturating_sub(skip);
+            count.map_or(written, |n| n.min(written))
+        };
 
         let should_skip_install = super::should_skip_install(
             self.install_if_different.as_ref(),
             &self.sha256sum,
             async {
-                trait AsyncReadSeek: AsyncRead + AsyncSeek + Unpin {}
-                impl<R: AsyncRead + AsyncSeek + Unpin> AsyncReadSeek for R {}
-
                 let h = fs::OpenOptions::new().read(true).open(device).await?;
                 let mut h = utils::io::timed_buf_reader(chunk_size, h);
                 h.seek(SeekFrom::Start(seek)).await?;
-                let h: Box<dyn AsyncReadSeek> = match &count {
-                    definitions::Count::All => Box::new(h),
-                    definitions::Count::Limited(n) => {
-                        let count = u64::try_from(*n).unwrap_or(0);
-                        Box::new(h.take_with_seek(count * chunk_size as u64))
-                    }
-                };
-                Ok(h)
+                Ok(h.take_with_seek(region_len))
             },
         )
         .await?;
@@ -80,11 +84,8 @@ impl Installer for objects::Raw {
             );
             input.seek(SeekFrom::Start(skip)).await.log_error_msg("failed to seek source file")?;
             match count {
-                definitions::Count::All => Box::new(input),
-                definitions::Count::Limited(n) => {
-                    let count = u64::try_from(n).unwrap_or(0);
-                    Box::new(input.take(count * chunk_size as u64))
-                }
+                None => Box::new(input),
+                Some(n) => Box::new(input.take(n)),
             }
         };
         let mut target = {
@@ -227,6 +228,101 @@ mod tests {
             f2.consume(len2);
         }
         Ok(())
+    }
+
+    const SHARED_CHUNK_SIZE: usize = 1024;
+    const SHARED_OBJECT_LEN: usize = 4 * SHARED_CHUNK_SIZE;
+    const SHARED_OBJECT_AT: usize = SHARED_CHUNK_SIZE;
+    const SHARED_NEIGHBOUR_AT: usize = 64 * SHARED_CHUNK_SIZE;
+
+    /// Lays out a device shared by two raw objects, the one under test at
+    /// `SHARED_OBJECT_AT` and a neighbour at `SHARED_NEIGHBOUR_AT`, each
+    /// holding a U-Boot banner of the given version.
+    fn fake_shared_device(
+        rule_version: &str,
+        object_version: Option<&str>,
+        neighbour_version: &str,
+    ) -> (objects::Raw, TempDir, NamedTempFile, NamedTempFile) {
+        let banner = |v: &str| format!("U-Boot {v} (Jul 18 2023 - 18:41:01 +0000)\0").into_bytes();
+
+        let download_dir = tempdir().unwrap();
+
+        let mut source = NamedTempFile::new_in(download_dir.path()).unwrap();
+        source
+            .write_all(&std::iter::repeat_n(ORIGINAL_BYTE, SHARED_OBJECT_LEN).collect::<Vec<_>>())
+            .unwrap();
+        source.flush().unwrap();
+
+        let mut dest = NamedTempFile::new_in(download_dir.path()).unwrap();
+        dest.write_all(
+            &std::iter::repeat_n(DEFAULT_BYTE, 2 * SHARED_NEIGHBOUR_AT).collect::<Vec<_>>(),
+        )
+        .unwrap();
+        if let Some(v) = object_version {
+            dest.seek(SeekFrom::Start(SHARED_OBJECT_AT as u64)).unwrap();
+            dest.write_all(&banner(v)).unwrap();
+        }
+        dest.seek(SeekFrom::Start(SHARED_NEIGHBOUR_AT as u64)).unwrap();
+        dest.write_all(&banner(neighbour_version)).unwrap();
+        dest.flush().unwrap();
+
+        let obj = objects::Raw {
+            filename: String::new(),
+            size: SHARED_OBJECT_LEN as u64,
+            sha256sum: source.path().to_string_lossy().to_string(),
+            target_type: definitions::TargetType::Device(dest.path().into()),
+
+            install_if_different: Some(definitions::InstallIfDifferent::KnownPattern {
+                version: rule_version.to_string(),
+                pattern: definitions::install_if_different::KnownPatternKind::UBoot,
+            }),
+            compressed: false,
+            required_uncompressed_size: 0,
+            chunk_size: definitions::ChunkSize(SHARED_CHUNK_SIZE),
+            skip: definitions::Skip(0),
+            seek: (SHARED_OBJECT_AT / SHARED_CHUNK_SIZE) as u64,
+            count: definitions::Count::All,
+            truncate: definitions::Truncate(false),
+        };
+
+        (obj, download_dir, source, dest)
+    }
+
+    /// The check must stop at the end of the object it guards. Objects install
+    /// largest first, so the neighbour is already carrying the new version by
+    /// the time this one is checked, and reading into it skips an object that
+    /// did change.
+    #[tokio::test]
+    async fn install_if_different_stops_at_the_end_of_the_object() {
+        let (obj, download_dir, _source_guard, target_guard) =
+            fake_shared_device("2020.01", None, "2020.01");
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+
+        obj.install(&context).await.unwrap();
+
+        let written = std::fs::read(target_guard.path()).unwrap();
+        assert_eq!(
+            written[SHARED_OBJECT_AT..SHARED_OBJECT_AT + SHARED_OBJECT_LEN],
+            std::iter::repeat_n(ORIGINAL_BYTE, SHARED_OBJECT_LEN).collect::<Vec<_>>(),
+            "the neighbour's version answered for this object and skipped it"
+        );
+    }
+
+    /// The counterpart: a matching version inside the object's own region still
+    /// skips the installation.
+    #[tokio::test]
+    async fn install_if_different_matches_inside_the_object() {
+        let (obj, download_dir, _source_guard, target_guard) =
+            fake_shared_device("2020.01", Some("2020.01"), "2019.04");
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+
+        let before = std::fs::read(target_guard.path()).unwrap();
+        obj.install(&context).await.unwrap();
+        let after = std::fs::read(target_guard.path()).unwrap();
+
+        assert_eq!(before, after, "object with an unchanged version should not be installed");
     }
 
     #[tokio::test]
