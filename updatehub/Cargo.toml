@@ -69,7 +69,7 @@ derive_more = { version = "2", default-features = false, features = [
   "from",
 ] }
 easy_process = "0.2"
-find-binary-version = "0.5"
+find-binary-version = "0.5.2"
 futures-util = { version = "0.3", default-features = false }
 logging_content = "0.1"
 mockito = { version = "1", optional = true }
