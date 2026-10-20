@@ -183,6 +183,7 @@ fn checked_region(obj: &objects::Raw) -> Option<(u64, u64)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::fs::tests::{FakeLoopDevice, LOOP_DEVICE_SIZE};
     use flate2::{Compression, write::GzEncoder};
     use pretty_assertions::assert_eq;
     use std::io::{Seek, Write};
@@ -492,6 +493,102 @@ mod tests {
 
             let target = std::fs::read(target_guard.path()).unwrap();
             assert!(target.iter().all(|b| *b == ORIGINAL_BYTE), "compressed: {compressed}");
+        }
+    }
+
+    /// Bootloader layout of an am335x: MLO at 128 KiB and U-Boot at 384 KiB of
+    /// the disk, the rootfs mounted from 1 MiB.
+    const PARTITION_START: u64 = 1024 * 1024;
+    const MLO_AT: u64 = 0x2_0000;
+    const UBOOT_AT: u64 = 0x6_0000;
+
+    fn mounted_disk() -> (FakeLoopDevice, utils::fs::MountGuard) {
+        let (disk, partition) =
+            FakeLoopDevice::with_partition(LOOP_DEVICE_SIZE, PARTITION_START).unwrap();
+        utils::fs::format(&partition, definitions::Filesystem::Ext4, None).unwrap();
+        let guard = utils::fs::mount(&partition, definitions::Filesystem::Ext4, "").unwrap();
+        std::fs::write(guard.mount_point().join("canary"), b"alive").unwrap();
+
+        (disk, guard)
+    }
+
+    fn read_at(device: &std::path::Path, offset: u64, len: usize) -> Vec<u8> {
+        use std::os::unix::fs::FileExt;
+
+        let mut buf = vec![0; len];
+        std::fs::File::open(device).unwrap().read_exact_at(&mut buf, offset).unwrap();
+        buf
+    }
+
+    #[tokio::test]
+    #[ignore = "needs root to attach a loop device"]
+    async fn bootloader_installs_beside_a_mounted_partition() {
+        let (disk, guard) = mounted_disk();
+        let download_dir = tempdir().unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+        let rootfs_before = read_at(&disk.device, PARTITION_START, 64 * 1024);
+
+        for compressed in [false, true] {
+            let mlo = vec![0x5a; 0x1_415c];
+            let uboot = vec![0xa5; 0x6_2f48];
+            for (name, data, at) in [("mlo", &mlo, MLO_AT), ("uboot", &uboot, UBOOT_AT)] {
+                let obj = raw_object(download_dir.path(), name, data, compressed, at, &disk.device);
+                obj.check_requirements(&context).await.unwrap();
+                obj.install(&context).await.unwrap();
+
+                assert_eq!(&read_at(&disk.device, at, data.len()), data, "{name}, {compressed}");
+            }
+        }
+
+        assert_eq!(read_at(&disk.device, PARTITION_START, 64 * 1024), rootfs_before);
+        assert_eq!(std::fs::read(guard.mount_point().join("canary")).unwrap(), b"alive");
+    }
+
+    #[tokio::test]
+    #[ignore = "needs root to attach a loop device"]
+    async fn object_reaching_a_mounted_partition_is_refused() {
+        let (disk, _guard) = mounted_disk();
+        let download_dir = tempdir().unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+
+        // Ends a single sector into the partition.
+        let data = vec![0x5a; usize::try_from(PARTITION_START - UBOOT_AT).unwrap() + 512];
+        let obj = raw_object(download_dir.path(), "uboot", &data, false, UBOOT_AT, &disk.device);
+        let res = obj.check_requirements(&context).await;
+
+        assert!(matches!(res, Err(Error::Utils(utils::Error::DeviceInUse { .. }))), "got {res:?}");
+    }
+
+    /// Beside a mounted partition the write is held to the declared region, so
+    /// an object holding more data must be refused before touching the disk.
+    #[tokio::test]
+    #[ignore = "needs root to attach a loop device"]
+    async fn object_larger_than_declared_beside_a_mounted_partition_is_refused() {
+        let (disk, _guard) = mounted_disk();
+        let download_dir = tempdir().unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+
+        for compressed in [false, true] {
+            let data = vec![0x5a; 8192];
+            let mut obj =
+                raw_object(download_dir.path(), "mlo", &data, compressed, MLO_AT, &disk.device);
+            if compressed {
+                obj.required_uncompressed_size = 4096;
+            } else {
+                obj.size = 4096;
+            }
+            obj.check_requirements(&context).await.unwrap();
+            let before = read_at(&disk.device, MLO_AT, data.len());
+
+            let res = obj.install(&context).await;
+            assert!(
+                matches!(res, Err(Error::LargerThanDeclared(_))),
+                "compressed: {compressed}, got {res:?}"
+            );
+            assert_eq!(read_at(&disk.device, MLO_AT, data.len()), before, "{compressed}");
         }
     }
 
