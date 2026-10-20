@@ -24,8 +24,11 @@ impl Installer for objects::Raw {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'raw' handle checking requirements");
 
-        if let definitions::TargetType::Device(dev) =
-            self.target_type.valid(Access::Exclusive).log_error_msg("device failed vaidation")?
+        let (offset, len) = target_region(self);
+        if let definitions::TargetType::Device(dev) = self
+            .target_type
+            .valid(Access::Region { offset, len })
+            .log_error_msg("device failed vaidation")?
         {
             utils::fs::ensure_disk_space(dev, self.required_install_size())
                 .log_error_msg("not enough disk space")?;
@@ -43,24 +46,12 @@ impl Installer for objects::Raw {
         };
         let source = context.download_dir.join(self.sha256sum());
         let chunk_size = self.chunk_size.0;
-        let seek = self.seek * chunk_size as u64;
         let skip = self.skip.0 * chunk_size as u64;
         let truncate = self.truncate.0;
-        let count = match self.count {
-            definitions::Count::All => None,
-            definitions::Count::Limited(n) => {
-                Some(u64::try_from(n).unwrap_or(0) * chunk_size as u64)
-            }
-        };
-
-        // How much of the target this object writes. The check must stop there,
-        // otherwise a neighbouring object sharing the device answers for it.
-        let region_len = if self.compressed {
-            self.required_uncompressed_size
-        } else {
-            let written = self.size.saturating_sub(skip);
-            count.map_or(written, |n| n.min(written))
-        };
+        let count = count_bytes(self);
+        // The check must stop at the end of what this object writes, otherwise
+        // a neighbouring object sharing the device answers for it.
+        let (seek, region_len) = target_region(self);
 
         let should_skip_install = super::should_skip_install(
             self.install_if_different.as_ref(),
@@ -114,6 +105,28 @@ impl Installer for objects::Raw {
 
         Ok(())
     }
+}
+
+fn count_bytes(obj: &objects::Raw) -> Option<u64> {
+    match obj.count {
+        definitions::Count::All => None,
+        definitions::Count::Limited(n) => {
+            Some(u64::try_from(n).unwrap_or(0) * obj.chunk_size.0 as u64)
+        }
+    }
+}
+
+/// Offset and length, in bytes, of what `obj` writes to its target.
+fn target_region(obj: &objects::Raw) -> (u64, u64) {
+    let chunk_size = obj.chunk_size.0 as u64;
+    let len = if obj.compressed {
+        obj.required_uncompressed_size
+    } else {
+        let written = obj.size.saturating_sub(obj.skip.0 * chunk_size);
+        count_bytes(obj).map_or(written, |n| n.min(written))
+    };
+
+    (obj.seek * chunk_size, len)
 }
 
 #[cfg(test)]
@@ -286,6 +299,27 @@ mod tests {
         };
 
         (obj, download_dir, source, dest)
+    }
+
+    #[test]
+    fn region_covers_what_is_written() -> Result<()> {
+        let (obj, ..) =
+            fake_raw_object(8192, 1024, 1, 4, definitions::Count::Limited(2), false, false)?;
+        assert_eq!(target_region(&obj), (4096, 2048));
+
+        let (obj, ..) = fake_raw_object(8192, 1024, 1, 4, definitions::Count::All, false, false)?;
+        assert_eq!(target_region(&obj), (4096, 7168));
+
+        let (obj, ..) =
+            fake_raw_object(8192, 1024, 0, 0, definitions::Count::Limited(16), false, false)?;
+        assert_eq!(target_region(&obj), (0, 8192));
+
+        let (mut obj, ..) =
+            fake_raw_object(8192, 1024, 0, 2, definitions::Count::All, false, true)?;
+        obj.required_uncompressed_size = 8192;
+        assert_eq!(target_region(&obj), (2048, 8192));
+
+        Ok(())
     }
 
     /// The check must stop at the end of the object it guards. Objects install
