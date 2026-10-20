@@ -8,6 +8,7 @@ pub(crate) mod fs;
 pub(crate) mod io;
 pub(crate) mod log;
 pub(crate) mod mtd;
+pub(crate) mod partition_table;
 
 #[cfg(any(test, feature = "test-env"))]
 pub(crate) mod test_env;
@@ -41,6 +42,16 @@ pub enum Error {
     )]
     #[from(ignore)]
     DeviceInUse {
+        device: std::path::PathBuf,
+        mount_point: std::path::PathBuf,
+    },
+
+    #[display(
+        "writing to {device:?} would overwrite its partition table, while it holds the \
+         filesystem mounted at {mount_point:?}"
+    )]
+    #[from(ignore)]
+    PartitionTableInUse {
         device: std::path::PathBuf,
         mount_point: std::path::PathBuf,
     },
