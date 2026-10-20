@@ -542,9 +542,33 @@ pub(crate) mod tests {
         /// A loop device holding a single partition from `start` to its end,
         /// returned along with the partition's own device node.
         pub(crate) fn with_partition(size: u64, start: u64) -> Result<(FakeLoopDevice, PathBuf)> {
+            let (loop_device, mut partitions) = FakeLoopDevice::with_image(size, 512, &[1], |f| {
+                partition_table::tests::write_mbr(
+                    f,
+                    &[(partition_table::tests::LINUX, start / 512, (size - start) / 512)],
+                )
+            })?;
+
+            Ok((loop_device, partitions.remove(0)))
+        }
+
+        /// A loop device of `sector_size` logical blocks over the image
+        /// `write` lays out, returned along with the device nodes of the
+        /// partitions numbered `partitions`.
+        pub(crate) fn with_image(
+            size: u64,
+            sector_size: u64,
+            partitions: &[u32],
+            write: impl FnOnce(&std::fs::File) -> io::Result<()>,
+        ) -> Result<(FakeLoopDevice, Vec<PathBuf>)> {
+            use std::os::fd::AsRawFd;
+
+            nix::ioctl_write_int_bad!(loop_set_block_size, 0x4c09);
+            nix::ioctl_none_bad!(blkrrpart, nix::request_code_none!(0x12, 95));
+
             let backing_file = tempfile::NamedTempFile::new()?;
             backing_file.as_file().set_len(size)?;
-            write_mbr(backing_file.as_file(), start / 512, (size - start) / 512)?;
+            write(backing_file.as_file())?;
 
             let mutex = SERIALIZE.clone();
             let _mutex = mutex.lock().unwrap();
@@ -553,30 +577,31 @@ pub(crate) mod tests {
             loopdev.with().part_scan(true).attach(backing_file.path())?;
             let loop_device = FakeLoopDevice { loopdev, device, _backing_file: backing_file };
 
-            // The partition node shows up asynchronously after the scan.
-            let partition = PathBuf::from(format!("{}p1", loop_device.device.display()));
+            // The partitions were scanned with 512 byte blocks, so they are
+            // scanned again once the block size changes.
+            if sector_size != 512 {
+                let fd = loop_device.loopdev.as_raw_fd();
+                unsafe {
+                    loop_set_block_size(fd, sector_size.try_into().unwrap())?;
+                    blkrrpart(fd)?;
+                }
+            }
+
+            // The partition nodes show up asynchronously after the scan.
+            let partitions = partitions
+                .iter()
+                .map(|n| PathBuf::from(format!("{}p{n}", loop_device.device.display())))
+                .collect::<Vec<_>>();
             for _ in 0..50 {
-                if partition.exists() {
-                    return Ok((loop_device, partition));
+                if partitions.iter().all(|partition| partition.exists()) {
+                    return Ok((loop_device, partitions));
                 }
                 std::thread::sleep(std::time::Duration::from_millis(100));
             }
 
-            Err(io::Error::new(io::ErrorKind::NotFound, format!("{partition:?} did not show up"))
+            Err(io::Error::new(io::ErrorKind::NotFound, format!("{partitions:?} did not show up"))
                 .into())
         }
-    }
-
-    /// Writes an MBR with a single Linux partition of `sectors` from `start`.
-    fn write_mbr(file: &std::fs::File, start: u64, sectors: u64) -> io::Result<()> {
-        use std::os::unix::fs::FileExt;
-
-        let mut entry = [0u8; 16];
-        entry[4] = 0x83;
-        entry[8..12].copy_from_slice(&u32::try_from(start).unwrap().to_le_bytes());
-        entry[12..16].copy_from_slice(&u32::try_from(sectors).unwrap().to_le_bytes());
-        file.write_all_at(&entry, 446)?;
-        file.write_all_at(&[0x55, 0xaa], 510)
     }
 
     impl Drop for FakeLoopDevice {
