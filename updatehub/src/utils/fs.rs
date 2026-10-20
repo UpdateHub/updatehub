@@ -776,4 +776,158 @@ pub(crate) mod tests {
             );
         }
     }
+
+    /// Mounts `partition` and checks that each region of `disk` in `free`
+    /// may be written while each in `table` is refused for holding the
+    /// partition table, and that nothing is refused once unmounted.
+    fn check_partition_table_regions(
+        disk: &Path,
+        partition: &Path,
+        free: &[Range<u64>],
+        table: &[Range<u64>],
+    ) {
+        format(partition, Filesystem::Ext4, None).unwrap();
+        let guard = mount(partition, Filesystem::Ext4, "").unwrap();
+        let check = |regions: &[Range<u64>]| {
+            regions
+                .iter()
+                .map(|region| (region.clone(), ensure_region_not_mounted(disk, region.clone())))
+                .collect::<Vec<_>>()
+        };
+        let mounted_free = check(free);
+        let mounted_table = check(table);
+        // Unmount before asserting so the device is always released.
+        drop(guard);
+
+        for (region, res) in mounted_free {
+            assert!(res.is_ok(), "{region:x?} should be free beside the mount, got {res:?}");
+        }
+        for (region, res) in mounted_table {
+            assert!(
+                matches!(res, Err(Error::PartitionTableInUse { .. })),
+                "{region:x?} holds the partition table, got {res:?}"
+            );
+        }
+        for (region, res) in check(table) {
+            assert!(res.is_ok(), "{region:x?} should be free with nothing mounted, got {res:?}");
+        }
+    }
+
+    /// i.MX6 U-Boot at 1 KiB, i.MX8M and Rockchip at 32 KiB, am335x from
+    /// 128 KiB, all ahead of a partition at 1 MiB.
+    const BOOTLOADERS: [Range<u64>; 3] = [0x400..0x8_0000, 0x8000..0x8_0000, 0x2_0000..0x10_0000];
+
+    #[test]
+    #[ignore = "needs root to attach a loop device"]
+    fn region_check_protects_the_mbr() {
+        let (disk, partition) =
+            FakeLoopDevice::with_partition(LOOP_DEVICE_SIZE, 1024 * 1024).unwrap();
+
+        check_partition_table_regions(
+            &disk.device,
+            &partition,
+            &std::iter::once(0..440).chain(BOOTLOADERS).collect::<Vec<_>>(),
+            &[0..512, 440..441, 446..447, 510..512],
+        );
+    }
+
+    #[test]
+    #[ignore = "needs root to attach a loop device"]
+    fn region_check_protects_the_ebrs() {
+        use partition_table::tests::{EXTENDED, LINUX, write_ebr, write_mbr};
+
+        const EXTENDED_START: u64 = 16384;
+        let (disk, partitions) = FakeLoopDevice::with_image(LOOP_DEVICE_SIZE, 512, &[5, 6], |f| {
+            write_mbr(
+                f,
+                &[
+                    (LINUX, 2048, 8192),
+                    (EXTENDED, EXTENDED_START, LOOP_DEVICE_SIZE / 512 - EXTENDED_START),
+                ],
+            )?;
+            write_ebr(f, 512, EXTENDED_START, 0, (2048, 8192), Some(16384))?;
+            write_ebr(f, 512, EXTENDED_START, 16384, (2048, 8192), None)
+        })
+        .unwrap();
+        let first = EXTENDED_START * 512;
+        let second = (EXTENDED_START + 16384) * 512;
+
+        check_partition_table_regions(
+            &disk.device,
+            &partitions[0],
+            &[0x2_0000..0x10_0000, first + 512..first + 1024 * 1024],
+            &[first..first + 1, second..second + 512, second + 446..second + 447],
+        );
+    }
+
+    #[test]
+    #[ignore = "needs root to attach a loop device"]
+    fn region_check_protects_the_gpt() {
+        let sectors = LOOP_DEVICE_SIZE / 512;
+        let (disk, partitions) = FakeLoopDevice::with_image(LOOP_DEVICE_SIZE, 512, &[1], |f| {
+            partition_table::tests::Gpt::new(512, sectors, vec![(2048, sectors - 34)]).write(f)
+        })
+        .unwrap();
+
+        check_partition_table_regions(
+            &disk.device,
+            &partitions[0],
+            // The GPT entries take the place of i.MX6's U-Boot.
+            &std::iter::once(0..440).chain(BOOTLOADERS[1..].iter().cloned()).collect::<Vec<_>>(),
+            &[
+                440..512,
+                512..513,
+                1024..1025,
+                34 * 512 - 1..34 * 512,
+                (sectors - 33) * 512..(sectors - 33) * 512 + 1,
+                LOOP_DEVICE_SIZE - 1..LOOP_DEVICE_SIZE,
+            ],
+        );
+    }
+
+    #[test]
+    #[ignore = "needs root to attach a loop device"]
+    fn region_check_protects_the_gpt_of_4k_sectors() {
+        let sectors = LOOP_DEVICE_SIZE / 4096;
+        let (disk, partitions) = FakeLoopDevice::with_image(LOOP_DEVICE_SIZE, 4096, &[1], |f| {
+            partition_table::tests::Gpt::new(4096, sectors, vec![(256, sectors - 6)]).write(f)
+        })
+        .unwrap();
+
+        check_partition_table_regions(
+            &disk.device,
+            &partitions[0],
+            &[&[0..440, 512..4096][..], &BOOTLOADERS[1..]].concat(),
+            &[
+                440..512,
+                4096..4097,
+                8192..8193,
+                6 * 4096 - 1..6 * 4096,
+                LOOP_DEVICE_SIZE - 1..LOOP_DEVICE_SIZE,
+            ],
+        );
+    }
+
+    /// Allwinner's SPL sits at 8 KiB, inside the entries a GPT reserves by
+    /// default, so its images shrink or relocate them.
+    #[test]
+    #[ignore = "needs root to attach a loop device"]
+    fn region_check_lets_sunxi_spl_beside_its_gpt() {
+        use partition_table::tests::Gpt;
+
+        let sectors = LOOP_DEVICE_SIZE / 512;
+        let shrunk = Gpt { entries: 4, ..Gpt::new(512, sectors, vec![(2048, sectors - 34)]) };
+        let relocated =
+            Gpt { entries_lba: 2016, ..Gpt::new(512, sectors, vec![(2048, sectors - 34)]) };
+
+        for (gpt, free, table) in [
+            (shrunk, 1536..0x8_0000, 1535..1536),
+            (relocated, 1024..2016 * 512, 2016 * 512..2016 * 512 + 1),
+        ] {
+            let (disk, partitions) =
+                FakeLoopDevice::with_image(LOOP_DEVICE_SIZE, 512, &[1], |f| gpt.write(f)).unwrap();
+
+            check_partition_table_regions(&disk.device, &partitions[0], &[free], &[table]);
+        }
+    }
 }

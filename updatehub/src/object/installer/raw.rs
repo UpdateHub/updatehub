@@ -561,6 +561,63 @@ mod tests {
         assert!(matches!(res, Err(Error::Utils(utils::Error::DeviceInUse { .. }))), "got {res:?}");
     }
 
+    /// Overwriting the partition table beside a mounted partition leaves the
+    /// mount working, but the next boot finds no partition to mount.
+    #[tokio::test]
+    #[ignore = "needs root to attach a loop device"]
+    async fn partition_table_beside_a_mounted_partition_is_refused() {
+        let download_dir = tempdir().unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+        let sectors = LOOP_DEVICE_SIZE / 512;
+        let mbr = FakeLoopDevice::with_partition(LOOP_DEVICE_SIZE, PARTITION_START).unwrap();
+        let gpt = FakeLoopDevice::with_image(LOOP_DEVICE_SIZE, 512, &[1], |f| {
+            utils::partition_table::tests::Gpt::new(512, sectors, vec![(2048, sectors - 34)])
+                .write(f)
+        })
+        .map(|(disk, mut partitions)| (disk, partitions.remove(0)))
+        .unwrap();
+
+        for ((disk, partition), regions) in
+            [(mbr, vec![(0, 512)]), (gpt, vec![(0, 34 * 512), ((sectors - 33) * 512, 33 * 512)])]
+        {
+            utils::fs::format(&partition, definitions::Filesystem::Ext4, None).unwrap();
+            let _guard = utils::fs::mount(&partition, definitions::Filesystem::Ext4, "").unwrap();
+
+            for (at, len) in regions {
+                let data = vec![0; usize::try_from(len).unwrap()];
+                let obj = raw_object(download_dir.path(), "table", &data, false, at, &disk.device);
+                let res = obj.check_requirements(&context).await;
+
+                assert!(
+                    matches!(res, Err(Error::Utils(utils::Error::PartitionTableInUse { .. }))),
+                    "{at:#x}+{len:#x}: got {res:?}"
+                );
+            }
+        }
+    }
+
+    /// A BIOS loader such as GRUB's boot.img replaces the boot code ahead of
+    /// the partition table.
+    #[tokio::test]
+    #[ignore = "needs root to attach a loop device"]
+    async fn boot_code_installs_beside_a_mounted_partition() {
+        let (disk, guard) = mounted_disk();
+        let download_dir = tempdir().unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+        let table_before = read_at(&disk.device, 440, 72);
+
+        let boot_code = vec![0x5a; 440];
+        let obj = raw_object(download_dir.path(), "boot", &boot_code, false, 0, &disk.device);
+        obj.check_requirements(&context).await.unwrap();
+        obj.install(&context).await.unwrap();
+
+        assert_eq!(read_at(&disk.device, 0, 440), boot_code);
+        assert_eq!(read_at(&disk.device, 440, 72), table_before);
+        assert_eq!(std::fs::read(guard.mount_point().join("canary")).unwrap(), b"alive");
+    }
+
     /// Beside a mounted partition the write is held to the declared region, so
     /// an object holding more data must be refused before touching the disk.
     #[tokio::test]
