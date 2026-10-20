@@ -398,7 +398,7 @@ pub(crate) fn chown(path: &Path, uid: Option<&Uid>, gid: Option<&Gid>) -> Result
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::{search_path::SearchPathGuard, *};
     use crate::object::installer::tests::SERIALIZE;
     use pretty_assertions::assert_eq;
@@ -467,16 +467,17 @@ mod tests {
 
     // Big enough to tell a loop device apart from the devtmpfs on /dev, small
     // enough to stay sparse on any builder.
-    const LOOP_DEVICE_SIZE: u64 = 64 * 1024 * 1024;
+    pub(crate) const LOOP_DEVICE_SIZE: u64 = 64 * 1024 * 1024;
 
-    struct FakeLoopDevice {
+    /// Detached when dropped, so a failing test does not leak it.
+    pub(crate) struct FakeLoopDevice {
         loopdev: loopdev::LoopDevice,
-        device: PathBuf,
+        pub(crate) device: PathBuf,
         _backing_file: tempfile::NamedTempFile,
     }
 
     impl FakeLoopDevice {
-        fn new(size: u64) -> Result<FakeLoopDevice> {
+        pub(crate) fn new(size: u64) -> Result<FakeLoopDevice> {
             let backing_file = tempfile::NamedTempFile::new()?;
             backing_file.as_file().set_len(size)?;
 
@@ -492,7 +493,7 @@ mod tests {
 
         /// A loop device holding a single partition from `start` to its end,
         /// returned along with the partition's own device node.
-        fn with_partition(size: u64, start: u64) -> Result<(FakeLoopDevice, PathBuf)> {
+        pub(crate) fn with_partition(size: u64, start: u64) -> Result<(FakeLoopDevice, PathBuf)> {
             let backing_file = tempfile::NamedTempFile::new()?;
             backing_file.as_file().set_len(size)?;
             write_mbr(backing_file.as_file(), start / 512, (size - start) / 512)?;
@@ -502,17 +503,19 @@ mod tests {
             let loopdev = loopdev::LoopControl::open()?.next_free()?;
             let device = loopdev.path().unwrap();
             loopdev.with().part_scan(true).attach(backing_file.path())?;
+            let loop_device = FakeLoopDevice { loopdev, device, _backing_file: backing_file };
 
             // The partition node shows up asynchronously after the scan.
-            let partition = PathBuf::from(format!("{}p1", device.display()));
+            let partition = PathBuf::from(format!("{}p1", loop_device.device.display()));
             for _ in 0..50 {
                 if partition.exists() {
-                    break;
+                    return Ok((loop_device, partition));
                 }
                 std::thread::sleep(std::time::Duration::from_millis(100));
             }
 
-            Ok((FakeLoopDevice { loopdev, device, _backing_file: backing_file }, partition))
+            Err(io::Error::new(io::ErrorKind::NotFound, format!("{partition:?} did not show up"))
+                .into())
         }
     }
 

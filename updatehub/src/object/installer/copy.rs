@@ -125,14 +125,10 @@ impl Installer for objects::Copy {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{object::installer::tests::SERIALIZE, utils::definitions::IdExt};
+    use crate::utils::{definitions::IdExt, fs::tests::FakeLoopDevice};
     use flate2::{Compression, write::GzEncoder};
     use pretty_assertions::assert_eq;
-    use std::{
-        io::{Seek, SeekFrom, Write},
-        os::unix::fs::MetadataExt,
-        path::PathBuf,
-    };
+    use std::{io::Write, os::unix::fs::MetadataExt, path::PathBuf};
     use tokio::io::AsyncBufReadExt;
 
     const DEFAULT_BYTE: u8 = 0xF;
@@ -147,21 +143,9 @@ mod tests {
     where
         F: FnMut(&mut objects::Copy),
     {
-        // Generate a sparse file for the faked device use
-        let mut image = tempfile::NamedTempFile::new()?;
-        image.seek(SeekFrom::Start(1024 * 1024 + FILE_SIZE as u64))?;
-        image.write_all(&[0])?;
-
         // Setup faked device
-        let (loopdev, device) = {
-            // Loop device next_free is not thread safe
-            let mutex = SERIALIZE.clone();
-            let _mutex = mutex.lock().unwrap();
-            let loopdev = loopdev::LoopControl::open()?.next_free()?;
-            let device = loopdev.path().unwrap();
-            loopdev.attach_file(image.path())?;
-            (loopdev, device)
-        };
+        let loop_device = FakeLoopDevice::new(1024 * 1024 + FILE_SIZE as u64 + 1)?;
+        let device = loop_device.device.clone();
 
         // Format the faked device
         utils::fs::format(&device, definitions::Filesystem::Ext4, None)?;
@@ -257,8 +241,6 @@ mod tests {
                 assert_eq!(gid, metadata.gid());
             }
         }
-
-        loopdev.detach()?;
 
         Ok(())
     }
