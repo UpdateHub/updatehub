@@ -24,11 +24,10 @@ impl Installer for objects::Raw {
     async fn check_requirements(&self, _: &Context) -> Result<()> {
         info!("'raw' handle checking requirements");
 
-        let (offset, len) = target_region(self);
-        if let definitions::TargetType::Device(dev) = self
-            .target_type
-            .valid(Access::Region { offset, len })
-            .log_error_msg("device failed vaidation")?
+        let access = checked_region(self)
+            .map_or(Access::Exclusive, |(offset, len)| Access::Region { offset, len });
+        if let definitions::TargetType::Device(dev) =
+            self.target_type.valid(access).log_error_msg("device failed vaidation")?
         {
             utils::fs::ensure_disk_space(dev, self.required_install_size())
                 .log_error_msg("not enough disk space")?;
@@ -90,7 +89,8 @@ impl Installer for objects::Raw {
                     .log_error_msg("failed to open target file")?,
             );
             target.seek(SeekFrom::Start(seek)).await.log_error_msg("failed to seek target file")?;
-            target
+            let limit = checked_region(self).map_or(u64::MAX, |(_, len)| len);
+            utils::io::BoundedWriter::new(target, limit)
         };
 
         if self.compressed {
@@ -127,6 +127,12 @@ fn target_region(obj: &objects::Raw) -> (u64, u64) {
     };
 
     (obj.seek * chunk_size, len)
+}
+
+/// The region requirements are checked for, when it is known up front. A
+/// compressed object not declaring its uncompressed size is not.
+fn checked_region(obj: &objects::Raw) -> Option<(u64, u64)> {
+    (!obj.compressed || obj.required_uncompressed_size != 0).then(|| target_region(obj))
 }
 
 #[cfg(test)]
@@ -320,6 +326,37 @@ mod tests {
         assert_eq!(target_region(&obj), (2048, 8192));
 
         Ok(())
+    }
+
+    #[test]
+    fn compressed_object_without_its_size_has_no_checked_region() -> Result<()> {
+        let (mut obj, ..) =
+            fake_raw_object(8192, 1024, 0, 2, definitions::Count::All, false, true)?;
+        assert_eq!(checked_region(&obj), None);
+
+        obj.required_uncompressed_size = 8192;
+        assert_eq!(checked_region(&obj), Some((2048, 8192)));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn source_longer_than_declared_is_not_written_past_its_region() {
+        let size = 2048;
+        let chunk_size = 8;
+        let (mut obj, download_dir, _source_guard, target_guard, _) =
+            fake_raw_object(size, chunk_size, 0, 0, definitions::Count::All, false, false).unwrap();
+        // The metadata claims less than the source holds.
+        obj.size = 1024;
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+
+        let res = obj.install(&context).await;
+        assert!(res.is_err(), "a source longer than declared must fail the install");
+
+        let target = std::fs::read(target_guard.path()).unwrap();
+        assert!(target[..1024].iter().all(|b| *b == ORIGINAL_BYTE));
+        assert!(target[1024..].iter().all(|b| *b == DEFAULT_BYTE));
     }
 
     /// The check must stop at the end of the object it guards. Objects install
