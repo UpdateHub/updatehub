@@ -13,7 +13,7 @@ use crate::{
 };
 use pkg_schema::{definitions, objects};
 use slog_scope::info;
-use std::io::SeekFrom;
+use std::{io::SeekFrom, path::Path};
 use tokio::{
     fs,
     io::{AsyncRead, AsyncReadExt, AsyncSeekExt},
@@ -45,9 +45,7 @@ impl Installer for objects::Raw {
         };
         let source = context.download_dir.join(self.sha256sum());
         let chunk_size = self.chunk_size.0;
-        let skip = self.skip.0 * chunk_size as u64;
         let truncate = self.truncate.0;
-        let count = count_bytes(self);
         // The check must stop at the end of what this object writes, otherwise
         // a neighbouring object sharing the device answers for it.
         let (seek, region_len) = target_region(self);
@@ -67,17 +65,19 @@ impl Installer for objects::Raw {
             return Ok(());
         }
 
-        let mut input: Box<dyn AsyncRead + Unpin> = {
-            let mut input = utils::io::timed_buf_reader(
-                chunk_size,
-                fs::File::open(source).await.log_error_msg("failed to open source file")?,
-            );
-            input.seek(SeekFrom::Start(skip)).await.log_error_msg("failed to seek source file")?;
-            match count {
-                None => Box::new(input),
-                Some(n) => Box::new(input.take(n)),
+        // The region check lets a whole disk be written beside the partitions
+        // it does not reach, even when they are mounted. Only then does the
+        // region matter, so only then is the write held to it, and the data
+        // is checked to fit before the device is touched.
+        let limit = match checked_region(self) {
+            Some((_, len)) if utils::fs::ensure_not_mounted(device).is_err() => {
+                ensure_fits(self, &source, len).await?;
+                Some(len)
             }
+            _ => None,
         };
+
+        let mut input = open_source(self, &source).await?;
         let mut target = {
             let mut target = utils::io::timed_buf_writer(
                 chunk_size,
@@ -89,8 +89,7 @@ impl Installer for objects::Raw {
                     .log_error_msg("failed to open target file")?,
             );
             target.seek(SeekFrom::Start(seek)).await.log_error_msg("failed to seek target file")?;
-            let limit = checked_region(self).map_or(u64::MAX, |(_, len)| len);
-            utils::io::BoundedWriter::new(target, limit)
+            utils::io::BoundedWriter::new(target, limit.unwrap_or(u64::MAX))
         };
 
         if self.compressed {
@@ -105,6 +104,52 @@ impl Installer for objects::Raw {
 
         Ok(())
     }
+}
+
+async fn open_source(obj: &objects::Raw, source: &Path) -> Result<Box<dyn AsyncRead + Unpin>> {
+    let mut input = utils::io::timed_buf_reader(
+        obj.chunk_size.0,
+        fs::File::open(source).await.log_error_msg("failed to open source file")?,
+    );
+    input
+        .seek(SeekFrom::Start(obj.skip.0 * obj.chunk_size.0 as u64))
+        .await
+        .log_error_msg("failed to seek source file")?;
+
+    Ok(match count_bytes(obj) {
+        None => Box::new(input),
+        Some(n) => Box::new(input.take(n)),
+    })
+}
+
+/// A compressed source is uncompressed to measure it, only its metadata
+/// telling its size otherwise.
+async fn ensure_fits(obj: &objects::Raw, source: &Path, len: u64) -> Result<()> {
+    let fits = if obj.compressed {
+        let mut input = open_source(obj, source).await?;
+        let mut sink = utils::io::BoundedWriter::new(tokio::io::sink(), len);
+        let res = compress_tools::tokio_support::uncompress_data(&mut input, &mut sink).await;
+        // Going past the limit fails the uncompression too, that is not a
+        // corrupted source.
+        if !sink.overflowed() {
+            res.log_error_msg("failed to uncompress data")?;
+        }
+        !sink.overflowed()
+    } else {
+        let available = fs::metadata(source)
+            .await
+            .log_error_msg("failed to read source file metadata")?
+            .len()
+            .saturating_sub(obj.skip.0 * obj.chunk_size.0 as u64);
+        count_bytes(obj).map_or(available, |n| n.min(available)) <= len
+    };
+
+    if !fits {
+        return Err(Error::LargerThanDeclared(obj.filename.clone()))
+            .log_error_msg("object does not fit the region checked for it");
+    }
+
+    Ok(())
 }
 
 fn count_bytes(obj: &objects::Raw) -> Option<u64> {
@@ -340,23 +385,114 @@ mod tests {
         Ok(())
     }
 
+    fn gzip(data: &[u8]) -> Vec<u8> {
+        let mut e = GzEncoder::new(Vec::new(), Compression::default());
+        e.write_all(data).unwrap();
+        e.finish().unwrap()
+    }
+
+    fn raw_object(
+        download_dir: &std::path::Path,
+        name: &str,
+        data: &[u8],
+        compressed: bool,
+        seek: u64,
+        target: &std::path::Path,
+    ) -> objects::Raw {
+        let source = if compressed { gzip(data) } else { data.to_vec() };
+        std::fs::write(download_dir.join(name), &source).unwrap();
+
+        objects::Raw {
+            filename: name.to_string(),
+            size: source.len() as u64,
+            sha256sum: name.to_string(),
+            target_type: definitions::TargetType::Device(target.into()),
+
+            install_if_different: None,
+            compressed,
+            required_uncompressed_size: if compressed { data.len() as u64 } else { 0 },
+            chunk_size: definitions::ChunkSize(512),
+            skip: definitions::Skip(0),
+            seek: seek / 512,
+            count: definitions::Count::All,
+            truncate: definitions::Truncate(false),
+        }
+    }
+
     #[tokio::test]
-    async fn source_longer_than_declared_is_not_written_past_its_region() {
-        let size = 2048;
-        let chunk_size = 8;
-        let (mut obj, download_dir, _source_guard, target_guard, _) =
-            fake_raw_object(size, chunk_size, 0, 0, definitions::Count::All, false, false).unwrap();
-        // The metadata claims less than the source holds.
-        obj.size = 1024;
-        let context =
-            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+    async fn source_fitting_its_region_fits() {
+        let dir = tempdir().unwrap();
+        let data = vec![ORIGINAL_BYTE; 4096];
+        for compressed in [false, true] {
+            let obj = raw_object(dir.path(), "obj", &data, compressed, 0, dir.path());
+            let source = dir.path().join("obj");
+            ensure_fits(&obj, &source, 4096).await.unwrap();
+        }
+    }
 
-        let res = obj.install(&context).await;
-        assert!(res.is_err(), "a source longer than declared must fail the install");
+    #[tokio::test]
+    async fn source_longer_than_its_region_does_not_fit() {
+        let dir = tempdir().unwrap();
+        let data = vec![ORIGINAL_BYTE; 4096];
+        for compressed in [false, true] {
+            let obj = raw_object(dir.path(), "obj", &data, compressed, 0, dir.path());
+            let source = dir.path().join("obj");
+            let res = ensure_fits(&obj, &source, 4095).await;
+            assert!(
+                matches!(res, Err(Error::LargerThanDeclared(_))),
+                "compressed: {compressed}, got {res:?}"
+            );
+        }
+    }
 
-        let target = std::fs::read(target_guard.path()).unwrap();
-        assert!(target[..1024].iter().all(|b| *b == ORIGINAL_BYTE));
-        assert!(target[1024..].iter().all(|b| *b == DEFAULT_BYTE));
+    #[tokio::test]
+    async fn source_fits_once_cut_by_skip_and_count() {
+        let dir = tempdir().unwrap();
+        let mut obj = raw_object(dir.path(), "obj", &[ORIGINAL_BYTE; 4096], false, 0, dir.path());
+        let source = dir.path().join("obj");
+        obj.skip = definitions::Skip(2);
+        ensure_fits(&obj, &source, 3072).await.unwrap();
+        assert!(ensure_fits(&obj, &source, 3071).await.is_err());
+
+        obj.count = definitions::Count::Limited(1);
+        ensure_fits(&obj, &source, 512).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn corrupted_compressed_source_is_not_reported_as_too_large() {
+        let dir = tempdir().unwrap();
+        let mut obj = raw_object(dir.path(), "obj", &[ORIGINAL_BYTE; 4096], true, 0, dir.path());
+        let source = dir.path().join("obj");
+        let mut gz = std::fs::read(&source).unwrap();
+        gz.truncate(gz.len() / 2);
+        std::fs::write(&source, gz).unwrap();
+        obj.size /= 2;
+
+        let res = ensure_fits(&obj, &source, 4096).await;
+        assert!(matches!(res, Err(Error::Uncompress(_))), "got {res:?}");
+    }
+
+    /// Nothing else being in use, the region is irrelevant and the object is
+    /// written whole, however much its metadata understates it.
+    #[tokio::test]
+    async fn source_longer_than_declared_is_written_whole_when_nothing_is_mounted() {
+        for compressed in [false, true] {
+            let (mut obj, download_dir, _source_guard, target_guard, _) =
+                fake_raw_object(2048, 8, 0, 0, definitions::Count::All, false, compressed).unwrap();
+            if compressed {
+                obj.required_uncompressed_size = 1024;
+            } else {
+                obj.size = 1024;
+            }
+            let context =
+                Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+
+            obj.check_requirements(&context).await.unwrap();
+            obj.install(&context).await.unwrap();
+
+            let target = std::fs::read(target_guard.path()).unwrap();
+            assert!(target.iter().all(|b| *b == ORIGINAL_BYTE), "compressed: {compressed}");
+        }
     }
 
     /// The check must stop at the end of the object it guards. Objects install

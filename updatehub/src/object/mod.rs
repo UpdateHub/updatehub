@@ -21,6 +21,8 @@ pub enum Error {
     FwSetEnvNoScriptOption,
     #[display("unsupported object model")]
     Unsupported,
+    #[display("object {_0:?} holds more data than its metadata declares")]
+    LargerThanDeclared(#[error(not(source))] String),
 
     Utils(crate::utils::Error),
     Firmware(crate::firmware::Error),
