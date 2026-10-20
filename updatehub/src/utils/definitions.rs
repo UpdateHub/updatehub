@@ -15,6 +15,8 @@ use std::path::PathBuf;
 pub(crate) enum Access {
     /// The handler writes the device itself, so nothing else may be using it.
     Exclusive,
+    /// The handler writes only `len` bytes at `offset` of the device.
+    Region { offset: u64, len: u64 },
     /// The handler writes through a filesystem it mounts, which is safe to do
     /// even on a device already mounted elsewhere.
     ThroughFilesystem,
@@ -32,7 +34,8 @@ impl Access {
 pub(crate) trait TargetTypeExt {
     /// Checks whether the device is valid to start installation, i.e.,
     /// device exists, use have write permission, and is free of mounted
-    /// filesystems when the handler asks for [`Access::Exclusive`].
+    /// filesystems when the handler asks for [`Access::Exclusive`] or
+    /// [`Access::Region`].
     fn valid(&self, access: Access) -> Result<&Self>;
 
     /// Gets device's path for mounting.
@@ -51,8 +54,12 @@ impl TargetTypeExt for TargetType {
             return Err(Error::MissingWritePermission(device));
         }
 
-        if let Access::Exclusive = access {
-            fs::ensure_not_mounted(&device)?;
+        match access {
+            Access::Exclusive => fs::ensure_not_mounted(&device)?,
+            Access::Region { offset, len } => {
+                fs::ensure_region_not_mounted(&device, offset..offset.saturating_add(len))?;
+            }
+            Access::ThroughFilesystem => {}
         }
 
         Ok(self)

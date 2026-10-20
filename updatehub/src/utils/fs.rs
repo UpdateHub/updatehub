@@ -12,6 +12,7 @@ use slog_scope::trace;
 use std::{
     collections::HashSet,
     io::{self, Seek},
+    ops::Range,
     os::unix::fs::FileTypeExt,
     path::{Path, PathBuf},
 };
@@ -74,6 +75,21 @@ type DeviceId = (u64, u64);
 pub(crate) fn ensure_not_mounted(target: &Path) -> Result<()> {
     trace!("checking whether {:?} is in use", target);
 
+    ensure_devices_not_mounted(target, related_block_devices)
+}
+
+/// Like [`ensure_not_mounted`], but ignores the partitions of a whole disk
+/// lying outside `region`.
+pub(crate) fn ensure_region_not_mounted(target: &Path, region: Range<u64>) -> Result<()> {
+    trace!("checking whether {:?} is in use within {:?}", target, region);
+
+    ensure_devices_not_mounted(target, |device| region_block_devices(device, &region))
+}
+
+fn ensure_devices_not_mounted(
+    target: &Path,
+    related: impl Fn(DeviceId) -> HashSet<DeviceId>,
+) -> Result<()> {
     let metadata = match std::fs::metadata(target) {
         Ok(metadata) => metadata,
         // Nothing can be mounted on a device which is not there. Complaining
@@ -87,10 +103,10 @@ pub(crate) fn ensure_not_mounted(target: &Path) -> Result<()> {
     let sources = mtd::mount_sources_for(target).into_iter().collect::<HashSet<_>>();
 
     let mut devices = HashSet::new();
-    devices.extend(block_device_id(&metadata).into_iter().flat_map(related_block_devices));
+    devices.extend(block_device_id(&metadata).into_iter().flat_map(&related));
     for source in sources.iter().filter(|source| source.starts_with('/')) {
         if let Ok(metadata) = std::fs::metadata(source) {
-            devices.extend(block_device_id(&metadata).into_iter().flat_map(related_block_devices));
+            devices.extend(block_device_id(&metadata).into_iter().flat_map(&related));
         }
     }
 
@@ -178,6 +194,47 @@ fn related_block_devices(device: DeviceId) -> HashSet<DeviceId> {
     }
 
     found
+}
+
+/// Like [`related_block_devices`], without the partitions lying outside
+/// `region`.
+fn region_block_devices(device: DeviceId, region: &Range<u64>) -> HashSet<DeviceId> {
+    let sysfs = PathBuf::from(format!("/sys/dev/block/{}:{}", device.0, device.1));
+    let Some(sysfs) = sysfs.canonicalize().ok().filter(|sysfs| !sysfs.join("partition").exists())
+    else {
+        return related_block_devices(device);
+    };
+
+    let mut found = HashSet::from([device]);
+    found.extend(
+        device_ids_in(&sysfs.join("holders"), |_| true).into_iter().flat_map(related_block_devices),
+    );
+    // Unreadable bounds count as overlapping.
+    found.extend(
+        device_ids_in(&sysfs, |path| {
+            path.join("partition").exists()
+                && partition_range(path).is_none_or(|partition| overlaps(&partition, region))
+        })
+        .into_iter()
+        .flat_map(related_block_devices),
+    );
+
+    found
+}
+
+/// sysfs reports `start` and `size` in 512 byte sectors.
+fn partition_range(path: &Path) -> Option<Range<u64>> {
+    let sectors = |name: &str| -> Option<u64> {
+        std::fs::read_to_string(path.join(name)).ok()?.trim().parse().ok()
+    };
+    let start = sectors("start")?.checked_mul(512)?;
+    let end = start.checked_add(sectors("size")?.checked_mul(512)?)?;
+
+    Some(start..end)
+}
+
+fn overlaps(a: &Range<u64>, b: &Range<u64>) -> bool {
+    a.start.max(b.start) < a.end.min(b.end)
 }
 
 /// Device numbers of the sysfs entries under `dir` which satisfy `wanted`.
@@ -512,6 +569,38 @@ mod tests {
         assert!(parse_mount_entry("").is_none());
         assert!(parse_mount_entry("26 25 8:2 / /boot rw,relatime ext4 /dev/sda2 rw").is_none());
         assert!(parse_mount_entry("26 25 bogus / /boot rw - ext4 /dev/sda2 rw").is_none());
+    }
+
+    #[test]
+    fn regions_overlap_only_when_sharing_a_byte() {
+        let rootfs = 0x10_0000..0x6a50_0000;
+        assert!(!overlaps(&(0x2_0000..0x3_415c), &rootfs));
+        assert!(!overlaps(&(0x6_0000..0xc_2f48), &rootfs));
+
+        assert!(!overlaps(&(0x8_0000..0x10_0000), &rootfs));
+        assert!(overlaps(&(0x8_0000..0x10_0001), &rootfs));
+        assert!(overlaps(&(0x20_0000..0x30_0000), &rootfs));
+        assert!(overlaps(&(0..u64::MAX), &rootfs));
+        assert!(!overlaps(&(0x20_0000..0x20_0000), &rootfs));
+    }
+
+    #[test]
+    fn partition_range_is_read_in_sectors() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("start"), "2048\n").unwrap();
+        std::fs::write(dir.path().join("size"), "3481600\n").unwrap();
+
+        assert_eq!(partition_range(dir.path()), Some(0x10_0000..0x6a50_0000));
+    }
+
+    #[test]
+    fn partition_range_needs_both_bounds() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("start"), "2048\n").unwrap();
+        assert_eq!(partition_range(dir.path()), None);
+
+        std::fs::write(dir.path().join("size"), "bogus\n").unwrap();
+        assert_eq!(partition_range(dir.path()), None);
     }
 
     #[test]
