@@ -50,6 +50,19 @@ jobs:
         timeout-minutes: 10
         run: cargo test --locked --release --all --all-features --no-fail-fast -- --nocapture
 
+      # The tests attaching loop devices need root, so the run above leaves
+      # them out. Only the test binary runs as root, which keeps the cached
+      # build owned by the runner. The MTD ones stay out, as they load the
+      # mtdram and nandsim kernel modules.
+      - name: Tests needing root
+        timeout-minutes: 10
+        working-directory: updatehub
+        run: |
+          bin=$(cargo test --locked --release --all-features --lib --no-run --message-format=json \
+            | sed -n 's/.*"executable":"\([^"]*\)".*/\1/p')
+          sudo env "PATH=$PATH" "$bin" --ignored --test-threads=1 \
+            --skip utils::mtd --skip installer::flash --skip installer::ubifs
+
       - name: Run listener test
         run: |
           export UH_LISTENER_TEST=updatehub-statechange.sock
