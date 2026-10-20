@@ -3,12 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::{Error, Result};
-use crate::utils::{definitions::IdExt, mtd};
+use crate::utils::{definitions::IdExt, mtd, partition_table};
 use pkg_schema::definitions::{
     Filesystem,
     target_permissions::{Gid, Uid},
 };
-use slog_scope::trace;
+use slog_scope::{trace, warn};
 use std::{
     collections::HashSet,
     io::{self, Seek},
@@ -79,11 +79,59 @@ pub(crate) fn ensure_not_mounted(target: &Path) -> Result<()> {
 }
 
 /// Like [`ensure_not_mounted`], but ignores the partitions of a whole disk
-/// lying outside `region`.
+/// lying outside `region`, unless `region` reaches the partition table which
+/// holds every one of them in place.
 pub(crate) fn ensure_region_not_mounted(target: &Path, region: Range<u64>) -> Result<()> {
     trace!("checking whether {:?} is in use within {:?}", target, region);
 
-    ensure_devices_not_mounted(target, |device| region_block_devices(device, &region))
+    ensure_devices_not_mounted(target, |device| region_block_devices(device, &region))?;
+    if reaches_partition_table(target, &region) {
+        trace!("{:?} holds its partition table within {:?}", target, region);
+        return ensure_not_mounted(target).map_err(|e| match e {
+            Error::DeviceInUse { device, mount_point } => {
+                Error::PartitionTableInUse { device, mount_point }
+            }
+            e => e,
+        });
+    }
+
+    Ok(())
+}
+
+/// Whether `region` holds part of the partition table of `target`, when it is
+/// a whole disk with partitions.
+fn reaches_partition_table(target: &Path, region: &Range<u64>) -> bool {
+    let Some(sysfs) = std::fs::metadata(target)
+        .ok()
+        .and_then(|metadata| block_device_id(&metadata))
+        .and_then(|device| {
+            PathBuf::from(format!("/sys/dev/block/{}:{}", device.0, device.1)).canonicalize().ok()
+        })
+        .filter(|sysfs| {
+            !sysfs.join("partition").exists()
+                && !device_ids_in(sysfs, |path| path.join("partition").exists()).is_empty()
+        })
+    else {
+        return false;
+    };
+
+    let read = |name: &str| -> Option<u64> {
+        std::fs::read_to_string(sysfs.join(name)).ok()?.trim().parse().ok()
+    };
+    // sysfs reports the size in 512 byte sectors, whatever the logical block
+    // size of the disk.
+    let disk = || -> Option<_> {
+        let size = read("size")?.checked_mul(512)?;
+        Some((std::fs::File::open(target).ok()?, read("queue/logical_block_size")?, size))
+    };
+    let Some((disk, sector_size, size)) = disk() else {
+        warn!("failed to read {:?}, its partition table is left unprotected", target);
+        return false;
+    };
+
+    partition_table::protected_ranges(&disk, sector_size, size)
+        .iter()
+        .any(|protected| overlaps(protected, region))
 }
 
 fn ensure_devices_not_mounted(
