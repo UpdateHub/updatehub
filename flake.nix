@@ -54,6 +54,7 @@
             socat
 
             # used by excluded tests
+            e2fsprogs
             mtdutils
           ];
 
