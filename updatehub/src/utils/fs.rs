@@ -489,6 +489,43 @@ mod tests {
 
             Ok(FakeLoopDevice { loopdev, device, _backing_file: backing_file })
         }
+
+        /// A loop device holding a single partition from `start` to its end,
+        /// returned along with the partition's own device node.
+        fn with_partition(size: u64, start: u64) -> Result<(FakeLoopDevice, PathBuf)> {
+            let backing_file = tempfile::NamedTempFile::new()?;
+            backing_file.as_file().set_len(size)?;
+            write_mbr(backing_file.as_file(), start / 512, (size - start) / 512)?;
+
+            let mutex = SERIALIZE.clone();
+            let _mutex = mutex.lock().unwrap();
+            let loopdev = loopdev::LoopControl::open()?.next_free()?;
+            let device = loopdev.path().unwrap();
+            loopdev.with().part_scan(true).attach(backing_file.path())?;
+
+            // The partition node shows up asynchronously after the scan.
+            let partition = PathBuf::from(format!("{}p1", device.display()));
+            for _ in 0..50 {
+                if partition.exists() {
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+
+            Ok((FakeLoopDevice { loopdev, device, _backing_file: backing_file }, partition))
+        }
+    }
+
+    /// Writes an MBR with a single Linux partition of `sectors` from `start`.
+    fn write_mbr(file: &std::fs::File, start: u64, sectors: u64) -> io::Result<()> {
+        use std::os::unix::fs::FileExt;
+
+        let mut entry = [0u8; 16];
+        entry[4] = 0x83;
+        entry[8..12].copy_from_slice(&u32::try_from(start).unwrap().to_le_bytes());
+        entry[12..16].copy_from_slice(&u32::try_from(sectors).unwrap().to_le_bytes());
+        file.write_all_at(&entry, 446)?;
+        file.write_all_at(&[0x55, 0xaa], 510)
     }
 
     impl Drop for FakeLoopDevice {
@@ -636,5 +673,31 @@ mod tests {
             matches!(in_use, Err(Error::DeviceInUse { .. })),
             "a mounted device must be rejected, got {in_use:?}"
         );
+    }
+
+    #[test]
+    #[ignore = "needs root to attach a loop device"]
+    fn region_check_ignores_partitions_outside_the_region() {
+        const PARTITION_START: u64 = 1024 * 1024;
+        let (loop_device, partition) =
+            FakeLoopDevice::with_partition(LOOP_DEVICE_SIZE, PARTITION_START).unwrap();
+        format(&partition, Filesystem::Ext4, None).unwrap();
+        let guard = mount(&partition, Filesystem::Ext4, "").unwrap();
+
+        let gap = ensure_region_not_mounted(&loop_device.device, 0x2_0000..PARTITION_START);
+        let overlapping =
+            ensure_region_not_mounted(&loop_device.device, 0x2_0000..PARTITION_START + 1);
+        let whole_disk = ensure_not_mounted(&loop_device.device);
+        let on_the_partition = ensure_region_not_mounted(&partition, 0..512);
+        // Unmount before asserting so the device is always released.
+        drop(guard);
+
+        assert!(gap.is_ok(), "the gap ahead of the partition should be free, got {gap:?}");
+        for in_use in [overlapping, whole_disk, on_the_partition] {
+            assert!(
+                matches!(in_use, Err(Error::DeviceInUse { .. })),
+                "a write reaching the mounted partition must be rejected, got {in_use:?}"
+            );
+        }
     }
 }
