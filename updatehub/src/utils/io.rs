@@ -43,11 +43,16 @@ where
 pub(crate) struct BoundedWriter<W> {
     inner: W,
     remaining: u64,
+    overflowed: bool,
 }
 
 impl<W> BoundedWriter<W> {
     pub(crate) fn new(inner: W, limit: u64) -> Self {
-        BoundedWriter { inner, remaining: limit }
+        BoundedWriter { inner, remaining: limit, overflowed: false }
+    }
+
+    pub(crate) fn overflowed(&self) -> bool {
+        self.overflowed
     }
 }
 
@@ -58,6 +63,7 @@ impl<W: AsyncWrite + Unpin> AsyncWrite for BoundedWriter<W> {
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
         if self.remaining == 0 && !buf.is_empty() {
+            self.overflowed = true;
             return Poll::Ready(Err(io::Error::other(
                 "data goes past the region checked for the object",
             )));
@@ -90,6 +96,7 @@ mod tests {
         let mut w = BoundedWriter::new(&mut out, 4);
         w.write_all(b"abcd").await.unwrap();
         w.flush().await.unwrap();
+        assert!(!w.overflowed());
 
         assert_eq!(out, b"abcd");
     }
@@ -101,6 +108,7 @@ mod tests {
         let res = w.write_all(b"abcdef").await;
 
         assert!(res.is_err(), "writing past the limit must fail");
+        assert!(w.overflowed());
         assert_eq!(out, b"abcd");
     }
 }
