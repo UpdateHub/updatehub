@@ -43,7 +43,7 @@ impl Installer for objects::Flash {
         let source = context.download_dir.join(self.sha256sum());
 
         if super::should_skip_install(self.install_if_different.as_ref(), &self.sha256sum, async {
-            tokio::fs::File::open(&target).await.map_err(Error::from)
+            Ok(std::io::Cursor::new(utils::mtd::read_written(&target, self.size)?))
         })
         .await?
         {
@@ -150,5 +150,56 @@ mod tests {
         );
 
         assert_eq!(std::fs::read_to_string(calls).unwrap(), expected);
+    }
+
+    /// Install, guarded by its checksum, an object of `written` bytes over a
+    /// partition holding `stored`, and tell whether it was written.
+    async fn checksum_install_writes(kind: MtdKind, stored: &[u8], written: &[u8]) -> bool {
+        use std::io::Write;
+
+        let _mtd_lock = SERIALIZE.lock();
+        // nandsim registers its own partition, which can't be split further
+        // without CONFIG_MTD_PARTITIONED_MASTER.
+        let (mtd, name) = match kind {
+            MtdKind::Nand => (FakeMtd::new(&[], kind).unwrap(), "NAND simulator partition 0"),
+            MtdKind::Nor => (FakeMtd::new(&["system0"], kind).unwrap(), "system0"),
+        };
+        let device = utils::mtd::target_device_from_mtd_name(name).unwrap();
+        std::fs::OpenOptions::new().write(true).open(device).unwrap().write_all(stored).unwrap();
+
+        let download_dir = tempfile::tempdir().unwrap();
+        let flash_obj = objects::Flash {
+            size: written.len() as u64,
+            sha256sum: utils::sha256sum(written),
+            install_if_different: Some(definitions::InstallIfDifferent::CheckSum),
+            ..fake_flash_obj(name)
+        };
+        std::fs::write(download_dir.path().join(&flash_obj.sha256sum), written).unwrap();
+        let context =
+            Context { download_dir: download_dir.path().to_owned(), ..Context::default() };
+
+        let (mocks, calls) = create_echo_bins(&["flash_erase", "flashcp", "nandwrite"]).unwrap();
+        let _path = PathEnvGuard::prepend(mocks.path());
+        flash_obj.install(&context).await.unwrap();
+        drop(mtd);
+
+        calls.exists()
+    }
+
+    #[tokio::test]
+    #[ignore = "needs root to load the MTD simulator modules"]
+    async fn install_if_different_checksum_ignores_the_erased_tail() {
+        let object = vec![0x5a; 1024];
+        assert!(!checksum_install_writes(MtdKind::Nor, &object, &object).await);
+        assert!(!checksum_install_writes(MtdKind::Nand, &object, &object).await);
+    }
+
+    #[tokio::test]
+    #[ignore = "needs root to load the MTD simulator modules"]
+    async fn install_if_different_checksum_writes_a_changed_object() {
+        let object = vec![0x5a; 1024];
+        let stored = vec![0xa5; 1024];
+        assert!(checksum_install_writes(MtdKind::Nor, &stored, &object).await);
+        assert!(checksum_install_writes(MtdKind::Nand, &stored, &object).await);
     }
 }

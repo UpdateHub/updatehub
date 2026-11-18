@@ -6,7 +6,7 @@ pub(crate) use self::ffi::is_nand;
 use super::{Error, Result};
 use std::{
     fs,
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, Read, Seek, SeekFrom},
     path::{Path, PathBuf},
 };
 
@@ -131,16 +131,52 @@ fn ubi_volumes_on_mtd(number: u32) -> Vec<String> {
         .collect()
 }
 
+/// The first `len` bytes of data held by the MTD `device`, read the way
+/// `flashcp` and `nandwrite -p` lay them out: from the start of the device,
+/// with the bad erase blocks of a NAND skipped as `nandwrite` skips them.
+pub(crate) fn read_written(device: &Path, len: u64) -> Result<Vec<u8>> {
+    let mut handle = fs::File::open(device)?;
+    let probe = handle.try_clone()?;
+    let info = ffi::info(&probe)?;
+    let nand = info.is_nand();
+
+    read_good_blocks(&mut handle, len, info.size(), info.erase_size(), |offset| {
+        if nand { ffi::is_bad_block(&probe, offset) } else { Ok(false) }
+    })
+}
+
+fn read_good_blocks<R: Read + Seek>(
+    source: &mut R,
+    len: u64,
+    device_size: u64,
+    erase_size: u64,
+    mut is_bad: impl FnMut(u64) -> Result<bool>,
+) -> Result<Vec<u8>> {
+    let mut data = Vec::with_capacity(usize::try_from(len).unwrap_or_default());
+    let mut offset = 0;
+    while (data.len() as u64) < len && offset < device_size {
+        if !is_bad(offset)? {
+            source.seek(SeekFrom::Start(offset))?;
+            let wanted = (len - data.len() as u64).min(erase_size);
+            source.by_ref().take(wanted).read_to_end(&mut data)?;
+        }
+        offset += erase_size;
+    }
+
+    Ok(data)
+}
+
 mod ffi {
     use crate::utils::Result;
-    use nix::ioctl_read;
-    use std::{mem::MaybeUninit, os::unix::io::AsRawFd, path::Path};
+    use nix::{ioctl_read, ioctl_write_ptr};
+    use std::{fs::File, mem::MaybeUninit, os::unix::io::AsRawFd, path::Path};
 
     // From https://github.com/torvalds/linux/blob/master/include/uapi/mtd/mtd-abi.h
     const MTD_NANDFLASH: u8 = 4;
     const MTD_MLCNANDFLASH: u8 = 8;
-    const MEMGETINFO: u8 = b'M';
+    const MTD_IOC_MAGIC: u8 = b'M';
     const MEMGETINFO_MODE: u8 = 1;
+    const MEMGETBADBLOCK_MODE: u8 = 11;
 
     #[repr(C)]
     pub struct mtd_info_user {
@@ -153,17 +189,39 @@ mod ffi {
         padding: u64,
     }
 
-    ioctl_read!(mtd_get_info, MEMGETINFO, MEMGETINFO_MODE, mtd_info_user);
+    impl mtd_info_user {
+        pub fn is_nand(&self) -> bool {
+            self.kind == MTD_NANDFLASH || self.kind == MTD_MLCNANDFLASH
+        }
 
-    pub fn is_nand(device: &Path) -> Result<bool> {
-        let device = std::fs::File::open(device)?;
-        let info = unsafe {
+        pub fn size(&self) -> u64 {
+            self.size.into()
+        }
+
+        pub fn erase_size(&self) -> u64 {
+            self.erasesize.into()
+        }
+    }
+
+    ioctl_read!(mtd_get_info, MTD_IOC_MAGIC, MEMGETINFO_MODE, mtd_info_user);
+    ioctl_write_ptr!(mtd_get_bad_block, MTD_IOC_MAGIC, MEMGETBADBLOCK_MODE, i64);
+
+    pub fn info(device: &File) -> Result<mtd_info_user> {
+        Ok(unsafe {
             let mut info = MaybeUninit::<mtd_info_user>::uninit();
             mtd_get_info(device.as_raw_fd(), info.as_mut_ptr())?;
             info.assume_init()
-        };
+        })
+    }
 
-        Ok(info.kind == MTD_NANDFLASH || info.kind == MTD_MLCNANDFLASH)
+    pub fn is_nand(device: &Path) -> Result<bool> {
+        Ok(info(&File::open(device)?)?.is_nand())
+    }
+
+    pub fn is_bad_block(device: &File, offset: u64) -> Result<bool> {
+        let offset = i64::try_from(offset)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e))?;
+        Ok(unsafe { mtd_get_bad_block(device.as_raw_fd(), &offset)? } > 0)
     }
 }
 
@@ -332,5 +390,41 @@ pub(crate) mod tests {
             target_device_from_ubi_volume_name(volume_names[12]).unwrap(),
             PathBuf::from("/dev/ubi0_12")
         );
+    }
+
+    const ERASE_SIZE: u64 = 16;
+
+    /// A device of `blocks` erase blocks, block `n` filled with byte `n`.
+    fn device(blocks: u8) -> std::io::Cursor<Vec<u8>> {
+        std::io::Cursor::new(
+            (0..blocks).flat_map(|n| std::iter::repeat_n(n, ERASE_SIZE as usize)).collect(),
+        )
+    }
+
+    fn read(blocks: u8, len: u64, bad: &[u64]) -> Vec<u8> {
+        let mut dev = device(blocks);
+        let size = dev.get_ref().len() as u64;
+        read_good_blocks(&mut dev, len, size, ERASE_SIZE, |offset| {
+            Ok(bad.contains(&(offset / ERASE_SIZE)))
+        })
+        .unwrap()
+    }
+
+    #[test]
+    fn read_written_stops_at_the_object_size() {
+        let data = read(4, 20, &[]);
+        assert_eq!(data, [vec![0; 16], vec![1; 4]].concat());
+    }
+
+    #[test]
+    fn read_written_skips_bad_blocks() {
+        let data = read(4, 20, &[0, 2]);
+        assert_eq!(data, [vec![1; 16], vec![3; 4]].concat());
+    }
+
+    #[test]
+    fn read_written_stops_at_the_end_of_the_device() {
+        assert_eq!(read(2, 40, &[]).len(), 32);
+        assert_eq!(read(2, 20, &[1]), vec![0; 16]);
     }
 }
