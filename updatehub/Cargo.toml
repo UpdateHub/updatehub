@@ -74,7 +74,7 @@ futures-util = { version = "0.3", default-features = false }
 logging_content = "0.1"
 mockito = { version = "1", optional = true }
 ms-converter = "1"
-nix = { version = "0.31", features = ["fs", "ioctl", "user"] }
+nix = { version = "0.32", features = ["fs", "ioctl", "user"] }
 openssl = "0.10"
 pkg-schema = { path = "../updatehub-package-schema", package = "updatehub-package-schema" }
 quale = "1"
