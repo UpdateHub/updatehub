@@ -33,6 +33,10 @@ pub enum Error {
     #[from(ignore)]
     DeviceDoesNotExist(#[error(not(source))] std::path::PathBuf),
 
+    #[display("{_0:?} is a boot-emmc target, which only raw objects support")]
+    #[from(ignore)]
+    UnresolvedBootEmmc(#[error(not(source))] std::path::PathBuf),
+
     #[display("user doesn't have write permission on target device: {_0:?}")]
     #[from(ignore)]
     MissingWritePermission(#[error(not(source))] std::path::PathBuf),

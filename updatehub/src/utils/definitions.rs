@@ -84,6 +84,9 @@ impl TargetTypeExt for TargetType {
             }
             TargetType::UBIVolume(s) => mtd::target_device_from_ubi_volume_name(s),
             TargetType::MTDName(s) => mtd::target_device_from_mtd_name(s),
+            // Which boot partition depends on the installation set, which
+            // only the raw handler knows
+            TargetType::BootEmmc(device) => Err(Error::UnresolvedBootEmmc(device.clone())),
         }
     }
 }

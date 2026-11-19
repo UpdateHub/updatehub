@@ -30,7 +30,7 @@ impl Installer for objects::Flash {
                 )?;
                 Ok(())
             }
-            definitions::TargetType::UBIVolume(_) => {
+            definitions::TargetType::UBIVolume(_) | definitions::TargetType::BootEmmc(_) => {
                 Err(Error::InvalidTargetType(self.target.clone()))
             }
         }

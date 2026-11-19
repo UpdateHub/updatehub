@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{Context, Result};
+use super::{Context, Error, Result};
 use crate::{
     object::{Info, Installer},
     utils::{
@@ -31,6 +31,9 @@ impl Installer for objects::Tarball {
                     .valid(Access::for_format(self.target_format.should_format))
                     .log_error_msg("device failed validation")?;
                 Ok(())
+            }
+            definitions::TargetType::BootEmmc(_) => {
+                Err(Error::InvalidTargetType(self.target.clone()))
             }
         }
     }
