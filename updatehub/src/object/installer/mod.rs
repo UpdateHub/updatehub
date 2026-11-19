@@ -27,6 +27,14 @@ pub(crate) struct Context {
     pub(crate) download_dir: PathBuf,
     pub(crate) offline_update: bool,
     pub(crate) base_url: String,
+    pub(crate) boot_emmc: Option<BootEmmcTarget>,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct BootEmmcTarget {
+    pub(crate) emmc: utils::emmc::Emmc,
+    /// Boot partition of the installation set being installed
+    pub(crate) partition: u8,
 }
 
 pub(crate) trait Installer {

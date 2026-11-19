@@ -16,18 +16,37 @@ use slog_scope::info;
 use std::{io::SeekFrom, path::Path};
 use tokio::{
     fs,
-    io::{AsyncRead, AsyncReadExt, AsyncSeekExt},
+    io::{AsyncRead, AsyncReadExt, AsyncSeekExt, AsyncWriteExt},
 };
 use tokio_take_seek::AsyncTakeSeekExt;
 
+/// The target the object writes: a `boot-emmc` target names the eMMC, and
+/// the context tells which of its boot partitions this installation set
+/// owns.
+fn resolve_target(obj: &objects::Raw, context: &Context) -> Result<definitions::TargetType> {
+    let definitions::TargetType::BootEmmc(ref device) = obj.target_type else {
+        return Ok(obj.target_type.clone());
+    };
+    let target =
+        context.boot_emmc.as_ref().ok_or_else(|| Error::BootEmmcNotConfigured(device.clone()))?;
+    if !target.emmc.is(device) {
+        return Err(Error::BootEmmcDeviceMismatch {
+            package: device.clone(),
+            configured: target.emmc.device().to_owned(),
+        });
+    }
+    Ok(definitions::TargetType::Device(target.emmc.boot_partition(target.partition)))
+}
+
 impl Installer for objects::Raw {
-    async fn check_requirements(&self, _: &Context) -> Result<()> {
+    async fn check_requirements(&self, context: &Context) -> Result<()> {
         info!("'raw' handle checking requirements");
 
+        let target = resolve_target(self, context)?;
         let access = checked_region(self)
             .map_or(Access::Exclusive, |(offset, len)| Access::Region { offset, len });
         if let definitions::TargetType::Device(dev) =
-            self.target_type.valid(access).log_error_msg("device failed vaidation")?
+            target.valid(access).log_error_msg("device failed vaidation")?
         {
             utils::fs::ensure_disk_space(dev, self.required_install_size())
                 .log_error_msg("not enough disk space")?;
@@ -40,9 +59,13 @@ impl Installer for objects::Raw {
     async fn install(&self, context: &Context) -> Result<()> {
         info!("'raw' handler Install {} ({})", self.filename, self.sha256sum);
 
-        let definitions::TargetType::Device(ref device) = self.target_type else {
+        let boot_emmc = matches!(self.target_type, definitions::TargetType::BootEmmc(_));
+        let definitions::TargetType::Device(ref device) = resolve_target(self, context)? else {
             unreachable!("device should be secured by check_requirements")
         };
+        if boot_emmc {
+            info!("writing to {:?}", device);
+        }
         let source = context.download_dir.join(self.sha256sum());
         let chunk_size = self.chunk_size.0;
         let truncate = self.truncate.0;
@@ -62,6 +85,15 @@ impl Installer for objects::Raw {
         )
         .await?;
         if should_skip_install {
+            // What matched may be in the page cache only, left by an earlier
+            // try that stopped before syncing
+            if boot_emmc {
+                fs::File::open(device)
+                    .await?
+                    .sync_all()
+                    .await
+                    .log_error_msg("failed to sync target file")?;
+            }
             return Ok(());
         }
 
@@ -77,20 +109,30 @@ impl Installer for objects::Raw {
             _ => None,
         };
 
+        // Only a boot partition checked to be the inactive set's is unlocked
+        let unlocked = if boot_emmc { utils::emmc::ForceRoGuard::unlock(device)? } else { None };
+        utils::emmc::ensure_writable(device)?;
+
         let mut input = open_source(self, &source).await?;
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .truncate(truncate)
+            .open(device)
+            .await
+            .log_error_msg("failed to open target file")?;
+        // Synced through the same open file, which is the one a writeback
+        // error is reported to
+        let synced = if boot_emmc { Some(file.try_clone().await?) } else { None };
         let mut target = {
-            let mut target = utils::io::timed_buf_writer(
-                chunk_size,
-                fs::OpenOptions::new()
-                    .write(true)
-                    .truncate(truncate)
-                    .open(device)
-                    .await
-                    .log_error_msg("failed to open target file")?,
-            );
+            let mut target = utils::io::timed_buf_writer(chunk_size, file);
             target.seek(SeekFrom::Start(seek)).await.log_error_msg("failed to seek target file")?;
             utils::io::BoundedWriter::new(target, limit.unwrap_or(u64::MAX))
         };
+
+        #[cfg(feature = "test-env")]
+        if boot_emmc {
+            power_cut_for_tests(&mut input, &mut target, device).await?;
+        }
 
         if self.compressed {
             compress_tools::tokio_support::uncompress_data(&mut input, &mut target)
@@ -101,9 +143,41 @@ impl Installer for objects::Raw {
                 .await
                 .log_error_msg("failed copy from source into target")?;
         }
+        target.flush().await.log_error_msg("failed to flush target file")?;
+        drop(target);
+
+        // The eMMC may boot from a boot partition as soon as the update ends,
+        // so it must be on the device by then, not in the page cache
+        if let Some(synced) = synced {
+            synced.sync_all().await.log_error_msg("failed to sync target file")?;
+        }
+        if let Some(unlocked) = unlocked {
+            unlocked.lock().log_error_msg("failed to make the target read-only again")?;
+        }
 
         Ok(())
     }
+}
+
+/// Lets tests cut the power in the middle of writing a boot partition: with
+/// `UPDATEHUB_TEST_POWER_CUT_AFTER` set to a byte count, only that much is
+/// written and synced before the agent dies on the spot.
+#[cfg(feature = "test-env")]
+async fn power_cut_for_tests<R, W>(input: &mut R, target: &mut W, device: &Path) -> Result<()>
+where
+    R: AsyncRead + Unpin,
+    W: tokio::io::AsyncWrite + Unpin,
+{
+    let Some(bytes) =
+        std::env::var("UPDATEHUB_TEST_POWER_CUT_AFTER").ok().and_then(|v| v.parse().ok())
+    else {
+        return Ok(());
+    };
+    tokio::io::copy(&mut input.take(bytes), target).await?;
+    target.flush().await?;
+    fs::File::open(device).await?.sync_all().await?;
+    slog_scope::warn!("power cut after writing {} bytes to {:?}", bytes, device);
+    std::process::abort();
 }
 
 async fn open_source(obj: &objects::Raw, source: &Path) -> Result<Box<dyn AsyncRead + Unpin>> {

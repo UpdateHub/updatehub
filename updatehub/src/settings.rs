@@ -50,7 +50,7 @@ impl Default for Settings {
                 server_address: "https://api.updatehub.io".to_string(),
                 listen_socket: "localhost:8080".to_string(),
             },
-            firmware: api::Firmware { metadata: "/usr/share/updatehub".into() },
+            firmware: api::Firmware { metadata: "/usr/share/updatehub".into(), boot_emmc: None },
         })
     }
 }
@@ -202,7 +202,7 @@ fn v1_parse(content: &str, toml_err: toml::de::Error) -> Result<api::Settings> {
         .map_err(|ini_err| Error::V1Parsing(Box::new(toml_err), ini_err))?;
 
     Ok(api::Settings {
-        firmware: api::Firmware { metadata: old_settings.firmware.metadata_path },
+        firmware: api::Firmware { metadata: old_settings.firmware.metadata_path, boot_emmc: None },
         network: api::Network {
             server_address: old_settings.network.server_address,
             listen_socket: old_settings.network.listen_socket,
@@ -272,7 +272,7 @@ metadata="/usr/share/updatehub"
                 server_address: "https://api.updatehub.io".to_string(),
                 listen_socket: "localhost:8080".to_string(),
             },
-            firmware: api::Firmware { metadata: "/usr/share/updatehub".into() },
+            firmware: api::Firmware { metadata: "/usr/share/updatehub".into(), boot_emmc: None },
         });
         assert_eq!(Settings::parse(sample).unwrap(), expected);
     }
@@ -352,7 +352,7 @@ metadata="/usr/share/updatehub"
                 server_address: "https://api.updatehub.io".to_string(),
                 listen_socket: "localhost:8080".to_string(),
             },
-            firmware: api::Firmware { metadata: "/usr/share/updatehub".into() },
+            firmware: api::Firmware { metadata: "/usr/share/updatehub".into(), boot_emmc: None },
         });
 
         assert_eq!(Some(settings), Some(expected));
@@ -395,7 +395,7 @@ ListenSocket=localhost:8313
                 server_address: "http://localhost".to_string(),
                 listen_socket: "localhost:8313".to_string(),
             },
-            firmware: api::Firmware { metadata: "/usr/share/updatehub".into() },
+            firmware: api::Firmware { metadata: "/usr/share/updatehub".into(), boot_emmc: None },
         });
 
         assert_eq!(Settings::parse(sample).unwrap(), expected);

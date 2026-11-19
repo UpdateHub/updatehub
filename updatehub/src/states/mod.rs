@@ -224,12 +224,63 @@ fn handle_startup_callbacks(
     runtime_settings: &mut RuntimeSettings,
 ) -> crate::Result<()> {
     if let Some(expected_set) = runtime_settings.update.upgrade_to_installation {
+        // The agent restarted without the device rebooting, e.g. after the
+        // reboot failed: the update has not run yet
+        if runtime_settings.is_upgrade_boot() {
+            // Unless the agent stopped while rebooting for the update's
+            // firmware, which it then resumes
+            if runtime_settings.update.boot_emmc.as_ref().is_some_and(|b| b.rebooted)
+                && expected_set == firmware::installation_set::active()?.0
+            {
+                firmware::boot_emmc::follow_active_set(settings, "agent start")?;
+                warn!("rebooting so the update is validated running its own firmware");
+                firmware::reboot()?;
+            } else {
+                warn!("the installed update waits for the device to reboot");
+            }
+            return Ok(());
+        }
+
         info!("booting from a recent installation");
+        // A power cut may have come between the installation set and the
+        // eMMC switching, or a bootloader may have rolled the set back on
+        // its own after too many failed boots. Until the eMMC follows, the
+        // update stays pending. Only an update that wrote the eMMC boot
+        // partition of its set may switch it there.
+        let boot_emmc = runtime_settings.update.boot_emmc.clone();
+        let follows = match boot_emmc {
+            Some(_) => firmware::boot_emmc::follows_active_set(settings)?,
+            None => true,
+        };
         if expected_set == firmware::installation_set::active()?.0 {
-            match firmware::validate_callback(&settings.firmware.metadata)? {
+            let transition = if follows {
+                firmware::validate_callback(&settings.firmware.metadata)?
+            } else if boot_emmc.is_some_and(|b| b.rebooted) {
+                error!("the eMMC did not keep booting the firmware of the update");
+                Transition::Cancel
+            } else {
+                // Recorded before switching, so an agent restarting in this
+                // boot does not take the switched eMMC for a booted update
+                runtime_settings.set_boot_emmc_rebooted()?;
+                firmware::boot_emmc::follow_active_set(settings, "agent start")?;
+                warn!("rebooting so the update is validated running its own firmware");
+                firmware::reboot()?;
+                return Ok(());
+            };
+            match transition {
                 Transition::Cancel => {
                     warn!("validate callback has failed");
                     firmware::installation_set::swap_active()?;
+                    if runtime_settings.update.boot_emmc.is_some() {
+                        if let Err(e) =
+                            firmware::boot_emmc::follow_active_set(settings, "update rolled back")
+                        {
+                            error!(
+                                "unable to boot the eMMC from the previous installation set: {}",
+                                e
+                            );
+                        }
+                    }
                     warn!("swapped active installation set and running rollback");
                     firmware::rollback_callback(&settings.firmware.metadata)?;
 
@@ -248,6 +299,9 @@ fn handle_startup_callbacks(
                 Transition::Continue => firmware::installation_set::validate()?,
             }
         } else {
+            if !follows {
+                firmware::boot_emmc::follow_active_set(settings, "agent start")?;
+            }
             warn!("confirming active installation as update has been rollback");
             firmware::installation_set::validate()?;
         }

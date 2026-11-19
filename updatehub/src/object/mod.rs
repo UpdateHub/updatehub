@@ -27,6 +27,19 @@ pub enum Error {
     Utils(crate::utils::Error),
     Firmware(crate::firmware::Error),
 
+    #[display(
+        "the package writes the boot partitions of {_0:?}, but the settings have no \
+         [firmware.boot-emmc] section"
+    )]
+    BootEmmcNotConfigured(#[error(not(source))] std::path::PathBuf),
+    #[display(
+        "the package writes the boot partitions of {package:?}, the device uses {configured:?}"
+    )]
+    BootEmmcDeviceMismatch {
+        package: std::path::PathBuf,
+        configured: std::path::PathBuf,
+    },
+
     #[display("invalid target type {_0:?}")]
     InvalidTargetType(#[error(not(source))] pkg_schema::definitions::TargetType),
     Io(std::io::Error),

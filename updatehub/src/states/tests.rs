@@ -24,7 +24,7 @@ fn startup_without_upgrade() {
 fn startup_with_normal_upgrade() {
     let mut setup = crate::tests::TestEnvironment::build().finish();
     let output_file_path = &setup.binaries.data;
-    setup.runtime_settings.data.set_upgrading_to(Set(InstallationSet::A)).unwrap();
+    setup.runtime_settings.data.set_upgrading_to(Set(InstallationSet::A), false).unwrap();
 
     handle_startup_callbacks(&setup.settings.data, &mut setup.runtime_settings.data).unwrap();
 
@@ -48,7 +48,7 @@ fn startup_on_faulty_upgrade() {
         format!("#!/bin/sh\necho $0 >> {}\nexit 1", output_file_path.to_string_lossy()),
     )
     .unwrap();
-    setup.runtime_settings.data.set_upgrading_to(Set(InstallationSet::A)).unwrap();
+    setup.runtime_settings.data.set_upgrading_to(Set(InstallationSet::A), false).unwrap();
 
     handle_startup_callbacks(&setup.settings.data, &mut setup.runtime_settings.data).unwrap();
 
@@ -69,7 +69,7 @@ fn startup_on_faulty_upgrade() {
 #[test]
 fn startup_on_wrong_install_set() {
     let mut setup = crate::tests::TestEnvironment::build().finish();
-    setup.runtime_settings.data.set_upgrading_to(Set(InstallationSet::B)).unwrap();
+    setup.runtime_settings.data.set_upgrading_to(Set(InstallationSet::B), false).unwrap();
 
     handle_startup_callbacks(&setup.settings.data, &mut setup.runtime_settings.data).unwrap();
 

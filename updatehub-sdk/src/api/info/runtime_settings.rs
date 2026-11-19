@@ -38,6 +38,23 @@ pub struct RuntimeUpdate {
     pub upgrade_to_installation: Option<InstallationSet>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub applied_package_uid: Option<String>,
+    /// Present when the pending update wrote the eMMC boot partition of its
+    /// installation set, which only then may the eMMC be switched to
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boot_emmc: Option<RuntimeBootEmmc>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuntimeBootEmmc {
+    /// Kernel boot ID of the boot that installed the pending update, or
+    /// rebooted for it, which is only validated from another boot
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub boot_id: Option<String>,
+    /// The agent rebooted for the eMMC to boot the firmware of the pending
+    /// update, which it only does once
+    #[serde(default)]
+    pub rebooted: bool,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]

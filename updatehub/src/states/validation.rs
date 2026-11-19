@@ -45,7 +45,18 @@ impl StateChangeImpl for Validation {
             info!("no signature key available on device, ignoring signature validation");
         }
 
+        let inactive_installation_set = context
+            .runtime_settings
+            .get_inactive_installation_set()
+            .log_error_msg("unable to get inactive installation set")?;
+
         let object_context = object::installer::Context {
+            boot_emmc: crate::firmware::boot_emmc::emmc(&context.settings).map(|emmc| {
+                object::installer::BootEmmcTarget {
+                    emmc,
+                    partition: inactive_installation_set.index(),
+                }
+            }),
             download_dir: context.settings.update.download_dir.clone(),
             offline_update: !self.require_download,
             base_url: format!(
@@ -57,10 +68,6 @@ impl StateChangeImpl for Validation {
         };
 
         // Ensure the package is compatible
-        let inactive_installation_set = context
-            .runtime_settings
-            .get_inactive_installation_set()
-            .log_error_msg("unable to get inactive installation set")?;
         self.package
             .compatible_with(&context.firmware)
             .log_error_msg("uhupkg is not compatible with this device")?;
