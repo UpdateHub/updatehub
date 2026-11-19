@@ -40,6 +40,13 @@ pub enum Error {
     #[display("invalid installation set, the only know ones are 0 or 1")]
     InvalidInstallSet,
 
+    #[display(
+        "refusing to run {_0:?} from a test build: tests reboot through a fake `reboot` in the \
+         temporary directory, so this one would reboot the machine running them"
+    )]
+    #[from(ignore)]
+    RealRebootInTestBuild(#[error(not(source))] Option<std::path::PathBuf>),
+
     Walkdir(walkdir::Error),
 
     Io(std::io::Error),
@@ -134,7 +141,47 @@ pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transiti
 }
 
 pub(crate) fn reboot() -> Result<easy_process::Output> {
-    Ok(easy_process::run("reboot")?)
+    #[cfg(any(test, feature = "test-env"))]
+    let reboot = &fake_reboot()?.display().to_string();
+    #[cfg(not(any(test, feature = "test-env")))]
+    let reboot = "reboot";
+
+    Ok(easy_process::run(reboot)?)
+}
+
+/// Test builds (unit tests and the `test-env` feature the integration tests
+/// use) run the real agent on the developer's machine, with a fake `reboot`
+/// first in `PATH`. If that fake is ever gone, e.g. an agent outliving the
+/// test that created it, `PATH` would find the real one and reboot the
+/// machine. So these builds only run a `reboot` living in the temporary
+/// directory, where every test creates its fakes, and run it by its path so
+/// no other lookup can pick another.
+#[cfg(any(test, feature = "test-env"))]
+fn fake_reboot() -> Result<std::path::PathBuf> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let found = std::env::var_os("PATH")
+        .map(|path| std::env::split_paths(&path).map(|dir| dir.join("reboot")).collect::<Vec<_>>())
+        .unwrap_or_default()
+        .into_iter()
+        .find(|candidate| {
+            std::fs::metadata(candidate)
+                .is_ok_and(|m| m.is_file() && m.permissions().mode() & 0o111 != 0)
+        })
+        .map(|reboot| std::fs::canonicalize(&reboot).ok());
+    let temp = std::fs::canonicalize(std::env::temp_dir()).ok();
+    // The path is run as a command line, which must not split it
+    let plain = |p: &std::path::Path| {
+        !p.to_string_lossy().contains(|c: char| c.is_whitespace() || "'\"\\".contains(c))
+    };
+
+    match (found.flatten(), temp) {
+        (Some(reboot), Some(temp)) if reboot.starts_with(&temp) && plain(&reboot) => Ok(reboot),
+        (other, _) => {
+            error!("refusing to run {:?}, which is not a fake reboot from a test", other);
+            Err(Error::RealRebootInTestBuild(other))
+        }
+    }
 }
 
 pub(crate) fn validate_callback(path: &Path) -> Result<Transition> {
@@ -194,5 +241,68 @@ fn run_command_for_state(name: &str, cmd: &str) -> Result<easy_process::Output> 
             error!("{} has failed with an invalid error: {:?}", name, e);
             Err(e.into())
         }
+    }
+}
+
+#[cfg(test)]
+mod reboot_guard {
+    use super::*;
+    use crate::utils::test_env::PathEnvGuard;
+    use std::{fs, os::unix::fs::PermissionsExt};
+
+    /// A `reboot` that only leaves a mark, so a broken guard fails the test
+    /// instead of rebooting anything
+    fn fake_reboot(dir: &Path) -> std::path::PathBuf {
+        let mark = dir.join("rebooted");
+        let reboot = dir.join("reboot");
+        fs::write(&reboot, format!("#!/bin/sh\n: > {}\n", mark.display())).unwrap();
+        fs::set_permissions(&reboot, fs::Permissions::from_mode(0o755)).unwrap();
+        mark
+    }
+
+    #[test]
+    fn runs_a_fake_reboot_from_the_temporary_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let mark = fake_reboot(dir.path());
+        let _path = PathEnvGuard::set(dir.path());
+
+        reboot().unwrap();
+        assert!(mark.exists());
+    }
+
+    #[test]
+    fn refuses_a_reboot_outside_the_temporary_directory() {
+        // Stands for the system's reboot, which also lives outside it
+        let outside = Path::new(env!("CARGO_MANIFEST_DIR"));
+        if outside.canonicalize().unwrap().starts_with(std::env::temp_dir().canonicalize().unwrap())
+        {
+            eprintln!("skipped: the source tree is inside the temporary directory");
+            return;
+        }
+        let dir = tempfile::tempdir_in(outside).unwrap();
+        let mark = fake_reboot(dir.path());
+        let _path = PathEnvGuard::set(dir.path());
+
+        assert!(matches!(reboot(), Err(Error::RealRebootInTestBuild(Some(_)))));
+        assert!(!mark.exists());
+    }
+
+    #[test]
+    fn ignores_a_reboot_that_is_not_executable() {
+        let dir = tempfile::tempdir().unwrap();
+        let mark = fake_reboot(dir.path());
+        fs::set_permissions(dir.path().join("reboot"), fs::Permissions::from_mode(0o644)).unwrap();
+        let _path = PathEnvGuard::set(dir.path());
+
+        assert!(matches!(reboot(), Err(Error::RealRebootInTestBuild(None))));
+        assert!(!mark.exists());
+    }
+
+    #[test]
+    fn refuses_when_there_is_no_fake_reboot() {
+        let dir = tempfile::tempdir().unwrap();
+        let _path = PathEnvGuard::set(dir.path());
+
+        assert!(matches!(reboot(), Err(Error::RealRebootInTestBuild(None))));
     }
 }
