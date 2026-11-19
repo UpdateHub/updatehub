@@ -37,7 +37,7 @@ impl StateChangeImpl for Reboot {
 
     async fn handle(self, _: &mut Context) -> Result<(State, machine::StepTransition)> {
         info!("triggering reboot");
-        let output = easy_process::run("reboot").log_error_msg("failed to run reboot command")?;
+        let output = crate::firmware::reboot().log_error_msg("failed to run reboot command")?;
         if !output.stdout.is_empty() || !output.stderr.is_empty() {
             warn!("  reboot output: stdout: {}, stderr: {}", output.stdout, output.stderr);
         }
