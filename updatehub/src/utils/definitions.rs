@@ -79,7 +79,10 @@ impl TargetTypeExt for TargetType {
                         .ok_or_else(|| Error::DeviceDoesNotExist(device.clone()))?;
                     mtd::target_device_from_ubi_volume_name(volume)
                 } else {
-                    Ok(device.clone())
+                    // mkfs makes udev recreate /dev/disk/by-label/* links, so
+                    // a mount right after formatting can find them missing.
+                    // An unresolvable path is kept so `valid` reports it.
+                    Ok(std::fs::canonicalize(device).unwrap_or_else(|_| device.clone()))
                 }
             }
             TargetType::UBIVolume(s) => mtd::target_device_from_ubi_volume_name(s),
@@ -114,5 +117,24 @@ impl IdExt for Uid {
             Uid::Name(s) => nix::unistd::User::from_name(s).unwrap().unwrap().uid.as_raw(),
             Uid::Number(n) => *n,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn device_target_resolves_links() {
+        let dir = tempfile::tempdir().unwrap();
+        let node = dir.path().join("mmcblk0p2");
+        std::fs::write(&node, b"").unwrap();
+        let link = dir.path().join("system_a");
+        std::os::unix::fs::symlink(&node, &link).unwrap();
+
+        let target = TargetType::Device(link).get_target().unwrap();
+
+        assert_eq!(target, node.canonicalize().unwrap());
     }
 }
