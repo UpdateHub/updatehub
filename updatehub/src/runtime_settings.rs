@@ -135,7 +135,7 @@ impl RuntimeSettings {
             fs::create_dir_all(parent)?;
         }
 
-        fs::write(&self.path, self.serialize()?)?;
+        write_atomically(&self.path, self.serialize()?.as_bytes())?;
         debug!("saved runtime settings to {:?}", &self.path);
 
         Ok(())
@@ -243,11 +243,39 @@ impl RuntimeSettings {
         // procedure when rebooting.
         if let Some(content) = &self.v1_content {
             warn!("restoring previous content of runtime settings for v1 compatibility");
-            fs::write(&self.path, content)?;
+            write_atomically(&self.path, content.as_bytes())?;
         }
 
         Ok(())
     }
+}
+
+/// Replaces `path` with `content` so a power cut leaves either the old or
+/// the new content, never a torn or empty file.
+fn write_atomically(path: &Path, content: &[u8]) -> Result<()> {
+    // A symlink stays one, the file it points to, which may not exist yet,
+    // is the one replaced
+    let mut path = path.to_owned();
+    for hops in 0.. {
+        let Ok(target) = fs::read_link(&path) else {
+            break;
+        };
+        if hops == 40 {
+            return Err(io::Error::from_raw_os_error(nix::libc::ELOOP).into());
+        }
+        path = path.parent().unwrap_or(Path::new("")).join(target);
+    }
+    let path = &path;
+    let dir = match path.parent().ok_or(Error::InvalidDestination)? {
+        dir if dir.as_os_str().is_empty() => Path::new("."),
+        dir => dir,
+    };
+    let mut temp = tempfile::NamedTempFile::new_in(dir)?;
+    std::io::Write::write_all(&mut temp, content)?;
+    temp.as_file().sync_all()?;
+    temp.persist(path).map_err(|e| e.error)?;
+    fs::File::open(dir)?.sync_all()?;
+    Ok(())
 }
 
 #[cfg(feature = "v1-parsing")]
@@ -308,6 +336,21 @@ fn v1_parse(content: &str, json_err: serde_json::Error) -> Result<api::RuntimeSe
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn saving_through_a_symlink_keeps_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let shared = dir.path().join("shared");
+        fs::create_dir(&shared).unwrap();
+        let link = dir.path().join("runtime.json");
+        std::os::unix::fs::symlink(shared.join("runtime.json"), &link).unwrap();
+
+        write_atomically(&link, b"first").unwrap();
+        write_atomically(&link, b"second").unwrap();
+
+        assert!(fs::symlink_metadata(&link).unwrap().file_type().is_symlink());
+        assert_eq!(fs::read_to_string(shared.join("runtime.json")).unwrap(), "second");
+    }
 
     #[test]
     fn default() {
