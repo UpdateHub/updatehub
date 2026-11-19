@@ -12,6 +12,12 @@ pub enum TargetType {
     Device(PathBuf),
     UBIVolume(String),
     MTDName(String),
+    /// The base device of an eMMC (e.g. `/dev/mmcblk1`) whose hardware boot
+    /// partitions hold one firmware per installation set: the agent writes
+    /// the boot partition of the set being installed (`boot0` for set 0,
+    /// `boot1` for set 1). Only valid for raw objects.
+    #[serde(rename = "boot-emmc")]
+    BootEmmc(PathBuf),
 }
 
 #[cfg(test)]
