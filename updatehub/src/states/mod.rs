@@ -240,7 +240,7 @@ fn handle_startup_callbacks(
                     #[cfg(feature = "v1-parsing")]
                     runtime_settings.restore_v1_content()?;
 
-                    easy_process::run("reboot")?;
+                    firmware::reboot()?;
 
                     // Ensure we detect the rollback in next boot.
                     return Ok(());

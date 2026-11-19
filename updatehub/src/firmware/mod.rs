@@ -133,6 +133,10 @@ pub(crate) fn state_change_callback(path: &Path, state: &str) -> Result<Transiti
     }
 }
 
+pub(crate) fn reboot() -> Result<easy_process::Output> {
+    Ok(easy_process::run("reboot")?)
+}
+
 pub(crate) fn validate_callback(path: &Path) -> Result<Transition> {
     let callback = path.join(VALIDATE_CALLBACK);
     if !callback.exists() {
