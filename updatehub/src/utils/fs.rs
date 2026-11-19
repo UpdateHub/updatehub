@@ -405,6 +405,17 @@ pub(crate) fn format(target: &Path, fs: Filesystem, options: Option<&str>) -> Re
     };
 
     easy_process::run(&cmd)?;
+
+    // The new label makes udev recreate the /dev/disk/by-label/* link, and a
+    // later object may reach the device through it. The queue is global, so
+    // the wait is bounded; JFFS2 and UBIFS sit on MTD, which has no such links.
+    if !matches!(fs, Filesystem::Jffs2 | Filesystem::Ubifs)
+        && is_executable_in_path("udevadm").is_ok()
+        && let Err(e) = easy_process::run("udevadm settle --timeout=30")
+    {
+        warn!("udevadm settle failed after formatting: {}", e);
+    }
+
     Ok(())
 }
 
@@ -460,6 +471,53 @@ pub(crate) mod tests {
         file.set_permissions(std::fs::Permissions::from_mode(0o755)).unwrap();
 
         dir
+    }
+
+    /// Formats a plain file with the tools replaced by scripts that log their
+    /// arguments, and returns the log.
+    fn format_with_mocks(fs: Filesystem, bins: &[&str]) -> String {
+        use crate::{object::installer::tests::create_echo_bins, utils::test_env::PathEnvGuard};
+
+        let target = tempfile::NamedTempFile::new().unwrap();
+        let (mocks, calls) = create_echo_bins(bins).unwrap();
+        let _search_path = SearchPathGuard::set([mocks.path()]);
+        let _path = PathEnvGuard::prepend(mocks.path());
+
+        format(target.path(), fs, None).unwrap();
+
+        std::fs::read_to_string(calls).unwrap().replace(&*target.path().to_string_lossy(), "TARGET")
+    }
+
+    #[test]
+    fn format_waits_for_udev_after_mkfs() {
+        let calls = format_with_mocks(Filesystem::Ext4, &["mkfs.ext4", "udevadm"]);
+
+        assert_eq!(calls, "mkfs.ext4 -F TARGET\nudevadm settle --timeout=30\n");
+    }
+
+    #[test]
+    fn format_does_not_wait_for_udev_on_mtd() {
+        let calls = format_with_mocks(Filesystem::Jffs2, &["flash_erase", "udevadm"]);
+
+        assert_eq!(calls, "flash_erase -j TARGET 0 0\n");
+    }
+
+    #[test]
+    fn format_succeeds_when_udev_settle_fails() {
+        use crate::utils::test_env::PathEnvGuard;
+        use std::os::unix::fs::PermissionsExt;
+
+        let target = tempfile::NamedTempFile::new().unwrap();
+        let mocks = tempfile::tempdir().unwrap();
+        for (bin, status) in [("mkfs.ext4", 0), ("udevadm", 1)] {
+            let path = mocks.path().join(bin);
+            std::fs::write(&path, format!("#!/bin/sh\nexit {status}\n")).unwrap();
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let _search_path = SearchPathGuard::set([mocks.path()]);
+        let _path = PathEnvGuard::prepend(mocks.path());
+
+        format(target.path(), Filesystem::Ext4, None).unwrap();
     }
 
     #[test]
