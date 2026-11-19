@@ -38,6 +38,17 @@ impl fmt::Display for Set {
     }
 }
 
+impl Set {
+    /// 0 or 1, as the installation set scripts and the eMMC boot partitions
+    /// number them
+    pub(crate) fn index(self) -> u8 {
+        match self.0 {
+            InstallationSet::A => 0,
+            InstallationSet::B => 1,
+        }
+    }
+}
+
 pub fn active() -> super::Result<Set> {
     run_script(GET_SCRIPT)?.parse()
 }

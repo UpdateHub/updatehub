@@ -51,6 +51,7 @@ impl Default for RuntimeSettings {
                 update: api::RuntimeUpdate {
                     upgrade_to_installation: None,
                     applied_package_uid: None,
+                    boot_emmc: None,
                 },
                 path: std::path::PathBuf::new(),
                 persistent: false,
@@ -201,9 +202,30 @@ impl RuntimeSettings {
         self.save()
     }
 
-    pub(crate) fn set_upgrading_to(&mut self, new_install_set: Set) -> Result<()> {
+    /// Records the update installed to `new_install_set`, by this boot. With
+    /// `boot_emmc`, the update wrote the set's eMMC boot partition.
+    pub(crate) fn set_upgrading_to(&mut self, new_install_set: Set, boot_emmc: bool) -> Result<()> {
         debug!("setting upgrading to {}", new_install_set);
         self.update.upgrade_to_installation = Some(new_install_set.0);
+        self.update.boot_emmc = boot_emmc
+            .then(|| api::RuntimeBootEmmc { boot_id: crate::utils::boot_id(), rebooted: false });
+        self.save()
+    }
+
+    /// Whether this is still the boot that installed the pending update, or
+    /// rebooted for it, which is only recorded for boot-emmc updates
+    pub(crate) fn is_upgrade_boot(&self) -> bool {
+        self.update
+            .boot_emmc
+            .as_ref()
+            .and_then(|b| b.boot_id.as_ref())
+            .is_some_and(|id| Some(id) == crate::utils::boot_id().as_ref())
+    }
+
+    /// Records the reboot for the eMMC to boot the pending update's firmware
+    pub(crate) fn set_boot_emmc_rebooted(&mut self) -> Result<()> {
+        self.update.boot_emmc =
+            Some(api::RuntimeBootEmmc { boot_id: crate::utils::boot_id(), rebooted: true });
         self.save()
     }
 
@@ -225,10 +247,22 @@ impl RuntimeSettings {
         self.polling.server_address = api::ServerAddress::Default;
     }
 
+    /// Forgets an install that failed before it was activated. Unlike
+    /// `reset_installation_settings`, it does not force a probe, so while
+    /// whatever made it fail lasts the package is retried at the polling
+    /// interval or on request, not again right away.
+    pub(crate) fn clear_upgrading(&mut self) -> Result<()> {
+        self.update.upgrade_to_installation = None;
+        self.update.applied_package_uid = None;
+        self.update.boot_emmc = None;
+        self.save()
+    }
+
     pub(crate) fn reset_installation_settings(&mut self) -> Result<()> {
         debug!("reseting installation settings");
         self.update.upgrade_to_installation = None;
         self.update.applied_package_uid = None;
+        self.update.boot_emmc = None;
 
         // Ensure we do a probe as soon as possible so full update
         // cycle can be finished.
@@ -326,6 +360,7 @@ fn v1_parse(content: &str, json_err: serde_json::Error) -> Result<api::RuntimeSe
                 _ => None,
             },
             applied_package_uid: None,
+            boot_emmc: None,
         },
         path: std::path::PathBuf::new(),
         persistent: false,
@@ -366,6 +401,7 @@ mod tests {
                 update: api::RuntimeUpdate {
                     upgrade_to_installation: None,
                     applied_package_uid: None,
+                    boot_emmc: None,
                 },
                 path: std::path::PathBuf::new(),
                 persistent: false,
@@ -463,6 +499,7 @@ UpgradeToInstallation=1
                 update: api::RuntimeUpdate {
                     upgrade_to_installation: Some(api::InstallationSet::B),
                     applied_package_uid: None,
+                    boot_emmc: None,
                 },
                 path: std::path::PathBuf::new(),
                 persistent: false,

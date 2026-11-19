@@ -21,6 +21,18 @@ pub struct Settings {
 #[serde(deny_unknown_fields)]
 pub struct Firmware {
     pub metadata: PathBuf,
+    #[serde(default, rename = "boot-emmc", skip_serializing_if = "Option::is_none")]
+    pub boot_emmc: Option<BootEmmc>,
+}
+
+/// Installation set N boots from boot partition N of `device`: updates
+/// write the boot partition of the inactive set, and the eMMC boots from the
+/// boot partition of the active one.
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct BootEmmc {
+    /// The eMMC base device, e.g. `/dev/mmcblk1`
+    pub device: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]

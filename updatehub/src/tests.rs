@@ -192,7 +192,7 @@ impl TestEnvironmentBuilder {
             runtime_settings.path.clone_from(&file_path);
             if self.booting_from_update {
                 runtime_settings.enable_persistency();
-                runtime_settings.set_upgrading_to(Set(InstallationSet::A)).unwrap();
+                runtime_settings.set_upgrading_to(Set(InstallationSet::A), false).unwrap();
             }
 
             Data { data: runtime_settings, stored_path: file_path, guard: vec![Box::new(file)] }

@@ -4,6 +4,7 @@
 
 pub(crate) mod definitions;
 pub(crate) mod delta;
+pub(crate) mod emmc;
 pub(crate) mod fs;
 pub(crate) mod io;
 pub(crate) mod log;
@@ -21,6 +22,17 @@ use std::fmt::Write;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// The kernel's ID of the running boot. Test builds take it from
+/// `UPDATEHUB_TEST_BOOT_ID`, as their reboots only restart the agent, and
+/// have none without it.
+pub(crate) fn boot_id() -> Option<String> {
+    #[cfg(any(test, feature = "test-env"))]
+    return std::env::var("UPDATEHUB_TEST_BOOT_ID").ok();
+
+    #[cfg(not(any(test, feature = "test-env")))]
+    std::fs::read_to_string("/proc/sys/kernel/random/boot_id").ok().map(|id| id.trim().to_owned())
+}
+
 #[derive(Debug, Display, Error, From)]
 pub enum Error {
     Io(std::io::Error),
@@ -32,6 +44,23 @@ pub enum Error {
     #[display("{_0:?} target device does not exists")]
     #[from(ignore)]
     DeviceDoesNotExist(#[error(not(source))] std::path::PathBuf),
+
+    #[display(
+        "switching {device:?} failed: PARTITION_CONFIG is 0x{found:02x} instead of 0x{expected:02x}"
+    )]
+    #[from(ignore)]
+    EmmcSwitchFailed {
+        device: std::path::PathBuf,
+        expected: u8,
+        found: u8,
+    },
+
+    #[display("copying {from:?} to {to:?} did not write the same content")]
+    #[from(ignore)]
+    EmmcCopyMismatch {
+        from: std::path::PathBuf,
+        to: std::path::PathBuf,
+    },
 
     #[display("{_0:?} is a boot-emmc target, which only raw objects support")]
     #[from(ignore)]

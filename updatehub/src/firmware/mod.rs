@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+pub(crate) mod boot_emmc;
 mod hook;
 pub mod installation_set;
 
@@ -41,6 +42,53 @@ pub enum Error {
     InvalidInstallSet,
 
     #[display(
+        "{device:?} does not boot from a boot partition (PARTITION_CONFIG 0x{part_config:02x}), \
+         so it cannot follow the installation set"
+    )]
+    #[from(ignore)]
+    EmmcNotBooting {
+        device: std::path::PathBuf,
+        part_config: u8,
+    },
+
+    #[display(
+        "the eMMC boot partitions are not updated while installation set {_0} waits for a \
+         reboot to boot"
+    )]
+    #[from(ignore)]
+    EmmcRebootPending(#[error(not(source))] u8),
+
+    #[display(
+        "the package was validated for the eMMC boot partition of installation set \
+         {validated}, but installation set {installing} is the one inactive now"
+    )]
+    #[from(ignore)]
+    EmmcTargetChanged {
+        validated: u8,
+        installing: u8,
+    },
+
+    #[display(
+        "the eMMC boot partitions are not updated with storage.read_only set: the update's \
+         state must survive a reboot for the eMMC to follow a rollback"
+    )]
+    EmmcStateNotPersistent,
+
+    #[display("installation set {_0} is the active one, so its eMMC boot partition is not updated")]
+    #[from(ignore)]
+    EmmcTargetActive(#[error(not(source))] u8),
+
+    #[display(
+        "{device:?} boots from {partition:?} again after an access to it: the kernel restored \
+         its cached PARTITION_CONFIG, so it cannot switch eMMC boot partitions safely"
+    )]
+    #[from(ignore)]
+    EmmcSwitchReverted {
+        device: std::path::PathBuf,
+        partition: std::path::PathBuf,
+    },
+
+    #[display(
         "refusing to run {_0:?} from a test build: tests reboot through a fake `reboot` in the \
          temporary directory, so this one would reboot the machine running them"
     )]
@@ -48,6 +96,8 @@ pub enum Error {
     RealRebootInTestBuild(#[error(not(source))] Option<std::path::PathBuf>),
 
     Walkdir(walkdir::Error),
+
+    Utils(crate::utils::Error),
 
     Io(std::io::Error),
 

@@ -7,12 +7,12 @@ use super::{
     machine::{self, Context},
 };
 use crate::{
-    firmware::installation_set,
+    firmware::{boot_emmc, installation_set},
     object::{self, Info, Installer},
     update_package::{UpdatePackage, UpdatePackageExt},
     utils::log::LogContent,
 };
-use slog_scope::info;
+use slog_scope::{error, info, warn};
 
 #[derive(Debug)]
 pub(super) struct Install {
@@ -52,6 +52,17 @@ impl StateChangeImpl for Install {
         info!("using installation set as target {}", installation_set);
 
         let obj_context = self.object_context;
+        // The objects write the boot partition picked when the package was
+        // validated, which must still be the one prepared here
+        if let Some(target) = &obj_context.boot_emmc {
+            if target.partition != installation_set.index() {
+                return Err(crate::firmware::Error::EmmcTargetChanged {
+                    validated: target.partition,
+                    installing: installation_set.index(),
+                }
+                .into());
+            }
+        }
         let objs = self.update_package.objects_mut(installation_set);
 
         // Objects are sorted in reverse order so the smaller objects are installed
@@ -59,10 +70,21 @@ impl StateChangeImpl for Install {
         // changes towards the end of the update.
         objs.sort_by(|a, b| a.len().partial_cmp(&b.len()).unwrap().reverse());
 
+        boot_emmc::prepare_install(
+            &context.settings,
+            !context.settings.storage.read_only,
+            context.runtime_settings.update.upgrade_to_installation.map(installation_set::Set),
+            installation_set.index(),
+        )
+        .log_error_msg("unable to prepare the eMMC boot partitions")?;
+
         // Run the install routine for every object.
         for obj in objs.iter_mut() {
             obj.install(&obj_context).await?;
         }
+
+        boot_emmc::check_installed(&context.settings, installation_set.index())
+            .log_error_msg("unable to install the eMMC boot partition")?;
 
         // Avoid installing same package twice.
         context
@@ -73,13 +95,43 @@ impl StateChangeImpl for Install {
         // Set upgrading to the new installation set.
         context
             .runtime_settings
-            .set_upgrading_to(installation_set)
+            .set_upgrading_to(installation_set, boot_emmc::emmc(&context.settings).is_some())
             .log_error_msg("failed to upgrade installation set to runtime settings ")?;
 
         // Swap installation set so it is used next device boot.
         info!("swapping active installation set");
-        installation_set::swap_active()
-            .log_error_msg("unable to update active installation set")?;
+        // A swap that fails without changing the set leaves no update to
+        // wait for
+        if let Err(e) = installation_set::swap_active() {
+            error!("unable to update active installation set: {}", e);
+            if installation_set::active()? != installation_set {
+                context
+                    .runtime_settings
+                    .clear_upgrading()
+                    .log_error_msg("failed to reset the installation settings")?;
+                return Err(e.into());
+            }
+            warn!("the active installation set changed nonetheless");
+        }
+
+        // When the eMMC cannot follow the new set, the set goes back, so
+        // firmware and system stay a pair. Should the eMMC not follow back
+        // either, the update stays pending, and the next start makes it.
+        if let Err(e) = boot_emmc::follow_active_set(&context.settings, "update installed") {
+            error!("unable to boot the eMMC from the new installation set: {}", e);
+            installation_set::swap_active()
+                .log_error_msg("unable to restore the active installation set")?;
+            match boot_emmc::follow_active_set(&context.settings, "update aborted") {
+                Ok(_) => context
+                    .runtime_settings
+                    .clear_upgrading()
+                    .log_error_msg("failed to reset the installation settings")?,
+                Err(e) => {
+                    error!("unable to boot the eMMC from the previous installation set: {}", e)
+                }
+            }
+            return Err(e.into());
+        }
 
         info!("update installed successfully");
         Ok((
