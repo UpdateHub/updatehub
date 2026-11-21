@@ -21,8 +21,12 @@ pub(crate) fn target_device_from_ubi_volume_name(volume: &str) -> Result<PathBuf
         .filter_map(std::result::Result::ok)
         .find_map(|entry| {
             let path = entry.path();
-            let output =
-                easy_process::run(&format!("ubinfo {} -N {}", path.display(), volume)).ok()?;
+            let output = easy_process::run(&format!(
+                "ubinfo {} -N {}",
+                super::fs::shell_quote(path).ok()?,
+                super::fs::shell_quote(volume).ok()?
+            ))
+            .ok()?;
 
             let line = output.stdout.lines().next()?;
             let re_match = re.captures(line)?;

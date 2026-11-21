@@ -41,7 +41,7 @@ impl Installer for objects::Ubifs {
 
         if self.compressed {
             easy_process::run_with_stdin(
-                &format!("ubiupdatevol {} -", target.display()),
+                &format!("ubiupdatevol {} -", utils::fs::shell_quote(&target)?),
                 |stdin| {
                     let mut file =
                         std::fs::File::open(source).log_error_msg("failed open object")?;
@@ -52,8 +52,12 @@ impl Installer for objects::Ubifs {
             )
             .log_error_msg("ubiupdatevol failed to run")?;
         } else {
-            easy_process::run(&format!("ubiupdatevol {} {}", target.display(), source.display()))
-                .log_error_msg("ubiupdatevol failed to run")?;
+            easy_process::run(&format!(
+                "ubiupdatevol {} {}",
+                utils::fs::shell_quote(&target)?,
+                utils::fs::shell_quote(&source)?
+            ))
+            .log_error_msg("ubiupdatevol failed to run")?;
         }
 
         Ok(())
