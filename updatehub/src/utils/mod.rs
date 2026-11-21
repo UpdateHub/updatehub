@@ -66,6 +66,10 @@ pub enum Error {
     #[from(ignore)]
     UnresolvedBootEmmc(#[error(not(source))] std::path::PathBuf),
 
+    #[display("{_0:?} is not valid UTF-8 and cannot be passed to a command")]
+    #[from(ignore)]
+    NonUtf8Path(#[error(not(source))] std::path::PathBuf),
+
     #[display("user doesn't have write permission on target device: {_0:?}")]
     #[from(ignore)]
     MissingWritePermission(#[error(not(source))] std::path::PathBuf),
