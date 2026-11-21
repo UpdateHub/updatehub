@@ -58,11 +58,7 @@ impl Installer for objects::Imxkobs {
             cmd += "-x ";
         }
 
-        cmd += context
-            .download_dir
-            .join(self.sha256sum())
-            .to_str()
-            .ok_or(Error::InvalidPath)
+        cmd += &utils::fs::shell_quote(context.download_dir.join(self.sha256sum()))
             .log_error_msg("invalid path from download_dir for kobs-ng command")?;
 
         if self.search_exponent > 0 {
@@ -70,11 +66,11 @@ impl Installer for objects::Imxkobs {
         }
 
         if let Some(chip_0) = &self.chip_0_device_path {
-            write!(cmd, " --chip_0_device_path={}", chip_0.display()).unwrap();
+            write!(cmd, " --chip_0_device_path={}", utils::fs::shell_quote(chip_0)?).unwrap();
         }
 
         if let Some(chip_1) = &self.chip_1_device_path {
-            write!(cmd, " --chip_1_device_path={}", chip_1.display()).unwrap();
+            write!(cmd, " --chip_1_device_path={}", utils::fs::shell_quote(chip_1)?).unwrap();
         }
 
         cmd += " -v";
