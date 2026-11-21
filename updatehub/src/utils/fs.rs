@@ -389,7 +389,7 @@ pub(crate) fn format(target: &Path, fs: Filesystem, options: Option<&str>) -> Re
     ensure_not_mounted(target)?;
 
     trace!("formating {:?} as {}", target, fs);
-    let target = target.display();
+    let target = shell_quote(target)?;
     let options = options.unwrap_or_default();
 
     let cmd = match fs {
@@ -417,6 +417,18 @@ pub(crate) fn format(target: &Path, fs: Filesystem, options: Option<&str>) -> Re
     }
 
     Ok(())
+}
+
+/// Quotes `arg` so `easy_process` passes it as one argument.
+///
+/// Its parser is not sh: a backslash escapes the next character even inside
+/// single quotes, and an unknown escape drops both characters. A lossy
+/// conversion could name a different node, so non-UTF-8 is refused.
+pub(crate) fn shell_quote(arg: impl AsRef<std::ffi::OsStr>) -> Result<String> {
+    let arg = arg.as_ref();
+    let arg = arg.to_str().ok_or_else(|| Error::NonUtf8Path(arg.into()))?;
+
+    Ok(format!("'{}'", arg.replace('\\', r"\\").replace('\'', r"\'")))
 }
 
 pub(crate) fn mount(source: &Path, fs: Filesystem, options: &str) -> io::Result<MountGuard> {
@@ -518,6 +530,25 @@ pub(crate) mod tests {
         let _path = PathEnvGuard::prepend(mocks.path());
 
         format(target.path(), Filesystem::Ext4, None).unwrap();
+    }
+
+    #[test]
+    fn quoted_argument_reaches_the_command_whole() {
+        for arg in [r"/dev/disk/by-label/it's a\x20disk", r"/dev/disk\q1", r"trailing\"] {
+            let quoted = shell_quote(arg).unwrap();
+            let output = easy_process::run(&format!("printf %s {quoted}")).unwrap();
+
+            assert_eq!(output.stdout, arg);
+        }
+    }
+
+    #[test]
+    fn non_utf8_argument_is_refused() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let arg = std::ffi::OsStr::from_bytes(b"/dev/disk\xff");
+
+        assert!(matches!(shell_quote(arg), Err(Error::NonUtf8Path(_))));
     }
 
     #[test]
