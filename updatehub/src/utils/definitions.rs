@@ -8,6 +8,7 @@ use pkg_schema::definitions::{
     TargetType,
     target_permissions::{Gid, Uid},
 };
+use slog_scope::trace;
 use std::path::PathBuf;
 
 /// How a handler reaches its target, which decides whether a filesystem the
@@ -81,8 +82,16 @@ impl TargetTypeExt for TargetType {
                 } else {
                     // mkfs makes udev recreate /dev/disk/by-label/* links, so
                     // a mount right after formatting can find them missing.
-                    // An unresolvable path is kept so `valid` reports it.
-                    Ok(std::fs::canonicalize(device).unwrap_or_else(|_| device.clone()))
+                    match std::fs::canonicalize(device) {
+                        Ok(node) => {
+                            trace!("target {:?} resolves to {:?}", device, node);
+                            Ok(node)
+                        }
+                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                            Err(Error::DeviceDoesNotExist(device.clone()))
+                        }
+                        Err(e) => Err(e.into()),
+                    }
                 }
             }
             TargetType::UBIVolume(s) => mtd::target_device_from_ubi_volume_name(s),
@@ -136,5 +145,27 @@ mod tests {
         let target = TargetType::Device(link).get_target().unwrap();
 
         assert_eq!(target, node.canonicalize().unwrap());
+    }
+
+    #[test]
+    fn dangling_device_target_is_reported_by_its_configured_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let link = dir.path().join("system_a");
+        std::os::unix::fs::symlink(dir.path().join("gone"), &link).unwrap();
+
+        let err = TargetType::Device(link.clone()).get_target().unwrap_err();
+
+        assert!(matches!(err, Error::DeviceDoesNotExist(ref p) if *p == link), "{err:?}");
+    }
+
+    #[test]
+    fn device_target_reports_unresolvable_links() {
+        let dir = tempfile::tempdir().unwrap();
+        let link = dir.path().join("loop");
+        std::os::unix::fs::symlink(&link, &link).unwrap();
+
+        let err = TargetType::Device(link).get_target().unwrap_err();
+
+        assert!(matches!(err, Error::Io(_)), "{err:?}");
     }
 }
