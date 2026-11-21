@@ -20,14 +20,15 @@ impl Installer for objects::RawDelta {
     async fn check_requirements(&self, context: &Context) -> Result<()> {
         info!("'raw-delta' handle checking requirements");
 
-        if let definitions::TargetType::Device(dev) =
+        if let definitions::TargetType::Device(_) =
             self.target.valid(Access::Exclusive).log_error_msg("device failed validation")?
         {
+            let dev = self.target.get_target().log_error_msg("failed to get target device")?;
             let seed = get_seed_path(self, context);
-            let required_size = delta::get_required_size(&seed, dev)
+            let required_size = delta::get_required_size(&seed, &dev)
                 .await
                 .log_error_msg("failed to fetch delta required install size")?;
-            utils::fs::ensure_disk_space(dev, required_size)
+            utils::fs::ensure_disk_space(&dev, required_size)
                 .log_error_msg("not enough disk space")?;
             return Ok(());
         }

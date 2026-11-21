@@ -45,10 +45,11 @@ impl Installer for objects::Raw {
         let target = resolve_target(self, context)?;
         let access = checked_region(self)
             .map_or(Access::Exclusive, |(offset, len)| Access::Region { offset, len });
-        if let definitions::TargetType::Device(dev) =
+        if let definitions::TargetType::Device(_) =
             target.valid(access).log_error_msg("device failed vaidation")?
         {
-            utils::fs::ensure_disk_space(dev, self.required_install_size())
+            let dev = target.get_target().log_error_msg("failed to get target device")?;
+            utils::fs::ensure_disk_space(&dev, self.required_install_size())
                 .log_error_msg("not enough disk space")?;
             return Ok(());
         }
@@ -60,9 +61,11 @@ impl Installer for objects::Raw {
         info!("'raw' handler Install {} ({})", self.filename, self.sha256sum);
 
         let boot_emmc = matches!(self.target_type, definitions::TargetType::BootEmmc(_));
-        let definitions::TargetType::Device(ref device) = resolve_target(self, context)? else {
+        let target = resolve_target(self, context)?;
+        let definitions::TargetType::Device(_) = target else {
             unreachable!("device should be secured by check_requirements")
         };
+        let device = &target.get_target().log_error_msg("failed to get target device")?;
         if boot_emmc {
             info!("writing to {:?}", device);
         }
